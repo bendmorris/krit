@@ -1,0 +1,77 @@
+struct GamepadType {
+    public var guid: String;
+    public var name: String;
+
+    var buttons: Map[Int, GamepadButton];
+    var axe: Map[Int, GamepadAxis];
+}
+
+/**
+ * Button layout is based on the XBox controller.
+ */
+enum GamepadButton {//: Uint8 {
+    BtnA; // = 0;
+    BtnB; // = 1;
+    BtnX; // = 2;
+    BtnY; // = 3;
+    LeftShoulder; // = 4;
+    RightShoulder; // = 5;
+    Back; // = 6;
+    Start; // = 7;
+    LeftStick; // = 8;
+    RightStick; // = 9;
+    Guide; // = 10;
+    DpadUp; // = 11;
+    DpadDown; // = 12;
+    DpadLeft; // = 13;
+    DpadRight; // = 14;
+}
+
+// implement ToString for GamepadButton {
+//     public function toString() {
+//         match this {
+//             BtnA => return "a";
+//             BtnB => return "b";
+//             BtnX => return "x";
+//             BtnY => return "y";
+//             LeftShoulder => return "left shoulder";
+//             RightShoulder => return "right shoulder";
+//             Back => return "back";
+//             Start => return "start";
+//             LeftStick => return "left stick";
+//             RightStick => return "right stick";
+//             Guide => return "guide";
+//             DpadUp => return "up";
+//             DpadDown => return "down";
+//             DpadLeft => return "left";
+//             DpadRight => return "right";
+//             default => return (this as Uint8) as String;
+//         }
+//     }
+// }
+
+/**
+ * Axis layout is based on the XBox controller.
+ */
+enum GamepadAxis {//: Int
+    LeftTrigger; // = 2;
+    RightTrigger; // = 5;
+    LeftX; // = 0;
+    LeftY; // = 1;
+    RightX; // = 3;
+    RightY; // = 4;
+}
+
+// implement ToString for GamepadAxis {
+//     public function toString() {
+//         match this {
+//             LeftTrigger => return "lefttrigger";
+//             RightTrigger => return "righttrigger";
+//             LeftX => return "leftx";
+//             LeftY => return "lefty";
+//             RightX => return "rightx";
+//             RightY => return "righty";
+//             default => return (this as Uint8) as String;
+//         }
+//     }
+// }
