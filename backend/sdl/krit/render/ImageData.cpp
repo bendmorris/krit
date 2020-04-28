@@ -7,7 +7,7 @@ namespace krit {
 
 ImageData::~ImageData() {
     SDL_LockMutex(Renderer::renderMutex);
-    // glDeleteTextures(1, &this->texture);
+    glDeleteTextures(1, &this->texture);
     SDL_UnlockMutex(Renderer::renderMutex);
 }
 

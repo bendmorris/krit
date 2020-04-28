@@ -9,7 +9,7 @@
 #include <utility>
 
 #define UI_DECL(x, T) T *x = static_cast<T*>(this->layout.getById(#x).get())
-#define UI_DECL_NODE(x) shared_ptr<LayoutNode> x = this->layout.getNodeById(#x)
+#define UI_DECL_NODE(x) shared_ptr<LayoutNode> x##Node = this->layout.getNodeById(#x)
 #define UI_GET(x, T) static_cast<T*>(this->layout.getById(x).get())
 #define UI_GET_NODE(x) this->layout.getNodeById(x)
 
@@ -96,18 +96,9 @@ struct LayoutNode: public VisibleSprite {
     Point getPosition() override { return this->position; }
     Dimensions getSize() override { return this->keepSize ? this->dimensions : (this->sprite ? this->sprite->getSize() : Dimensions(this->width.measure(0), this->height.measure(0))); }
 
-    void update(UpdateContext &ctx) override {
-        this->reflow(ctx);
-        if (this->sprite) {
-            this->sprite->update(ctx);
-        }
-    }
+    void update(UpdateContext &ctx) override;
 
-    void render(RenderContext &ctx) override {
-        if (this->isVisible() && this->sprite) {
-            this->sprite->render(ctx);
-        }
-    }
+    void render(RenderContext &ctx) override;
 };
 
 struct LayoutRoot;

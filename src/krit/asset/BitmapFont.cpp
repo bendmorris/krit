@@ -37,7 +37,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
             attr = attr + 2;
         }
         int64_t key = (static_cast<int64_t>(first) << 32) | second;
-        font->kerningTable.insert(make_pair(key, amount));
+        font->kerningTable.insert(std::make_pair(key, amount));
     } else if (!strcmp(name, "info")) {
         const char **attr = attrs;
         while (*attr) {
@@ -69,7 +69,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
                 const char *key = *attr;
                 const char *value = *(attr + 1);
                 if (!strcmp(key, "file")) {
-                    shared_ptr<ImageData> asset = static_pointer_cast<ImageData>(font->cache->get("img", value));
+                    std::shared_ptr<ImageData> asset = std::static_pointer_cast<ImageData>(font->cache->get("img", value));
                     font->pages.push_back(asset);
                 }
             }

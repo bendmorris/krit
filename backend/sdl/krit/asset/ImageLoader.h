@@ -5,20 +5,18 @@
 #include <memory>
 #include <string>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
+
+static const std::string IMG_TYPE = "img";
 
 /**
  * Used to load images and initialize GL textures for them.
  */
-class ImageLoader: public AssetLoader {
-    public:
-        ImageLoader() {}
+struct ImageLoader: public AssetLoader {
+    ImageLoader() {}
 
-        string assetType() override { return "img"; }
-        shared_ptr<void> loadAsset(string id) override;
+    const std::string &assetType() override { return IMG_TYPE; }
+    std::shared_ptr<void> loadAsset(const std::string &id) override;
 };
 
 }

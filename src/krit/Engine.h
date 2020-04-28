@@ -46,6 +46,7 @@ struct Engine {
 
     Color bgColor = Color::black();
     Camera camera;
+    Camera uiCamera;
 
     unique_ptr<Sprite> root = nullptr;
     void *userData = nullptr;
@@ -99,6 +100,7 @@ struct Engine {
         // actual update cycle
         invoke(this->onUpdate, &ctx);
         this->camera.update(ctx);
+        this->uiCamera.update(ctx);
         this->controls.update(ctx);
         this->input.update(ctx);
         if (this->root) this->root->update(ctx);

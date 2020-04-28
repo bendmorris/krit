@@ -7,6 +7,11 @@ void Backdrop::render(RenderContext &ctx) {
     if (this->color.a <= 0) {
         return;
     }
+    CameraTransform transform;
+    transform.scroll = scroll;
+    CameraTransform *oldTransform = ctx.transform;
+    ctx.transform = &transform;
+
     Dimensions scaledDimensions(this->width(), this->height());
     ctx.transformDimensions(
         scaledDimensions.multiply(this->scale.x, this->scale.y)
@@ -40,6 +45,8 @@ void Backdrop::render(RenderContext &ctx) {
             ctx.addRectRaw(key, this->region.rect, m, this->color);
         }
     }
+
+    ctx.transform = oldTransform;
 }
 
 }

@@ -132,6 +132,7 @@ struct BitmapText: public VisibleSprite {
     std::shared_ptr<BitmapFont> font;
     BitmapTextOptions options;
     int charCount = -1;
+    int maxChars = 0;
 
     BitmapText(BitmapTextOptions options);
 

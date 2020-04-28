@@ -4,15 +4,12 @@
 #include <memory>
 #include <string>
 
-using namespace std;
-
 namespace krit {
 
-class AssetLoader {
-    public:
-        virtual string assetType() = 0;
-        virtual int initialSize() { return 16; }
-        virtual shared_ptr<void> loadAsset(string id) = 0;
+struct AssetLoader {
+    virtual const std::string &assetType() = 0;
+    virtual int initialSize() { return 16; }
+    virtual std::shared_ptr<void> loadAsset(const std::string &id) = 0;
 };
 
 }

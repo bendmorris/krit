@@ -152,6 +152,15 @@ struct TextParser {
         }
         this->flushWord(txt);
         this->newLine(txt, false);
+
+        txt.maxChars = 0;
+        for (auto &op : txt.opcodes) {
+            switch (op.type) {
+                case TextBlock: {
+                    txt.maxChars += op.data.text.length;
+                }
+            }
+        }
     }
 
     void addTag(BitmapText &txt, StringSlice tagName) {
@@ -231,7 +240,8 @@ struct TextParser {
         this->flushWordSegment(txt);
         if (!TextParser::word.empty()) {
             this->trailingWhitespace = this->wordTrailingWhitespace;
-            if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width()) {
+            double baseScale = static_cast<double>(txt.options.size) / txt.font->size;
+            if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width() / baseScale) {
                 this->newLine(txt, true);
                 this->cursor.x = this->wordLength;
             } else {

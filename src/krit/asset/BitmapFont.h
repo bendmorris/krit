@@ -11,12 +11,9 @@
 #include <utility>
 #include <vector>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
-class AssetCache;
+struct AssetCache;
 
 struct GlyphData {
     int page = 0;
@@ -28,37 +25,37 @@ struct GlyphData {
     GlyphData() {}
 };
 
-class BitmapFont {
-    public:
-        int size;
-        int lineHeight;
-        vector<shared_ptr<ImageData>> pages;
-        GlyphData glyphData[0x100];
-        unordered_map<int64_t, int> kerningTable;
-        AssetCache *cache;
+struct BitmapFont {
+    int size;
+    int lineHeight;
+    std::vector<std::shared_ptr<ImageData>> pages;
+    GlyphData glyphData[0x100];
+    std::unordered_map<int64_t, int> kerningTable;
+    AssetCache *cache;
 
-        BitmapFont(AssetCache *cache, const char *path);
+    BitmapFont(AssetCache *cache, const char *path);
 
-        GlyphData &getGlyph(int c) {
-            return this->glyphData[c];
-        }
+    GlyphData &getGlyph(int c) {
+        return this->glyphData[c];
+    }
 
-        shared_ptr<ImageData> &getPage(int i) {
-            return this->pages[i];
-        }
+    std::shared_ptr<ImageData> &getPage(int i) {
+        return this->pages[i];
+    }
 };
 
-class BitmapFontLoader: public AssetLoader {
-    public:
-        AssetCache *cache;
+static const std::string BMF_TYPE = "bmf";
 
-        BitmapFontLoader(AssetCache *cache): cache(cache) {}
+struct BitmapFontLoader: public AssetLoader {
+    AssetCache *cache;
 
-        string assetType() override { return "bmf"; }
-        shared_ptr<void> loadAsset(string id) override {
-            shared_ptr<BitmapFont> font = make_shared<BitmapFont>(this->cache, id.c_str());
-            return font;
-        }
+    BitmapFontLoader(AssetCache *cache): cache(cache) {}
+
+    const std::string &assetType() override { return BMF_TYPE; }
+    std::shared_ptr<void> loadAsset(const std::string &id) override {
+        std::shared_ptr<BitmapFont> font = std::make_shared<BitmapFont>(this->cache, id.c_str());
+        return font;
+    }
 };
 
 }

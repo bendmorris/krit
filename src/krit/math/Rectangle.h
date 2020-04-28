@@ -35,6 +35,15 @@ template <typename T> class BaseRectangle {
                 this->top() <= other.bottom();
         }
 
+        template <typename U> bool contains(U &other) {
+            return (
+                other.x >= left() &&
+                other.x <= right() &&
+                other.y >= top() &&
+                other.y <= bottom()
+            );
+        }
+
         BaseRectangle<T> &setTo(BaseRectangle<T> &other) {
             return this->setTo(other.x, other.y, other.width, other.height);
         }

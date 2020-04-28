@@ -15,46 +15,42 @@ using namespace krit;
 
 namespace krit {
 
-class ControlBindings {
-    public:
-        KeyManager key;
-        MouseManager mouse;
+struct ControlBindings {
+    KeyManager key;
+    MouseManager mouse;
 
-        ControlBindings(): key(&this->events), mouse(&this->events) {}
+    ControlBindings(): key(&this->events), mouse(&this->events) {}
 
-        void reset() {
-            this->mouse.reset();
-        }
+    void reset() {
+        this->events.clear();
+        this->mouse.reset();
+    }
 
-        void update(UpdateContext &ctx) {
-            this->key.update();
-            this->mouse.update();
-        }
+    void update(UpdateContext &ctx) {
+        this->key.update();
+        this->mouse.update();
+    }
 
-        void clear() {
-            this->events.clear();
-        }
+    void bindKey(Key key, Action action) {
+        this->key.define(key, action);
+    }
 
-        void bindKey(Key key, Action action) {
-            this->key.define(key, action);
-        }
+    void unbindKey(Key key) {
+        this->key.undefine(key);
+    }
 
-        void unbindKey(Key key) {
-            this->key.undefine(key);
-        }
+    void bindMouse(MouseButton btn, Action action) {
+        this->mouse.define(btn, action);
+    }
 
-        void bindMouse(MouseButton btn, Action action) {
-            this->mouse.define(btn, action);
-        }
+    void unbindMouse(MouseButton btn) {
+        this->mouse.undefine(btn);
+    }
 
-        void unbindMouse(MouseButton btn) {
-            this->mouse.undefine(btn);
-        }
+    vector<InputEvent> &getEvents() { return this->events; }
 
-        vector<InputEvent> &getEvents() { return this->events; }
-
-        friend class MouseManager;
-        friend class KeyManager;
+    friend class MouseManager;
+    friend class KeyManager;
 
     private:
         vector<InputEvent> events;

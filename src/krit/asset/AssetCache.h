@@ -10,19 +10,17 @@
 #include <unordered_map>
 #include <utility>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
-class TextLoader: public AssetLoader {
-    public:
-        string assetType() override { return "txt"; }
-        shared_ptr<void> loadAsset(string id) override;
-        TextLoader() {}
+static const std::string TEXT_TYPE = "txt";
+
+struct TextLoader: public AssetLoader {
+    const std::string &assetType() override { return TEXT_TYPE; }
+    std::shared_ptr<void> loadAsset(const std::string &id) override;
+    TextLoader() {}
 };
 
-typedef unordered_map<string, weak_ptr<void>> AssetCacheMap;
+typedef std::unordered_map<std::string, std::weak_ptr<void>> AssetCacheMap;
 
 /**
  * A single AssetCache is used per Engine to load and manage assets. The cache
@@ -34,37 +32,36 @@ typedef unordered_map<string, weak_ptr<void>> AssetCacheMap;
  * loaded assets, so it can return a reference to the existing asset if still
  * live, or load and cache a weak pointer otherwise.
  */
-class AssetCache {
-    public:
-        TextLoader txtLoader;
-        ImageLoader imgLoader;
-        BitmapFontLoader bmfLoader;
-        TextureAtlasLoader atlasLoader;
+struct AssetCache {
+    TextLoader txtLoader;
+    ImageLoader imgLoader;
+    BitmapFontLoader bmfLoader;
+    TextureAtlasLoader atlasLoader;
 
-        AssetCache(): bmfLoader(this), atlasLoader(this) {
-            this->registerLoader(&this->txtLoader);
-            this->registerLoader(&this->imgLoader);
-            this->registerLoader(&this->bmfLoader);
-            this->registerLoader(&this->atlasLoader);
-        }
+    AssetCache(): bmfLoader(this), atlasLoader(this) {
+        this->registerLoader(&this->txtLoader);
+        this->registerLoader(&this->imgLoader);
+        this->registerLoader(&this->bmfLoader);
+        this->registerLoader(&this->atlasLoader);
+    }
 
-        void registerLoader(AssetLoader *loader) {
-            string type = loader->assetType();
-            this->loaders.insert(make_pair(type, loader));
-            AssetCacheMap assetMap;
-            assetMap.reserve(16);
-            this->assets.insert(make_pair(type, assetMap));
-        }
+    void registerLoader(AssetLoader *loader) {
+        const std::string &type = loader->assetType();
+        this->loaders.insert(make_pair(type, loader));
+        AssetCacheMap assetMap;
+        assetMap.reserve(16);
+        this->assets.insert(make_pair(type, assetMap));
+    }
 
-        bool registered(string &id) {
-            return this->loaders.find(id) != this->loaders.end();
-        }
+    bool registered(const std::string &id) {
+        return this->loaders.find(id) != this->loaders.end();
+    }
 
-        shared_ptr<void> get(string type, string id);
+    std::shared_ptr<void> get(const std::string &type, const std::string &id);
 
     private:
-        unordered_map<string, AssetCacheMap> assets;
-        unordered_map<string, AssetLoader*> loaders;
+        std::unordered_map<std::string, AssetCacheMap> assets;
+        std::unordered_map<std::string, AssetLoader*> loaders;
 };
 
 }

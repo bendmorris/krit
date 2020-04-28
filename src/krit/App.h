@@ -8,16 +8,13 @@
 #include "krit/Options.h"
 #include "krit/UpdateContext.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 const int MAX_FRAMES = 5;
 const int FPS = 60;
 
 struct App {
-    string title;
+    std::string title;
     Engine engine;
     IntDimensions window;
     // opaque, backend-specific contents
@@ -44,15 +41,6 @@ struct App {
     private:
         bool running = false;
         bool full = false;
-
-        void flushRender(RenderContext &render) {
-            this->renderer.flushBatch(render);
-            this->renderer.flushFrame(render);
-        }
-
-        #ifndef SINGLE_THREAD
-        static int renderLoop(void*);
-        #endif
 
         void handleEvents(UpdateContext&);
 };

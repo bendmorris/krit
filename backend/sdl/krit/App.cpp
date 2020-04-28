@@ -1,57 +1,66 @@
 #include "krit/App.h"
 
 #include <krit/input/Mouse.h>
+#include "krit/TaskManager.h"
+#include "SDL2/SDL.h"
 #include <chrono>
 #include <cmath>
 
 namespace krit {
 
-#ifndef SINGLE_THREAD
-
-struct RenderThreadData {
-    App *app;
+struct RenderThread {
+    RenderContext &render;
+    SDL_Thread *thread;
     SDL_mutex *renderMutex;
     SDL_mutex *renderCondMutex;
     SDL_cond *renderCond;
-    RenderContext *context;
     bool killed = false;
 
-    RenderThreadData(App* app, SDL_mutex* renderMutex, SDL_mutex* renderCondMutex, SDL_cond* renderCond, RenderContext* context) :
-        app(app),
-        renderMutex(renderMutex),
-        renderCondMutex(renderCondMutex),
-        renderCond(renderCond),
-        context(context) {}
+    AsyncQueue<AsyncTask> inbox;
+
+    RenderThread(RenderContext &render):
+        render(render)
+    {
+        renderMutex = SDL_CreateMutex();
+        renderCondMutex = SDL_CreateMutex();
+        renderCond = SDL_CreateCond();
+        SDL_Thread *renderThread = SDL_CreateThread(RenderThread::exec, "render", this);
+    }
+
+    static int exec(void *raw) {
+        static_cast<RenderThread*>(raw)->renderLoop();
+        return 0;
+    }
+
+    void renderLoop() {
+        while (true) {
+            SDL_LockMutex(renderCondMutex);
+            SDL_CondWait(renderCond, renderCondMutex);
+            SDL_UnlockMutex(renderCondMutex);
+
+            if (killed) {
+                SDL_DestroyCond(renderCond);
+                SDL_DestroyMutex(renderMutex);
+                SDL_DestroyMutex(renderCondMutex);
+                break;
+            }
+            SDL_LockMutex(renderMutex);
+            SDL_GL_MakeCurrent(render.app->backend.window, render.app->backend.glContext);
+            render.app->renderer.flushBatch(render);
+            render.app->renderer.flushFrame(render);
+            SDL_UnlockMutex(renderMutex);
+        }
+    }
 };
 
 App::App(KritOptions &options):
     backend(options.title, options.width, options.height),
     window(options.width, options.height) {}
 
-int App::renderLoop(void *raw) {
-    RenderThreadData *data = static_cast<RenderThreadData *>(raw);
-    while (true) {
-        SDL_LockMutex(data->renderCondMutex);
-        SDL_CondWait(data->renderCond, data->renderCondMutex);
-        SDL_UnlockMutex(data->renderCondMutex);
-
-        if (data->killed) {
-            SDL_DestroyCond(data->renderCond);
-            SDL_DestroyMutex(data->renderMutex);
-            SDL_DestroyMutex(data->renderCondMutex);
-            return 0;
-        }
-        SDL_LockMutex(data->renderMutex);
-        SDL_GL_MakeCurrent(data->app->backend.window, data->app->backend.glContext);
-        data->app->flushRender(*data->context);
-        SDL_UnlockMutex(data->renderMutex);
-    }
-}
-#endif
-
 void App::run() {
     double frameDelta1 = 1.0 / (FPS - 1);
     double frameDelta2 = 1.0 / (FPS + 4);
+
     UpdateContext update;
     update.app = this;
     update.engine = &this->engine;
@@ -60,25 +69,20 @@ void App::run() {
     update.camera = &this->engine.camera;
     update.controls = &this->engine.controls;
     update.input = &this->engine.input;
+
     RenderContext render;
     render.app = this;
     render.engine = &this->engine;
     render.window = &this->window;
     render.drawCommandBuffer = &this->renderer.drawCommandBuffer;
     render.userData = this->engine.userData;
+
     double accumulator = 0, elapsed;
     clock_t frameStart = clock(), frameFinish;
+    int cores = SDL_GetCPUCount();
 
-    #ifndef SINGLE_THREAD
-    RenderThreadData renderThreadData(
-        this,
-        SDL_CreateMutex(),
-        SDL_CreateMutex(),
-        SDL_CreateCond(),
-        &render
-    );
-    SDL_Thread *renderThread = SDL_CreateThread(App::renderLoop, "render", &renderThreadData);
-    #endif
+    RenderThread renderThread(render);
+    TaskManager taskManager(update, max(2, cores - 2));
 
     invoke(engine.onBegin, &update);
 
@@ -105,7 +109,6 @@ void App::run() {
             accumulator = fmod(accumulator, frameDelta2);
         }
         frameStart = frameFinish;
-        this->engine.controls.clear();
         this->engine.controls.reset();
         this->engine.reset();
         this->handleEvents(update);
@@ -115,34 +118,26 @@ void App::run() {
         }
 
         if (update.frameCount > 0) {
-            #ifndef SINGLE_THREAD
-            SDL_LockMutex(renderThreadData.renderMutex);
-            #endif
+            SDL_LockMutex(renderThread.renderMutex);
 
             this->renderer.startFrame(render);
             this->engine.render(render);
 
-            #ifdef SINGLE_THREAD
-            this->flushRender(render);
-            #else
-            SDL_UnlockMutex(renderThreadData.renderMutex);
-            SDL_LockMutex(renderThreadData.renderCondMutex);
-            SDL_CondSignal(renderThreadData.renderCond);
-            SDL_UnlockMutex(renderThreadData.renderCondMutex);
+            SDL_UnlockMutex(renderThread.renderMutex);
+            SDL_LockMutex(renderThread.renderCondMutex);
+            SDL_CondSignal(renderThread.renderCond);
+            SDL_UnlockMutex(renderThread.renderCondMutex);
             SDL_GL_MakeCurrent(this->backend.window, this->backend.glContext);
-            #endif
         }
     }
 
-    #ifndef SINGLE_THREAD
-    SDL_LockMutex(renderThreadData.renderMutex);
-    renderThreadData.killed = true;
-    SDL_LockMutex(renderThreadData.renderCondMutex);
-    SDL_CondSignal(renderThreadData.renderCond);
-    SDL_UnlockMutex(renderThreadData.renderCondMutex);
-    SDL_UnlockMutex(renderThreadData.renderMutex);
-    SDL_WaitThread(renderThread, nullptr);
-    #endif
+    SDL_LockMutex(renderThread.renderMutex);
+    renderThread.killed = true;
+    SDL_LockMutex(renderThread.renderCondMutex);
+    SDL_CondSignal(renderThread.renderCond);
+    SDL_UnlockMutex(renderThread.renderCondMutex);
+    SDL_UnlockMutex(renderThread.renderMutex);
+    SDL_WaitThread(renderThread.thread, nullptr);
 }
 
 MouseButton sdlMouseButton(int b) {

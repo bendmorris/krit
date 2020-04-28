@@ -31,7 +31,7 @@ void TileMap::render(RenderContext &ctx) {
             if (x < this->clip.x || x >= this->clip.right()) {
                 continue;
             }
-            int16_t tile = this->getTile(x, y);
+            int tile = this->getTile(x, y);
             if (tile > -1) {
                 int tx = tile % this->tilemapSizeInTiles.width(),
                     ty = tile / this->tilemapSizeInTiles.width();

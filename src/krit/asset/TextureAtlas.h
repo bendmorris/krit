@@ -11,34 +11,31 @@
 #include <utility>
 #include <vector>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
-class AssetCache;
+struct AssetCache;
 
-class TextureAtlas {
-    public:
-        unordered_map<string, ImageRegion> regions;
+struct TextureAtlas {
+    std::unordered_map<std::string, ImageRegion> regions;
 
-        TextureAtlas(AssetCache *cache, const string &path);
-        ImageRegion &getRegion(const string &region) {
-            return this->regions.find(region)->second;
-        }
+    TextureAtlas(AssetCache *cache, const std::string &path);
+    ImageRegion &getRegion(const std::string &region) {
+        return this->regions.find(region)->second;
+    }
 };
 
-class TextureAtlasLoader: public AssetLoader {
-    public:
-        AssetCache *cache;
+static const std::string ATLAS_TYPE = "tex";
 
-        TextureAtlasLoader(AssetCache *cache): cache(cache) {}
+struct TextureAtlasLoader: public AssetLoader {
+    AssetCache *cache;
 
-        string assetType() override { return "tex"; }
-        shared_ptr<void> loadAsset(string id) override {
-            shared_ptr<TextureAtlas> font = make_shared<TextureAtlas>(this->cache, id);
-            return font;
-        }
+    TextureAtlasLoader(AssetCache *cache): cache(cache) {}
+
+    const std::string &assetType() override { return ATLAS_TYPE; }
+    std::shared_ptr<void> loadAsset(const std::string &id) override {
+        std::shared_ptr<TextureAtlas> font = std::make_shared<TextureAtlas>(this->cache, id);
+        return font;
+    }
 };
 
 }

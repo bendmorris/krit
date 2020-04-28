@@ -91,24 +91,24 @@ void Renderer::flushFrame(RenderContext &ctx) {
     // printf("triangles: %i\n", this->triangleCount);
 }
 
-template <> void Renderer::drawCall<SetClipRect, Rectangle>(RenderContext &ctx, Rectangle &clipRect) {
+template <> void Renderer::drawCall<SetClipRect, Rectangle>(Rectangle &clipRect) {
     glScissor(clipRect.x, this->height - clipRect.y - clipRect.height, clipRect.width, clipRect.height);
 }
 
-template <> void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer*>(RenderContext &ctx, BaseFrameBuffer *&fb) {
+template <> void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer*>(BaseFrameBuffer *&fb) {
     // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
     glBindFramebuffer(GL_FRAMEBUFFER, fb ? fb->frameBuffer : 0);
     checkForGlErrors("bind framebuffer");
 }
 
-template <> void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
+template <> void Renderer::drawCall<ClearColor, Color>(Color &c) {
     glDisable(GL_SCISSOR_TEST);
     glClearColor(c.r, c.g, c.b, c.a);
     glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_SCISSOR_TEST);
 }
 
-template <> void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx, DrawCall &drawCall) {
+template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
     // puts("draw");
     checkForGlErrors("drawCall");
 
@@ -169,7 +169,7 @@ template <> void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
     }
 }
 
-template <> void Renderer::drawCall<DrawMaterial, Material>(RenderContext &ctx, Material &material) {
+template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) {
     // puts("material");
     checkForGlErrors("material");
 
@@ -257,7 +257,7 @@ void Renderer::flushBatch(RenderContext &ctx) {
     for (auto commandType : this->drawCommandBuffer.commandTypes) {
         size_t index = indices[commandType]++;
         switch (commandType) {
-            #define DISPATCH_COMMAND(cmd) case cmd: this->drawCall<cmd>(ctx, this->drawCommandBuffer.get<cmd>()[index]); break;
+            #define DISPATCH_COMMAND(cmd) case cmd: this->drawCall<cmd>(this->drawCommandBuffer.get<cmd>()[index]); break;
 
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(SetClipRect)

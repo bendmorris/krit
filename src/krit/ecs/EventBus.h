@@ -1,17 +1,18 @@
 #ifndef KRIT_ECS_EVENTBUS
 #define KRIT_ECS_EVENTBUS
 
+#include <functional>
 #include <list>
 #include <tuple>
-
-using namespace std;
-using namespace krit;
+#include <type_traits>
+#include <vector>
 
 namespace krit {
 
 template <typename EventType, typename... EventDataTypes> struct EventBus {
-    tuple<list<EventDataTypes>...> events;
-    tuple<list<EventDataTypes>...> nextEvents;
+    std::tuple<std::list<EventDataTypes>...> events;
+    std::tuple<std::list<EventDataTypes>...> nextEvents;
+    std::tuple<std::vector<std::function<bool(EventDataTypes)>>...> callbacks;
 
     template <size_t e> auto get() -> decltype(std::get<e>(events)) {
         return std::get<e>(this->events);
@@ -19,6 +20,10 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
 
     template <size_t e, typename... Args> void add(Args&&... args) {
         return std::get<e>(this->nextEvents).emplace_back(args...);
+    }
+
+    template <size_t e> void listen(typename std::remove_reference<decltype(std::get<e>(callbacks).back())>::type callback) {
+        std::get<e>(this->callbacks).push_back(callback);
     }
 
     void clear() {
@@ -45,8 +50,28 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
         template <int i, typename Head> void _stepAll(Head head) {
             auto &events = std::get<i>(this->events);
             auto &nextEvents = std::get<i>(this->nextEvents);
+            auto &callbacks = std::get<i>(this->callbacks);
             events.clear();
             events.splice(events.begin(), nextEvents);
+            // call any callbacks with the new events
+            for (int c = 0; c < callbacks.size(); ++c) {
+                auto &callback = callbacks[c];
+                bool done = false;
+                for (auto &event : events) {
+                    if (!callback(event)) {
+                        done = true;
+                        break;
+                    }
+                }
+                if (done) {
+                    for (int j = c + 1; j < callbacks.size(); ++j) {
+                        std::swap(callbacks[c], callbacks[j]);
+                    }
+                    callbacks.pop_back();
+                    --c;
+                    break;
+                }
+            }
         }
 };
 

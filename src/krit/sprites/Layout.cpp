@@ -1,3 +1,4 @@
+#include "krit/Engine.h"
 #include "krit/sprites/Backdrop.h"
 #include "krit/sprites/BitmapText.h"
 #include "krit/sprites/Button.h"
@@ -15,6 +16,22 @@ using namespace std;
 using namespace krit;
 
 namespace krit {
+
+void LayoutNode::update(UpdateContext &ctx) {
+    this->reflow(ctx);
+    if (this->sprite) {
+        this->sprite->update(ctx);
+    }
+}
+
+void LayoutNode::render(RenderContext &ctx) {
+    Camera *oldCamera = ctx.camera;
+    ctx.camera = &ctx.engine->uiCamera;
+    if (this->isVisible() && this->sprite) {
+        this->sprite->render(ctx);
+    }
+    ctx.camera = oldCamera;
+}
 
 void LayoutNode::reflow(UpdateContext &ctx) {
     double x, y, availableWidth, availableHeight;
@@ -82,8 +99,8 @@ void LayoutNode::reflow(UpdateContext &ctx) {
     }
 }
 
-unordered_map<string, string> &collectAttrs(const char **attrs) {
-    static unordered_map<string, string> _attrMap;
+std::unordered_map<string, string> &collectAttrs(const char **attrs) {
+    static std::unordered_map<string, string> _attrMap;
     _attrMap.clear();
     const char **attr = attrs;
     while (*attr) {
@@ -180,30 +197,30 @@ SpriteStyle LayoutRoot::parseStyle(string &s) {
     return style;
 }
 
-void LayoutRoot::parseAndApplyStyle(unordered_map<string, string> &attrMap, shared_ptr<VisibleSprite> e) {
+void LayoutRoot::parseAndApplyStyle(std::unordered_map<string, string> &attrMap, std::shared_ptr<VisibleSprite> e) {
     auto found = attrMap.find("style");
     if (found != attrMap.end()) {
         e->applyStyle(LayoutRoot::parseStyle(found->second));
     }
 }
 
-ImageRegion LayoutRoot::parseSrc(unordered_map<string, string> &attrMap, AssetContext *asset) {
+ImageRegion LayoutRoot::parseSrc(std::unordered_map<string, string> &attrMap, AssetContext *asset) {
     auto found = attrMap.find("src");
     if (found != attrMap.end()) {
         return ImageRegion(asset->getImage(found->second));
     }
     found = attrMap.find("atlas");
     if (found != attrMap.end()) {
-        shared_ptr<TextureAtlas> atlas = asset->getTextureAtlas(found->second);
+        std::shared_ptr<TextureAtlas> atlas = asset->getTextureAtlas(found->second);
         return atlas->getRegion(attrMap["region"]);
     }
 }
 
-void parseBackdrop(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseBackdrop(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
-    shared_ptr<Backdrop> backdrop = make_shared<Backdrop>(src);
+    std::shared_ptr<Backdrop> backdrop = make_shared<Backdrop>(src);
     node->attachSprite(backdrop);
     for (auto &it: attrMap) {
         const string &key = it.first;
@@ -216,30 +233,30 @@ void parseBackdrop(LayoutParseData *data, unordered_map<string, string> &attrMap
     }
 }
 
-void parseImg(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseImg(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
-    shared_ptr<Image> img = make_shared<Image>(src);
+    std::shared_ptr<Image> img = make_shared<Image>(src);
     LayoutRoot::parseAndApplyStyle(attrMap, img);
     node->attachSprite(img);
 }
 
-void parseLabel(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseLabel(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
 
     // parse text options first
-    shared_ptr<BitmapFont> font = data->asset->getBitmapFont(attrMap["font"]);
+    std::shared_ptr<BitmapFont> font = data->asset->getBitmapFont(attrMap["font"]);
     BitmapTextOptions options(font);
-    unordered_map<string, string>::const_iterator it;
+    std::unordered_map<string, string>::const_iterator it;
     if ((it = attrMap.find("size")) != attrMap.end()) {
         options.size = stoi(it->second);
     }
     if ((it = attrMap.find("wrap")) != attrMap.end()) {
         options.wordWrap = ParseUtil::parseBool(it->second);
     }
-    shared_ptr<BitmapText> txt = make_shared<BitmapText>(options);
+    std::shared_ptr<BitmapText> txt = make_shared<BitmapText>(options);
     LayoutRoot::parseAndApplyStyle(attrMap, txt);
     node->attachSprite(txt);
 
@@ -263,12 +280,12 @@ void parseLabel(LayoutParseData *data, unordered_map<string, string> &attrMap) {
     }
 }
 
-void parseSpine(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseSpine(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
 
     // parse skeleton name
-    shared_ptr<SpineSprite> spine = make_shared<SpineSprite>(*data->asset, attrMap["skeleton"]);
+    std::shared_ptr<SpineSprite> spine = make_shared<SpineSprite>(*data->asset, attrMap["skeleton"]);
     LayoutRoot::parseAndApplyStyle(attrMap, spine);
     spine->setDefaultMix(2.5/60);
     node->attachSprite(spine);
@@ -291,9 +308,9 @@ void parseSpine(LayoutParseData *data, unordered_map<string, string> &attrMap) {
     }
 }
 
-void parseNineSlice(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseNineSlice(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     int lw, rw, th, bh;
     auto found = attrMap.find("border");
@@ -324,14 +341,14 @@ void parseNineSlice(LayoutParseData *data, unordered_map<string, string> &attrMa
     if (found != attrMap.end()) {
         bh = ParseUtil::parseInt(found->second);
     }
-    shared_ptr<NineSlice> img = make_shared<NineSlice>(src, lw, rw, th, bh);
+    std::shared_ptr<NineSlice> img = make_shared<NineSlice>(src, lw, rw, th, bh);
     LayoutRoot::parseAndApplyStyle(attrMap, img);
     node->attachSprite(img);
 }
 
-void parseButton(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseButton(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     LayoutRoot *root = data->root;
-    shared_ptr<LayoutNode> node = data->node;
+    std::shared_ptr<LayoutNode> node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     int lw, rw, th, bh;
     auto found = attrMap.find("border");
@@ -362,14 +379,14 @@ void parseButton(LayoutParseData *data, unordered_map<string, string> &attrMap) 
     if (found != attrMap.end()) {
         bh = ParseUtil::parseInt(found->second);
     }
-    shared_ptr<BitmapFont> font = data->asset->getBitmapFont(attrMap["font"]);
+    std::shared_ptr<BitmapFont> font = data->asset->getBitmapFont(attrMap["font"]);
     BitmapTextOptions options(font);
-    unordered_map<string, string>::const_iterator it;
+    std::unordered_map<string, string>::const_iterator it;
     if ((it = attrMap.find("size")) != attrMap.end()) {
         options.size = stoi(it->second);
     }
     string &label = attrMap["label"];
-    shared_ptr<Button> btn = make_shared<Button>(src, lw, rw, th, bh, options, label);
+    std::shared_ptr<Button> btn = make_shared<Button>(src, lw, rw, th, bh, options, label);
 
     found = attrMap.find("style");
     if (found != attrMap.end()) {
@@ -392,18 +409,18 @@ void parseButton(LayoutParseData *data, unordered_map<string, string> &attrMap) 
     node->attachSprite(btn);
 }
 
-void parseDiv(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parseDiv(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     data->node->keepSize = true;
 }
 
-void parsePlaceholder(LayoutParseData *data, unordered_map<string, string> &attrMap) {
+void parsePlaceholder(LayoutParseData *data, std::unordered_map<string, string> &attrMap) {
     data->node->keepSize = false;
 }
 
 void layoutStartElement(void *userData, const char *name, const char **attrs) {
     LayoutParseData *data = static_cast<LayoutParseData*>(userData);
-    unordered_map<string, string> &attrMap = collectAttrs(attrs);
-    shared_ptr<LayoutNode> node = make_shared<LayoutNode>();
+    std::unordered_map<string, string> &attrMap = collectAttrs(attrs);
+    std::shared_ptr<LayoutNode> node = make_shared<LayoutNode>();
     data->root->nodes.push_back(node);
     data->node = node;
     for (auto &it: attrMap) {
@@ -428,7 +445,7 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
         }
         data->divs.push(DivData(node, PositionAbsolute));
     }
-    unordered_map<string, string>::const_iterator it;
+    std::unordered_map<string, string>::const_iterator it;
     if ((it = attrMap.find("id")) != attrMap.end()) {
         data->root->nodeMap.insert(make_pair(it->second, node));
     }
@@ -439,7 +456,7 @@ void layoutEndElement(void *userData, const char *name) {
     data->divs.pop();
 }
 
-unordered_map<string, LayoutParseFunction*> LayoutRoot::parsers = {
+std::unordered_map<string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"div", &parseDiv},
     {"placeholder", &parsePlaceholder},
     {"img", &parseImg},

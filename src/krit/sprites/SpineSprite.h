@@ -13,9 +13,6 @@
 #include <string>
 #include <utility>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct SpineTextureLoader: public spine::TextureLoader {
@@ -38,16 +35,15 @@ struct SpineTextureLoader: public spine::TextureLoader {
     }
 };
 
-class SpineLoader: public AssetLoader {
-    public:
-        static string TYPE;
-        AssetCache *cache;
-        SpineTextureLoader textureLoader;
+struct SpineLoader: public AssetLoader {
+    static std::string TYPE;
+    AssetCache *cache;
+    SpineTextureLoader textureLoader;
 
-        SpineLoader(AssetCache *cache): cache(cache), textureLoader(cache) {}
+    SpineLoader(AssetCache *cache): cache(cache), textureLoader(cache) {}
 
-        string assetType() override { return SpineLoader::TYPE; }
-        shared_ptr<void> loadAsset(string id) override;
+    const std::string &assetType() override { return SpineLoader::TYPE; }
+    std::shared_ptr<void> loadAsset(const std::string &id) override;
 };
 
 struct SkeletonBinaryData {
@@ -114,7 +110,7 @@ struct SpineSprite: public VisibleSprite {
     spine::SkeletonData &skeletonData() { return *this->bin->skeletonData; }
     spine::AnimationStateData &animationStateData() { return *this->bin->animationStateData; }
 
-    SpineSprite(AssetContext &asset, const string &id) {
+    SpineSprite(AssetContext &asset, const std::string &id) {
         if (!asset.cache->registered(SpineLoader::TYPE)) {
             SpineLoader *loader = new SpineLoader(asset.cache);
             asset.cache->registerLoader(loader);
@@ -128,8 +124,8 @@ struct SpineSprite: public VisibleSprite {
         this->skin = new spine::Skin(spine::String("custom"));
     }
 
-    void setAnimation(size_t track, const string &name, bool loop = true, double speed = 1, float mix = -1);
-    void addAnimation(size_t track, const string &name, bool loop = true, float delay = 0, float mix = -1);
+    void setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
+    void addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
 
     void setAttachment(const string &slot, const string &attachment) {
         this->skeleton->setAttachment(spine::String(slot.c_str()), spine::String(attachment.c_str()));
@@ -161,9 +157,9 @@ struct SpineSprite: public VisibleSprite {
     void render(RenderContext &ctx) override;
     Dimensions getSize() override { return Dimensions(0, 0); }
     void resize(double w, double h) override {}
+    void advance(float time);
 
     private:
-        void advance(float time);
         void _render(RenderContext &ctx, bool ghost, int ghostSlot, Color ghostColor);
         void _renderTrail(DrawKey &key, RenderContext &ctx, FloatPoint lastTip, FloatPoint lastBase, FloatPoint curTip, FloatPoint curBase, Color &color);
 };

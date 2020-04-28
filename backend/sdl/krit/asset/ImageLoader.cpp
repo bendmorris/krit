@@ -10,9 +10,8 @@
 #include <memory>
 #include <string>
 
-shared_ptr<void> ImageLoader::loadAsset(string id) {
+shared_ptr<void> ImageLoader::loadAsset(const std::string &id) {
     SDL_LockMutex(Renderer::renderMutex);
-    glActiveTexture(GL_TEXTURE0);
     checkForGlErrors("active texture");
     // shortcut for now: just load from file
     SDL_Surface *surface = IMG_Load(id.c_str());
@@ -36,9 +35,10 @@ shared_ptr<void> ImageLoader::loadAsset(string id) {
         mode = GL_RGBA;
     }
     SDL_UnlockSurface(surface);
-    // upload texture
     shared_ptr<ImageData> img = make_shared<ImageData>();
     img->dimensions.setTo(surface->w, surface->h);
+    // upload texture
+    glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &img->texture);
     checkForGlErrors("gen textures");
     glBindTexture(GL_TEXTURE_2D, img->texture);

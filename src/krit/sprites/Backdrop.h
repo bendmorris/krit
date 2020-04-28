@@ -20,7 +20,7 @@ struct Backdrop: public VisibleSprite {
     bool repeatX = true;
     bool repeatY = true;
 
-    Backdrop(AssetContext &asset, string id): region(asset.getImage(id)) {}
+    Backdrop(AssetContext &asset, const std::string &id): region(asset.getImage(id)) {}
     Backdrop(ImageRegion region): region(region) {}
 
     int &width() { return this->region.rect.width; }

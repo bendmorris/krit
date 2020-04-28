@@ -1,5 +1,5 @@
-#ifndef KRIT_RENDER_FRAME_BUFFER
-#define KRIT_RENDER_FRAME_BUFFER
+#ifndef KRIT_RENDER_FRAMEBUFFER
+#define KRIT_RENDER_FRAMEBUFFER
 
 #include <cstddef>
 #include "GLES3/gl3.h"

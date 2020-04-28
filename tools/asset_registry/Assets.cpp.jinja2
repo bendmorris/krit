@@ -1,0 +1,14 @@
+#include "krit/Assets.h"
+
+const AssetInfo Assets::assets[AssetCount] = {
+    {% for asset in assets: %}
+    {
+        .id = {{ asset.assetId }},
+        .type = {{ asset.type}}Asset,
+        .path = "{{ asset.path }}",
+        {% if asset.type == 'Image': %}
+        .dimensions = Dimensions({{ asset.width }}, {{ asset.height }}),
+        {% endif %}
+    },
+    {% endfor %}
+};

@@ -12,26 +12,26 @@ using namespace krit;
 
 namespace krit {
 
-string SpineLoader::TYPE = "sp";
+std::string SpineLoader::TYPE = "sp";
 float SpineSprite::worldVertices[1024] = {0};
 
-shared_ptr<void> SpineLoader::loadAsset(string id) {
+shared_ptr<void> SpineLoader::loadAsset(const std::string &id) {
     const spine::String &atlasName((id + ".atlas").c_str());
     const spine::String &skelName((id + ".skel").c_str());
     spine::Atlas *atlas = new spine::Atlas(atlasName, &this->textureLoader);
     spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
     spine::SkeletonData *skeletonData = binary->readSkeletonDataFile(skelName);
     spine::AnimationStateData *animationStateData = new spine::AnimationStateData(skeletonData);
-    shared_ptr<SkeletonBinaryData> bin = make_shared<SkeletonBinaryData>(
+    std::shared_ptr<SkeletonBinaryData> bin = make_shared<SkeletonBinaryData>(
         atlas,
         binary,
         skeletonData,
         animationStateData
     );
-    return static_pointer_cast<void>(bin);
+    return std::static_pointer_cast<void>(bin);
 }
 
-void SpineSprite::setAnimation(size_t track, const string &name, bool loop, double speed, float mix) {
+void SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, double speed, float mix) {
     auto trackEntry = this->animationState->setAnimation(track, spine::String(name.c_str()), loop);
     if (speed != 1) {
         trackEntry->setTimeScale(speed);
@@ -113,7 +113,6 @@ void SpineSprite::render(RenderContext &ctx) {
                 break;
             }
             double trailTime = this->trail.time;
-            this->trail.elapsed += ctx.elapsed;
             if (trailTime > 0) {
                 auto slotTrack = this->trail.trackPart > -1 ? this->skeleton->getSlots()[this->trail.trackPart] : nullptr;
                 float inc = -trailTime / this->trail.slices;
@@ -148,7 +147,7 @@ void SpineSprite::render(RenderContext &ctx) {
                     }
                     if ((!slotTrack || slotTrack->getAttachment()) && lastTip.x && lastTip.y && curTip.x && curTip.y && lastTip.x != curTip.x && lastTip.y != curTip.y) {
                         Color c(this->trail.color);
-                        c.a = this->trail.color.a * (1 - static_cast<float>(i) / this->trail.slices);
+                        c.a = this->trail.color.a * (0.5 + (1 - static_cast<float>(i) / this->trail.slices) / 2);
                         _renderTrail(key, ctx, lastTip, lastBase, curTip, curBase, c);
                     }
                     this->advance(inc);
@@ -157,6 +156,7 @@ void SpineSprite::render(RenderContext &ctx) {
                 }
                 this->advance(total);
             }
+            this->trail.elapsed += ctx.elapsed;
             break;
         }
     }
@@ -250,32 +250,40 @@ void SpineSprite::_render(RenderContext &ctx, bool ghost, int ghostSlot, Color g
                 color
             );
         } else if (attachment->getRTTI().isExactly(spine::MeshAttachment::rtti)) {
-            // spine::MeshAttachment *mesh = static_cast<spine::MeshAttachment*>(attachment);
-            // SpineSprite.worldVertices.ensureSize(mesh.trianglesCount * 6);
-            // var worldVertices = SpineSprite.worldVertices.ref();
-            // var image = (mesh.rendererObject as Ptr[spAtlasRegion]).page.rendererObject as Ptr[ImageData];
-            // var imageRegion = ImageRegion.fromImage(image);
-            // // before rendering via spSkeleton_updateWorldTransform
-            // spVertexAttachment_computeWorldVertices(mesh.super, slot, 0, mesh.super.worldVerticesLength, worldVertices, 0, 2);
-            // var key = struct DrawKey {
-            //     image: imageRegion.image,
-            //     smooth: this->smooth,
-            //     blend: blendMode,
-            // };
-            // var uvs: Ptr[Float] = mesh.uvs;
-            // for i in 0 ... mesh.trianglesCount / 3 {
-            //     var i0 = mesh.triangles[i * 3] << 1;
-            //     var i1 = mesh.triangles[i * 3 + 1] << 1;
-            //     var i2 = mesh.triangles[i * 3 + 2] << 1;
-            //     var t = T(worldVertices[i0], worldVertices[i0 + 1], worldVertices[i1], worldVertices[i1 + 1], worldVertices[i2], worldVertices[i2 + 1]);
-            //     t.multiply(this->scale.fullScaleX, this->scale.fullScaleY);
-            //     context.addTriangle(
-            //         key,
-            //         t,
-            //         T(uvs[i0], uvs[i0 + 1], uvs[i1], uvs[i1 + 1], uvs[i2], uvs[i2 + 1]),
-            //         color, false
-            //     );
-            // }
+            float *worldVertices = SpineSprite::worldVertices;
+            spine::MeshAttachment *meshAttachment = static_cast<spine::MeshAttachment*>(attachment);
+            ImageRegion *region = static_cast<ImageRegion*>((static_cast<spine::AtlasRegion*>(meshAttachment->getRendererObject()))->page->getRendererObject());
+            // before rendering via spSkeleton_updateWorldTransform
+            meshAttachment->computeWorldVertices(*slot, worldVertices);
+            DrawKey key;
+            key.image = region->img;
+            key.smooth = this->smooth;
+            key.blend = blendMode;
+            float *uvs = meshAttachment->getUVs().buffer();
+            auto &triangles = meshAttachment->getTriangles();
+            for (int i = 0; i < triangles.size() / 3; ++i) {
+                int i0 = triangles[i * 3] << 1;
+                int i1 = triangles[i * 3 + 1] << 1;
+                int i2 = triangles[i * 3 + 2] << 1;
+                Triangle t(
+                    worldVertices[i0], worldVertices[i0 + 1],
+                    worldVertices[i1], worldVertices[i1 + 1],
+                    worldVertices[i2], worldVertices[i2 + 1]
+                );
+                t.scale(this->scale.x, this->scale.y);
+                t.translate(this->position);
+                Triangle uvt(
+                    uvs[i0], uvs[i0 + 1],
+                    uvs[i1], uvs[i1 + 1],
+                    uvs[i2], uvs[i2 + 1]
+                );
+                ctx.addTriangle(
+                    key,
+                    t,
+                    uvt,
+                    color
+                );
+            }
         }
     }
 }

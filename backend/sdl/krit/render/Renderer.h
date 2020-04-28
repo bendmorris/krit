@@ -34,7 +34,7 @@ struct Renderer {
         int width;
         int height;
 
-        template <size_t, typename T> void drawCall(RenderContext &ctx, T&);
+        template <size_t, typename T> void drawCall(T&);
 };
 
 }
