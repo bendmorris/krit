@@ -2,8 +2,10 @@
 #define KRIT_ASSET_ASSET_CACHE
 
 #include "krit/asset/AssetLoader.h"
+#include "krit/asset/AssetType.h"
 #include "krit/asset/BitmapFont.h"
 #include "krit/asset/ImageLoader.h"
+#include "krit/asset/TextLoader.h"
 #include "krit/asset/TextureAtlas.h"
 #include <memory>
 #include <string>
@@ -12,15 +14,7 @@
 
 namespace krit {
 
-static const std::string TEXT_TYPE = "txt";
-
-struct TextLoader: public AssetLoader {
-    const std::string &assetType() override { return TEXT_TYPE; }
-    std::shared_ptr<void> loadAsset(const std::string &id) override;
-    TextLoader() {}
-};
-
-typedef std::unordered_map<std::string, std::weak_ptr<void>> AssetCacheMap;
+typedef std::unordered_map<int, std::weak_ptr<void>> AssetCacheMap;
 
 /**
  * A single AssetCache is used per Engine to load and manage assets. The cache
@@ -46,22 +40,23 @@ struct AssetCache {
     }
 
     void registerLoader(AssetLoader *loader) {
-        const std::string &type = loader->assetType();
-        this->loaders.insert(make_pair(type, loader));
+        AssetType type = loader->type();
+        this->loaders.insert(std::make_pair(type, loader));
         AssetCacheMap assetMap;
         assetMap.reserve(16);
-        this->assets.insert(make_pair(type, assetMap));
+        this->assets.insert(std::make_pair(type, std::move(assetMap)));
     }
 
-    bool registered(const std::string &id) {
+    bool registered(AssetType id) {
         return this->loaders.find(id) != this->loaders.end();
     }
 
-    std::shared_ptr<void> get(const std::string &type, const std::string &id);
+    std::shared_ptr<void> get(const std::string &path);
+    std::shared_ptr<void> get(const AssetInfo &info);
 
     private:
-        std::unordered_map<std::string, AssetCacheMap> assets;
-        std::unordered_map<std::string, AssetLoader*> loaders;
+        std::unordered_map<int, AssetCacheMap> assets;
+        std::unordered_map<int, AssetLoader*> loaders;
 };
 
 }

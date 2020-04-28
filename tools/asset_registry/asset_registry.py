@@ -29,7 +29,7 @@ def run(inputPath, outputDir):
 
             assets.append(asset)
     for artifact in ('Assets.h', 'Assets.cpp'):
-        with open(os.path.join(os.path.dirname(__file__), 'Assets.h.jinja2')) as templateFile:
+        with open(os.path.join(os.path.dirname(__file__), artifact + '.jinja2')) as templateFile:
             template = Template(templateFile.read())
         with open(os.path.join(outputDir, artifact), 'w') as outFile:
             outFile.write(template.render(assets=assets))

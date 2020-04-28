@@ -19,6 +19,7 @@ struct Renderer {
 
     Renderer();
 
+    void init();
     void startFrame(RenderContext &ctx);
     void flushFrame(RenderContext &ctx);
     void flushBatch(RenderContext &ctx);
@@ -30,9 +31,10 @@ struct Renderer {
         GLuint materialBuffer;
         RenderFloat *bufferPtr = nullptr;
         unsigned int triangleCount;
+        bool initialized = false;
 
-        int width;
-        int height;
+        int width = 0;
+        int height = 0;
 
         template <size_t, typename T> void drawCall(T&);
 };

@@ -12,13 +12,13 @@ namespace krit {
  * Contains backend-specific data for an image.
  */
 struct ImageData {
-    GLuint texture;
+    GLuint texture = 0;
     IntDimensions dimensions;
 
     ImageData(GLuint texture, IntDimensions dimensions): texture(texture), dimensions(dimensions) {}
 
-    int &width() { return this->dimensions.width(); }
-    int &height() { return this->dimensions.height(); }
+    int width() { return this->dimensions.width(); }
+    int height() { return this->dimensions.height(); }
 
     ImageData() {}
     ~ImageData();

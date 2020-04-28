@@ -1,19 +1,15 @@
 #include "krit/asset/AssetCache.h"
-#include <fstream>
-#include <sstream>
+#include "krit/Assets.h"
 #include <memory>
 
-std::shared_ptr<void> TextLoader::loadAsset(const std::string &id) {
-    std::ifstream tinput(id);
-    std::shared_ptr<std::stringstream> buffer = std::make_shared<std::stringstream>();
-    *buffer << tinput.rdbuf();
-    return buffer;
+std::shared_ptr<void> AssetCache::get(const std::string &path) {
+    return get(Assets::byPath(path));
 }
 
-std::shared_ptr<void> AssetCache::get(const std::string &type, const std::string &id) {
-    auto found = assets.find(type);
+std::shared_ptr<void> AssetCache::get(const AssetInfo &info) {
+    auto found = assets.find(info.type);
     AssetCacheMap &map = found->second;
-    auto asset = map.find(id);
+    auto asset = map.find(info.id);
     if (asset != map.end()) {
         std::weak_ptr<void> weak = asset->second;
         std::shared_ptr<void> result = weak.lock();
@@ -24,10 +20,10 @@ std::shared_ptr<void> AssetCache::get(const std::string &type, const std::string
         // otherwise we have an expired weak_ptr, so reload
     }
     // load the asset, store a weak_ptr, and return a shared_ptr
-    auto foundLoader = loaders.find(type);
+    auto foundLoader = loaders.find(info.type);
     AssetLoader *loader = foundLoader->second;
-    std::shared_ptr<void> result = loader->loadAsset(id);
+    std::shared_ptr<void> result = loader->loadAsset(info);
     std::weak_ptr<void> weak = result;
-    map.insert(make_pair(id, weak));
+    map.insert(std::make_pair(info.id, weak));
     return result;
 }

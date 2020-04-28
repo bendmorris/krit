@@ -22,7 +22,7 @@ struct SpineTextureLoader: public spine::TextureLoader {
     ~SpineTextureLoader() {}
 
     void load(spine::AtlasPage &page, const spine::String &path) override {
-        shared_ptr<ImageData> texture = static_pointer_cast<ImageData>(this->cache->get("img", string(path.buffer())));
+        shared_ptr<ImageData> texture = static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
         ImageRegion *region = new ImageRegion(texture);
         page.setRendererObject(region);
         page.width = texture->width();
@@ -36,14 +36,13 @@ struct SpineTextureLoader: public spine::TextureLoader {
 };
 
 struct SpineLoader: public AssetLoader {
-    static std::string TYPE;
     AssetCache *cache;
     SpineTextureLoader textureLoader;
 
     SpineLoader(AssetCache *cache): cache(cache), textureLoader(cache) {}
 
-    const std::string &assetType() override { return SpineLoader::TYPE; }
-    std::shared_ptr<void> loadAsset(const std::string &id) override;
+    AssetType type() override { return SpineSkeletonAsset; }
+    std::shared_ptr<void> loadAsset(const AssetInfo &info) override;
 };
 
 struct SkeletonBinaryData {
@@ -110,15 +109,17 @@ struct SpineSprite: public VisibleSprite {
     spine::SkeletonData &skeletonData() { return *this->bin->skeletonData; }
     spine::AnimationStateData &animationStateData() { return *this->bin->animationStateData; }
 
-    SpineSprite(AssetContext &asset, const std::string &id) {
-        if (!asset.cache->registered(SpineLoader::TYPE)) {
+    SpineSprite(AssetContext &asset, const std::string &id);
+
+    SpineSprite(AssetContext &asset, const AssetInfo &info) {
+        if (!asset.cache->registered(SpineSkeletonAsset)) {
             SpineLoader *loader = new SpineLoader(asset.cache);
             asset.cache->registerLoader(loader);
         }
         spine::Bone::setYDown(true);
 
         // load skeleton/animation data
-        this->bin = static_pointer_cast<SkeletonBinaryData>(asset.get(SpineLoader::TYPE, id));
+        this->bin = std::static_pointer_cast<SkeletonBinaryData>(asset.get(info));
         this->skeleton = new spine::Skeleton(&this->skeletonData());
         this->animationState = new spine::AnimationState(&this->animationStateData());
         this->skin = new spine::Skin(spine::String("custom"));

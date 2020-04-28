@@ -1,6 +1,7 @@
 #include "krit/asset/AssetCache.h"
 #include "krit/asset/BitmapFont.h"
 #include "krit/utils/Panic.h"
+#include "krit/Assets.h"
 #include "expat.h"
 #include <cstring>
 #include <utility>
@@ -69,7 +70,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
                 const char *key = *attr;
                 const char *value = *(attr + 1);
                 if (!strcmp(key, "file")) {
-                    std::shared_ptr<ImageData> asset = std::static_pointer_cast<ImageData>(font->cache->get("img", value));
+                    std::shared_ptr<ImageData> asset = std::static_pointer_cast<ImageData>(font->cache->get(Assets::byPath(value)));
                     font->pages.push_back(asset);
                 }
             }

@@ -1,4 +1,5 @@
 #include "krit/App.h"
+#include "krit/RenderThread.h"
 
 #include <krit/input/Mouse.h>
 #include "krit/TaskManager.h"
@@ -7,51 +8,6 @@
 #include <cmath>
 
 namespace krit {
-
-struct RenderThread {
-    RenderContext &render;
-    SDL_Thread *thread;
-    SDL_mutex *renderMutex;
-    SDL_mutex *renderCondMutex;
-    SDL_cond *renderCond;
-    bool killed = false;
-
-    AsyncQueue<AsyncTask> inbox;
-
-    RenderThread(RenderContext &render):
-        render(render)
-    {
-        renderMutex = SDL_CreateMutex();
-        renderCondMutex = SDL_CreateMutex();
-        renderCond = SDL_CreateCond();
-        SDL_Thread *renderThread = SDL_CreateThread(RenderThread::exec, "render", this);
-    }
-
-    static int exec(void *raw) {
-        static_cast<RenderThread*>(raw)->renderLoop();
-        return 0;
-    }
-
-    void renderLoop() {
-        while (true) {
-            SDL_LockMutex(renderCondMutex);
-            SDL_CondWait(renderCond, renderCondMutex);
-            SDL_UnlockMutex(renderCondMutex);
-
-            if (killed) {
-                SDL_DestroyCond(renderCond);
-                SDL_DestroyMutex(renderMutex);
-                SDL_DestroyMutex(renderCondMutex);
-                break;
-            }
-            SDL_LockMutex(renderMutex);
-            SDL_GL_MakeCurrent(render.app->backend.window, render.app->backend.glContext);
-            render.app->renderer.flushBatch(render);
-            render.app->renderer.flushFrame(render);
-            SDL_UnlockMutex(renderMutex);
-        }
-    }
-};
 
 App::App(KritOptions &options):
     backend(options.title, options.width, options.height),
@@ -81,13 +37,14 @@ void App::run() {
     clock_t frameStart = clock(), frameFinish;
     int cores = SDL_GetCPUCount();
 
-    RenderThread renderThread(render);
     TaskManager taskManager(update, max(2, cores - 2));
+    RenderThread renderThread(update, render, taskManager, backend.window);
 
     invoke(engine.onBegin, &update);
 
     this->running = true;
     while (this->running) {
+        TaskManager::work(taskManager.mainQueue, update);
         do {
             frameFinish = clock();
             elapsed = static_cast<double>(frameFinish - frameStart) / CLOCKS_PER_SEC;
@@ -120,19 +77,18 @@ void App::run() {
         if (update.frameCount > 0) {
             SDL_LockMutex(renderThread.renderMutex);
 
-            this->renderer.startFrame(render);
             this->engine.render(render);
 
             SDL_UnlockMutex(renderThread.renderMutex);
             SDL_LockMutex(renderThread.renderCondMutex);
             SDL_CondSignal(renderThread.renderCond);
             SDL_UnlockMutex(renderThread.renderCondMutex);
-            SDL_GL_MakeCurrent(this->backend.window, this->backend.glContext);
         }
     }
 
     SDL_LockMutex(renderThread.renderMutex);
     renderThread.killed = true;
+    // TODO: kill workers
     SDL_LockMutex(renderThread.renderCondMutex);
     SDL_CondSignal(renderThread.renderCond);
     SDL_UnlockMutex(renderThread.renderCondMutex);

@@ -15,7 +15,6 @@ class DrawCall;
 
 struct Shader {
     GLuint program;
-    bool initialized = false;
     const char *vertexSource;
     const char *fragmentSource;
     GLint positionIndex;

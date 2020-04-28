@@ -13,9 +13,18 @@ struct BaseFrameBuffer {
     unsigned int width = 0;
     unsigned int height = 0;
 
-    BaseFrameBuffer() {
-        glGenFramebuffers(1, &frameBuffer);
-        checkForGlErrors("create framebuffer");
+    BaseFrameBuffer(int width, int height) {}
+
+    void init() {
+        if (!frameBuffer) {
+            glGenFramebuffers(1, &frameBuffer);
+            checkForGlErrors("create framebuffer");
+            int width = this->width,
+                height = this->height;
+            this->width = 0;
+            this->height = 0;
+            this->resize(width, height);
+        }
     }
 
     virtual void resize(unsigned int width, unsigned int height) {}
@@ -24,11 +33,10 @@ struct BaseFrameBuffer {
 template <size_t N> struct FrameBuffer: public BaseFrameBuffer {
     GLuint textures[N] = {0};
 
-    FrameBuffer(unsigned int width, unsigned int height): BaseFrameBuffer() {
-        resize(width, height);
-    }
+    FrameBuffer(unsigned int width, unsigned int height): BaseFrameBuffer(width, height) {}
 
     void resize(unsigned int width, unsigned int height) override {
+        init();
         if (this->width != width || this->height != height) {
             glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 

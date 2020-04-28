@@ -44,16 +44,14 @@ struct BitmapFont {
     }
 };
 
-static const std::string BMF_TYPE = "bmf";
-
 struct BitmapFontLoader: public AssetLoader {
     AssetCache *cache;
 
     BitmapFontLoader(AssetCache *cache): cache(cache) {}
 
-    const std::string &assetType() override { return BMF_TYPE; }
-    std::shared_ptr<void> loadAsset(const std::string &id) override {
-        std::shared_ptr<BitmapFont> font = std::make_shared<BitmapFont>(this->cache, id.c_str());
+    AssetType type() override { return BitmapFontAsset; }
+    std::shared_ptr<void> loadAsset(const AssetInfo &info) override {
+        std::shared_ptr<BitmapFont> font = std::make_shared<BitmapFont>(this->cache, info.path.c_str());
         return font;
     }
 };

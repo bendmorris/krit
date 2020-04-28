@@ -2,6 +2,7 @@
 #define KRIT_TASKMANAGER
 
 #include "krit/UpdateContext.h"
+#include "krit/render/RenderContext.h"
 #include "SDL2/SDL.h"
 #include <functional>
 #include <queue>
@@ -9,7 +10,9 @@
 
 namespace krit {
 
-using AsyncTask = std::function<void(UpdateContext&)>;
+template <typename T> using AsyncTask = std::function<void(T&)>;
+using UpdateTask = AsyncTask<UpdateContext>;
+using RenderTask = AsyncTask<RenderContext>;
 
 template <typename T> struct AsyncQueue {
     SDL_mutex *lock;
@@ -55,14 +58,34 @@ template <typename T> struct AsyncQueue {
 };
 
 struct TaskManager {
+    static TaskManager *instance;
+
+    /**
+     * Used only by the main/render threads who are the only owners of their
+     * work queues. Not safe when multiple threads may perform work.
+     */
+    template <typename T> static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
+        size_t len;
+        while (len = queue.size()) {
+            for (int i = 0; i < len; ++i) {
+                (queue.pop())(ctx);
+            }
+        }
+    }
+
     size_t size;
     SDL_Thread **threads;
     UpdateContext &ctx;
+
+    AsyncQueue<UpdateTask> mainQueue;
+    AsyncQueue<RenderTask> renderQueue;
+    AsyncQueue<UpdateTask> workQueue;
 
     TaskManager(UpdateContext &ctx, size_t size):
         ctx(ctx),
         size(size)
     {
+        instance = this;
         threads = new SDL_Thread*[size];
         for (int i = 0; i < size; ++i) {
             std::string threadName = "worker" + std::to_string(i + 1);
@@ -70,8 +93,12 @@ struct TaskManager {
         }
     }
 
-    void push(AsyncTask task) { queue.push(task); }
-    AsyncTask pop() { return queue.pop(); }
+    void push(UpdateTask task) { workQueue.push(task); }
+    void pushMain(UpdateTask task) { mainQueue.push(task); }
+    void pushRender(RenderTask task) { renderQueue.push(task); }
+    UpdateTask pop() { return workQueue.pop(); }
+    UpdateTask popMain() { return mainQueue.pop(); }
+    RenderTask popRender() { return renderQueue.pop(); }
 
     private:
         static int workerFunc(void *raw) {
@@ -79,8 +106,6 @@ struct TaskManager {
             taskManager->workerLoop();
             return 0;
         }
-
-        AsyncQueue<AsyncTask> queue;
 
         void workerLoop();
 };

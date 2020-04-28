@@ -4,10 +4,10 @@ find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenAL REQUIRED)
 
-add_custom_command(
+execute_process(
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
-    DEPENDS ${CMAKE_SOURCE_DIR}/assets.yaml
+    # OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
+    # DEPENDS ${CMAKE_SOURCE_DIR}/assets.yaml
 )
 
 file(GLOB KRIT_SRC_FILES
@@ -17,6 +17,7 @@ file(GLOB KRIT_SRC_FILES
 )
 include_directories(src)
 include_directories(spine-runtimes/spine-cpp/spine-cpp/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
 
 file(GLOB KRIT_BACKEND_SRC_FILES
     backend/sdl/krit/*.cpp
@@ -27,9 +28,9 @@ include_directories(backend/sdl)
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 add_library(${PROJECT_NAME} STATIC
+    ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
     ${KRIT_SRC_FILES}
     ${KRIT_BACKEND_SRC_FILES}
-    ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
 )
 target_link_libraries(${PROJECT_NAME}
     PUBLIC

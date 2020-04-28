@@ -2,12 +2,14 @@
 #define KRIT_ASSET_IMAGE_LOADER
 
 #include "krit/asset/AssetLoader.h"
+#include "krit/render/ImageData.h"
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace krit {
 
-static const std::string IMG_TYPE = "img";
+using PreloadedImages = std::vector<std::shared_ptr<ImageData>>;
 
 /**
  * Used to load images and initialize GL textures for them.
@@ -15,8 +17,19 @@ static const std::string IMG_TYPE = "img";
 struct ImageLoader: public AssetLoader {
     ImageLoader() {}
 
-    const std::string &assetType() override { return IMG_TYPE; }
-    std::shared_ptr<void> loadAsset(const std::string &id) override;
+    AssetType type() override { return ImageAsset; }
+    std::shared_ptr<void> loadAsset(const AssetInfo &info) override;
+
+    bool ready(std::shared_ptr<ImageData> img) { return img->texture != 0; }
+    bool imagesAreReady(PreloadedImages &preload) {
+        int readyCount = 0;
+        for (auto img : preload) {
+            if (!ready(img)) {
+                return false;
+            }
+        }
+        return true;
+    }
 };
 
 }

@@ -1,5 +1,6 @@
 #include "krit/asset/TextureAtlas.h"
 #include "krit/asset/AssetCache.h"
+#include "krit/Assets.h"
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -21,18 +22,18 @@ pair<int, int> parseTuple(string &x) {
     return make_pair(a, b);
 }
 
-TextureAtlas::TextureAtlas(AssetCache *assetCache, const string &path) {
-    ifstream input(path);
-    string line;
+TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
+    std::ifstream input(path);
+    std::string line;
     while (std::getline(input, line)) {
         if (line.empty()) {
             continue;
         }
         // an atlas page
-        string pageName = line;
+        std::string pageName = line;
         size_t lastSlash = path.rfind("/");
-        string s = (lastSlash == string::npos) ? pageName : (path.substr(0, lastSlash) + "/" + pageName);
-        shared_ptr<ImageData> image = static_pointer_cast<ImageData>(assetCache->get("img", s));
+        std::string s = (lastSlash == string::npos) ? pageName : (path.substr(0, lastSlash) + "/" + pageName);
+        std::shared_ptr<ImageData> image = std::static_pointer_cast<ImageData>(assetCache->get(Assets::byPath(s)));
 
         while (std::getline(input, line) && line.find(':') != string::npos) {}
         while (!line.empty()) {

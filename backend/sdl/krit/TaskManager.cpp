@@ -2,9 +2,13 @@
 
 namespace krit {
 
+TaskManager *TaskManager::instance = nullptr;
+
 void TaskManager::workerLoop() {
-    AsyncTask job = pop();
-    job(ctx);
+    while (true) {
+        UpdateTask job = pop();
+        job(ctx);
+    }
 }
 
 }

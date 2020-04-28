@@ -16,7 +16,7 @@ static uint32_t colorToInt(Color &c) {
 }
 
 void Shader::init() {
-    if (!this->initialized) {
+    if (!this->program) {
         GLint status;
 
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -58,8 +58,6 @@ void Shader::init() {
         checkForGlErrors("positionIndex");
         this->texCoordIndex = glGetAttribLocation(this->program, "aTexCoord");
         checkForGlErrors("texCoordIndex");
-
-        this->initialized = true;
     }
 }
 
@@ -86,7 +84,7 @@ GLint Shader::getUniformLocation(const std::string &name) {
 }
 
 void SpriteShader::init() {
-    if (!this->initialized) {
+    if (!this->program) {
         Shader::init();
         this->matrixIndex = glGetUniformLocation(this->program, "uMatrix");
         checkForGlErrors("matrixIndex");
@@ -144,11 +142,11 @@ void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
             buffer[i++] = tri.uv.p3.y;
         }
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
-        checkForGlErrors("bufferSubData");
+        checkForGlErrors("texture bufferSubData");
         glVertexAttribPointer(this->positionIndex, 2, GL_FLOAT, GL_FALSE, stride, origin);
         glVertexAttribPointer(this->colorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, origin + 2);
         glVertexAttribPointer(this->texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride, origin + 3);
-        checkForGlErrors("attrib pointers");
+        checkForGlErrors("texture attrib pointers");
     } else {
         for (int t = 0; t < drawCall->length(); ++t) {
             TriangleData &tri = drawCall->data[t];
@@ -164,10 +162,10 @@ void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
             static_cast<uint32_t *>(static_cast<void *>(buffer))[i++] = c;
         }
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
-        checkForGlErrors("bufferSubData");
+        checkForGlErrors("no texture bufferSubData");
         glVertexAttribPointer(this->positionIndex, 2, GL_FLOAT, GL_FALSE, stride, origin);
         glVertexAttribPointer(this->colorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride, origin + 2);
-        checkForGlErrors("attrib pointers");
+        checkForGlErrors("no texture attrib pointers");
     }
 }
 

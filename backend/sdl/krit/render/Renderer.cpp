@@ -66,16 +66,23 @@ static RenderFloat _vertices[24] = {
     -1.0,  1.0, 0.0, 1.0
 };
 
-Renderer::Renderer() {
-    glGenVertexArrays(1, &this->vao);
-    glBindVertexArray(this->vao);
-    glGenBuffers(2, this->renderBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+Renderer::Renderer() {}
+
+void Renderer::init() {
+    if (!initialized) {
+        glGenVertexArrays(1, &this->vao);
+        glBindVertexArray(this->vao);
+        glGenBuffers(2, this->renderBuffer);
+        glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        checkForGlErrors("renderer init");
+        initialized = true;
+    }
 }
 
 void Renderer::startFrame(RenderContext &ctx) {
+    init();
     ctx.app->backend.getWindowSize(&this->width, &this->height);
     ortho(0, this->width, this->height, 0);
     glViewport(0, 0, this->width, this->height);
@@ -112,7 +119,7 @@ template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall)
     // puts("draw");
     checkForGlErrors("drawCall");
 
-    if (drawCall.length()) {
+    if (drawCall.length() && (!drawCall.key.image || drawCall.key.image->texture)) {
         this->triangleCount += drawCall.length();
 
         if (width > 0 && height > 0) {
@@ -147,10 +154,12 @@ template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall)
             }
             shader->bindOrtho(_ortho);
             setBlendMode(drawCall.key.blend);
+            checkForGlErrors("set blend mode");
 
             int dataSize = drawCall.length() * shader->bytesPerVertex() * 3;
             this->renderData.reserve(dataSize);
             glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[0]);
+            checkForGlErrors("bind buffer");
             if ((RenderFloat *)this->renderData.data() != this->bufferPtr) {
                 glBufferData(GL_ARRAY_BUFFER, this->renderData.capacity(), (RenderFloat *)this->renderData.data(), GL_DYNAMIC_DRAW);
                 checkForGlErrors("buffer data");

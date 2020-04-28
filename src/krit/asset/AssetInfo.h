@@ -7,14 +7,19 @@
 
 namespace krit {
 
+union AssetProperties {
+    IntDimensions dimensions;
+    bool _ = false;
+
+    AssetProperties(int width, int height): dimensions(width, height) {}
+    AssetProperties(): _(false) {}
+};
+
 struct AssetInfo {
     int id;
     AssetType type;
     std::string path;
-    union {
-        Dimensions dimensions;
-        bool _ = false;
-    };
+    AssetProperties properties;
 };
 
 }

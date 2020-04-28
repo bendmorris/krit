@@ -44,7 +44,6 @@ struct AudioBackend {
 struct SdlBackend {
     SDL_Window *window;
     SDL_Surface *surface;
-    SDL_GLContext glContext;
     // AudioBackend audio;
 
     SdlBackend(std::string title, int width, int height);

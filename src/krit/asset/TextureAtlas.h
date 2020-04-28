@@ -31,9 +31,9 @@ struct TextureAtlasLoader: public AssetLoader {
 
     TextureAtlasLoader(AssetCache *cache): cache(cache) {}
 
-    const std::string &assetType() override { return ATLAS_TYPE; }
-    std::shared_ptr<void> loadAsset(const std::string &id) override {
-        std::shared_ptr<TextureAtlas> font = std::make_shared<TextureAtlas>(this->cache, id);
+    AssetType type() override { return AtlasAsset; }
+    std::shared_ptr<void> loadAsset(const AssetInfo &info) override {
+        std::shared_ptr<TextureAtlas> font = std::make_shared<TextureAtlas>(this->cache, info.path);
         return font;
     }
 };

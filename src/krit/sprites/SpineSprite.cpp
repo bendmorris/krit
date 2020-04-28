@@ -1,6 +1,7 @@
 #include "krit/asset/ImageLoader.h"
 #include "krit/sprites/SpineSprite.h"
 #include "krit/render/ImageRegion.h"
+#include "krit/Assets.h"
 #include <spine/Extension.h>
 
 spine::SpineExtension *spine::getDefaultExtension() {
@@ -12,12 +13,14 @@ using namespace krit;
 
 namespace krit {
 
-std::string SpineLoader::TYPE = "sp";
+SpineSprite::SpineSprite(AssetContext &asset, const std::string &id):
+    SpineSprite(asset, Assets::byPath(id)) {}
+
 float SpineSprite::worldVertices[1024] = {0};
 
-shared_ptr<void> SpineLoader::loadAsset(const std::string &id) {
-    const spine::String &atlasName((id + ".atlas").c_str());
-    const spine::String &skelName((id + ".skel").c_str());
+std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {
+    const spine::String &atlasName((info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
+    const spine::String &skelName((info.path).c_str());
     spine::Atlas *atlas = new spine::Atlas(atlasName, &this->textureLoader);
     spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
     spine::SkeletonData *skeletonData = binary->readSkeletonDataFile(skelName);

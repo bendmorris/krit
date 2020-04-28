@@ -3,13 +3,15 @@
 
 #include <memory>
 #include <string>
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetType.h"
 
 namespace krit {
 
 struct AssetLoader {
-    virtual const std::string &assetType() = 0;
-    virtual int initialSize() { return 16; }
-    virtual std::shared_ptr<void> loadAsset(const std::string &id) = 0;
+    virtual AssetType type() { return TextAsset; }
+    virtual size_t initialSize() { return 16; }
+    virtual std::shared_ptr<void> loadAsset(const AssetInfo &info) = 0;
 };
 
 }
