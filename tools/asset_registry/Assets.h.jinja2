@@ -23,7 +23,7 @@ struct Assets {
     static const AssetInfo &byPath(const std::string &path) {
         auto found = _byPath.find(path);
         if (found == _byPath.end()) {
-            panic("unrecognize asset path: %s\n", path.c_str());
+            panic("unrecognized asset path: %s\n", path.c_str());
         }
         return _assets[found->second];
     }

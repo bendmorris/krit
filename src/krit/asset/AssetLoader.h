@@ -12,6 +12,7 @@ struct AssetLoader {
     virtual AssetType type() { return TextAsset; }
     virtual size_t initialSize() { return 16; }
     virtual std::shared_ptr<void> loadAsset(const AssetInfo &info) = 0;
+    virtual bool isLoaded(std::shared_ptr<void> asset) { return true; }
 };
 
 }

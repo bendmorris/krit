@@ -2,6 +2,7 @@
 #include "krit/render/Renderer.h"
 #include "krit/render/Shader.h"
 #include "krit/utils/Panic.h"
+#include "krit/TaskManager.h"
 
 using namespace krit;
 
@@ -13,6 +14,13 @@ static uint32_t colorToInt(Color &c) {
         (static_cast<uint32_t>(c.g * 0xff) << 8) |
         (static_cast<uint32_t>(c.r * 0xff))
     ;
+}
+
+Shader::~Shader() {
+    GLuint program = this->program;
+    TaskManager::instance->pushRender([program](RenderContext&) {
+        glDeleteProgram(program);
+    });
 }
 
 void Shader::init() {

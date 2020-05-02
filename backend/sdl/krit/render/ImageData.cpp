@@ -1,14 +1,16 @@
 #include "krit/render/ImageData.h"
 #include "krit/render/Renderer.h"
+#include "krit/TaskManager.h"
 
 using namespace krit;
 
 namespace krit {
 
 ImageData::~ImageData() {
-    SDL_LockMutex(Renderer::renderMutex);
-    glDeleteTextures(1, &this->texture);
-    SDL_UnlockMutex(Renderer::renderMutex);
+    GLuint texture = this->texture;
+    TaskManager::instance->pushRender([texture](RenderContext&) {
+        glDeleteTextures(1, &texture);
+    });
 }
 
 }

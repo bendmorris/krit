@@ -1,8 +1,8 @@
 #ifndef KRIT_RENDER_IMAGE_DATA
 #define KRIT_RENDER_IMAGE_DATA
 
-#include "GLES3/gl3.h"
 #include "krit/Math.h"
+#include "GLES3/gl3.h"
 
 using namespace krit;
 

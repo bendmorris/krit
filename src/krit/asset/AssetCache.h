@@ -51,6 +51,10 @@ struct AssetCache {
         return this->loaders.find(id) != this->loaders.end();
     }
 
+    bool isLoaded(AssetType type, std::shared_ptr<void> asset) {
+        return loaders[type]->isLoaded(asset);
+    }
+
     std::shared_ptr<void> get(const std::string &path);
     std::shared_ptr<void> get(const AssetInfo &info);
 

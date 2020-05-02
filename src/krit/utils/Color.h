@@ -35,8 +35,6 @@ struct Color {
             return *this;
         } else if (mix >= 1) {
             return other;
-        } else if (a == b) {
-            return *this;
         } else {
             float rm = 1 - mix;
             return Color(

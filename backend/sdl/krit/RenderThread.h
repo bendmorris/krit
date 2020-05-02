@@ -37,28 +37,7 @@ struct RenderThread {
 
     void init();
 
-    void renderLoop() {
-        init();
-
-        while (true) {
-            TaskManager::work(taskManager.renderQueue, render);
-            SDL_LockMutex(renderCondMutex);
-            SDL_CondWait(renderCond, renderCondMutex);
-            SDL_UnlockMutex(renderCondMutex);
-
-            if (killed) {
-                SDL_DestroyCond(renderCond);
-                SDL_DestroyMutex(renderMutex);
-                SDL_DestroyMutex(renderCondMutex);
-                break;
-            }
-            render.app->renderer.startFrame(render);
-            SDL_LockMutex(renderMutex);
-            render.app->renderer.flushBatch(render);
-            render.app->renderer.flushFrame(render);
-            SDL_UnlockMutex(renderMutex);
-        }
-    }
+    void renderLoop();
 };
 
 }

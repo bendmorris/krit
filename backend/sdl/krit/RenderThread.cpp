@@ -24,9 +24,41 @@ void RenderThread::init() {
         panic(SDL_GetError());
     }
     SDL_GL_MakeCurrent(this->window, this->glContext);
-    SDL_GL_SetSwapInterval(1);
+    // try to get adaptive vsync
+    int result = SDL_GL_SetSwapInterval(-1);
+    // fall back to regular vsync
+    if (result == -1) {
+        SDL_GL_SetSwapInterval(1);
+    }
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
+}
+
+void RenderThread::renderLoop() {
+    init();
+
+    while (true) {
+        TaskManager::work(taskManager.renderQueue, render);
+        SDL_LockMutex(renderCondMutex);
+        SDL_CondWait(renderCond, renderCondMutex);
+        SDL_UnlockMutex(renderCondMutex);
+
+        if (killed) {
+            SDL_DestroyCond(renderCond);
+            SDL_DestroyMutex(renderMutex);
+            SDL_DestroyMutex(renderCondMutex);
+            break;
+        }
+        render.app->renderer.startFrame(render);
+        SDL_LockMutex(renderMutex);
+        render.app->renderer.flushBatch(render);
+        render.app->renderer.flushFrame(render);
+        SDL_UnlockMutex(renderMutex);
+
+        SDL_LockMutex(renderCondMutex);
+        SDL_CondSignal(renderCond);
+        SDL_UnlockMutex(renderCondMutex);
+    }
 }
 
 }

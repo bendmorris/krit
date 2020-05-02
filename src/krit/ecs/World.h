@@ -87,7 +87,7 @@ template <typename... Components> struct World {
     EntityId newEntity() {
         EntityId e;
         if (this->freeList.empty()) {
-            e = ++this->next;
+            e = this->next++;
         } else {
             e = this->freeList.front();
             this->freeList.pop_front();

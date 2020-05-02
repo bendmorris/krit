@@ -24,8 +24,6 @@ struct TextureAtlas {
     }
 };
 
-static const std::string ATLAS_TYPE = "tex";
-
 struct TextureAtlasLoader: public AssetLoader {
     AssetCache *cache;
 

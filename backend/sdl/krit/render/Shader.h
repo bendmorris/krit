@@ -25,9 +25,7 @@ struct Shader {
         vertexSource(vertexSource),
         fragmentSource(fragmentSource) {}
 
-    ~Shader() {
-        glDeleteProgram(this->program);
-    }
+    ~Shader();
 
     GLint getUniformLocation(const std::string&);
     virtual void init();

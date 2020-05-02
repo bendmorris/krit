@@ -34,7 +34,9 @@ void App::run() {
     render.userData = this->engine.userData;
 
     double accumulator = 0, elapsed;
-    clock_t frameStart = clock(), frameFinish;
+    std::chrono::steady_clock clock;
+    auto frameStart = clock.now();
+    auto frameFinish = frameStart;
     int cores = SDL_GetCPUCount();
 
     TaskManager taskManager(update, max(2, cores - 2));
@@ -46,8 +48,8 @@ void App::run() {
     while (this->running) {
         TaskManager::work(taskManager.mainQueue, update);
         do {
-            frameFinish = clock();
-            elapsed = static_cast<double>(frameFinish - frameStart) / CLOCKS_PER_SEC;
+            frameFinish = clock.now();
+            elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0;
         } while (elapsed < frameDelta2);
         accumulator += elapsed;
         update.elapsed = update.frameCount = 0;
@@ -82,6 +84,10 @@ void App::run() {
             SDL_UnlockMutex(renderThread.renderMutex);
             SDL_LockMutex(renderThread.renderCondMutex);
             SDL_CondSignal(renderThread.renderCond);
+            SDL_UnlockMutex(renderThread.renderCondMutex);
+
+            SDL_LockMutex(renderThread.renderCondMutex);
+            SDL_CondWaitTimeout(renderThread.renderCond, renderThread.renderCondMutex, frameDelta2 * 1000);
             SDL_UnlockMutex(renderThread.renderCondMutex);
         }
     }
