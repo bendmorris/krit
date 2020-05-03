@@ -2,7 +2,6 @@
 #define KRIT_RENDER_SHADER
 
 #include "krit/render/Gl.h"
-#include "GLES3/gl3.h"
 #include <cstdlib>
 #include <cstdio>
 #include <unordered_map>

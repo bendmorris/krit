@@ -1,7 +1,9 @@
 #include "krit/RenderThread.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
-#include "SDL2/SDL_opengl.h"
+#include "krit/editor/Editor.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_sdl.h"
 
 namespace krit {
 
@@ -32,6 +34,36 @@ void RenderThread::init() {
     }
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);
+
+    glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        panic("%s\n", glewGetErrorString(err));
+    }
+    checkForGlErrors("glew init");
+
+    ImGui::CreateContext();
+    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+    ImGui_ImplOpenGL3_Init(nullptr);
+    checkForGlErrors("render thread init");
+
+    auto &io = ImGui::GetIO();
+
+    unsigned char* pixels = nullptr;
+    int width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+    glActiveTexture(GL_TEXTURE0);
+    checkForGlErrors("imgui active texture");
+    glGenTextures(1, &Editor::imguiTextureId);
+    checkForGlErrors("imgui gen textures");
+    glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
+    checkForGlErrors("imgui bind texture");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    checkForGlErrors("imgui texImage2D");
+
+    io.Fonts->TexID = (void*)Editor::imguiTextureId;
+    Editor::imguiInitialized = true;
 }
 
 void RenderThread::renderLoop() {

@@ -1,16 +1,18 @@
 #include "krit/asset/ImageLoader.h"
 #include "krit/App.h"
+#include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
 #include "krit/utils/Panic.h"
 #include "krit/TaskManager.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "GLES3/gl3.h"
+#include <SDL.h>
+#include <SDL_image.h>
 #include <cstdint>
 #include <memory>
 #include <string>
+
+namespace krit {
 
 shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
     shared_ptr<ImageData> img = make_shared<ImageData>();
@@ -48,7 +50,7 @@ shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
             checkForGlErrors("gen textures");
             glBindTexture(GL_TEXTURE_2D, img->texture);
             checkForGlErrors("bind texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0, mode, GL_UNSIGNED_BYTE, surface->pixels);
+            glTexImage2D(GL_TEXTURE_2D, 0, mode, img->width(), img->height(), 0, mode, GL_UNSIGNED_BYTE, surface->pixels);
             checkForGlErrors("texImage2D");
             glGenerateMipmap(GL_TEXTURE_2D);
             checkForGlErrors("asset load");
@@ -61,4 +63,6 @@ shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
     });
 
     return img;
+}
+
 }

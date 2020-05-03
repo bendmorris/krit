@@ -3,7 +3,7 @@
 
 #include "krit/UpdateContext.h"
 #include "krit/render/RenderContext.h"
-#include "SDL2/SDL.h"
+#include <SDL.h>
 #include <functional>
 #include <queue>
 #include <string>

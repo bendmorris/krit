@@ -1,13 +1,16 @@
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawCall.h"
+#include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
 #include "krit/render/Shader.h"
 #include "krit/App.h"
 #include "krit/Math.h"
-#include "SDL2/SDL.h"
-#include "GLES3/gl3.h"
+#include <SDL.h>
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_sdl.h"
 
 using namespace krit;
 
@@ -113,6 +116,14 @@ template <> void Renderer::drawCall<ClearColor, Color>(Color &c) {
     glClearColor(c.r, c.g, c.b, c.a);
     glClear(GL_COLOR_BUFFER_BIT);
     glEnable(GL_SCISSOR_TEST);
+}
+
+template <> void Renderer::drawCall<RenderImGui, ImDrawData*>(ImDrawData *&drawData) {
+    if (drawData) {
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(Editor::window);
+        ImGui_ImplOpenGL3_RenderDrawData(drawData);
+    }
 }
 
 template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
@@ -273,6 +284,7 @@ void Renderer::flushBatch(RenderContext &ctx) {
             DISPATCH_COMMAND(SetRenderTarget)
             DISPATCH_COMMAND(DrawMaterial)
             DISPATCH_COMMAND(ClearColor)
+            DISPATCH_COMMAND(RenderImGui)
         }
     }
 

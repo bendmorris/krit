@@ -2,7 +2,7 @@
 #define KRIT_RENDER_IMAGE_DATA
 
 #include "krit/Math.h"
-#include "GLES3/gl3.h"
+#include "krit/render/Gl.h"
 
 using namespace krit;
 

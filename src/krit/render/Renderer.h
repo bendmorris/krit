@@ -6,7 +6,7 @@
 #include "krit/render/DrawCommand.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/RenderContext.h"
-#include "SDL2/SDL.h"
+#include <SDL.h>
 
 using namespace krit;
 

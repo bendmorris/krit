@@ -1,11 +1,12 @@
 #include "krit/App.h"
 #include "krit/RenderThread.h"
-
 #include <krit/input/Mouse.h>
 #include "krit/TaskManager.h"
-#include "SDL2/SDL.h"
+#include <SDL.h>
 #include <chrono>
 #include <cmath>
+#include "krit/editor/Editor.h"
+#include "imgui_impl_sdl.h"
 
 namespace krit {
 
@@ -14,8 +15,9 @@ App::App(KritOptions &options):
     window(options.width, options.height) {}
 
 void App::run() {
+    double frameDelta = 1.0 / FPS;
     double frameDelta1 = 1.0 / (FPS - 1);
-    double frameDelta2 = 1.0 / (FPS + 4);
+    double frameDelta2 = 1.0 / (FPS + 1);
 
     UpdateContext update;
     update.app = this;
@@ -55,7 +57,7 @@ void App::run() {
         update.elapsed = update.frameCount = 0;
         while (accumulator >= frameDelta2 && update.frameCount < MAX_FRAMES) {
             ++update.frameCount;
-            update.elapsed += frameDelta1;
+            update.elapsed += frameDelta;
             accumulator -= frameDelta1;
             if (accumulator < 0) {
                 accumulator = 0;
@@ -113,6 +115,14 @@ MouseButton sdlMouseButton(int b) {
 void App::handleEvents(UpdateContext &context) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
+        bool handleKey = true,
+            handleMouse = true;
+        if (Editor::imguiInitialized) {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            auto &io = ImGui::GetIO();
+            handleKey = !io.WantTextInput;
+            handleMouse = !io.WantCaptureMouse;
+        }
         switch (event.type) {
             case SDL_QUIT: {
                 this->quit();
@@ -128,19 +138,27 @@ void App::handleEvents(UpdateContext &context) {
                 break;
             }
             case SDL_KEYDOWN: {
-                context.controls->key.registerDown(static_cast<Key>(event.key.keysym.scancode));
+                if (handleKey) {
+                    context.controls->key.registerDown(static_cast<Key>(event.key.keysym.scancode));
+                }
                 break;
             }
             case SDL_KEYUP: {
-                context.controls->key.registerUp(static_cast<Key>(event.key.keysym.scancode));
+                if (handleKey) {
+                    context.controls->key.registerUp(static_cast<Key>(event.key.keysym.scancode));
+                }
                 break;
             }
             case SDL_MOUSEBUTTONDOWN: {
-                context.controls->mouse.registerDown(sdlMouseButton(event.button.button));
+                if (handleMouse) {
+                    context.controls->mouse.registerDown(sdlMouseButton(event.button.button));
+                }
                 break;
             }
             case SDL_MOUSEBUTTONUP: {
-                context.controls->mouse.registerUp(sdlMouseButton(event.button.button));
+                if (handleMouse) {
+                    context.controls->mouse.registerUp(sdlMouseButton(event.button.button));
+                }
                 break;
             }
             case SDL_MOUSEMOTION: {

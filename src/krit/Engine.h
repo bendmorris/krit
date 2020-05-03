@@ -9,6 +9,7 @@
 #include "krit/utils/Signal.h"
 #include "krit/Camera.h"
 #include "krit/Sprite.h"
+#include "krit/editor/Editor.h"
 #include <list>
 
 using namespace std;
@@ -48,6 +49,7 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
+    unique_ptr<Editor> editor = nullptr;
     unique_ptr<Sprite> root = nullptr;
     void *userData = nullptr;
 
@@ -104,6 +106,7 @@ struct Engine {
         this->controls.update(ctx);
         this->input.update(ctx);
         if (this->root) this->root->update(ctx);
+        if (this->editor) this->editor->update(ctx);
         invoke(this->postUpdate, &ctx);
     }
 
@@ -123,6 +126,7 @@ struct Engine {
             );
         }
         if (this->root) this->root->render(ctx);
+        if (this->editor) this->editor->render(ctx);
 
         invoke(this->postRender, &ctx);
     }

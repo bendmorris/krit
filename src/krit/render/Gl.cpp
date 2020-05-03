@@ -1,5 +1,4 @@
-#include "SDL2/SDL.h"
-#include "GLES3/gl3.h"
+#include <SDL.h>
 #include <cstdio>
 #include "krit/render/Gl.h"
 

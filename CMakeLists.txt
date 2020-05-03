@@ -6,31 +6,29 @@ find_package(OpenAL REQUIRED)
 
 execute_process(
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
-    # OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
-    # DEPENDS ${CMAKE_SOURCE_DIR}/assets.yaml
+)
+
+add_definitions(
+    "-DIMGUI_IMPL_OPENGL_LOADER_GLEW"
 )
 
 file(GLOB KRIT_SRC_FILES
     src/krit/*.cpp
     src/krit/**/*.cpp
     spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp
+    imgui/*.cpp
 )
 include_directories(src)
 include_directories(spine-runtimes/spine-cpp/spine-cpp/include)
+include_directories(/usr/include/SDL2)
+include_directories(imgui)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
-
-file(GLOB KRIT_BACKEND_SRC_FILES
-    backend/sdl/krit/*.cpp
-    backend/sdl/krit/**/*.cpp
-)
-include_directories(backend/sdl)
 
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
     ${KRIT_SRC_FILES}
-    ${KRIT_BACKEND_SRC_FILES}
 )
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
@@ -41,4 +39,5 @@ target_link_libraries(${PROJECT_NAME}
     "-lopenal"
     "-lSDL2_image"
     "-Wl,--gc-sections"
+    "-lGLEW"
 )

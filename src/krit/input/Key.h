@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 // FIXME: leaky abstraction
-#include "SDL2/SDL.h"
+#include <SDL.h>
 
 using namespace std;
 using namespace krit;

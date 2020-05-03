@@ -1,8 +1,8 @@
 #include "krit/render/RenderContext.h"
+#include "krit/render/Gl.h"
 #include "krit/App.h"
 #include "krit/TaskManager.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_opengl.h"
+#include <SDL.h>
 
 namespace krit {
 

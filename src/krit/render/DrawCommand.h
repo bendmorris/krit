@@ -16,6 +16,9 @@
 #include <tuple>
 #include <vector>
 
+struct SDL_Window;
+struct ImDrawData;
+
 namespace krit {
 
 enum DrawCommandType {
@@ -24,11 +27,19 @@ enum DrawCommandType {
     SetRenderTarget,
     DrawMaterial,
     ClearColor,
+    RenderImGui,
 
     DrawCommandTypeCount
 };
 
-struct DrawCommandBuffer: public CommandBuffer<DrawCall, Rectangle, BaseFrameBuffer*, Material, Color> {
+struct DrawCommandBuffer: public CommandBuffer<
+    DrawCall,
+    Rectangle,
+    BaseFrameBuffer*,
+    Material,
+    Color,
+    ImDrawData*
+> {
     DrawCommandBuffer() {
         this->get<DrawTriangles>().reserve(0x40);
         this->get<SetClipRect>().reserve(0x10);

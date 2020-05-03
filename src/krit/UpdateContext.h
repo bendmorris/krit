@@ -25,6 +25,9 @@ struct UpdateContext {
     krit::InputContext *input = nullptr;
     void *userData = nullptr;
 
+    UpdateContext() {}
+    UpdateContext(const UpdateContext &) {}
+
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 };
 

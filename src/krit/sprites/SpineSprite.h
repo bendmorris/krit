@@ -22,7 +22,7 @@ struct SpineTextureLoader: public spine::TextureLoader {
     ~SpineTextureLoader() {}
 
     void load(spine::AtlasPage &page, const spine::String &path) override {
-        shared_ptr<ImageData> texture = static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
+        std::shared_ptr<ImageData> texture = static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
         ImageRegion *region = new ImageRegion(texture);
         page.setRendererObject(region);
         page.width = texture->width();

@@ -2,7 +2,6 @@
 #define KRIT_RENDER_FRAMEBUFFER
 
 #include <cstddef>
-#include "GLES3/gl3.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 

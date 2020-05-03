@@ -2,9 +2,9 @@
 #define KRIT_BACKEND
 
 #include "krit/utils/Panic.h"
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_opengl.h"
+#include "krit/render/Gl.h"
+#include <SDL.h>
+#include <SDL_image.h>
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <string>
