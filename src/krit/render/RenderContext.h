@@ -21,6 +21,7 @@ struct RenderContext {
     CameraTransform *transform = nullptr;
     Point offset;
     void *userData;
+    bool debugDraw = false;
 
     RenderContext() {}
 

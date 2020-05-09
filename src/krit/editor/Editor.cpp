@@ -20,6 +20,7 @@ void Overlay::draw(krit::RenderContext &ctx) {
             total += fpsBuffer[next];
         }
         ImGui::Text("FPS: %.2f", total / 4);
+        ImGui::Checkbox("Debug draw", &ctx.debugDraw);
     }
     ImGui::End();
 }

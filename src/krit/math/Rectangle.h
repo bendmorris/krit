@@ -16,12 +16,16 @@ template <typename T, typename Self> struct BaseRectangle {
             this->width == other.width && this->height == other.height;
     }
 
-    T top() { return this->y; }
-    T bottom() { return this->y + this->height; }
-    T left() { return this->x; }
-    T right() { return this->x + this->width; }
+    T top() const { return this->y; }
+    T bottom() const { return this->y + this->height; }
+    T left() const { return this->x; }
+    T right() const { return this->x + this->width; }
 
-    bool eq(Self &other) {
+    Point center() {
+        return Point(this->x + this->width/2, this->y + this->height/2);
+    }
+
+    bool eq(const Self &other) const {
         return
             this->x == other.x &&
             this->y == other.y &&
@@ -29,14 +33,24 @@ template <typename T, typename Self> struct BaseRectangle {
             this->height == other.height;
     }
 
-    bool overlaps(Self &other) {
+    bool overlaps(const Self &other) const {
         return this->right() >= other.left() &&
             this->bottom() >= other.top() &&
             this->left() <= other.right() &&
             this->top() <= other.bottom();
     }
 
-    Self join(Self &other) {
+    Self &joinInPlace(const Self &other) {
+        T xi = min(x, other.x);
+        width = max(x + width, other.x + other.width) - xi;
+        x = xi;
+        T yi = min(y, other.y);
+        height = max(y + height, other.y + other.height) - yi;
+        y = yi;
+        return static_cast<Self&>(*this);
+    }
+
+    Self join(const Self &other) {
         T left = min(x, other.x);
         T right = max(x + width, other.x + other.width);
         T top = min(y, other.y);
@@ -49,22 +63,22 @@ template <typename T, typename Self> struct BaseRectangle {
         );
     }
 
-    template <typename U, typename V> bool contains(BaseRectangle<U, V> &other) {
-        return (
-            other.x >= left() &&
-            other.x <= right() &&
-            other.y >= top() &&
-            other.y <= bottom()
+    Self overlap(const Self &other) {
+        T xi = max(x, other.x);
+        T yi = max(y, other.y);
+        return Self(
+            xi, yi,
+            min(right(), other.right()) - xi,
+            min(bottom(), other.bottom()) - yi
         );
     }
-
 
     template <typename U, typename V> bool contains(BasePoint<U, V> &p) {
         return p.x >= this->x && p.x <= (this->x + this->width) &&
             p.y >= this->y && p.y <= (this->y + this->height);
     }
 
-    Self &setTo(Self &other) {
+    Self &setTo(const Self &other) {
         return this->setTo(other.x, other.y, other.width, other.height);
     }
 
@@ -74,6 +88,10 @@ template <typename T, typename Self> struct BaseRectangle {
         this->width = w;
         this->height = h;
         return static_cast<Self&>(*this);
+    }
+
+    void debugPrint() {
+        printf("%i,%i %ix%i\n", x, y, width, height);
     }
 };
 

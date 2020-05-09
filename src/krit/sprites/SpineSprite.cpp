@@ -124,11 +124,10 @@ void SpineSprite::render(RenderContext &ctx) {
                 key.blend = BlendMode::Add;
                 FloatPoint lastTip, lastBase, curTip, curBase;
                 float total = 0;
-                int start = this->trail.slices * (1 - min(1.0, this->trail.elapsed / this->trail.time));
-                for (int i = start; i < this->trail.slices; ++i) {
+                for (int i = 0; i < this->trail.slices; ++i) {
                     auto attachTip = slotTip->getAttachment(),
                         attachBase = slotBase->getAttachment();
-                    if (total - inc > this->trail.elapsed) {
+                    if ((this->trail.elapsed - 0.05) - total + inc < 0) {
                         break;
                     } else {
                         total -= inc;

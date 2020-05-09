@@ -18,8 +18,9 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
         return std::get<e>(this->events);
     }
 
-    template <size_t e, typename... Args> void add(Args&&... args) {
-        return std::get<e>(this->nextEvents).emplace_back(args...);
+    template <size_t e, typename... Args> auto add(Args&&... args) -> decltype(std::get<e>(events).back()) {
+        std::get<e>(this->nextEvents).emplace_back(args...);
+        return std::get<e>(this->nextEvents).back();
     }
 
     template <size_t e> void listen(typename std::remove_reference<decltype(std::get<e>(callbacks).back())>::type callback) {
