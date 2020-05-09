@@ -134,7 +134,7 @@ struct BitmapText: public VisibleSprite {
     int charCount = -1;
     int maxChars = 0;
 
-    BitmapText(BitmapTextOptions options);
+    BitmapText(const BitmapTextOptions &options);
 
     BitmapText &setFont(shared_ptr<BitmapFont> font);
     BitmapText &setText(string text);

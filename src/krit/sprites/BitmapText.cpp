@@ -335,12 +335,10 @@ struct TextParser {
 GlyphRenderStack TextParser::stack;
 vector<TextOpcode> TextParser::word;
 
-BitmapText::BitmapText(BitmapTextOptions options):
+BitmapText::BitmapText(const BitmapTextOptions &options):
     options(options),
     font(options.font)
-{
-    // TODO
-}
+{}
 
 BitmapText &BitmapText::setFont(shared_ptr<BitmapFont> font) {
     this->font = font;

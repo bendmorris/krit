@@ -8,10 +8,10 @@
 #include <string>
 #include <utility>
 
-#define UI_DECL(x, T) T *x = static_cast<T*>(this->layout.getById(#x).get())
-#define UI_DECL_NODE(x) shared_ptr<LayoutNode> x##Node = this->layout.getNodeById(#x)
-#define UI_GET(x, T) static_cast<T*>(this->layout.getById(x).get())
+#define UI_GET(x, T) static_cast<T*>(this->layout.getById(x))
 #define UI_GET_NODE(x) this->layout.getNodeById(x)
+#define UI_DECL(x, T) T *x = static_cast<T*>(this->layout.getById(#x))
+#define UI_DECL_NODE(x) LayoutNode *x##Node = this->layout.getNodeById(#x)
 
 namespace krit {
 
@@ -24,7 +24,7 @@ enum PositionMode {
 // TODO: opportunity for pooling everything here
 
 struct LayoutNode: public VisibleSprite {
-    shared_ptr<VisibleSprite> sprite = nullptr;
+    std::unique_ptr<VisibleSprite> sprite = nullptr;
     Measurement padding[4] = {Measurement(0), Measurement(0), Measurement(0), Measurement(0)};
     AnchoredMeasurement x = AnchoredMeasurement(Measurement(0), 0);
     AnchoredMeasurement y = AnchoredMeasurement(Measurement(0), 0);
@@ -36,8 +36,8 @@ struct LayoutNode: public VisibleSprite {
     bool visible = true;
 
     PositionMode positionMode = PositionAbsolute;
-    shared_ptr<LayoutNode> parent = nullptr;
-    shared_ptr<LayoutNode> prevSibling = nullptr;
+    LayoutNode *parent = nullptr;
+    LayoutNode *prevSibling = nullptr;
     double siblingSpacing = 0;
 
     LayoutNode() {}
@@ -82,8 +82,8 @@ struct LayoutNode: public VisibleSprite {
         return *this;
     }
 
-    LayoutNode &attachSprite(shared_ptr<VisibleSprite> e) {
-        this->sprite = e;
+    LayoutNode &attachSprite(VisibleSprite *e) {
+        this->sprite = std::unique_ptr<VisibleSprite>(e);
         return *this;
     }
 
@@ -104,57 +104,57 @@ struct LayoutNode: public VisibleSprite {
 struct LayoutRoot;
 
 struct DivData {
-    shared_ptr<LayoutNode> div;
-    shared_ptr<LayoutNode> lastChild = nullptr;
+    LayoutNode *div;
+    LayoutNode *lastChild = nullptr;
     PositionMode mode;
 
-    DivData(shared_ptr<LayoutNode> div, PositionMode mode): div(div), mode(mode) {}
+    DivData(LayoutNode *div, PositionMode mode): div(div), mode(mode) {}
 };
 
 struct LayoutParseData {
-    string *path;
+    std::string *path;
     LayoutRoot *root;
-    shared_ptr<LayoutNode> node;
+    LayoutNode *node;
     AssetContext *asset;
-    stack<DivData> divs;
+    std::stack<DivData> divs;
 };
 
-typedef void LayoutParseFunction(LayoutParseData *, unordered_map<string, string>&);
+typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
 
 struct LayoutRoot: public Sprite {
-    static unordered_map<string, LayoutParseFunction*> parsers;
-    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const string &key, const string &value);
-    static SpriteStyle parseStyle(string &s);
-    static void parseAndApplyStyle(unordered_map<string, string> &attrMap, shared_ptr<VisibleSprite> e);
-    static ImageRegion parseSrc(unordered_map<string, string> &attrMap, AssetContext *asset);
+    static std::unordered_map<string, LayoutParseFunction*> parsers;
+    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value);
+    static SpriteStyle parseStyle(std::string &s);
+    static void parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e);
+    static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap, AssetContext *asset);
 
     static void addParser(string tag, LayoutParseFunction *f) {
         parsers.insert(make_pair(tag, f));
     }
 
-    vector<shared_ptr<LayoutNode>> nodes;
-    unordered_map<string, shared_ptr<LayoutNode>> nodeMap;
+    std::vector<std::unique_ptr<LayoutNode>> nodes;
+    std::unordered_map<std::string, LayoutNode*> nodeMap;
 
     LayoutRoot(string path, AssetContext &asset);
 
-    shared_ptr<LayoutNode> getNodeById(const string id) {
+    LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);
         return (found != this->nodeMap.end()) ? found->second : nullptr;
     }
 
-    shared_ptr<VisibleSprite> getById(const string id) {
-        shared_ptr<LayoutNode> node = this->getNodeById(id);
-        return node ? node->sprite : nullptr;
+    VisibleSprite *getById(const std::string &id) {
+        LayoutNode *node = this->getNodeById(id);
+        return node ? node->sprite.get() : nullptr;
     }
 
-    virtual void update(UpdateContext &ctx) override {
-        for (shared_ptr<LayoutNode> node: this->nodes) {
+    void update(UpdateContext &ctx) override {
+        for (std::unique_ptr<LayoutNode> &node : this->nodes) {
             node->update(ctx);
         }
     }
 
-    virtual void render(RenderContext &ctx) override {
-        for (shared_ptr<LayoutNode> node: this->nodes) {
+    void render(RenderContext &ctx) override {
+        for (std::unique_ptr<LayoutNode> &node : this->nodes) {
             node->render(ctx);
         }
     }
