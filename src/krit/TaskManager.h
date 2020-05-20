@@ -66,8 +66,8 @@ struct TaskManager {
      */
     template <typename T> static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
         size_t len;
-        while (len = queue.size()) {
-            for (int i = 0; i < len; ++i) {
+        while ((len = queue.size())) {
+            for (size_t i = 0; i < len; ++i) {
                 (queue.pop())(ctx);
             }
         }
@@ -82,12 +82,12 @@ struct TaskManager {
     AsyncQueue<UpdateTask> workQueue;
 
     TaskManager(UpdateContext &ctx, size_t size):
-        ctx(ctx),
-        size(size)
+        size(size),
+        ctx(ctx)
     {
         instance = this;
         threads = new SDL_Thread*[size];
-        for (int i = 0; i < size; ++i) {
+        for (size_t i = 0; i < size; ++i) {
             std::string threadName = "worker" + std::to_string(i + 1);
             SDL_CreateThread(workerFunc, threadName.c_str(), this);
         }

@@ -23,8 +23,8 @@ namespace krit {
 typedef double (*LerpFunction)(double);
 
 struct ParticleType {
-    Image image;
     int id;
+    Image image;
 
     Range<Color> colorStart;
     Range<Color> colorEnd;
@@ -176,7 +176,6 @@ struct ParticleSystem {
 
     ParticleEffect &defineEffect() {
         effects.emplace_back();
-        auto &effect = effects.back();
         return effects.back();
     }
 };

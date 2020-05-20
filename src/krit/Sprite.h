@@ -17,8 +17,8 @@ struct Sprite {
 };
 
 struct SpriteStyle {
-    ScaleFactor scale;
     Color color = Color::white();
+    ScaleFactor scale;
 
     SpriteStyle(ScaleFactor scale, Color color = Color::white())
         : color(color), scale(scale) {}

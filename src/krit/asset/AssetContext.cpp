@@ -12,7 +12,7 @@ std::shared_ptr<void> AssetContext::get(int id) {
 }
 
 PendingAssets &AssetContext::pendingAssets() {
-    int i = 0;
+    size_t i = 0;
     while (i < pending.size()) {
         auto &entry = pending[i];
         bool loaded = this->cache->isLoaded(entry.first, entry.second);

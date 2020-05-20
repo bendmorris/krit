@@ -53,7 +53,7 @@ struct Engine {
     unique_ptr<Sprite> root = nullptr;
     void *userData = nullptr;
 
-    Engine(): asset(&this->assetCache), input(&this->controls) {}
+    Engine(): input(&this->controls), asset(&this->assetCache) {}
 
     void reset() {
         this->controls.reset();

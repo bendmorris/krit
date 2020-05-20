@@ -43,7 +43,6 @@ void Editor::render(krit::RenderContext &ctx) {
         io.DisplaySize.x = ctx.window->width();
         io.DisplaySize.y = ctx.window->height();
 
-        bool show_demo_window = true;
         ImGui::NewFrame();
 
         for (auto &tool : devTools) {

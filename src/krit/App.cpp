@@ -60,13 +60,12 @@ void App::run() {
         this->engine.reset();
         this->handleEvents(update);
 
-        int frames = 0;
         while (accumulator >= frameDelta2 && update.frameCount < MAX_FRAMES) {
             accumulator -= frameDelta;
             if (accumulator < 0) {
                 accumulator = 0;
             }
-            update.frameCount = 1;
+            ++update.frameCount;
             ++update.frameId;
             render.elapsed += frameDelta;
             render.frameId = update.frameId;
@@ -76,7 +75,6 @@ void App::run() {
         if (accumulator > frameDelta2) {
             accumulator = fmod(accumulator, frameDelta2);
         }
-        update.frameCount = 0;
         update.elapsed = render.elapsed = elapsed;
         this->engine.update(update);
         if (engine.finished) {

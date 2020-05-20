@@ -57,8 +57,7 @@ void Emitter::emit(ParticleType &type, int count) {
 }
 
 void Emitter::update(UpdateContext &ctx) {
-    auto it = this->_particles.begin();
-    int i = 0;
+    size_t i = 0;
     int trailCount = 0;
     while (i < this->_particles.size()) {
         auto &it = this->_particles[i];

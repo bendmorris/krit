@@ -27,7 +27,7 @@ struct RenderThread {
         renderMutex = SDL_CreateMutex();
         renderCondMutex = SDL_CreateMutex();
         renderCond = SDL_CreateCond();
-        SDL_Thread *renderThread = SDL_CreateThread(RenderThread::exec, "render", this);
+        thread = SDL_CreateThread(RenderThread::exec, "render", this);
     }
 
     static int exec(void *raw) {

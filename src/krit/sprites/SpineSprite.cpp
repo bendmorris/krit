@@ -161,6 +161,7 @@ void SpineSprite::render(RenderContext &ctx) {
             this->trail.elapsed += ctx.elapsed;
             break;
         }
+        default: {}
     }
     this->_render(ctx, false, 0, Color::black());
 }
@@ -180,7 +181,7 @@ void SpineSprite::_render(RenderContext &ctx, bool ghost, int ghostSlot, Color g
     spine::Skeleton &skeleton = *this->skeleton;
     spine::Vector<spine::Slot*> &drawOrder = skeleton.getDrawOrder();
     size_t size = drawOrder.size();
-    for (int i = 0; i < size; ++i) {
+    for (size_t i = 0; i < size; ++i) {
         spine::Slot *slot = drawOrder[i];
         if (ghost && ((ghostSlot != -1) && slot->getData().getIndex() != ghostSlot)) {
             continue;
@@ -263,7 +264,7 @@ void SpineSprite::_render(RenderContext &ctx, bool ghost, int ghostSlot, Color g
             key.blend = blendMode;
             float *uvs = meshAttachment->getUVs().buffer();
             auto &triangles = meshAttachment->getTriangles();
-            for (int i = 0; i < triangles.size() / 3; ++i) {
+            for (size_t i = 0; i < triangles.size() / 3; ++i) {
                 int i0 = triangles[i * 3] << 1;
                 int i1 = triangles[i * 3 + 1] << 1;
                 int i2 = triangles[i * 3 + 2] << 1;

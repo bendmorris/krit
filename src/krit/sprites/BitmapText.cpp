@@ -159,6 +159,7 @@ struct TextParser {
                 case TextBlock: {
                     txt.maxChars += op.data.text.length;
                 }
+                default: {}
             }
         }
     }
@@ -201,7 +202,7 @@ struct TextParser {
 
     void newLine(BitmapText &txt, bool append) {
         if (txt.opcodes[this->newLineIndex].type == NewLine) {
-            pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
+            // std::pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
             // update the size of the preceding line
             double add = this->thisLineHeight + (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
             this->cursor.y += this->thisLineHeight + add;
@@ -336,8 +337,8 @@ GlyphRenderStack TextParser::stack;
 vector<TextOpcode> TextParser::word;
 
 BitmapText::BitmapText(const BitmapTextOptions &options):
-    options(options),
-    font(options.font)
+    font(options.font),
+    options(options)
 {}
 
 BitmapText &BitmapText::setFont(shared_ptr<BitmapFont> font) {
@@ -437,7 +438,7 @@ void BitmapText::render(RenderContext &ctx) {
             }
             case TextBlock: {
                 StringSlice &txt = op.data.text;
-                for (int i = 0; i < txt.length; ++i) {
+                for (size_t i = 0; i < txt.length; ++i) {
                     if (charCount > -1 && --charCount < 0) {
                         return;
                     }
@@ -489,6 +490,7 @@ void BitmapText::render(RenderContext &ctx) {
                 }
             }
             // other opcodes (e.g. the Pop variants) are removed during parsing
+            default: {}
         }
     }
 }

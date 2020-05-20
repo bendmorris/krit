@@ -201,7 +201,6 @@ template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) 
     checkForGlErrors("bind");
 
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
-    RenderFloat *v = (RenderFloat*)this->renderData.data();
     checkForGlErrors("bindBuffer");
     RenderFloat *origin = nullptr;
     glEnableVertexAttribArray(shader->positionIndex);

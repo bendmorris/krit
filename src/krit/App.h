@@ -16,9 +16,9 @@ const int FPS = 60;
 struct App {
     std::string title;
     Engine engine;
-    IntDimensions window;
     // opaque, backend-specific contents
     Backend backend;
+    IntDimensions window;
     Renderer renderer;
 
     App(KritOptions &options);

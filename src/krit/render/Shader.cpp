@@ -130,7 +130,7 @@ void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
     int i = 0;
     RenderFloat *origin = nullptr;
     if (hasTexCoord) {
-        for (int t = 0; t < drawCall->length(); ++t) {
+        for (size_t t = 0; t < drawCall->length(); ++t) {
             TriangleData &tri = drawCall->data[t];
             uint32_t c = colorToInt(tri.color);
             buffer[i++] = tri.t.p1.x;
@@ -156,7 +156,7 @@ void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
         glVertexAttribPointer(this->texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride, origin + 3);
         checkForGlErrors("texture attrib pointers");
     } else {
-        for (int t = 0; t < drawCall->length(); ++t) {
+        for (size_t t = 0; t < drawCall->length(); ++t) {
             TriangleData &tri = drawCall->data[t];
             uint32_t c = colorToInt(tri.color);
             buffer[i++] = tri.t.p1.x;
