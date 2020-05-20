@@ -122,20 +122,20 @@ struct LayoutParseData {
 typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
 
 struct LayoutRoot: public Sprite {
-    static std::unordered_map<string, LayoutParseFunction*> parsers;
+    static std::unordered_map<std::string, LayoutParseFunction*> parsers;
     static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value);
     static SpriteStyle parseStyle(std::string &s);
     static void parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e);
     static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap, AssetContext *asset);
 
-    static void addParser(string tag, LayoutParseFunction *f) {
+    static void addParser(const std::string &tag, LayoutParseFunction *f) {
         parsers.insert(make_pair(tag, f));
     }
 
     std::vector<std::unique_ptr<LayoutNode>> nodes;
     std::unordered_map<std::string, LayoutNode*> nodeMap;
 
-    LayoutRoot(string path, AssetContext &asset);
+    LayoutRoot(std::string path, AssetContext &asset);
 
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);

@@ -1,4 +1,5 @@
 #include "krit/render/DrawCommand.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
 
@@ -15,7 +16,15 @@ DrawCall &DrawCommandBuffer::getDrawCall(DrawKey &key) {
     return call;
 }
 
-void DrawCommandBuffer::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color) {
+void DrawCommandBuffer::addTriangle(RenderContext &ctx, DrawKey &key, Triangle &t, Triangle &uv, Color color) {
+    Rectangle bounds = t.bounds();
+    if (color.a > 0 && bounds.overlaps(Rectangle(0, 0, ctx.window->width(), ctx.window->height()))) {
+        DrawCall &call = this->getDrawCall(key);
+        call.addTriangle(t, uv, color);
+    }
+}
+
+void DrawCommandBuffer::addRect(RenderContext &ctx, DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color) {
     double uvx1;
     double uvy1;
     double uvx2;
@@ -48,9 +57,7 @@ void DrawCommandBuffer::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix
         uvx2, uvy1,
         uvx1, uvy2
     );
-
-    DrawCall &call = this->getDrawCall(key);
-    call.addTriangle(t, uv, color);
+    addTriangle(ctx, key, t, uv, color);
 
     Triangle t2(
         xc, yd,
@@ -62,7 +69,7 @@ void DrawCommandBuffer::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix
         uvx2, uvy1,
         uvx2, uvy2
     );
-    call.addTriangle(t2, uv2, color);
+    addTriangle(ctx, key, t2, uv2, color);
 }
 
 }

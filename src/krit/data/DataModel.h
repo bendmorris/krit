@@ -24,6 +24,10 @@ template <typename ModelType> struct DataModel {
         return this->data[it->second];
     }
 
+    bool has(const std::string &id) {
+        return this->idMap.find(id) != this->idMap.end();
+    }
+
     std::vector<ModelType> &all() { return this->data; }
 
     ModelType &operator[](int index) {

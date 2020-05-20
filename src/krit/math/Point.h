@@ -88,6 +88,12 @@ template <typename T, class Self> class BasePoint {
             return dx * dx + dy * dy * yFactor;
         }
 
+        T distance(T x, T y) {
+            T dx = this->x - x;
+            T dy = this->y - y;
+            return sqrt(dx * dx + dy * dy);
+        }
+
         T distance(Self &other) {
             Self &derived = static_cast<Self&>(*this);
             T dx = derived.x - other.x;

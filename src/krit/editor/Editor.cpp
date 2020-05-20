@@ -8,8 +8,8 @@
 namespace krit {
 
 void Overlay::draw(krit::RenderContext &ctx) {
-    ImVec2 window_pos = ImVec2(32, 32);
-    ImVec2 window_pos_pivot = ImVec2(0, 0);
+    ImVec2 window_pos = ImVec2(ctx.window->width() - 32, 32);
+    ImVec2 window_pos_pivot = ImVec2(1, 0);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
     bool pOpen;
     if (ImGui::Begin("FPS", &pOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -21,6 +21,7 @@ void Overlay::draw(krit::RenderContext &ctx) {
         }
         ImGui::Text("FPS: %.2f", total / 4);
         ImGui::Checkbox("Debug draw", &ctx.debugDraw);
+        ImGui::Checkbox("Pause", &ctx.engine->paused);
     }
     ImGui::End();
 }

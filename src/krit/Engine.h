@@ -110,26 +110,11 @@ struct Engine {
         invoke(this->postUpdate, &ctx);
     }
 
-    void render(RenderContext &ctx) {
-        ctx.camera = &this->camera;
-        invoke(this->onRender, &ctx);
-
-        if (this->bgColor.a > 0) {
-            DrawKey key;
-            IntRectangle windowRect(0, 0, ctx.window->width(), ctx.window->height());
-            Matrix m;
-            ctx.drawCommandBuffer->addRect(
-                key,
-                windowRect,
-                m,
-                this->bgColor
-            );
-        }
-        if (this->root) this->root->render(ctx);
-        if (this->editor) this->editor->render(ctx);
-
-        invoke(this->postRender, &ctx);
+    void fixedUpdate(UpdateContext &ctx) {
+        this->root->fixedUpdate(ctx);
     }
+
+    void render(RenderContext &ctx);
 
     void setTimeout(CustomSignal s, double delay = 0, void *userData = nullptr) {
         bool inserted = false;

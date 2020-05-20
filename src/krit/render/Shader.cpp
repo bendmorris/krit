@@ -199,7 +199,7 @@ uniform sampler2D uImage;
 void main(void) {
     vec4 color = texture2D(uImage, vTexCoord);
     if (color.a == 0.0) {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 0.0);
+        discard;
     } else {
         gl_FragColor = color * vColor;
     }

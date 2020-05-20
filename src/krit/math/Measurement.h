@@ -16,12 +16,7 @@ struct Measurement {
     Measurement(MeasurementType type, double value): type(type), value(value) {}
 
     double measure(double max) {
-        switch (this->type) {
-            case Absolute:
-                return this->value;
-            case Percent:
-                return this->value * max / 100;
-        }
+        return type == Percent ? (value * max / 100) : value;
     }
 };
 

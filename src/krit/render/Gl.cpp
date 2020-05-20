@@ -9,7 +9,7 @@ void checkForGlErrors(const char *fmt, ...) {
     if (err) {
         va_list args;
         va_start(args, fmt);
-        fprintf(stderr, "GL error: %i\n", err);
+        fprintf(stderr, "GL error: %i ", err);
         vfprintf(stderr, fmt, args);
         fputs("\n", stderr);
     }

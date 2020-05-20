@@ -2,13 +2,14 @@
 #define KRIT_RENDER_RENDER_CONTEXT
 
 #include "krit/math/Point.h"
-#include "krit/render/DrawCommand.h"
 #include "krit/Camera.h"
+#include "krit/render/DrawKey.h"
 
 namespace krit {
 
-class App;
-class Engine;
+struct App;
+struct Engine;
+struct DrawCommandBuffer;
 
 struct RenderContext {
     double elapsed;
@@ -27,33 +28,12 @@ struct RenderContext {
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 
-    void setClip(Rectangle rect) {
-        this->transformRect(rect);
-        this->drawCommandBuffer->setClip(rect);
-    }
-
-    void clearClip() {
-        Rectangle r;
-        this->drawCommandBuffer->setClip(r);
-    }
-
-    void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color) {
-        this->transformMatrix(matrix);
-        this->drawCommandBuffer->addRect(key, rect, matrix, color);
-    }
-
-    void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color) {
-        this->drawCommandBuffer->addRect(key, rect, matrix, color);
-    }
-
-    void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color) {
-        this->transformTriangle(t);
-        this->drawCommandBuffer->addTriangle(key, t, uv, color);
-    }
-
-    void addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv, Color color) {
-        this->drawCommandBuffer->addTriangle(key, t, uv, color);
-    }
+    void setClip(Rectangle rect);
+    void clearClip();
+    void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
+    void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
+    void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color);
+    void addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv, Color color);
 
     Point &transformPoint(Point &point) {
         point.add(this->offset);

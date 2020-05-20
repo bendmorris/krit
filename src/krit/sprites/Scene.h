@@ -7,9 +7,6 @@
 #include "krit/input/MouseContext.h"
 #include "krit/Sprite.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct Scene: public Sprite {
@@ -20,7 +17,7 @@ struct Scene: public Sprite {
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 
-    Scene(UpdateContext &ctx, const string &layoutPath)
+    Scene(UpdateContext &ctx, const std::string &layoutPath)
         : input(ctx.controls), layout(layoutPath, *ctx.asset) {}
 
     void fadeOut(Color color, double fadeDuration = 0.5) {

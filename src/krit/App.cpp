@@ -16,7 +16,6 @@ App::App(KritOptions &options):
 
 void App::run() {
     double frameDelta = 1.0 / FPS;
-    double frameDelta1 = 1.0 / (FPS - 1);
     double frameDelta2 = 1.0 / (FPS + 1);
 
     UpdateContext update;
@@ -39,6 +38,7 @@ void App::run() {
     std::chrono::steady_clock clock;
     auto frameStart = clock.now();
     auto frameFinish = frameStart;
+    bool lockFramerate = true;
     int cores = SDL_GetCPUCount();
 
     TaskManager taskManager(update, max(2, cores - 2));
@@ -52,46 +52,50 @@ void App::run() {
         do {
             frameFinish = clock.now();
             elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0;
-        } while (elapsed < frameDelta2);
+        } while (lockFramerate && elapsed < frameDelta2);
         accumulator += elapsed;
         update.elapsed = update.frameCount = 0;
-        while (accumulator >= frameDelta2 && update.frameCount < MAX_FRAMES) {
-            ++update.frameCount;
-            update.elapsed += frameDelta;
-            accumulator -= frameDelta1;
-            if (accumulator < 0) {
-                accumulator = 0;
-            }
-        }
-        update.frameId += update.frameCount;
-        render.elapsed = update.elapsed;
-        render.frameId = update.frameId;
-        if (accumulator > frameDelta2) {
-            accumulator = fmod(accumulator, frameDelta2);
-        }
-        frameStart = frameFinish;
+
         this->engine.controls.reset();
         this->engine.reset();
         this->handleEvents(update);
+
+        int frames = 0;
+        while (accumulator >= frameDelta2 && update.frameCount < MAX_FRAMES) {
+            accumulator -= frameDelta;
+            if (accumulator < 0) {
+                accumulator = 0;
+            }
+            update.frameCount = 1;
+            ++update.frameId;
+            render.elapsed += frameDelta;
+            render.frameId = update.frameId;
+            
+            this->engine.fixedUpdate(update);
+        }
+        if (accumulator > frameDelta2) {
+            accumulator = fmod(accumulator, frameDelta2);
+        }
+        update.frameCount = 0;
+        update.elapsed = render.elapsed = elapsed;
         this->engine.update(update);
         if (engine.finished) {
             this->quit();
         }
+        frameStart = frameFinish;
 
-        if (update.frameCount > 0) {
-            SDL_LockMutex(renderThread.renderMutex);
+        SDL_LockMutex(renderThread.renderMutex);
 
-            this->engine.render(render);
+        this->engine.render(render);
 
-            SDL_UnlockMutex(renderThread.renderMutex);
-            SDL_LockMutex(renderThread.renderCondMutex);
-            SDL_CondSignal(renderThread.renderCond);
-            SDL_UnlockMutex(renderThread.renderCondMutex);
+        SDL_UnlockMutex(renderThread.renderMutex);
+        SDL_LockMutex(renderThread.renderCondMutex);
+        SDL_CondSignal(renderThread.renderCond);
+        SDL_UnlockMutex(renderThread.renderCondMutex);
 
-            SDL_LockMutex(renderThread.renderCondMutex);
-            SDL_CondWaitTimeout(renderThread.renderCond, renderThread.renderCondMutex, frameDelta2 * 1000);
-            SDL_UnlockMutex(renderThread.renderCondMutex);
-        }
+        SDL_LockMutex(renderThread.renderCondMutex);
+        SDL_CondWaitTimeout(renderThread.renderCond, renderThread.renderCondMutex, frameDelta2 * 1000);
+        SDL_UnlockMutex(renderThread.renderCondMutex);
     }
 
     SDL_LockMutex(renderThread.renderMutex);

@@ -22,7 +22,7 @@ struct SpineTextureLoader: public spine::TextureLoader {
     ~SpineTextureLoader() {}
 
     void load(spine::AtlasPage &page, const spine::String &path) override {
-        std::shared_ptr<ImageData> texture = static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
+        std::shared_ptr<ImageData> texture = std::static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
         ImageRegion *region = new ImageRegion(texture);
         page.setRendererObject(region);
         page.width = texture->width();
@@ -101,7 +101,7 @@ struct SpineSprite: public VisibleSprite {
     std::string trailTip;
     std::string trailBase;
 
-    shared_ptr<SkeletonBinaryData> bin;
+    std::shared_ptr<SkeletonBinaryData> bin;
     spine::Skeleton *skeleton;
     spine::AnimationState *animationState;
     spine::Skin *skin;
@@ -128,7 +128,7 @@ struct SpineSprite: public VisibleSprite {
     void setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
     void addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
 
-    void setAttachment(const string &slot, const string &attachment) {
+    void setAttachment(const std::string &slot, const std::string &attachment) {
         this->skeleton->setAttachment(spine::String(slot.c_str()), spine::String(attachment.c_str()));
     }
 
@@ -143,8 +143,8 @@ struct SpineSprite: public VisibleSprite {
         }
     }
 
-    void setSkin(const string &name);
-    void removeSkin(const string &name);
+    void setSkin(const std::string &name);
+    void removeSkin(const std::string &name);
 
     /**
      * This will be shared across all instances of this skeleton as long as the

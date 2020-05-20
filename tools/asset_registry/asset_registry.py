@@ -4,14 +4,12 @@ from jinja2 import Template
 import yaml
 from PIL import Image
 
-yaml.parse('')
-
 def assetId(path):
     return ''.join(filter(lambda s: s.isalpha() or s.isdigit(), list(''.join(s.title() for s in path.split('/')))))
 
 def run(inputPath, outputDir):
     with open(inputPath) as inputFile:
-        spec = yaml.load(inputFile)
+        spec = yaml.safe_load(inputFile)
     assets = []
     for item in spec:
         matches = glob(item['pattern'], recursive=True)

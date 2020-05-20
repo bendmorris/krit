@@ -1,5 +1,6 @@
 #include "krit/input/InputContext.h"
 #include "krit/sprites/Scene.h"
+#include "krit/render/DrawCommand.h"
 
 using namespace std;
 using namespace krit;
@@ -33,6 +34,7 @@ void Scene::render(RenderContext &ctx) {
         IntRectangle windowRect(0, 0, ctx.window->width(), ctx.window->height());
         Matrix m;
         ctx.drawCommandBuffer->addRect(
+            ctx,
             key,
             windowRect,
             m,

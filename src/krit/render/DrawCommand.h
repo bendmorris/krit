@@ -1,5 +1,5 @@
-#ifndef KRIT_RENDER_DRAW_COMMAND
-#define KRIT_RENDER_DRAW_COMMAND
+#ifndef KRIT_RENDER_DRAWCOMMAND
+#define KRIT_RENDER_DRAWCOMMAND
 
 #include "krit/Math.h"
 #include "krit/render/BlendMode.h"
@@ -20,6 +20,8 @@ struct SDL_Window;
 struct ImDrawData;
 
 namespace krit {
+
+struct RenderContext;
 
 enum DrawCommandType {
     DrawTriangles,
@@ -50,12 +52,8 @@ struct DrawCommandBuffer: public CommandBuffer<
 
     DrawCall &getDrawCall(DrawKey &key);
 
-    void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color) {
-        DrawCall &call = this->getDrawCall(key);
-        call.addTriangle(t, uv, color);
-    }
-
-    void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
+    void addTriangle(RenderContext &ctx, DrawKey &key, Triangle &t, Triangle &uv, Color color);
+    void addRect(RenderContext &ctx, DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
 
     void setClip(Rectangle &clip) {
         auto &rect = this->emplace_back<SetClipRect>();

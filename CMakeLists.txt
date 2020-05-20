@@ -1,8 +1,10 @@
 project(krit)
 
 find_package(SDL2 REQUIRED)
+#find_package(SDL2_image REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(OpenAL REQUIRED)
+find_package(GLEW REQUIRED)
 
 execute_process(
     COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
@@ -13,6 +15,7 @@ add_definitions(
 )
 
 file(GLOB KRIT_SRC_FILES
+    CONFIGURE_DEPENDS
     src/krit/*.cpp
     src/krit/**/*.cpp
     spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp

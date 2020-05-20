@@ -13,6 +13,7 @@ namespace krit {
 struct Sprite {
     virtual void render(RenderContext &ctx) {}
     virtual void update(UpdateContext &ctx) {}
+    virtual void fixedUpdate(UpdateContext &ctx) {}
 };
 
 struct SpriteStyle {

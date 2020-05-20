@@ -17,7 +17,7 @@ template <typename Context> using EvalFunction = std::function<BehaviorResult(Co
 
 template <typename Context> struct BehaviorTree;
 
-// FIXME: pool these and use intrinsic linked list instead of individual allocations in builder
+// FIXME: pool these
 template <typename Context> struct BehaviorTreeNode {
     EvalFunction<Context> f;
     BehaviorTreeNode *onSuccess = nullptr;

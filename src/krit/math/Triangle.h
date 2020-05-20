@@ -2,8 +2,17 @@
 #define KRIT_MATH_TRIANGLE
 
 #include "./Point.h"
+#include <stdio.h>
 
 namespace krit {
+
+template <typename T> T minOf3(T a, T b, T c) {
+    return a > b ? (b > c ? c : b) : (a > c ? c : a);
+}
+
+template <typename T> T maxOf3(T a, T b, T c) {
+    return a < b ? (b < c ? c : b) : (a < c ? c : a);
+}
 
 struct Triangle {
     Point p1;
@@ -34,6 +43,19 @@ struct Triangle {
         this->p2.add(p.x, p.y);
         this->p3.add(p.x, p.y);
         return *this;
+    }
+
+    void debugPrint() {
+        printf("%.2f,%.2f %.2f,%.2f %.2f,%.2f\n", p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+    }
+
+    Rectangle bounds() {
+        double
+            x1 = minOf3(p1.x, p2.x, p3.x),
+            y1 = minOf3(p1.y, p2.y, p3.y),
+            x2 = maxOf3(p1.x, p2.x, p3.x),
+            y2 = maxOf3(p1.y, p2.y, p3.y);
+        return Rectangle(x1, y1, x2 - x1, y2 - y1);
     }
 };
 
