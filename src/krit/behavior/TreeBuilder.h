@@ -121,10 +121,12 @@ template <typename Context> struct TreeBuilder {
                     break;
                 }
                 case CloseComposite: {
+                    auto onSuccess = composite.onSuccess;
+                    auto onFailure = composite.onFailure;
                     compositeStack.emplace_back(op.compositeType);
                     auto &newComposite = compositeStack.back();
-                    newComposite.onSuccess = composite.onSuccess;
-                    newComposite.onFailure = composite.onFailure;
+                    newComposite.onSuccess = onSuccess;
+                    newComposite.onFailure = onFailure;
                     break;
                 }
                 case OpenComposite: {
@@ -139,9 +141,11 @@ template <typename Context> struct TreeBuilder {
                             newComposite.onSuccess = last;
                             break;
                         }
+                        default: {}
                     }
                     break;
                 }
+                default: {}
             }
         }
 

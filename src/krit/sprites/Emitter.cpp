@@ -20,7 +20,7 @@ void Emitter::emit(int effectType) {
     auto &effect = this->system.effects[effectType];
     for (auto it = effect.types.begin(); it != effect.types.end(); ++it) {
         if (it->second.start < it->second.end) {
-            uniform_int_distribution<int> count(it->second.start, it->second.end);
+            std::uniform_int_distribution<int> count(it->second.start, it->second.end);
             this->emit(this->system.types[it->first], count(rng));
         } else {
             this->emit(this->system.types[it->first], it->second.start);
@@ -29,7 +29,7 @@ void Emitter::emit(int effectType) {
 }
 
 void Emitter::emit(ParticleType &type, int count) {
-    uniform_real_distribution<double> r(0, 1);
+    std::uniform_real_distribution<double> r(0, 1);
     for (int i = 0; i < count; ++i) {
         this->_particles.emplace_back(&type);
         auto &particle = this->_particles.back();

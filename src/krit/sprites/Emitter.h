@@ -16,8 +16,6 @@
 #include <string>
 #include <unordered_map>
 
-using namespace krit;
-
 namespace krit {
 
 typedef double (*LerpFunction)(double);
@@ -160,7 +158,7 @@ struct ParticleEffect {
         if (max == -1) {
             max = min;
         }
-        types.push_back(make_pair(type, Range<int>(min, max)));
+        types.push_back(std::make_pair(type, Range<int>(min, max)));
         return *this;
     }
 };
@@ -170,8 +168,8 @@ struct ParticleSystem {
     std::vector<ParticleType> types;
 
     ParticleType &defineType(ImageRegion region, BlendMode blend = Alpha) {
-        this->types.emplace_back(this->types.size(), region, blend);
-        return this->types.back();
+        types.emplace_back(types.size(), region, blend);
+        return types.back();
     }
 
     ParticleEffect &defineEffect() {
