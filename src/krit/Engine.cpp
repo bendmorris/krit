@@ -5,6 +5,8 @@ namespace krit {
 
 void Engine::render(RenderContext &ctx) {
     ctx.camera = &this->camera;
+    ctx.userData = this->userData;
+
     invoke(this->onRender, &ctx);
 
     if (this->bgColor.a > 0) {

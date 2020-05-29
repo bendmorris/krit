@@ -5,6 +5,7 @@
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
 #include "krit/render/Shader.h"
+#include "krit/utils/Panic.h"
 #include "krit/App.h"
 #include "krit/Math.h"
 #include <SDL.h>
@@ -86,7 +87,7 @@ void Renderer::init() {
 
 void Renderer::startFrame(RenderContext &ctx) {
     init();
-    ctx.app->backend.getWindowSize(&this->width, &this->height);
+    ctx.app->getWindowSize(&this->width, &this->height);
     ortho(0, this->width, this->height, 0);
     glViewport(0, 0, this->width, this->height);
     glClearColor(0, 0, 0, 1);
@@ -97,7 +98,7 @@ void Renderer::startFrame(RenderContext &ctx) {
 }
 
 void Renderer::flushFrame(RenderContext &ctx) {
-    SDL_GL_SwapWindow(ctx.app->backend.window);
+    SDL_GL_SwapWindow(ctx.app->window);
     // printf("triangles: %i\n", this->triangleCount);
 }
 
@@ -107,6 +108,9 @@ template <> void Renderer::drawCall<SetClipRect, Rectangle>(Rectangle &clipRect)
 
 template <> void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer*>(BaseFrameBuffer *&fb) {
     // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
+    if (fb) {
+        fb->_resize();
+    }
     glBindFramebuffer(GL_FRAMEBUFFER, fb ? fb->frameBuffer : 0);
     checkForGlErrors("bind framebuffer");
 }
@@ -215,40 +219,42 @@ template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) 
     checkForGlErrors("bind texture");
 
     for (auto it : material.uniforms) {
-        auto loc = it.first;
-        auto &uniform = it.second;
-        switch (uniform.type) {
-            case UniformInt:
-            case UniformTexture: {
-                glUniform1i(loc, uniform.intValue);
-                break;
-            }
-            case UniformFloat: {
-                glUniform1f(loc, uniform.floatValue);
-                break;
-            }
-            case UniformVec2: {
-                glUniform2f(loc, uniform.vec2Value[0], uniform.vec2Value[1]);
-                break;
-            }
-            case UniformVec3: {
-                glUniform3f(loc, uniform.vec3Value[0], uniform.vec3Value[1], uniform.vec3Value[2]);
-                break;
-            }
-            case UniformVec4: {
-                glUniform4f(loc, uniform.vec4Value[0], uniform.vec4Value[1], uniform.vec4Value[2], uniform.vec4Value[3]);
-                break;
-            }
-            case UniformFloat3v: {
-                glUniform3fv(loc, uniform.floatData.first, uniform.floatData.second);
-                break;
-            }
-            case UniformFloat4v: {
-                glUniform4fv(loc, uniform.floatData.first, uniform.floatData.second);
-                break;
-            }
-            default: {
-                panic("unknown uniform type: %i\n", uniform.type);
+        auto loc = material.findUniform(it.first);
+        if (loc > -1) {
+            auto &uniform = it.second;
+            switch (uniform.type) {
+                case UniformInt:
+                case UniformTexture: {
+                    glUniform1i(loc, uniform.intValue);
+                    break;
+                }
+                case UniformFloat: {
+                    glUniform1f(loc, uniform.floatValue);
+                    break;
+                }
+                case UniformVec2: {
+                    glUniform2f(loc, uniform.vec2Value[0], uniform.vec2Value[1]);
+                    break;
+                }
+                case UniformVec3: {
+                    glUniform3f(loc, uniform.vec3Value[0], uniform.vec3Value[1], uniform.vec3Value[2]);
+                    break;
+                }
+                case UniformVec4: {
+                    glUniform4f(loc, uniform.vec4Value[0], uniform.vec4Value[1], uniform.vec4Value[2], uniform.vec4Value[3]);
+                    break;
+                }
+                case UniformFloat3v: {
+                    glUniform3fv(loc, uniform.floatData.first, uniform.floatData.second);
+                    break;
+                }
+                case UniformFloat4v: {
+                    glUniform4fv(loc, uniform.floatData.first, uniform.floatData.second);
+                    break;
+                }
+                default: {
+                    panic("unknown uniform type: %i\n", uniform.type);
+                }
             }
         }
     }

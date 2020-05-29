@@ -1,27 +1,48 @@
 #include "krit/App.h"
 #include "krit/RenderThread.h"
-#include <krit/input/Mouse.h>
+#include "krit/input/Mouse.h"
 #include "krit/TaskManager.h"
+#include "krit/utils/Panic.h"
+#include "krit/editor/Editor.h"
 #include <SDL.h>
 #include <chrono>
 #include <cmath>
-#include "krit/editor/Editor.h"
 #include "imgui_impl_sdl.h"
 
 namespace krit {
 
 App::App(KritOptions &options):
-    backend(options.title, options.width, options.height),
-    window(options.width, options.height) {}
+    dimensions(options.width, options.height) {}
 
 void App::run() {
+    // SDL
+    SDL_Init(SDL_INIT_VIDEO);
+
+    // SDL_Image
+    IMG_Init(IMG_INIT_PNG);
+
+    this->window = SDL_CreateWindow(
+        title.c_str(),
+        SDL_WINDOWPOS_UNDEFINED,
+        SDL_WINDOWPOS_UNDEFINED,
+        dimensions.width(), dimensions.height(),
+        SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
+    );
+    if (!this->window) {
+        panic(SDL_GetError());
+    }
+
+    this->surface = SDL_GetWindowSurface(this->window);
+
+    checkForGlErrors("SDL init");
+
     double frameDelta = 1.0 / FPS;
     double frameDelta2 = 1.0 / (FPS + 1);
 
     UpdateContext update;
     update.app = this;
     update.engine = &this->engine;
-    update.window = &this->window;
+    update.window = &this->dimensions;
     update.asset = &this->engine.asset;
     update.camera = &this->engine.camera;
     update.controls = &this->engine.controls;
@@ -30,9 +51,8 @@ void App::run() {
     RenderContext render;
     render.app = this;
     render.engine = &this->engine;
-    render.window = &this->window;
+    render.window = &this->dimensions;
     render.drawCommandBuffer = &this->renderer.drawCommandBuffer;
-    render.userData = this->engine.userData;
 
     double accumulator = 0, elapsed;
     std::chrono::steady_clock clock;
@@ -42,7 +62,7 @@ void App::run() {
     int cores = SDL_GetCPUCount();
 
     TaskManager taskManager(update, max(2, cores - 2));
-    RenderThread renderThread(update, render, taskManager, backend.window);
+    RenderThread renderThread(update, render, taskManager, window);
 
     invoke(engine.onBegin, &update);
 
@@ -75,6 +95,7 @@ void App::run() {
         if (accumulator > frameDelta2) {
             accumulator = fmod(accumulator, frameDelta2);
         }
+
         update.elapsed = render.elapsed = elapsed;
         this->engine.update(update);
         if (engine.finished) {
@@ -135,7 +156,7 @@ void App::handleEvents(UpdateContext &context) {
                     // resize
                     int w = event.window.data1,
                         h = event.window.data2;
-                    this->window.setTo(w, h);
+                    this->dimensions.setTo(w, h);
                 }
                 break;
             }
@@ -176,12 +197,6 @@ void App::handleEvents(UpdateContext &context) {
                 break;
             }
         }
-    }
-}
-
-void App::setFullScreen(bool full) {
-    if (this->full != full) {
-        this->backend.setFullScreen(this->full = full);
     }
 }
 

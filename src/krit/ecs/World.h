@@ -3,7 +3,7 @@
 
 #include "krit/ecs/Entity.h"
 #include "krit/ecs/Utils.h"
-#include <list>
+#include <queue>
 #include <unordered_map>
 
 namespace krit {
@@ -11,6 +11,9 @@ namespace krit {
 template <typename... Components> struct World {
     std::tuple<std::unordered_map<EntityId, Components>...> components;
 
+    /**
+     * Returns a map of all entities that have a specific component.
+     */
     template <typename ComponentType> std::unordered_map<EntityId, ComponentType> &getAll() {
         return std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
     }
@@ -29,8 +32,8 @@ template <typename... Components> struct World {
      */
     template <typename ComponentType, class... Args> ComponentType &add(Entity e, Args&&... args) { return this->add<ComponentType, Args...>(args...); }
     template <typename ComponentType, class... Args> ComponentType &add(EntityId e, Args&&... args) {
-        auto &map = std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
-        auto result = map.emplace(piecewise_construct,
+        auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
+        map.emplace(piecewise_construct,
               forward_as_tuple(e),
               forward_as_tuple(args...)
         );
@@ -42,7 +45,7 @@ template <typename... Components> struct World {
      */
     template <typename ComponentType> bool has(Entity e) { return this->has<ComponentType>(e.id); }
     template <typename ComponentType> bool has(EntityId e) {
-        auto &map = std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
+        auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         auto it = map.find(e);
         return it != map.end();
     }
@@ -52,7 +55,7 @@ template <typename... Components> struct World {
      */
     template <typename ComponentType> ComponentType &get(Entity e) { return this->get<ComponentType>(e.id); }
     template <typename ComponentType> ComponentType &get(EntityId e) {
-        auto &map = std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
+        auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         return map[e];
     }
 
@@ -61,7 +64,7 @@ template <typename... Components> struct World {
      */
     template <typename ComponentType> ComponentType *maybeGet(Entity e) { return this->maybeGet<ComponentType>(e.id); }
     template <typename ComponentType> ComponentType *maybeGet(EntityId e) {
-        auto &map = std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
+        auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         auto it = map.find(e);
         return it == map.end() ? nullptr : &it->second;
     }
@@ -71,7 +74,7 @@ template <typename... Components> struct World {
      */
     template <typename ComponentType> void remove(Entity e) { this->remove<ComponentType>(e.id); }
     template <typename ComponentType> void remove(EntityId e) {
-        auto &map = std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
+        auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         map.erase(e);
     }
 
@@ -81,7 +84,7 @@ template <typename... Components> struct World {
     void removeAll(Entity e) { this->removeAll(e.id); }
     void removeAll(EntityId e) {
         this->_removeAll<Components...>(e, Components()...);
-        this->freeList.push_back(e);
+        this->freeList.push(e);
     }
 
     EntityId newEntity() {
@@ -90,7 +93,7 @@ template <typename... Components> struct World {
             e = this->next++;
         } else {
             e = this->freeList.front();
-            this->freeList.pop_front();
+            this->freeList.pop();
         }
         return e;
     }
@@ -98,12 +101,14 @@ template <typename... Components> struct World {
     void clear() {
         this->_clearAll<Components...>(Components()...);
         this->next = Entity::NO_ENTITY + 1;
-        freeList.clear();
+        while (!freeList.empty()) {
+            freeList.pop();
+        }
     }
 
     private:
         unsigned int next = Entity::NO_ENTITY + 1;
-        list<EntityId> freeList;
+        std::queue<EntityId> freeList;
 
         template <typename T, typename Head, typename... Tail> void _addAll(T &e, EntityId id, Head head, Tail... tail) {
             this->_addAll<T, Head>(e, id, head);
@@ -111,7 +116,7 @@ template <typename... Components> struct World {
         }
 
         template<typename T, typename Head> void _addAll(T &e, EntityId id, Head head) {
-            auto &map = std::get<find_first<tuple<Components...>, Head>::value>(this->components);
+            auto &map = std::get<find_first<std::tuple<Components...>, Head>::value>(this->components);
             map.insert(make_pair(id, e.template get<Head>()));
         }
 
@@ -128,7 +133,7 @@ template <typename... Components> struct World {
             this->_clearAll<Tail...>(tail...);
         }
         template <typename Head> void _clearAll(Head head) {
-            auto &map = std::get<find_first<tuple<Components...>, Head>::value>(this->components);
+            auto &map = std::get<find_first<std::tuple<Components...>, Head>::value>(this->components);
             map.clear();
         }
 };

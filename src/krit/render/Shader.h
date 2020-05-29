@@ -13,11 +13,11 @@ namespace krit {
 class DrawCall;
 
 struct Shader {
-    GLuint program;
+    GLuint program = 0;
     const char *vertexSource;
     const char *fragmentSource;
-    GLint positionIndex;
-    GLint texCoordIndex;
+    GLint positionIndex = 0;
+    GLint texCoordIndex = 0;
     std::unordered_map<std::string, GLint> uniformLocations;
 
     Shader(const char *vertexSource, const char *fragmentSource):

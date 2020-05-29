@@ -13,16 +13,18 @@ namespace krit {
 struct Material {
     Shader *shader = nullptr;
     ImageData img;
-    std::vector<std::pair<int, UniformValue>> uniforms;
+    std::vector<std::pair<std::string, UniformValue>> uniforms;
+    std::unordered_map<std::string, int> uniformLocations;
 
     Material() {}
     Material(Shader *shader): shader(shader) {}
 
     void setUniform(const std::string &name, UniformValue value) {
-        int loc = shader->getUniformLocation(name);
-        if (loc > -1) {
-            uniforms.push_back(std::make_pair(loc, value));
-        }
+        uniforms.push_back(std::make_pair(name, value));
+    }
+
+    int findUniform(const std::string &name) {
+        return shader->getUniformLocation(name);
     }
 
     void clear() {

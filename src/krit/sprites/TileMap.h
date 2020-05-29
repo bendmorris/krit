@@ -7,9 +7,6 @@
 #include "krit/render/ImageRegion.h"
 #include <memory>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct TileMapProperties {
@@ -36,13 +33,13 @@ struct TileMap: public VisibleSprite {
     IntRectangle clip;
 
     TileMap(shared_ptr<ImageData> img, TileMapProperties properties)
-        : region(img), properties(properties)
+        : properties(properties), region(img)
     {
         this->_init();
     }
 
     TileMap(ImageRegion &region, TileMapProperties properties)
-        : region(region), properties(properties)
+        : properties(properties), region(region)
     {
         this->_init();
     }

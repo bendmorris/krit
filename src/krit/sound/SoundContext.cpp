@@ -2,7 +2,7 @@
 
 namespace krit {
 
-void SoundContext::playSound(std::string &name) {
+void SoundContext::playSound(const std::string &name) {
 
 }
 

@@ -211,10 +211,10 @@ ImageRegion LayoutRoot::parseSrc(std::unordered_map<std::string, std::string> &a
         std::shared_ptr<TextureAtlas> atlas = asset->getTextureAtlas(found->second);
         return atlas->getRegion(attrMap["region"]);
     }
+    panic("couldn't find src");
 }
 
 void parseBackdrop(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     Backdrop *backdrop = new Backdrop(src);
@@ -231,7 +231,6 @@ void parseBackdrop(LayoutParseData *data, std::unordered_map<std::string, std::s
 }
 
 void parseImg(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     Image *img = new Image(src);
@@ -240,7 +239,6 @@ void parseImg(LayoutParseData *data, std::unordered_map<std::string, std::string
 }
 
 void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
 
     // parse text options first
@@ -278,7 +276,6 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
 }
 
 void parseSpine(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
 
     // parse skeleton name
@@ -306,7 +303,6 @@ void parseSpine(LayoutParseData *data, std::unordered_map<std::string, std::stri
 }
 
 void parseNineSlice(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     int lw, rw, th, bh;
@@ -344,7 +340,6 @@ void parseNineSlice(LayoutParseData *data, std::unordered_map<std::string, std::
 }
 
 void parseButton(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutRoot *root = data->root;
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap, data->asset);
     int lw, rw, th, bh;

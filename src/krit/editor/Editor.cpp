@@ -1,6 +1,7 @@
 #include "krit/editor/Editor.h"
 #include "krit/App.h"
 #include "krit/Engine.h"
+#include "krit/Utils.h"
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
@@ -20,6 +21,8 @@ void Overlay::draw(krit::RenderContext &ctx) {
             total += fpsBuffer[next];
         }
         ImGui::Text("FPS: %.2f", total / 4);
+        ImGui::Text("Memory: %.3f MB", getCurrentRss() / 1000000.0);
+        ImGui::Text("Peak Mem: %.3f MB", getPeakRss() / 1000000.0);
         ImGui::Checkbox("Debug draw", &ctx.debugDraw);
         ImGui::Checkbox("Pause", &ctx.engine->paused);
     }
@@ -40,6 +43,7 @@ void Editor::render(krit::RenderContext &ctx) {
     if (imguiInitialized) {
         auto &io = ImGui::GetIO();
         io.DeltaTime = ctx.elapsed;
+        io.FontGlobalScale = SCALE;
         io.DisplaySize.x = ctx.window->width();
         io.DisplaySize.y = ctx.window->height();
 
@@ -52,7 +56,7 @@ void Editor::render(krit::RenderContext &ctx) {
         ImGui::Render();
 
         // frame will be finished in the render thread
-        window = ctx.app->backend.window;
+        window = ctx.app->window;
         ctx.drawCommandBuffer->emplace_back<RenderImGui>(ImGui::GetDrawData());
     }
 }

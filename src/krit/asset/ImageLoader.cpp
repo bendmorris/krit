@@ -14,8 +14,13 @@
 
 namespace krit {
 
-shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
-    shared_ptr<ImageData> img = make_shared<ImageData>();
+std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
+    std::shared_ptr<ImageData> img(new ImageData(), [](ImageData *img) {
+        GLuint texture = img->texture;
+        TaskManager::instance->pushRender([texture](RenderContext&) {
+            glDeleteTextures(1, &texture);
+        });
+    });
     img->dimensions.setTo(info.properties.dimensions);
 
     TaskManager::instance->push([info, img](UpdateContext &) {

@@ -9,42 +9,43 @@ namespace krit {
 
 struct BaseFrameBuffer {
     GLuint frameBuffer = 0;
-    unsigned int width = 0;
-    unsigned int height = 0;
+    IntDimensions currentSize, requestedSize;
 
-    BaseFrameBuffer(int width, int height) {}
+    BaseFrameBuffer(int width, int height): requestedSize(width, height) {}
 
     void init() {
         if (!frameBuffer) {
             glGenFramebuffers(1, &frameBuffer);
             checkForGlErrors("create framebuffer");
-            int width = this->width,
-                height = this->height;
-            this->width = 0;
-            this->height = 0;
-            this->resize(width, height);
+            this->resize(requestedSize.width(), requestedSize.height());
         }
     }
 
-    virtual void resize(unsigned int width, unsigned int height) {}
+    void resize(unsigned int width, unsigned int height) {
+        requestedSize.setTo(width, height);
+    }
+
+    virtual void _resize() {}
 };
 
 template <size_t N> struct FrameBuffer: public BaseFrameBuffer {
     GLuint textures[N] = {0};
 
-    FrameBuffer(unsigned int width, unsigned int height): BaseFrameBuffer(width, height) {}
+    FrameBuffer(unsigned int width, unsigned int height):
+        BaseFrameBuffer(width, height)
+    {}
 
-    void resize(unsigned int width, unsigned int height) override {
+    void _resize() override {
+        int width = requestedSize.width(), height = requestedSize.height();
         init();
-        if (this->width != width || this->height != height) {
+        if (this->currentSize.width() != width || this->currentSize.height() != height) {
             glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 
             if (textures[0]) {
                 glDeleteTextures(N, textures);
             }
 
-            this->width = width;
-            this->height = height;
+            this->currentSize.setTo(width, height);
             createTextures(width, height);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
@@ -52,10 +53,10 @@ template <size_t N> struct FrameBuffer: public BaseFrameBuffer {
     }
 
     void createTextures(unsigned int width, unsigned int height) {
+        glActiveTexture(GL_TEXTURE0);
         glGenTextures(N, textures);
 
-        for (int i = 0; i < N; ++i) {
-            glActiveTexture(GL_TEXTURE0);
+        for (size_t i = 0; i < N; ++i) {
             glBindTexture(GL_TEXTURE_2D, textures[i]);
             checkForGlErrors("create texture %i: %i %ix%i\n", i, textures[i], width, height);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
@@ -73,7 +74,7 @@ template <size_t N> struct FrameBuffer: public BaseFrameBuffer {
     }
 
     ImageData getTexture(int index = 0) {
-        return ImageData(textures[index], IntDimensions(width, height));
+        return ImageData(textures[index], currentSize);
     }
 };
 

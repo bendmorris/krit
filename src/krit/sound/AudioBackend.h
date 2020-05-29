@@ -3,8 +3,7 @@
 
 #include "krit/utils/Panic.h"
 #include "krit/render/Gl.h"
-#include <SDL.h>
-#include <SDL_image.h>
+
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <string>
@@ -40,28 +39,6 @@ struct AudioBackend {
         alcCloseDevice(this->device);
     }
 };
-
-struct SdlBackend {
-    SDL_Window *window;
-    SDL_Surface *surface;
-    // AudioBackend audio;
-
-    SdlBackend(std::string title, int width, int height);
-
-    void getWindowSize(int *w, int *h) {
-        SDL_GetWindowSize(this->window, w, h);
-    }
-
-    void setFullScreen(bool full) {
-        SDL_SetWindowFullscreen(this->window, full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-    }
-
-    ~SdlBackend() {
-        SDL_DestroyWindow(this->window);
-    }
-};
-
-typedef SdlBackend Backend;
 
 }
 

@@ -8,9 +8,9 @@
 namespace krit {
 
 enum BehaviorResult {
-    Failure,
-    Success,
-    InProgress,
+    InProgress = -1,
+    Failure = 0,
+    Success = 1,
 };
 
 template <typename Context> using EvalFunction = std::function<BehaviorResult(Context&)>;

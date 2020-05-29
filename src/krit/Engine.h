@@ -12,9 +12,6 @@
 #include "krit/editor/Editor.h"
 #include <list>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct TimedEvent {
@@ -37,7 +34,7 @@ struct Engine {
     UpdateSignal postUpdate = nullptr;
     RenderSignal onRender = nullptr;
     RenderSignal postRender = nullptr;
-    list<TimedEvent> events;
+    std::list<TimedEvent> events;
 
     // global context
     ControlBindings controls;
@@ -49,8 +46,8 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
-    unique_ptr<Editor> editor = nullptr;
-    unique_ptr<Sprite> root = nullptr;
+    std::unique_ptr<Editor> editor = nullptr;
+    std::unique_ptr<Sprite> root = nullptr;
     void *userData = nullptr;
 
     Engine(): input(&this->controls), asset(&this->assetCache) {}
@@ -126,6 +123,8 @@ struct Engine {
                 this->events.emplace(it, delay, interval, s, userData);
                 inserted = true;
                 break;
+            } else {
+                delay -= it->delay;
             }
         }
         if (!inserted) {

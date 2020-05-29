@@ -81,6 +81,9 @@ template <typename T, typename... Args> T weightedChoice(WeightedCollection<T> w
     return current;
 }
 
+size_t getPeakRss();
+size_t getCurrentRss();
+
 }
 
 #endif

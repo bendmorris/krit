@@ -17,16 +17,16 @@ struct ParseUtil {
         int value = std::stoi(s);
         return Measurement(percent ? Percent : Absolute, value);
     }
-    static int parseInt(std::string &s, int base = 10) {
+    static int parseInt(const std::string &s, int base = 10) {
         return std::stoi(s, 0, base);
     }
-    static double parseFloat(std::string s) {
+    static double parseFloat(const std::string &s) {
         return std::stod(s, 0);
     }
-    static Color parseColor(std::string s) {
+    static Color parseColor(const std::string &s) {
         return Color(ParseUtil::parseInt(s, 16), 1.0);
     }
-    static bool parseBool(std::string s) {
+    static bool parseBool(const std::string &s) {
         return s == "true";
     }
 };

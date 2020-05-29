@@ -11,7 +11,7 @@ struct SoundContext {
 
     SoundContext(AssetContext &asset): asset(asset) {}
 
-    void playSound(std::string &name);
+    void playSound(const std::string &name);
 };
 
 }

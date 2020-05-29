@@ -21,7 +21,6 @@ struct ImageData {
     int height() { return this->dimensions.height(); }
 
     ImageData() {}
-    ~ImageData();
 };
 
 }

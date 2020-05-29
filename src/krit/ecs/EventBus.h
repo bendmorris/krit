@@ -55,7 +55,7 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
             events.clear();
             events.splice(events.begin(), nextEvents);
             // call any callbacks with the new events
-            for (int c = 0; c < callbacks.size(); ++c) {
+            for (size_t c = 0; c < callbacks.size(); ++c) {
                 auto &callback = callbacks[c];
                 bool done = false;
                 for (auto &event : events) {
@@ -65,7 +65,7 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
                     }
                 }
                 if (done) {
-                    for (int j = c + 1; j < callbacks.size(); ++j) {
+                    for (size_t j = c + 1; j < callbacks.size(); ++j) {
                         std::swap(callbacks[c], callbacks[j]);
                     }
                     callbacks.pop_back();

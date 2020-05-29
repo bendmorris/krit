@@ -158,7 +158,7 @@ struct ParticleEffect {
         if (max == -1) {
             max = min;
         }
-        types.push_back(std::make_pair(type, Range<int>(min, max)));
+        types.emplace_back(type, Range<int>(min, max));
         return *this;
     }
 };

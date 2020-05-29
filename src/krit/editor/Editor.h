@@ -18,6 +18,8 @@ struct Overlay: public DevTool {
 };
 
 struct Editor: public Sprite {
+    constexpr static const double SCALE = 1.5;
+
     static bool imguiInitialized;
     static GLuint imguiTextureId;
     static SDL_Window *window;

@@ -4,7 +4,7 @@
 namespace krit {
 
 Rectangle TriangleData::bounds() {
-    t.bounds();
+    return t.bounds();
 }
 
 }
