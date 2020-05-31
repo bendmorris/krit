@@ -8,9 +8,6 @@
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct Image: public VisibleSprite {
@@ -19,7 +16,7 @@ struct Image: public VisibleSprite {
     float angle = 0;
     ImageRegion region;
 
-    Image(AssetContext &asset, string id): region(asset.getImage(id)) {}
+    Image(AssetContext &asset, const std::string &id): region(asset.getImage(id)) {}
     Image(ImageRegion region): region(region) {}
 
     int &width() { return this->region.rect.width; }

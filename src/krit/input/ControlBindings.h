@@ -10,9 +10,6 @@
 #include <utility>
 #include <vector>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct ControlBindings {
@@ -47,13 +44,13 @@ struct ControlBindings {
         this->mouse.undefine(btn);
     }
 
-    vector<InputEvent> &getEvents() { return this->events; }
+    std::vector<InputEvent> &getEvents() { return this->events; }
 
     friend class MouseManager;
     friend class KeyManager;
 
     private:
-        vector<InputEvent> events;
+        std::vector<InputEvent> events;
 };
 
 }

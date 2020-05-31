@@ -14,9 +14,6 @@
 #include <unordered_map>
 #include <utility>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 enum AlignType {
@@ -26,7 +23,7 @@ enum AlignType {
 };
 
 struct BitmapTextOptions {
-    shared_ptr<BitmapFont> font;
+    std::shared_ptr<BitmapFont> font;
     int size = 16;
     AlignType align = LeftAlign;
     bool wordWrap = false;
@@ -85,7 +82,7 @@ union TextOpcodeData {
     TextOpcodeData(AlignType align): align(align) {}
     TextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
     TextOpcodeData(StringSlice text): text(text) {}
-    TextOpcodeData(Dimensions d, AlignType a): newLine(make_pair(d, a)) {}
+    TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
     TextOpcodeData(std::shared_ptr<ImageData> image);
 };
 

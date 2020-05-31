@@ -6,6 +6,8 @@
 #include <cstring>
 #include <utility>
 
+namespace krit {
+
 void startElement(void *userData, const char *name, const char **attrs) {
     BitmapFont *font = static_cast<BitmapFont*>(userData);
     if (!strcmp(name, "kernings")) {
@@ -134,4 +136,6 @@ BitmapFont::BitmapFont(AssetCache *cache, const char *path): cache(cache) {
         }
     } while (true);
     XML_ParserFree(parser);
+}
+
 }

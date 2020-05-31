@@ -3,14 +3,11 @@
 
 #include "./Point.h"
 
-using namespace krit;
-
 namespace krit {
 
-class ScaleFactor: public BasePoint<double, ScaleFactor> {
-    public:
-        ScaleFactor(double x, double y): BasePoint<double, ScaleFactor>(x, y) {}
-        ScaleFactor(): ScaleFactor(1, 1) {}
+struct ScaleFactor: public BasePoint<double, ScaleFactor> {
+    ScaleFactor(double x, double y): BasePoint<double, ScaleFactor>(x, y) {}
+    ScaleFactor(): ScaleFactor(1, 1) {}
 };
 
 }

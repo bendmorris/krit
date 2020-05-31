@@ -54,9 +54,9 @@ template <typename ModelType> struct DataModel {
         size_t delimiterPos = value.find(delimiter);
         if (delimiterPos == std::string::npos) {
             std::string val = value;
-            return make_pair(val, val);
+            return std::make_pair(val, val);
         } else {
-            return make_pair(value.substr(0, delimiterPos), value.substr(delimiterPos + 1));
+            return std::make_pair(value.substr(0, delimiterPos), value.substr(delimiterPos + 1));
         }
     }
 

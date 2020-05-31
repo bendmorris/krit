@@ -2,8 +2,8 @@
 
 namespace krit {
 
-random_device rd;
-mt19937 rng(rd());
+std::random_device rd;
+std::mt19937 rng(rd());
 
 template <> double smoothStep<0>(double n) {
     return pow(n, 2) * (3 - 2 * n);

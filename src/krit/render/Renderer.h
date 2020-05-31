@@ -8,8 +8,6 @@
 #include "krit/render/RenderContext.h"
 #include <SDL.h>
 
-using namespace krit;
-
 namespace krit {
 
 struct Renderer {

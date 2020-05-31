@@ -2,6 +2,8 @@
 #include "krit/Assets.h"
 #include <memory>
 
+namespace krit {
+
 std::shared_ptr<void> AssetCache::get(const std::string &path) {
     return get(Assets::byPath(path));
 }
@@ -26,4 +28,6 @@ std::shared_ptr<void> AssetCache::get(const AssetInfo &info) {
     std::weak_ptr<void> weak = result;
     map.insert(std::make_pair(info.id, weak));
     return result;
+}
+
 }

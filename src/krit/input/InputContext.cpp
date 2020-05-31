@@ -1,18 +1,20 @@
 #include "krit/input/InputContext.h"
 #include <vector>
 
+namespace krit {
+
 void InputContext::update(UpdateContext &ctx) {
     invoke(this->onUpdate, &ctx);
 
     this->active.clear();
 
     if (this->enabled) {
-        vector<InputEvent> &events = this->bindings->getEvents();
+        std::vector<InputEvent> &events = this->bindings->getEvents();
         for (InputEvent &event : events) {
             if (event.eventType == InputFinish) {
                 this->active.erase(event.action);
             } else {
-                this->active.insert(make_pair(event.action, event.level));
+                this->active.insert(std::make_pair(event.action, event.level));
             }
             auto found = this->actionMappings.find(event.action);
             if (found != this->actionMappings.end()) {
@@ -44,3 +46,5 @@ void InputContext::update(UpdateContext &ctx) {
         }
     }
 };
+
+}

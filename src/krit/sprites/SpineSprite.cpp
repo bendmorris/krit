@@ -8,9 +8,6 @@ spine::SpineExtension *spine::getDefaultExtension() {
    return new spine::DefaultSpineExtension();
 }
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 SpineSprite::SpineSprite(AssetContext &asset, const std::string &id):
@@ -25,7 +22,7 @@ std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {
     spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
     spine::SkeletonData *skeletonData = binary->readSkeletonDataFile(skelName);
     spine::AnimationStateData *animationStateData = new spine::AnimationStateData(skeletonData);
-    std::shared_ptr<SkeletonBinaryData> bin = make_shared<SkeletonBinaryData>(
+    std::shared_ptr<SkeletonBinaryData> bin = std::make_shared<SkeletonBinaryData>(
         atlas,
         binary,
         skeletonData,
@@ -44,7 +41,7 @@ void SpineSprite::setAnimation(size_t track, const std::string &name, bool loop,
     }
 }
 
-void SpineSprite::addAnimation(size_t track, const string &name, bool loop, float delay, float mix) {
+void SpineSprite::addAnimation(size_t track, const std::string &name, bool loop, float delay, float mix) {
     auto trackEntry = this->animationState->addAnimation(track, spine::String(name.c_str()), loop, delay);
     if (mix >= 0) {
         trackEntry->setMixTime(mix);
@@ -62,7 +59,7 @@ void SpineSprite::advance(float t) {
     }
 }
 
-void SpineSprite::setSkin(const string &name) {
+void SpineSprite::setSkin(const std::string &name) {
     spine::Skin *newSkin = this->skeletonData().findSkin(spine::String(name.c_str()));
     if (newSkin) {
         this->skin->addSkin(newSkin);
@@ -74,7 +71,7 @@ void SpineSprite::setSkin(const string &name) {
     this->animationState->apply(*this->skeleton);
 }
 
-void SpineSprite::removeSkin(const string &name) {
+void SpineSprite::removeSkin(const std::string &name) {
     spine::Skin *oldSkin = this->skeletonData().findSkin(spine::String(name.c_str()));
     spine::Skin::AttachmentMap::Entries entries = oldSkin->getAttachments();
     while (entries.hasNext()) {

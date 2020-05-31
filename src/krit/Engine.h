@@ -133,7 +133,7 @@ struct Engine {
     }
 
     void setRoot(Sprite *root) {
-        this->root = unique_ptr<Sprite>(root);
+        this->root = std::unique_ptr<Sprite>(root);
     }
 };
 

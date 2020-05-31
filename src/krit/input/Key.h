@@ -9,9 +9,6 @@
 // FIXME: leaky abstraction
 #include <SDL.h>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 class InputContext;
@@ -259,43 +256,42 @@ enum Key {
     KeyApp2 = SDL_SCANCODE_APP2,
 };
 
-class KeyManager {
-    public:
-        unordered_map<int, Action> keyMappings;
-        unordered_map<int, bool> active;
+struct KeyManager {
+    std::unordered_map<int, Action> keyMappings;
+    std::unordered_map<int, bool> active;
 
-        KeyManager(vector<InputEvent> *events): events(events) {}
+    KeyManager(std::vector<InputEvent> *events): events(events) {}
 
-        void update() {
-            for (auto &it : this->active) {
-                this->keyEvent(static_cast<Key>(it.first), InputActive);
-            }
+    void update() {
+        for (auto &it : this->active) {
+            this->keyEvent(static_cast<Key>(it.first), InputActive);
         }
+    }
 
-        void define(Key keyCode, Action action) {
-            this->keyMappings.insert(make_pair(keyCode, action));
-        }
+    void define(Key keyCode, Action action) {
+        this->keyMappings.insert(std::make_pair(keyCode, action));
+    }
 
-        void undefine(Key keyCode) {
-            this->keyMappings.erase(keyCode);
-        }
+    void undefine(Key keyCode) {
+        this->keyMappings.erase(keyCode);
+    }
 
-        void registerDown(Key keyCode) {
-            if (this->keyMappings.count(keyCode) && !this->active.count(keyCode)) {
-                this->active.insert(make_pair(keyCode, true));
-                this->keyEvent(keyCode, InputStart);
-            }
+    void registerDown(Key keyCode) {
+        if (this->keyMappings.count(keyCode) && !this->active.count(keyCode)) {
+            this->active.insert(std::make_pair(keyCode, true));
+            this->keyEvent(keyCode, InputStart);
         }
+    }
 
-        void registerUp(Key keyCode) {
-            if (this->keyMappings.count(keyCode) && this->active.count(keyCode)) {
-                this->active.erase(keyCode);
-                this->keyEvent(keyCode, InputFinish);
-            }
+    void registerUp(Key keyCode) {
+        if (this->keyMappings.count(keyCode) && this->active.count(keyCode)) {
+            this->active.erase(keyCode);
+            this->keyEvent(keyCode, InputFinish);
         }
+    }
 
     private:
-        vector<InputEvent> *events;
+        std::vector<InputEvent> *events;
 
         void keyEvent(Key key, InputEventType eventType) {
             auto found = this->keyMappings.find(static_cast<int>(key));

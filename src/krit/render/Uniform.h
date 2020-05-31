@@ -33,7 +33,7 @@ struct UniformValue {
     UniformValue(float a, float b): type(UniformVec2), vec2Value {a, b} {}
     UniformValue(float a, float b, float c): type(UniformVec3), vec3Value {a, b, c} {}
     UniformValue(float a, float b, float c, float d): type(UniformVec4), vec4Value {a, b, c, d} {}
-    UniformValue(size_t N, size_t c, float *v): type(static_cast<UniformValueType>(UniformFloat1v + N - 1)), floatData(make_pair(c, v)) {}
+    UniformValue(size_t N, size_t c, float *v): type(static_cast<UniformValueType>(UniformFloat1v + N - 1)), floatData(std::make_pair(c, v)) {}
     UniformValue(ImageData img): type(UniformTexture), intValue(img.texture) {}
 };
 

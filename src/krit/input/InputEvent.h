@@ -4,9 +4,6 @@
 #include "krit/Math.h"
 #include <string>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 typedef int InputType;

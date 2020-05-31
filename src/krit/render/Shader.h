@@ -6,8 +6,6 @@
 #include <cstdio>
 #include <unordered_map>
 
-using namespace krit;
-
 namespace krit {
 
 class DrawCall;

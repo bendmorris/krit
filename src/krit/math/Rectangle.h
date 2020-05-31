@@ -2,6 +2,7 @@
 #define KRIT_MATH_RECTANGLE
 
 #include "krit/math/Point.h"
+#include <algorithm>
 
 namespace krit {
 
@@ -41,20 +42,20 @@ template <typename T, typename Self> struct BaseRectangle {
     }
 
     Self &joinInPlace(const Self &other) {
-        T xi = min(x, other.x);
-        width = max(x + width, other.x + other.width) - xi;
+        T xi = std::min(x, other.x);
+        width = std::max(x + width, other.x + other.width) - xi;
         x = xi;
-        T yi = min(y, other.y);
-        height = max(y + height, other.y + other.height) - yi;
+        T yi = std::min(y, other.y);
+        height = std::max(y + height, other.y + other.height) - yi;
         y = yi;
         return static_cast<Self&>(*this);
     }
 
     Self join(const Self &other) {
-        T left = min(x, other.x);
-        T right = max(x + width, other.x + other.width);
-        T top = min(y, other.y);
-        T bottom = max(y + height, other.y + other.height);
+        T left = std::min(x, other.x);
+        T right = std::max(x + width, other.x + other.width);
+        T top = std::min(y, other.y);
+        T bottom = std::max(y + height, other.y + other.height);
         return Self(
             left,
             top,
@@ -64,12 +65,12 @@ template <typename T, typename Self> struct BaseRectangle {
     }
 
     Self overlap(const Self &other) {
-        T xi = max(x, other.x);
-        T yi = max(y, other.y);
+        T xi = std::max(x, other.x);
+        T yi = std::max(y, other.y);
         return Self(
             xi, yi,
-            min(right(), other.right()) - xi,
-            min(bottom(), other.bottom()) - yi
+            std::min(right(), other.right()) - xi,
+            std::min(bottom(), other.bottom()) - yi
         );
     }
 

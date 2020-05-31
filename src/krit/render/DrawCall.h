@@ -11,9 +11,6 @@
 #include <memory>
 #include <vector>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct TriangleData {
@@ -40,7 +37,7 @@ struct DrawCall {
         this->data.reserve(0x100);
     }
 
-    std::size_t length() { return this->data.size(); }
+    size_t length() { return this->data.size(); }
 
     bool matches(const DrawKey &other) {
         return this->key == other;

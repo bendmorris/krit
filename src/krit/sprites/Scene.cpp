@@ -2,9 +2,6 @@
 #include "krit/sprites/Scene.h"
 #include "krit/render/DrawCommand.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 void Scene::update(UpdateContext &ctx) {

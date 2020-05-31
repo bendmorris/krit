@@ -2,6 +2,7 @@
 #define KRIT_ECS_ENTITY
 
 #include "krit/ecs/Utils.h"
+#include <tuple>
 
 namespace krit {
 
@@ -15,10 +16,10 @@ struct Entity {
 };
 
 template <typename... Components> struct EntityTemplate {
-    tuple<Components...> components;
+    std::tuple<Components...> components;
 
     template <typename ComponentType> ComponentType &get() {
-        return std::get<find_first<tuple<Components...>, ComponentType>::value>(this->components);
+        return std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
     }
 };
 

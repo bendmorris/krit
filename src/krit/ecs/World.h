@@ -33,9 +33,9 @@ template <typename... Components> struct World {
     template <typename ComponentType, class... Args> ComponentType &add(Entity e, Args&&... args) { return this->add<ComponentType, Args...>(args...); }
     template <typename ComponentType, class... Args> ComponentType &add(EntityId e, Args&&... args) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
-        map.emplace(piecewise_construct,
-              forward_as_tuple(e),
-              forward_as_tuple(args...)
+        map.emplace(std::piecewise_construct,
+              std::forward_as_tuple(e),
+              std::forward_as_tuple(args...)
         );
         return map[e];
     }
@@ -117,7 +117,7 @@ template <typename... Components> struct World {
 
         template<typename T, typename Head> void _addAll(T &e, EntityId id, Head head) {
             auto &map = std::get<find_first<std::tuple<Components...>, Head>::value>(this->components);
-            map.insert(make_pair(id, e.template get<Head>()));
+            map.insert(std::make_pair(id, e.template get<Head>()));
         }
 
         template <typename Head, typename... Tail> void _removeAll(EntityId e, Head head, Tail... tail) {

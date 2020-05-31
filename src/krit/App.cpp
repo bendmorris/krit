@@ -61,7 +61,7 @@ void App::run() {
     bool lockFramerate = true;
     int cores = SDL_GetCPUCount();
 
-    TaskManager taskManager(update, max(2, cores - 2));
+    TaskManager taskManager(update, std::max(2, cores - 2));
     RenderThread renderThread(update, render, taskManager, window);
 
     invoke(engine.onBegin, &update);

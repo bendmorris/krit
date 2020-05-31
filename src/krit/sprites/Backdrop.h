@@ -8,9 +8,6 @@
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct Backdrop: public VisibleSprite {

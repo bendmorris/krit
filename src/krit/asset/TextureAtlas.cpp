@@ -5,6 +5,8 @@
 #include <sstream>
 #include <string>
 
+namespace krit {
+
 std::pair<int, int> parseTuple(std::string &x) {
     int a = 0, b = 0;
     size_t index = 0;
@@ -60,4 +62,6 @@ TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
             this->regions.insert(std::make_pair(regionName, region));
         }
     }
+}
+
 }

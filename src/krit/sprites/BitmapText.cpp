@@ -4,9 +4,6 @@
 #include <stack>
 #include <utility>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 TextOpcodeData::TextOpcodeData(std::shared_ptr<ImageData> image)
@@ -30,7 +27,7 @@ std::unordered_map<std::string, FormatTagOptions> BitmapText::formatTags = {
 std::vector<std::shared_ptr<ImageData>> BitmapText::images;
 
 void BitmapText::addFormatTag(string tagName, FormatTagOptions tagOptions) {
-    BitmapText::formatTags.insert(make_pair(tagName, tagOptions));
+    BitmapText::formatTags.insert(std::make_pair(tagName, tagOptions));
 }
 
 template <typename T> void clearStack(stack<T> &stack) {
@@ -38,12 +35,12 @@ template <typename T> void clearStack(stack<T> &stack) {
 }
 
 struct GlyphRenderStack {
-    // stack<shared_ptr<BitmapFont>> font;
-    // stack<int> size;
-    stack<double> scale;
-    stack<Color> color;
-    stack<AlignType> align;
-    stack<CustomRenderFunction*> custom;
+    // std::stack<std::shared_ptr<BitmapFont>> font;
+    // std::stack<int> size;
+    std::stack<double> scale;
+    std::stack<Color> color;
+    std::stack<AlignType> align;
+    std::stack<CustomRenderFunction*> custom;
 
     GlyphRenderStack() {}
 
@@ -63,7 +60,7 @@ struct GlyphRenderStack {
  */
 struct TextParser {
     static GlyphRenderStack stack;
-    static vector<TextOpcode> word;
+    static std::vector<TextOpcode> word;
 
     double thisLineHeight = 0;
     Point cursor;

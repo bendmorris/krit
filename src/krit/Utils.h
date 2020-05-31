@@ -7,12 +7,10 @@
 #include <utility>
 #include <vector>
 
-using namespace std;
-
 namespace krit {
 
-extern random_device rd;
-extern mt19937 rng;
+extern std::random_device rd;
+extern std::mt19937 rng;
 
 template <typename T> T lerp(T v1, T v2, T mix) {
     if (mix <= 0) return v1;
@@ -38,10 +36,10 @@ template <int N = 0> double smoothStep(double n) {
 
 template <> double smoothStep<0>(double n);
 
-template <typename T> using WeightedCollection = vector<pair<T, int>>;
+template <typename T> using WeightedCollection = std::vector<std::pair<T, int>>;
 
 template <typename T> T weightedChoice(WeightedCollection<T> weights) {
-    uniform_real_distribution<double> r(0, 1);
+    std::uniform_real_distribution<double> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
     for (int i = 1; i < weights.size(); ++i) {
@@ -61,7 +59,7 @@ template <typename T> T weightedChoice(WeightedCollection<T> weights) {
 }
 
 template <typename T, typename... Args> T weightedChoice(WeightedCollection<T> weights, int fn(T, int, Args...), Args... args) {
-    uniform_real_distribution<double> r(0, 1);
+    std::uniform_real_distribution<double> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
     for (int i = 1; i < weights.size(); ++i) {

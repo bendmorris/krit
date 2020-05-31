@@ -60,7 +60,7 @@ struct TileMap: public VisibleSprite {
     void render(RenderContext &ctx) override;
 
     private:
-        vector<int16_t> tileData;
+        std::vector<int16_t> tileData;
 
         void _init() {
             this->tilemapSizeInTiles.setTo(

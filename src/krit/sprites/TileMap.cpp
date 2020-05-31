@@ -1,5 +1,7 @@
 #include "krit/sprites/TileMap.h"
 
+namespace krit {
+
 void TileMap::render(RenderContext &ctx) {
     if (this->color.a <= 0) {
         return;
@@ -46,4 +48,6 @@ void TileMap::render(RenderContext &ctx) {
             }
         }
     }
+}
+
 }

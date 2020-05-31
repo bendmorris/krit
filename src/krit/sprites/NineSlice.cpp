@@ -1,8 +1,5 @@
 #include "krit/sprites/NineSlice.h"
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 #define RENDER_SLICE(_r, _x, _y, _w, _h) do {\

@@ -5,14 +5,11 @@
 #include "krit/Sprite.h"
 #include <memory>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct Canvas: public Sprite {
     Camera camera;
-    unique_ptr<Sprite> child = nullptr;
+    std::unique_ptr<Sprite> child = nullptr;
 
     Canvas() {}
 

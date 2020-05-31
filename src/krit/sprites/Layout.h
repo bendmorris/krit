@@ -129,7 +129,7 @@ struct LayoutRoot: public Sprite {
     static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap, AssetContext *asset);
 
     static void addParser(const std::string &tag, LayoutParseFunction *f) {
-        parsers.insert(make_pair(tag, f));
+        parsers.insert(std::make_pair(tag, f));
     }
 
     std::vector<std::unique_ptr<LayoutNode>> nodes;

@@ -6,8 +6,6 @@
 #include "krit/render/RenderContext.h"
 #include "krit/UpdateContext.h"
 
-using namespace krit;
-
 namespace krit {
 
 struct Sprite {

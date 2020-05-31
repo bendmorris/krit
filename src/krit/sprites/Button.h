@@ -7,9 +7,6 @@
 #include "krit/render/ImageRegion.h"
 #include <memory>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct Button: public NineSlice {

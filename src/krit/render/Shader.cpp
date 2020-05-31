@@ -4,8 +4,6 @@
 #include "krit/utils/Panic.h"
 #include "krit/TaskManager.h"
 
-using namespace krit;
-
 namespace krit {
 
 static uint32_t colorToInt(Color &c) {

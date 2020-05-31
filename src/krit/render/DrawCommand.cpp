@@ -29,7 +29,7 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, DrawKey &key, IntRectangle &
     double uvy1;
     double uvx2;
     double uvy2;
-    shared_ptr<ImageData> imageData = key.image;
+    std::shared_ptr<ImageData> imageData = key.image;
     if (!imageData) {
         uvx1 = uvy1 = 0;
         uvx2 = rect.width;

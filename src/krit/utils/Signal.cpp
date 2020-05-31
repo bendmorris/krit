@@ -1,7 +1,9 @@
 #include "krit/utils/Signal.h"
 
-using namespace krit;
+namespace krit {
 
 void invoke(Signal s) {
     if (s) s();
+}
+
 }

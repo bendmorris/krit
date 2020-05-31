@@ -11,9 +11,6 @@
 #include <unordered_map>
 #include <utility>
 
-using namespace std;
-using namespace krit;
-
 namespace krit {
 
 struct ActionContext {
@@ -40,9 +37,9 @@ struct InputContext {
     bool enabled = true;
     UpdateSignal onUpdate = nullptr;
 
-    unordered_map<Action, InputCallbacks> actionMappings;
-    unordered_map<InputType, bool> actionStates;
-    unordered_map<InputType, LevelData> active;
+    std::unordered_map<Action, InputCallbacks> actionMappings;
+    std::unordered_map<InputType, bool> actionStates;
+    std::unordered_map<InputType, LevelData> active;
 
     ControlBindings *bindings;
 
@@ -51,7 +48,7 @@ struct InputContext {
     void update(UpdateContext &ctx);
 
     void bind(Action action, InputSignal onStart = nullptr, InputSignal onActive = nullptr, InputSignal onFinish = nullptr, double delay = 0) {
-        this->actionMappings.insert(make_pair(action, InputCallbacks(onStart, onActive, onFinish, delay)));
+        this->actionMappings.insert(std::make_pair(action, InputCallbacks(onStart, onActive, onFinish, delay)));
     }
 
     void unbind(Action action) {
@@ -67,7 +64,7 @@ struct InputContext {
     }
 
     void activate(Action action, LevelData &l) {
-        this->active.insert(make_pair(action, l));
+        this->active.insert(std::make_pair(action, l));
     }
 };
 

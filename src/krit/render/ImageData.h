@@ -4,8 +4,6 @@
 #include "krit/Math.h"
 #include "krit/render/Gl.h"
 
-using namespace krit;
-
 namespace krit {
 
 /**
