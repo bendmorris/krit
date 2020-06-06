@@ -11,9 +11,11 @@ def run(inputPath, outputDir):
     with open(inputPath) as inputFile:
         spec = yaml.safe_load(inputFile)
     assets = []
+    mtime = 0
     for item in spec:
         matches = glob(item['pattern'], recursive=True)
         for match in matches:
+            mtime = max(mtime, os.path.getmtime(match))
             asset = {k: v for (k, v) in item.items()}
             asset['assetId'] = assetId(match)
             asset['path'] = match
@@ -27,9 +29,13 @@ def run(inputPath, outputDir):
 
             assets.append(asset)
     for artifact in ('Assets.h', 'Assets.cpp'):
+        outPath = os.path.join(outputDir, artifact)
+        if os.path.exists(outPath) and os.path.getmtime(outPath) > mtime:
+            print('{} is up to date, skipping'.format(outPath))
+            continue
         with open(os.path.join(os.path.dirname(__file__), artifact + '.jinja2')) as templateFile:
             template = Template(templateFile.read())
-        with open(os.path.join(outputDir, artifact), 'w') as outFile:
+        with open(outPath, 'w') as outFile:
             outFile.write(template.render(assets=assets))
 
 

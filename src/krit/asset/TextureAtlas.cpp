@@ -1,7 +1,7 @@
 #include "krit/asset/TextureAtlas.h"
 #include "krit/asset/AssetCache.h"
 #include "krit/Assets.h"
-#include <fstream>
+#include "krit/io/Io.h"
 #include <sstream>
 #include <string>
 
@@ -23,7 +23,9 @@ std::pair<int, int> parseTuple(std::string &x) {
 }
 
 TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
-    std::ifstream input(path);
+    char *data = IoRead::read(path);
+    std::string s(data);
+    std::istringstream input(s);
     std::string line;
     while (std::getline(input, line)) {
         if (line.empty()) {

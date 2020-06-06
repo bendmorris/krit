@@ -3,6 +3,7 @@
 
 #include "imgui.h"
 #include "krit/Sprite.h"
+#include <functional>
 
 namespace krit {
 
@@ -10,9 +11,18 @@ struct DevTool {
     virtual void draw(krit::RenderContext &ctx) {}
 };
 
+typedef std::function<void(RenderContext&)> MetricGetter;
+
 struct Overlay: public DevTool {
+    static std::vector<MetricGetter> metrics;
+
+    static void addMetric(MetricGetter getter) {
+        metrics.emplace_back(std::move(getter));
+    };
+
     int fpsBuffer[4] = {0};
     int index = 0;
+    double elapsed = 0;
 
     void draw(krit::RenderContext &ctx) override;
 };

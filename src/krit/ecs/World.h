@@ -9,7 +9,7 @@
 namespace krit {
 
 template <typename... Components> struct World {
-    std::tuple<std::unordered_map<EntityId, Components>...> components;
+    unsigned int count;
 
     /**
      * Returns a map of all entities that have a specific component.
@@ -83,11 +83,13 @@ template <typename... Components> struct World {
      */
     void removeAll(Entity e) { this->removeAll(e.id); }
     void removeAll(EntityId e) {
+        --count;
         this->_removeAll<Components...>(e, Components()...);
         this->freeList.push(e);
     }
 
     EntityId newEntity() {
+        ++count;
         EntityId e;
         if (this->freeList.empty()) {
             e = this->next++;
@@ -107,6 +109,7 @@ template <typename... Components> struct World {
     }
 
     private:
+        std::tuple<std::unordered_map<EntityId, Components>...> components;
         unsigned int next = Entity::NO_ENTITY + 1;
         std::queue<EntityId> freeList;
 

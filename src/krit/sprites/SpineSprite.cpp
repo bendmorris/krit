@@ -2,10 +2,17 @@
 #include "krit/sprites/SpineSprite.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/Assets.h"
+#include "krit/io/Io.h"
 #include <spine/Extension.h>
 
+struct KritSpineExtension: public spine::DefaultSpineExtension {
+    char *_readFile(const spine::String &path, int *length) override {
+        return krit::IoRead::read(std::string(path.buffer()), length);
+    }
+};
+
 spine::SpineExtension *spine::getDefaultExtension() {
-   return new spine::DefaultSpineExtension();
+   return new KritSpineExtension();
 }
 
 namespace krit {

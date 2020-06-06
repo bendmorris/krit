@@ -49,7 +49,7 @@ template <typename T, class Self> class BasePoint {
             return derived;
         }
 
-        Self &setTo(const Self &v) {
+        template <typename U> Self &setTo(const U &v) {
             Self &derived = static_cast<Self&>(*this);
             derived.setTo(v.x, v.y);
             return derived;
