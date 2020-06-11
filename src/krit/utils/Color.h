@@ -30,6 +30,8 @@ struct Color {
     bool operator==(const Color &other) { return r == other.r && g == other.g && b == other.b && a == other.a; }
     bool operator!=(const Color &other) { return !(*this == other); }
 
+    Color operator*(const Color &other) { return Color(this->r * other.r, this->g * other.g, this->b * other.b, this->a * other.a); }
+
     Color lerp(const Color &other, float mix) {
         if (mix <= 0) {
             return *this;

@@ -25,12 +25,12 @@ void RenderThread::init() {
         panic(SDL_GetError());
     }
     SDL_GL_MakeCurrent(this->window, this->glContext);
-    // try to get adaptive vsync
-    int result = SDL_GL_SetSwapInterval(-1);
+    // // try to get adaptive vsync
+    // int result = SDL_GL_SetSwapInterval(-1);
     // fall back to regular vsync
-    if (result == -1) {
+    // if (result == -1) {
         SDL_GL_SetSwapInterval(1);
-    }
+    // }
     glEnable(GL_MULTISAMPLE);
     glEnable(GL_BLEND);
     glDisable(GL_DEPTH_TEST);

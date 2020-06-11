@@ -18,6 +18,10 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
         return std::get<e>(this->events);
     }
 
+    template <size_t e> auto getNext() -> decltype(std::get<e>(nextEvents)) {
+        return std::get<e>(this->nextEvents);
+    }
+
     template <size_t e, typename... Args> auto add(Args&&... args) -> decltype(std::get<e>(events).back()) {
         std::get<e>(this->nextEvents).emplace_back(args...);
         return std::get<e>(this->nextEvents).back();

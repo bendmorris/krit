@@ -10,9 +10,9 @@
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 #include <string>
-#include <vector>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace krit {
 
@@ -39,13 +39,14 @@ struct BitmapTextOptions {
 };
 
 struct GlyphRenderData {
-    char c;
+    char c = 0;
     Color color;
     ScaleFactor scale;
     Point position;
 
     GlyphRenderData() {}
-    GlyphRenderData(char c, Color color, ScaleFactor &scale, Point position):
+    GlyphRenderData(const Point &position): position(position) {}
+    GlyphRenderData(char c, Color color, ScaleFactor &scale, const Point &position):
         c(c), color(color), scale(scale), position(position) {}
 };
 
@@ -63,7 +64,7 @@ enum TextOpcodeType {
     PopCustom,
     TextBlock,
     NewLine,
-    InlineImage,
+    RenderSprite,
 };
 
 union TextOpcodeData {
@@ -71,10 +72,10 @@ union TextOpcodeData {
     Color color;
     double number;
     AlignType align;
-    CustomRenderFunction *custom;
+    CustomRenderFunction *custom = nullptr;
     StringSlice text;
     std::pair<Dimensions, AlignType> newLine;
-    ImageData *image;
+    VisibleSprite *sprite;
 
     TextOpcodeData(): present(false) {}
     TextOpcodeData(Color color): color(color) {}
@@ -83,7 +84,7 @@ union TextOpcodeData {
     TextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
     TextOpcodeData(StringSlice text): text(text) {}
     TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
-    TextOpcodeData(std::shared_ptr<ImageData> image);
+    TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
 };
 
 struct TextOpcode {
@@ -100,7 +101,7 @@ struct FormatTagOptions {
     Option<AlignType> align;
     bool newline = false;
     CustomRenderFunction *custom = nullptr;
-    std::shared_ptr<ImageData> image = nullptr;
+    VisibleSprite *sprite = nullptr;
 
     FormatTagOptions() {}
 
@@ -109,7 +110,7 @@ struct FormatTagOptions {
     FormatTagOptions &setAlign(AlignType a) { this->align = Option<AlignType>(a); return *this; }
     FormatTagOptions &setNewline() { this->newline = true; return *this; }
     FormatTagOptions &setCustom(CustomRenderFunction *c) { this->custom = c; return *this; }
-    FormatTagOptions &setImage(std::shared_ptr<ImageData> image) { this->image = image; return *this; }
+    FormatTagOptions &setSprite(VisibleSprite *s) { this->sprite = s; return *this; }
 };
 
 struct TextParser;
@@ -120,7 +121,6 @@ struct TextParser;
  */
 struct BitmapText: public VisibleSprite {
     static std::unordered_map<std::string, FormatTagOptions> formatTags;
-    static std::vector<std::shared_ptr<ImageData>> images;
 
     static void addFormatTag(std::string, FormatTagOptions);
 

@@ -6,25 +6,12 @@
 
 namespace krit {
 
-TextOpcodeData::TextOpcodeData(std::shared_ptr<ImageData> image)
-    : image(image.get())
-{
-    for (auto i : BitmapText::images) {
-        if (i == image) {
-            return;
-        }
-    }
-    BitmapText::images.push_back(image);
-}
-
 std::unordered_map<std::string, FormatTagOptions> BitmapText::formatTags = {
     {"br", FormatTagOptions().setNewline()},
     {"left", FormatTagOptions().setAlign(LeftAlign)},
     {"center", FormatTagOptions().setAlign(CenterAlign)},
     {"right", FormatTagOptions().setAlign(RightAlign)},
 };
-
-std::vector<std::shared_ptr<ImageData>> BitmapText::images;
 
 void BitmapText::addFormatTag(string tagName, FormatTagOptions tagOptions) {
     BitmapText::formatTags.insert(std::make_pair(tagName, tagOptions));
@@ -156,6 +143,8 @@ struct TextParser {
                 case TextBlock: {
                     txt.maxChars += op.data.text.length;
                 }
+                case RenderSprite:
+                    ++txt.maxChars;
                 default: {}
             }
         }
@@ -188,8 +177,8 @@ struct TextParser {
                 if (close) this->addOp(txt, TextOpcode(PopCustom));
                 else this->addOp(txt, TextOpcode(SetCustom, TextOpcodeData(tag.custom)));
             }
-            if (tag.image) {
-                this->addOp(txt, TextOpcode(InlineImage, TextOpcodeData(tag.image)));
+            if (tag.sprite) {
+                this->addOp(txt, TextOpcode(RenderSprite, TextOpcodeData(tag.sprite)));
             }
             if (tag.newline && !close) {
                 this->addOp(txt, TextOpcode(NewLine, TextOpcodeData(Dimensions(), LeftAlign)));
@@ -319,8 +308,18 @@ struct TextParser {
                 this->currentAlign = align;
                 break;
             }
-            case InlineImage: {
-                // TODO
+            case RenderSprite: {
+                auto sprite = op.data.sprite;
+                auto size = sprite->getSize();
+                double imageWidth = size.width();
+                TextParser::word.push_back(op);
+                this->wordTrailingWhitespace = 0;
+                this->wordLength += imageWidth;
+                this->wordHeight = max(wordHeight, size.height());
+                this->thisLineHeight = max(this->wordHeight, this->thisLineHeight);
+                if (cursor.x > txt.dimensions.width()) {
+                    txt.dimensions.width() = cursor.x;
+                }
                 break;
             }
             default: {
@@ -403,7 +402,7 @@ void BitmapText::render(RenderContext &ctx) {
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
             case SetColor: {
-                color = op.data.color;
+                color = this->color * op.data.color;
                 break;
             }
             case SetScale: {
@@ -429,8 +428,19 @@ void BitmapText::render(RenderContext &ctx) {
                 thisLineHeight = dims.height();
                 break;
             }
-            case InlineImage: {
-                // TODO
+            case RenderSprite: {
+                if (charCount > -1 && --charCount < 0) {
+                    return;
+                }
+                auto sprite = op.data.sprite;
+                GlyphRenderData renderData(cursor);
+                if (this->options.dynamic && custom) {
+                    custom(&ctx, this, &renderData);
+                }
+                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y);
+                sprite->render(ctx);
+                double width = sprite->getSize().width();
+                cursor.x += width;
                 break;
             }
             case TextBlock: {

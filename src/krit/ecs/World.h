@@ -85,7 +85,7 @@ template <typename... Components> struct World {
     void removeAll(EntityId e) {
         --count;
         this->_removeAll<Components...>(e, Components()...);
-        this->freeList.push(e);
+        this->freeList.push_back(e);
     }
 
     EntityId newEntity() {
@@ -94,8 +94,8 @@ template <typename... Components> struct World {
         if (this->freeList.empty()) {
             e = this->next++;
         } else {
-            e = this->freeList.front();
-            this->freeList.pop();
+            e = this->freeList.back();
+            this->freeList.pop_back();
         }
         return e;
     }
@@ -103,15 +103,13 @@ template <typename... Components> struct World {
     void clear() {
         this->_clearAll<Components...>(Components()...);
         this->next = Entity::NO_ENTITY + 1;
-        while (!freeList.empty()) {
-            freeList.pop();
-        }
+        freeList.clear();
     }
 
     private:
         std::tuple<std::unordered_map<EntityId, Components>...> components;
         unsigned int next = Entity::NO_ENTITY + 1;
-        std::queue<EntityId> freeList;
+        std::vector<EntityId> freeList;
 
         template <typename T, typename Head, typename... Tail> void _addAll(T &e, EntityId id, Head head, Tail... tail) {
             this->_addAll<T, Head>(e, id, head);

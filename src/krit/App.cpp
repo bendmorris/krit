@@ -69,10 +69,10 @@ void App::run() {
     this->running = true;
     while (this->running) {
         TaskManager::work(taskManager.mainQueue, update);
-        do {
-            frameFinish = clock.now();
-            elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0;
-        } while (lockFramerate && elapsed < frameDelta2);
+        // do {
+        frameFinish = clock.now();
+        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0;
+        // } while (lockFramerate && elapsed < frameDelta2);
         accumulator += elapsed;
         update.elapsed = update.frameCount = 0;
 
