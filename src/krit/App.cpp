@@ -58,7 +58,7 @@ void App::run() {
     std::chrono::steady_clock clock;
     auto frameStart = clock.now();
     auto frameFinish = frameStart;
-    bool lockFramerate = true;
+    // bool lockFramerate = true;
     int cores = SDL_GetCPUCount();
 
     TaskManager taskManager(update, std::max(2, cores - 2));

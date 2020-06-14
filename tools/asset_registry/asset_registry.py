@@ -28,7 +28,7 @@ def run(inputPath, outputDir):
                 asset['height'] = h
 
             assets.append(asset)
-    for artifact in ('Assets.h', 'Assets.cpp'):
+    for artifact in ('Assets.cpp', 'AssetId.h'):
         outPath = os.path.join(outputDir, artifact)
         if os.path.exists(outPath) and os.path.getmtime(outPath) > mtime:
             print('{} is up to date, skipping'.format(outPath))

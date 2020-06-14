@@ -11,10 +11,9 @@ add_definitions(
     "-DIMGUI_IMPL_OPENGL_LOADER_GLEW"
 )
 
-file(GLOB KRIT_SRC_FILES
+file(GLOB_RECURSE KRIT_SRC_FILES
     CONFIGURE_DEPENDS
     src/krit/*.cpp
-    src/krit/**/*.cpp
     spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp
     imgui/*.cpp
 )
@@ -45,8 +44,8 @@ target_link_libraries(${PROJECT_NAME}
 
 add_custom_target(
     compile-assets ALL
-    COMMAND python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
-    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
+    COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/AssetId.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
 )
 add_dependencies(${PROJECT_NAME} compile-assets)
 
