@@ -108,6 +108,9 @@ struct Engine {
     }
 
     void fixedUpdate(UpdateContext &ctx) {
+        if (this->paused) {
+            return;
+        }
         this->root->fixedUpdate(ctx);
     }
 

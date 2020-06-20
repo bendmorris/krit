@@ -61,7 +61,7 @@ void App::run() {
     // bool lockFramerate = true;
     int cores = SDL_GetCPUCount();
 
-    TaskManager taskManager(update, std::max(2, cores - 2));
+    TaskManager taskManager(update, std::min(4, std::max(2, cores - 2)));
     RenderThread renderThread(update, render, taskManager, window);
 
     invoke(engine.onBegin, &update);
@@ -119,7 +119,8 @@ void App::run() {
 
     SDL_LockMutex(renderThread.renderMutex);
     renderThread.killed = true;
-    // TODO: kill workers
+    TaskManager::instance->killed = true;
+
     SDL_LockMutex(renderThread.renderCondMutex);
     SDL_CondSignal(renderThread.renderCond);
     SDL_UnlockMutex(renderThread.renderCondMutex);
@@ -152,11 +153,14 @@ void App::handleEvents(UpdateContext &context) {
                 break;
             }
             case SDL_WINDOWEVENT: {
-                if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-                    // resize
-                    int w = event.window.data1,
-                        h = event.window.data2;
-                    this->dimensions.setTo(w, h);
+                switch (event.window.event) {
+                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
+                        // resize
+                        int w = event.window.data1,
+                            h = event.window.data2;
+                        this->dimensions.setTo(w, h);
+                        break;
+                    }
                 }
                 break;
             }

@@ -15,7 +15,9 @@ void Overlay::draw(krit::RenderContext &ctx) {
     ImVec2 window_pos_pivot = ImVec2(1, 0);
     ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
     bool pOpen;
-    elapsed += ctx.elapsed;
+    if (!ctx.engine->paused) {
+        elapsed += ctx.elapsed;
+    }
     if (ImGui::Begin("FPS", &pOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
         int next = (index++) % 4;
         fpsBuffer[next] = 1.0 / ctx.elapsed;
@@ -32,6 +34,13 @@ void Overlay::draw(krit::RenderContext &ctx) {
         }
         ImGui::Checkbox("Debug draw", &ctx.debugDraw);
         ImGui::Checkbox("Pause", &ctx.engine->paused);
+        if (ImGui::Button("Advance Frame")) {
+            ctx.engine->paused = false;
+            ctx.engine->setTimeout([](UpdateContext *ctx, void*) {
+                ctx->engine->paused = true;
+                return false;
+            });
+        }
     }
     ImGui::End();
 }
@@ -43,8 +52,6 @@ SDL_Window *Editor::window = nullptr;
 Editor::Editor() {
     devTools.push_back(std::unique_ptr<DevTool>(new Overlay()));
 }
-
-void Editor::update(krit::UpdateContext &ctx) {}
 
 void Editor::render(krit::RenderContext &ctx) {
     if (imguiInitialized) {

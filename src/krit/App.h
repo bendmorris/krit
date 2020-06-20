@@ -26,7 +26,9 @@ struct App {
     App(KritOptions &options);
 
     ~App() {
-        SDL_DestroyWindow(window);
+        if (window) {
+            SDL_DestroyWindow(window);
+        }
     }
 
     /**

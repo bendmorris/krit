@@ -111,7 +111,7 @@ std::unordered_map<std::string, std::string> &collectAttrs(const char **attrs) {
     return _attrMap;
 }
 
-void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const string &key, const string &value) {
+void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value) {
     if (key == "x" || key == "left") {
         Measurement val = ParseUtil::parseMeasurement(value);
         layout->setX(val, 0);
@@ -448,7 +448,7 @@ void layoutEndElement(void *userData, const char *name) {
     data->divs.pop();
 }
 
-std::unordered_map<string, LayoutParseFunction*> LayoutRoot::parsers = {
+std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"div", &parseDiv},
     {"placeholder", &parsePlaceholder},
     {"img", &parseImg},
@@ -459,7 +459,7 @@ std::unordered_map<string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"button", &parseButton},
 };
 
-LayoutRoot::LayoutRoot(string path, AssetContext &asset)
+LayoutRoot::LayoutRoot(std::string path, AssetContext &asset)
 {
     XML_Parser parser = XML_ParserCreate(nullptr);
     LayoutParseData data;

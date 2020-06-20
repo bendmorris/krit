@@ -31,9 +31,6 @@ struct Shader {
 };
 
 struct SpriteShader: public Shader {
-    static SpriteShader defaultTextureSpriteShader;
-    static SpriteShader defaultColorSpriteShader;
-
     GLint matrixIndex;
     GLint colorIndex;
 

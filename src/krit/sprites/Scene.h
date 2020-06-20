@@ -17,6 +17,7 @@ struct Scene: public Sprite {
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 
+    Scene(UpdateContext &ctx): input(ctx.controls) {}
     Scene(UpdateContext &ctx, const std::string &layoutPath)
         : input(ctx.controls), layout(layoutPath, *ctx.asset) {}
 

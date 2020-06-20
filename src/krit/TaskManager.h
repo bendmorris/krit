@@ -42,16 +42,7 @@ template <typename T> struct AsyncQueue {
         SDL_UnlockMutex(lock);
     }
 
-    T pop() {
-        SDL_LockMutex(lock);
-        while (queue.empty()) {
-            SDL_CondWait(available, lock);
-        }
-        T result = queue.front();
-        queue.pop();
-        SDL_UnlockMutex(lock);
-        return result;
-    }
+    bool pop(T *to);
 
     private:
         std::queue<T> queue;
@@ -65,10 +56,11 @@ struct TaskManager {
      * work queues. Not safe when multiple threads may perform work.
      */
     template <typename T> static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
-        size_t len;
-        while ((len = queue.size())) {
-            for (size_t i = 0; i < len; ++i) {
-                (queue.pop())(ctx);
+        size_t len = queue.size();
+        AsyncTask<T> job;
+        for (size_t i = 0; i < len; ++i) {
+            if (queue.pop(&job)) {
+                job(ctx);
             }
         }
     }
@@ -80,6 +72,8 @@ struct TaskManager {
     AsyncQueue<UpdateTask> mainQueue;
     AsyncQueue<RenderTask> renderQueue;
     AsyncQueue<UpdateTask> workQueue;
+
+    bool killed = false;
 
     TaskManager(UpdateContext &ctx, size_t size):
         size(size),
@@ -96,9 +90,6 @@ struct TaskManager {
     void push(UpdateTask task) { workQueue.push(task); }
     void pushMain(UpdateTask task) { mainQueue.push(task); }
     void pushRender(RenderTask task) { renderQueue.push(task); }
-    UpdateTask pop() { return workQueue.pop(); }
-    UpdateTask popMain() { return mainQueue.pop(); }
-    RenderTask popRender() { return renderQueue.pop(); }
 
     private:
         static int workerFunc(void *raw) {

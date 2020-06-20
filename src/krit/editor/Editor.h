@@ -43,7 +43,6 @@ struct Editor: public Sprite {
         devTools.emplace_back(tool);
     }
 
-    void update(krit::UpdateContext&) override;
     void render(krit::RenderContext&) override;
 
     private:

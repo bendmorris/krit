@@ -135,6 +135,7 @@ struct LayoutRoot: public Sprite {
     std::vector<std::unique_ptr<LayoutNode>> nodes;
     std::unordered_map<std::string, LayoutNode*> nodeMap;
 
+    LayoutRoot() {}
     LayoutRoot(std::string path, AssetContext &asset);
 
     LayoutNode *getNodeById(const std::string &id) {
