@@ -1,3 +1,4 @@
+#include "krit/editor/Editor.h"
 #include "krit/input/MouseContext.h"
 #include "krit/input/Mouse.h"
 #include "krit/Engine.h"

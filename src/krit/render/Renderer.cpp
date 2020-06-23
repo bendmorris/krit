@@ -1,3 +1,4 @@
+#include "krit/editor/Editor.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawCall.h"
 #include "krit/render/Gl.h"

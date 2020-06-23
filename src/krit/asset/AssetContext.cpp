@@ -15,7 +15,7 @@ PendingAssets &AssetContext::pendingAssets() {
     size_t i = 0;
     while (i < pending.size()) {
         auto &entry = pending[i];
-        bool loaded = this->cache->isLoaded(entry.first, entry.second);
+        bool loaded = this->cache.isLoaded(entry.first, entry.second);
         if (loaded) {
             // remove from pending; we don't care about preserving order
             std::swap(entry, pending[pending.size() - 1]);

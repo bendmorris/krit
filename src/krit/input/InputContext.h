@@ -41,9 +41,9 @@ struct InputContext {
     std::unordered_map<InputType, bool> actionStates;
     std::unordered_map<InputType, LevelData> active;
 
-    ControlBindings *bindings;
+    ControlBindings &bindings;
 
-    InputContext(ControlBindings *bindings): bindings(bindings) {}
+    InputContext(ControlBindings &bindings): bindings(bindings) {}
 
     void update(UpdateContext &ctx);
 

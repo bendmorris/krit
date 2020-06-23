@@ -20,6 +20,20 @@ namespace krit {
 SpineSprite::SpineSprite(AssetContext &asset, const std::string &id):
     SpineSprite(asset, Assets::byPath(id)) {}
 
+SpineSprite::SpineSprite(AssetContext &asset, const AssetInfo &info) {
+    if (!asset.cache.registered(SpineSkeletonAsset)) {
+        SpineLoader *loader = new SpineLoader(&asset.cache);
+        asset.cache.registerLoader(loader);
+    }
+    spine::Bone::setYDown(true);
+
+    // load skeleton/animation data
+    this->bin = std::static_pointer_cast<SkeletonBinaryData>(asset.get(info));
+    this->skeleton = new spine::Skeleton(&this->skeletonData());
+    this->animationState = new spine::AnimationState(&this->animationStateData());
+    this->skin = new spine::Skin(spine::String("custom"));
+}
+
 float SpineSprite::worldVertices[1024] = {0};
 
 std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {

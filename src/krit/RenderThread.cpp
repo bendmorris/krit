@@ -70,7 +70,7 @@ void RenderThread::renderLoop() {
     init();
 
     while (true) {
-        TaskManager::work(taskManager.renderQueue, render);
+        TaskManager::work(taskManager.renderQueue, ctx);
         SDL_LockMutex(renderCondMutex);
         bool signaled = !SDL_CondWaitTimeout(renderCond, renderCondMutex, 100);
         SDL_UnlockMutex(renderCondMutex);
@@ -84,10 +84,10 @@ void RenderThread::renderLoop() {
         if (!signaled) {
             continue;
         }
-        render.app->renderer.startFrame(render);
+        ctx.app->renderer.startFrame(ctx);
         SDL_LockMutex(renderMutex);
-        render.app->renderer.flushBatch(render);
-        render.app->renderer.flushFrame(render);
+        ctx.app->renderer.flushBatch(ctx);
+        ctx.app->renderer.flushFrame(ctx);
         SDL_UnlockMutex(renderMutex);
 
         SDL_LockMutex(renderCondMutex);

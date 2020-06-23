@@ -5,8 +5,8 @@
 #include <functional>
 
 namespace krit {
-    class RenderContext;
-    class UpdateContext;
+    struct RenderContext;
+    struct UpdateContext;
 
     typedef std::function<void(void)> Signal;
     template <typename A> using Signal1 = std::function<void(A)>;

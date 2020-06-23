@@ -7,8 +7,7 @@
 namespace krit {
 
 struct RenderThread {
-    UpdateContext &update;
-    RenderContext &render;
+    RenderContext &ctx;
     TaskManager &taskManager;
     SDL_GLContext glContext;
     SDL_Thread *thread;
@@ -18,9 +17,8 @@ struct RenderThread {
     SDL_Window *window;
     bool killed = false;
 
-    RenderThread(UpdateContext &update, RenderContext &render, TaskManager &taskManager, SDL_Window *window):
-        update(update),
-        render(render),
+    RenderThread(RenderContext &ctx, TaskManager &taskManager, SDL_Window *window):
+        ctx(ctx),
         taskManager(taskManager),
         window(window)
     {

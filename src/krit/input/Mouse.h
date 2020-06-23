@@ -52,8 +52,8 @@ struct MouseManager {
         if (btn == MouseLeft) {
             this->pressed = true;
         }
+        this->active[btn] = true;
         if (this->mappings[btn] && !this->active[btn]) {
-            this->active[btn] = true;
             this->mouseEvent(btn, InputStart);
         }
     }
@@ -62,8 +62,8 @@ struct MouseManager {
         if (btn == MouseLeft) {
             this->released = true;
         }
+        this->active[btn] = false;
         if (btn == MouseLeft || (this->mappings[btn] && this->active[btn])) {
-            this->active[btn] = false;
             this->mouseEvent(btn, InputFinish);
         }
     }

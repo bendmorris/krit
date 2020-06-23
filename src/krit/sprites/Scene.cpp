@@ -1,8 +1,14 @@
-#include "krit/input/InputContext.h"
 #include "krit/sprites/Scene.h"
+#include "krit/Engine.h"
+#include "krit/input/InputContext.h"
 #include "krit/render/DrawCommand.h"
 
 namespace krit {
+
+Scene::Scene(UpdateContext &ctx):
+    asset(ctx.asset->cache), input(ctx.engine->controls) {}
+Scene::Scene(UpdateContext &ctx, const std::string &layoutPath):
+    asset(ctx.asset->cache), input(ctx.engine->controls), layout(layoutPath, *ctx.asset) {}
 
 void Scene::update(UpdateContext &ctx) {
     if (this->fadingOut && this->fadeColor.a < this->maxAlpha) {
@@ -16,15 +22,16 @@ void Scene::update(UpdateContext &ctx) {
             this->fadeColor.a = 0;
         }
     }
-    InputContext *oldInput = ctx.input;
-    ctx.input = &this->input;
+    ctx.asset = &asset;
+    ctx.input = &input;
     this->input.update(ctx);
     this->layout.update(ctx);
-    ctx.input = oldInput;
     this->mouseContext.update(ctx);
 }
 
 void Scene::render(RenderContext &ctx) {
+    Camera *oldCamera = ctx.camera;
+    ctx.camera = &ctx.engine->uiCamera;
     this->layout.render(ctx);
     if (this->fadeColor.a > 0) {
         DrawKey key;
@@ -38,6 +45,7 @@ void Scene::render(RenderContext &ctx) {
             this->fadeColor.withAlpha(1 - pow(1 - this->fadeColor.a, 2))
         );
     }
+    ctx.camera = oldCamera;
 }
 
 }

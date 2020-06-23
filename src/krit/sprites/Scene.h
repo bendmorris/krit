@@ -10,16 +10,15 @@
 namespace krit {
 
 struct Scene: public Sprite {
+    AssetContext asset;
     InputContext input;
-    LayoutRoot layout;
     MouseContext mouseContext;
-    // AssetContext asset;
+    LayoutRoot layout;
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 
-    Scene(UpdateContext &ctx): input(ctx.controls) {}
-    Scene(UpdateContext &ctx, const std::string &layoutPath)
-        : input(ctx.controls), layout(layoutPath, *ctx.asset) {}
+    Scene(UpdateContext &ctx);
+    Scene(UpdateContext &ctx, const std::string &layoutPath);
 
     void fadeOut(Color color, double fadeDuration = 0.5) {
         this->fadeColor = color;

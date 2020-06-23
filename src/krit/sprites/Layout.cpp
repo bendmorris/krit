@@ -22,12 +22,9 @@ void LayoutNode::update(UpdateContext &ctx) {
 }
 
 void LayoutNode::render(RenderContext &ctx) {
-    Camera *oldCamera = ctx.camera;
-    ctx.camera = &ctx.engine->uiCamera;
     if (this->isVisible() && this->sprite) {
         this->sprite->render(ctx);
     }
-    ctx.camera = oldCamera;
 }
 
 void LayoutNode::reflow(UpdateContext &ctx) {

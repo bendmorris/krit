@@ -23,11 +23,11 @@ typedef std::vector<std::pair<AssetType, std::shared_ptr<void>>> PendingAssets;
  * unless there are other owners of the shared asset pointers.
  */
 struct AssetContext {
-    AssetCache *cache;
+    AssetCache &cache;
     AssetMap assets;
     PendingAssets pending;
 
-    AssetContext(AssetCache *cache): cache(cache) {}
+    AssetContext(AssetCache &cache): cache(cache) {}
 
     std::shared_ptr<void> get(const std::string &str);
     std::shared_ptr<void> get(int id);
@@ -35,8 +35,8 @@ struct AssetContext {
         auto foundAsset = assets.find(info.id);
         if (foundAsset == assets.end()) {
             // not found; load the asset
-            std::shared_ptr<void> result = this->cache->get(info);
-            if (!this->cache->isLoaded(info.type, result)) {
+            std::shared_ptr<void> result = this->cache.get(info);
+            if (!this->cache.isLoaded(info.type, result)) {
                 pending.push_back(std::make_pair(info.type, result));
             }
             assets.insert(std::make_pair(info.id, result));

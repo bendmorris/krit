@@ -4,6 +4,7 @@
 #include "krit/math/Point.h"
 #include "krit/Camera.h"
 #include "krit/render/DrawKey.h"
+#include "krit/UpdateContext.h"
 
 namespace krit {
 
@@ -11,22 +12,13 @@ struct App;
 struct Engine;
 struct DrawCommandBuffer;
 
-struct RenderContext {
-    double elapsed;
-    unsigned int frameId;
-    App *app = nullptr;
-    Engine *engine = nullptr;
-    IntDimensions *window = nullptr;
+struct RenderContext: public UpdateContext {
     DrawCommandBuffer *drawCommandBuffer = nullptr;
-    Camera *camera = nullptr;
     CameraTransform *transform = nullptr;
     Point offset;
-    void *userData;
     bool debugDraw = false;
 
     RenderContext() {}
-
-    template <typename T> T *data() { return static_cast<T*>(this->userData); }
 
     void setClip(Rectangle rect);
     void clearClip();

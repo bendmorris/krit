@@ -110,20 +110,7 @@ struct SpineSprite: public VisibleSprite {
     spine::AnimationStateData &animationStateData() { return *this->bin->animationStateData; }
 
     SpineSprite(AssetContext &asset, const std::string &id);
-
-    SpineSprite(AssetContext &asset, const AssetInfo &info) {
-        if (!asset.cache->registered(SpineSkeletonAsset)) {
-            SpineLoader *loader = new SpineLoader(asset.cache);
-            asset.cache->registerLoader(loader);
-        }
-        spine::Bone::setYDown(true);
-
-        // load skeleton/animation data
-        this->bin = std::static_pointer_cast<SkeletonBinaryData>(asset.get(info));
-        this->skeleton = new spine::Skeleton(&this->skeletonData());
-        this->animationState = new spine::AnimationState(&this->animationStateData());
-        this->skin = new spine::Skin(spine::String("custom"));
-    }
+    SpineSprite(AssetContext &asset, const AssetInfo &info);
 
     void setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
     void addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);

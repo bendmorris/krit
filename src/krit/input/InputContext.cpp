@@ -9,7 +9,7 @@ void InputContext::update(UpdateContext &ctx) {
     this->active.clear();
 
     if (this->enabled) {
-        std::vector<InputEvent> &events = this->bindings->getEvents();
+        std::vector<InputEvent> &events = this->bindings.getEvents();
         for (InputEvent &event : events) {
             if (event.eventType == InputFinish) {
                 this->active.erase(event.action);

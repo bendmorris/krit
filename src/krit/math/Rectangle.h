@@ -2,6 +2,7 @@
 #define KRIT_MATH_RECTANGLE
 
 #include "krit/math/Point.h"
+#include <stdio.h>
 #include <algorithm>
 
 namespace krit {

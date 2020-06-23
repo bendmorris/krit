@@ -57,7 +57,7 @@ void Editor::render(krit::RenderContext &ctx) {
     if (imguiInitialized) {
         auto &io = ImGui::GetIO();
         io.DeltaTime = ctx.elapsed;
-        io.FontGlobalScale = SCALE;
+        io.FontGlobalScale = std::max(1.0, ctx.window->height() * 2.5 / ctx.camera->height());
         io.DisplaySize.x = ctx.window->width();
         io.DisplaySize.y = ctx.window->height();
 
