@@ -30,13 +30,18 @@ def run(inputPath, outputDir):
             assets.append(asset)
     for artifact in ('Assets.cpp', 'AssetId.h'):
         outPath = os.path.join(outputDir, artifact)
-        if os.path.exists(outPath) and os.path.getmtime(outPath) > mtime:
-            print('{} is up to date, skipping'.format(outPath))
-            continue
+        existing = None
+        if os.path.exists(outPath):
+            with open(outPath, 'r') as existingFile:
+                existing = existingFile.read()
         with open(os.path.join(os.path.dirname(__file__), artifact + '.jinja2')) as templateFile:
             template = Template(templateFile.read())
-        with open(outPath, 'w') as outFile:
-            outFile.write(template.render(assets=assets))
+        newContent = template.render(assets=assets)
+        if not existing or newContent != existing:
+            with open(outPath, 'w') as outFile:
+                outFile.write(newContent)
+        else:
+            print('no change to {}; skipping'.format(artifact))
 
 
 def main():
