@@ -140,11 +140,19 @@ struct TextParser {
         txt.maxChars = 0;
         for (auto &op : txt.opcodes) {
             switch (op.type) {
+                case NewLine: {
+                    Dimensions &dims = op.data.newLine.first;
+                    txt.textDimensions.x = std::max(txt.textDimensions.x, dims.x);
+                    txt.textDimensions.y += dims.y;
+                    // fallthrough
+                }
                 case TextBlock: {
                     txt.maxChars += op.data.text.length;
+                    break;
                 }
                 case RenderSprite:
                     ++txt.maxChars;
+                    break;
                 default: {}
             }
         }
@@ -194,10 +202,6 @@ struct TextParser {
             this->cursor.y += this->thisLineHeight + add;
             txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, add);
             txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
-            txt.textDimensions.setTo(
-                max(txt.textDimensions.width(), this->cursor.x - this->trailingWhitespace),
-                this->cursor.y
-            );
         }
         if (append) {
             this->thisLineHeight = txt.font->lineHeight * this->currentScale;
@@ -207,8 +211,6 @@ struct TextParser {
             ));
             this->cursor.x = this->trailingWhitespace = 0;
             this->newLineIndex = txt.opcodes.size() - 1;
-        } else {
-            txt.textDimensions.y = this->thisLineHeight;
         }
     }
 
@@ -233,9 +235,6 @@ struct TextParser {
                 this->cursor.x = this->wordLength;
             } else {
                 this->cursor.x += this->wordLength;
-            }
-            if (this->cursor.x > txt.textDimensions.width()) {
-                txt.textDimensions.width() = this->cursor.x;
             }
             for (TextOpcode &op: TextParser::word) {
                 txt.opcodes.push_back(op);
@@ -342,7 +341,7 @@ BitmapText &BitmapText::setFont(shared_ptr<BitmapFont> font) {
     return *this;
 }
 
-BitmapText &BitmapText::setText(string text) {
+BitmapText &BitmapText::setText(const std::string &text) {
     if (this->rich || text != this->text) {
         this->text = text;
         this->rich = false;
@@ -351,7 +350,7 @@ BitmapText &BitmapText::setText(string text) {
     return *this;
 }
 
-BitmapText &BitmapText::setRichText(string text) {
+BitmapText &BitmapText::setRichText(const std::string &text) {
     if (!this->rich || text != this->text) {
         this->text = text;
         this->rich = true;
@@ -437,10 +436,13 @@ void BitmapText::render(RenderContext &ctx) {
                 if (this->options.dynamic && custom) {
                     custom(&ctx, this, &renderData);
                 }
-                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y);
+                auto size = sprite->getSize();
+                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y + (thisLineHeight * scale.y * baseScale - size.height()));
+                Color originalColor(sprite->color);
+                sprite->color = sprite->color * this->color;
                 sprite->render(ctx);
-                double width = sprite->getSize().width();
-                cursor.x += width;
+                sprite->color = originalColor;
+                cursor.x += size.width();
                 break;
             }
             case TextBlock: {

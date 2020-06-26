@@ -133,9 +133,9 @@ struct BitmapText: public VisibleSprite {
 
     BitmapText(const BitmapTextOptions &options);
 
-    BitmapText &setFont(shared_ptr<BitmapFont> font);
-    BitmapText &setText(string text);
-    BitmapText &setRichText(string text);
+    BitmapText &setFont(std::shared_ptr<BitmapFont> font);
+    BitmapText &setText(const std::string &text);
+    BitmapText &setRichText(const std::string &text);
     BitmapText &refresh();
 
     double baseScale() { return static_cast<double>(this->options.size) / this->font->size; }
@@ -143,8 +143,8 @@ struct BitmapText: public VisibleSprite {
         this->refresh();
         double s = this->baseScale();
         return Dimensions(
-            this->textDimensions.width() * s,
-            this->textDimensions.height() * s
+            this->textDimensions.width() * s * scale.x,
+            this->textDimensions.height() * s * scale.y
         );
     }
     void resize(double, double) override;
