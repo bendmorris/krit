@@ -25,7 +25,7 @@ struct FocusContext {
         bool wasEmpty = this->registeredObjects.empty();
         this->registeredObjects.emplace_back(sprite, FocusCallbacks(onGotFocus, onLostFocus));
         if (wasEmpty) {
-            this->focus = this->registeredObjects.begin();
+            this->focus = 0;
             invoke(onGotFocus, ctx, static_cast<void*>(sprite));
         }
     }
@@ -39,12 +39,14 @@ struct FocusContext {
         }
     }
 
+    VisibleSprite *get(size_t index) { return registeredObjects[focus].first; }
+
     void clear() {
         this->registeredObjects.clear();
     }
 
     VisibleSprite *focused() {
-        return this->registeredObjects.empty() ? nullptr : this->focus->first;
+        return this->registeredObjects.empty() ? nullptr : registeredObjects[focus].first;
     }
 
     void setFocus(UpdateContext *ctx, VisibleSprite *sprite);
@@ -52,8 +54,8 @@ struct FocusContext {
     void nextFocus(UpdateContext *ctx) { this->changeFocus(ctx, true); }
 
     private:
-        std::list<std::pair<VisibleSprite*, FocusCallbacks>> registeredObjects;
-        std::list<std::pair<VisibleSprite*, FocusCallbacks>>::iterator focus;
+        std::vector<std::pair<VisibleSprite*, FocusCallbacks>> registeredObjects;
+        int focus = 0;
 
         void changeFocus(UpdateContext *ctx, bool forward);
 };
