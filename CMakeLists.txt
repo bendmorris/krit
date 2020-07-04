@@ -52,8 +52,7 @@ add_dependencies(${PROJECT_NAME} compile-assets)
 add_custom_target(
     copy-assets ALL
     COMMAND
-        rsync --delete -a ${CMAKE_SOURCE_DIR}/assets ${CMAKE_BINARY_DIR} &&
-        cd ${CMAKE_BINARY_DIR} && zip -r assets.zip assets
+        ${CMAKE_CURRENT_SOURCE_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
     BYPRODUCTS assets.zip
 )
 add_dependencies(compile-assets copy-assets)

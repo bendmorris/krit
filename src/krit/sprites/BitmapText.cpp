@@ -372,18 +372,10 @@ void BitmapText::resize(double w, double h) {
     if (this->options.wordWrap) {
         if ((this->dimensions.width() != static_cast<int>(w)) || (this->dimensions.height() != static_cast<int>(h))) {
             this->dirty = true;
-            this->dimensions.setTo(static_cast<int>(w), static_cast<int>(h));
+            this->dimensions.setTo(w, h);
         }
     } else {
-        double sx = w / this->dimensions.width();
-        double sy = h / this->dimensions.height();
-        if (this->scale.x != sx || this->scale.y != sy) {
-            this->dirty = true;
-            this->scale.setTo(
-                w / this->dimensions.width(),
-                h / this->dimensions.height()
-            );
-        }
+        this->dimensions.setTo(w / this->scale.x, h / this->scale.y);
     }
 }
 

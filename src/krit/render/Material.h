@@ -12,6 +12,7 @@ namespace krit {
 
 struct Material {
     Shader *shader = nullptr;
+    BlendMode blend = Alpha;
     ImageData img;
     std::vector<std::pair<std::string, UniformValue>> uniforms;
     std::unordered_map<std::string, int> uniformLocations;

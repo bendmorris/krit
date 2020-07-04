@@ -323,8 +323,7 @@ template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) 
     }
     checkForGlErrors("uniforms");
 
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+    setBlendMode(material.blend);
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     checkForGlErrors("drawArrays");

@@ -63,8 +63,13 @@ void LayoutNode::reflow(UpdateContext &ctx) {
             bool horizontal = this->positionMode == PositionHbox;
             if (!this->prevSibling) {
                 // first child element; set to top left
-                ex = x;
-                ey = y;
+                if (horizontal) {
+                    ex = x;
+                    ey = y + this->y.measure(availableHeight, spriteSize.height());
+                } else {
+                    ex = x + this->x.measure(availableWidth, spriteSize.width());
+                    ey = y;
+                }
             } else {
                 // position relative to previous child
                 Point siblingPos = this->prevSibling->getPosition();
@@ -72,10 +77,10 @@ void LayoutNode::reflow(UpdateContext &ctx) {
                 if (horizontal) {
                     double spacing = this->parent->spacing.measure(availableWidth);
                     ex = siblingPos.x + siblingSize.width() + spacing;
-                    ey = siblingPos.y;
+                    ey = y + this->y.measure(availableHeight, spriteSize.height());
                 } else {
                     double spacing = this->parent->spacing.measure(availableHeight);
-                    ex = siblingPos.x;
+                    ex = x + this->x.measure(availableWidth, spriteSize.width());
                     ey = siblingPos.y + siblingSize.height() + spacing;
                 }
             }

@@ -14,6 +14,7 @@ struct Scene: public Sprite {
     InputContext input;
     MouseContext mouseContext;
     LayoutRoot layout;
+
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 

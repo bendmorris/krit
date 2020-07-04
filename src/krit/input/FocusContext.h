@@ -20,6 +20,7 @@ struct FocusCallbacks {
 
 struct FocusContext {
     bool loop = true;
+    int focus = 0;
 
     void add(UpdateContext *ctx, VisibleSprite *sprite, SelfUpdateSignal onGotFocus = nullptr, SelfUpdateSignal onLostFocus = nullptr) {
         bool wasEmpty = this->registeredObjects.empty();
@@ -55,7 +56,6 @@ struct FocusContext {
 
     private:
         std::vector<std::pair<VisibleSprite*, FocusCallbacks>> registeredObjects;
-        int focus = 0;
 
         void changeFocus(UpdateContext *ctx, bool forward);
 };

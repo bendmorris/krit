@@ -1,6 +1,7 @@
 #ifndef KRIT_EDITOR_EDITOR
 #define KRIT_EDITOR_EDITOR
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "krit/Sprite.h"
 #include <functional>

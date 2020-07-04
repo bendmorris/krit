@@ -82,7 +82,8 @@ template <typename ModelType> struct DataModel {
      * multiple times. Calls `parseItem` for each element in the list generated
      * by parsing `path`.
      */
-    std::unordered_map<std::string, ModelType> parse(const char *path) {
+    void parse(const char *path) {
+        // FIXME: should use IoRead and yaml_parser_set_input_string
         FILE *input = fopen(path, "rb");
         yaml_parser_t parser;
         yaml_parser_initialize(&parser);
@@ -92,7 +93,6 @@ template <typename ModelType> struct DataModel {
             panic("failed to parse data YAML: %s", path);
         }
 
-        std::unordered_map<std::string, ModelType> val;
         yaml_node_t *root = yaml_document_get_root_node(&doc);
         if (root->type != YAML_SEQUENCE_NODE) {
             panic("%s: data YAML didn't contain a top-level list", path);
@@ -107,7 +107,6 @@ template <typename ModelType> struct DataModel {
 
         yaml_document_delete(&doc);
         yaml_parser_delete(&parser);
-        return val;
     }
 
     template <typename... Args> ModelType &newItem(Args&&... args) {

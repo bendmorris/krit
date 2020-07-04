@@ -8,10 +8,14 @@
 #include <string>
 #include <utility>
 
-#define UI_GET(x, T) static_cast<T*>(this->layout.getById(x))
-#define UI_GET_NODE(x) this->layout.getNodeById(x)
-#define UI_DECL(x, T) T *x = static_cast<T*>(this->layout.getById(#x))
-#define UI_DECL_NODE(x) LayoutNode *x##Node = this->layout.getNodeById(#x)
+#define UI_GET_FROM(from, x, T) static_cast<T*>(from.layout.getById(#x))
+#define UI_GET(x, T) UI_GET_FROM((*this), x, T)
+#define UI_GET_NODE_FROM(from, x) from.layout.getNodeById(#x)
+#define UI_GET_NODE(x) UI_GET_NODE_FROM((*this), x)
+#define UI_DECL_FROM(from, x, T) T *x = static_cast<T*>(from.layout.getById(#x))
+#define UI_DECL(x, T) UI_DECL_FROM((*this), x, T)
+#define UI_DECL_NODE_FROM(from, x) LayoutNode *x##Node = from.layout.getNodeById(#x)
+#define UI_DECL_NODE(x) UI_DECL_NODE_FROM((*this), x)
 
 namespace krit {
 

@@ -16,11 +16,7 @@ struct ZipIo {
     static void setArchive(const std::string &path);
 
     static char *read(const std::string &path, int *length = nullptr);
-
-    static bool exists(const std::string &path) {
-        int index = zip_name_locate(archive, path.c_str(), 0);
-        return index != -1;
-    }
+    static bool exists(const std::string &path);
 
     private:
         static zip_t *archive;

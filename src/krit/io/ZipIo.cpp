@@ -14,7 +14,18 @@ void ZipIo::setArchive(const std::string &path) {
     // }
 }
 
+bool ZipIo::exists(const std::string &path) {
+    if (!archive) {
+        return FileIo::exists(path);
+    }
+    int index = zip_name_locate(archive, path.c_str(), 0);
+    return index != -1;
+}
+
 char *ZipIo::read(const std::string &path, int *length) {
+    if (!archive) {
+        return FileIo::read(path, length);
+    }
     zip_stat_t stat;
     zip_stat_init(&stat);
     zip_stat(archive, path.c_str(), 0, &stat);
