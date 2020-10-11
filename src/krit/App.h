@@ -43,10 +43,7 @@ struct App {
         running = false;
     }
 
-    void setFullScreen(bool full) {
-        SDL_SetWindowFullscreen(this->window, full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-        this->full = full;
-    }
+    void setFullScreen(bool full);
     bool isFullScreen() { return full; }
 
     void getWindowSize(int *w, int *h) {

@@ -18,6 +18,7 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
     std::shared_ptr<ImageData> img(new ImageData(), [](ImageData *img) {
         GLuint texture = img->texture;
         TaskManager::instance->pushRender([texture](RenderContext&) {
+            puts("DELETE");
             glDeleteTextures(1, &texture);
         });
     });
@@ -48,7 +49,6 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
 
         TaskManager::instance->pushRender([img, surface, mode](RenderContext &render) {
             // upload texture
-            SDL_LockMutex(Renderer::renderMutex);
             glActiveTexture(GL_TEXTURE0);
             checkForGlErrors("active texture");
             glGenTextures(1, &img->texture);
@@ -59,7 +59,6 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
             checkForGlErrors("texImage2D");
             glGenerateMipmap(GL_TEXTURE_2D);
             checkForGlErrors("asset load");
-            SDL_UnlockMutex(Renderer::renderMutex);
 
             TaskManager::instance->push([surface](UpdateContext &) {
                 SDL_FreeSurface(surface);

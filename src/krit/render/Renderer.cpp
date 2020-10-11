@@ -135,8 +135,65 @@ static RenderFloat _vertices[24] = {
 
 Renderer::Renderer() {}
 
-void Renderer::init() {
+void Renderer::init(SDL_Window *window) {
     if (!initialized) {
+        // SDL_GL
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
+
+        this->glContext = SDL_GL_CreateContext(window);
+        if (!this->glContext) {
+            panic(SDL_GetError());
+        }
+        SDL_GL_MakeCurrent(window, this->glContext);
+        // try to get adaptive vsync
+        int result = SDL_GL_SetSwapInterval(-1);
+        // fall back to regular vsync
+        if (result == -1) {
+            SDL_GL_SetSwapInterval(1);
+        }
+        glEnable(GL_MULTISAMPLE);
+        glEnable(GL_BLEND);
+        glDisable(GL_DEPTH_TEST);
+
+        glewExperimental = GL_TRUE;
+        GLenum err = glewInit();
+        if (err != GLEW_OK) {
+            panic("%s\n", glewGetErrorString(err));
+        }
+        checkForGlErrors("glew init");
+
+        ImGui::CreateContext();
+        ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+        ImGui_ImplOpenGL3_Init(nullptr);
+        checkForGlErrors("imgui init");
+
+        auto &io = ImGui::GetIO();
+
+        unsigned char* pixels = nullptr;
+        int width, height;
+        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+
+        glActiveTexture(GL_TEXTURE0);
+        checkForGlErrors("imgui active texture");
+        glGenTextures(1, &Editor::imguiTextureId);
+        checkForGlErrors("imgui gen textures");
+        glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
+        checkForGlErrors("imgui bind texture");
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        checkForGlErrors("imgui texImage2D");
+
+        io.Fonts->TexID = (void*)Editor::imguiTextureId;
+        Editor::imguiInitialized = true;
+
         glGenVertexArrays(1, &this->vao);
         glBindVertexArray(this->vao);
         glGenBuffers(2, this->renderBuffer);
@@ -146,23 +203,6 @@ void Renderer::init() {
         checkForGlErrors("renderer init");
         initialized = true;
     }
-}
-
-void Renderer::startFrame(RenderContext &ctx) {
-    init();
-    ctx.app->getWindowSize(&this->width, &this->height);
-    ortho(0, this->width, this->height, 0);
-    glViewport(0, 0, this->width, this->height);
-    glClearColor(0, 0, 0, 1);
-    glClear(GL_COLOR_BUFFER_BIT);
-    this->triangleCount = 0;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    checkForGlErrors("start frame");
-}
-
-void Renderer::flushFrame(RenderContext &ctx) {
-    SDL_GL_SwapWindow(ctx.app->window);
-    // printf("triangles: %i\n", this->triangleCount);
 }
 
 template <> void Renderer::drawCall<SetClipRect, Rectangle>(Rectangle &clipRect) {
@@ -335,7 +375,16 @@ template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) 
     shader->unbind();
 }
 
-void Renderer::flushBatch(RenderContext &ctx) {
+void Renderer::renderFrame(RenderContext &ctx) {
+    ctx.app->getWindowSize(&this->width, &this->height);
+    ortho(0, this->width, this->height, 0);
+    glViewport(0, 0, this->width, this->height);
+    glClearColor(0, 0, 0, 1);
+    glClear(GL_COLOR_BUFFER_BIT);
+    this->triangleCount = 0;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    checkForGlErrors("start frame");
+
     glEnable(GL_SCISSOR_TEST);
     glScissor(0, 0, this->width, this->height);
     checkForGlErrors("start batch");
@@ -358,6 +407,9 @@ void Renderer::flushBatch(RenderContext &ctx) {
     glDisable(GL_SCISSOR_TEST);
 
     this->drawCommandBuffer.clear();
+
+    SDL_GL_SwapWindow(ctx.app->window);
+    // printf("triangles: %i\n", this->triangleCount);
 }
 
 }

@@ -21,6 +21,7 @@ include_directories(src)
 include_directories(spine-runtimes/spine-cpp/spine-cpp/include)
 include_directories(/usr/include/SDL2)
 include_directories(imgui)
+include_directories(quickjs)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
 
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
@@ -40,7 +41,16 @@ target_link_libraries(${PROJECT_NAME}
     "-Wl,--gc-sections"
     "-lGLEW"
     "-lzip"
+    ${CMAKE_CURRENT_SOURCE_DIR}/quickjs/libquickjs.a
 )
+
+add_custom_target(
+    quickjs
+    COMMAND make libquickjs.a CONFIG_BIGNUM= CONFIG_LTO=n
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/quickjs
+)
+
+add_dependencies(${PROJECT_NAME} quickjs)
 
 add_custom_target(
     compile-assets ALL

@@ -13,14 +13,14 @@ namespace krit {
 struct Renderer {
     static SDL_mutex *renderMutex;
 
+    SDL_GLContext glContext;
+
     DrawCommandBuffer drawCommandBuffer;
 
     Renderer();
 
-    void init();
-    void startFrame(RenderContext &ctx);
-    void flushFrame(RenderContext &ctx);
-    void flushBatch(RenderContext &ctx);
+    void init(SDL_Window *window);
+    void renderFrame(RenderContext &ctx);
 
     private:
         std::vector<char> renderData;

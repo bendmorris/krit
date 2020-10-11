@@ -16,9 +16,11 @@ static uint32_t colorToInt(Color &c) {
 
 Shader::~Shader() {
     GLuint program = this->program;
-    TaskManager::instance->pushRender([program](RenderContext&) {
-        glDeleteProgram(program);
-    });
+    if (program) {
+        TaskManager::instance->pushRender([program](RenderContext&) {
+            glDeleteProgram(program);
+        });
+    }
 }
 
 void Shader::init() {
@@ -69,6 +71,7 @@ void Shader::init() {
 
 void Shader::bind() {
     this->init();
+    checkForGlErrors("shader init");
     glUseProgram(this->program);
     checkForGlErrors("glUseProgram");
 }
