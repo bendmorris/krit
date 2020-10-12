@@ -66,6 +66,7 @@ void App::run() {
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
 
     UpdateContext *update = &ctx;
+    update->userData = engine.userData;
 
     double accumulator = 0, elapsed;
     std::chrono::steady_clock clock;

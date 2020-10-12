@@ -72,6 +72,8 @@ struct Engine {
     void setRoot(int index, Sprite *root);
     void reset() { controls.reset(); }
     void quit() { finished = true; }
+
+    template <typename T> T *data() { return static_cast<T*>(this->userData); }
 };
 
 }
