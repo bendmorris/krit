@@ -22,6 +22,8 @@ struct App {
     IntDimensions dimensions;
     Renderer renderer;
     // AudioBackend audio;
+    int framerate;
+    int fixedFramerate;
 
     App(KritOptions &options);
 

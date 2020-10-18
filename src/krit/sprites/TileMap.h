@@ -32,7 +32,7 @@ struct TileMap: public VisibleSprite {
     ImageRegion region;
     IntRectangle clip;
 
-    TileMap(shared_ptr<ImageData> img, TileMapProperties properties)
+    TileMap(std::shared_ptr<ImageData> img, TileMapProperties properties)
         : properties(properties), region(img)
     {
         this->_init();

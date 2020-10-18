@@ -14,10 +14,10 @@ void TileMap::render(RenderContext &ctx) {
     );
     Point scaledPosition = this->position;
     ctx.transformPoint(scaledPosition);
-    int startX = max(0, static_cast<int>(floor(-scaledPosition.x / scaledDimensions.width()))),
-        startY = max(0, static_cast<int>(floor(-scaledPosition.y / scaledDimensions.height()))),
-        destX = min(static_cast<int>(startX + 1 + ceil(ctx.window->width() / scaledDimensions.width())), this->properties.sizeInTiles.width()),
-        destY = min(static_cast<int>(startY + 1 + ceil(ctx.window->height() / scaledDimensions.height())), this->properties.sizeInTiles.height());
+    int startX = std::max(0, static_cast<int>(floor(-scaledPosition.x / scaledDimensions.width()))),
+        startY = std::max(0, static_cast<int>(floor(-scaledPosition.y / scaledDimensions.height()))),
+        destX = std::min(static_cast<int>(startX + 1 + ceil(ctx.window->width() / scaledDimensions.width())), this->properties.sizeInTiles.width()),
+        destY = std::min(static_cast<int>(startY + 1 + ceil(ctx.window->height() / scaledDimensions.height())), this->properties.sizeInTiles.height());
 
     DrawKey key;
     key.shader = this->shader;

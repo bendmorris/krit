@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <cstdio>
 #include "krit/render/Gl.h"
+#include "krit/utils/Panic.h"
 
 namespace krit {
 
@@ -12,6 +13,7 @@ void checkForGlErrors(const char *fmt, ...) {
         fprintf(stderr, "GL error: %i ", err);
         vfprintf(stderr, fmt, args);
         fputs("\n", stderr);
+        // panic("GL error");
     }
 }
 

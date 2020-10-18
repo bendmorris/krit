@@ -13,11 +13,11 @@ std::unordered_map<std::string, FormatTagOptions> BitmapText::formatTags = {
     {"right", FormatTagOptions().setAlign(RightAlign)},
 };
 
-void BitmapText::addFormatTag(string tagName, FormatTagOptions tagOptions) {
+void BitmapText::addFormatTag(std::string tagName, FormatTagOptions tagOptions) {
     BitmapText::formatTags.insert(std::make_pair(tagName, tagOptions));
 }
 
-template <typename T> void clearStack(stack<T> &stack) {
+template <typename T> void clearStack(std::stack<T> &stack) {
     while (!stack.empty()) stack.pop();
 }
 
@@ -62,7 +62,7 @@ struct TextParser {
     AlignType currentAlign = LeftAlign;
     int newLineIndex = 0;
 
-    void parseText(BitmapText &txt, string &s, bool rich) {
+    void parseText(BitmapText &txt, std::string &s, bool rich) {
         txt.opcodes.clear();
         txt.textDimensions.setTo(0, 0);
         TextParser::word.clear();
@@ -105,7 +105,7 @@ struct TextParser {
                 if (this->wordSegment[this->wordSegment.length] == 0) {
                     break;
                 } else {
-                    this->wordHeight = max(this->wordHeight, txt.font->lineHeight * this->currentScale);
+                    this->wordHeight = std::max(this->wordHeight, txt.font->lineHeight * this->currentScale);
                     char c = this->wordSegment[this->wordSegment.length];
                     switch (c) {
                         case '\n': {
@@ -159,7 +159,7 @@ struct TextParser {
     }
 
     void addTag(BitmapText &txt, StringSlice tagName) {
-        static string tagStr;
+        static std::string tagStr;
         bool close = false;
         if (tagName[0] == '/') {
             close = true;
@@ -240,7 +240,7 @@ struct TextParser {
                 txt.opcodes.push_back(op);
             }
             TextParser::word.clear();
-            this->thisLineHeight = max(this->wordHeight, this->thisLineHeight);
+            this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
             this->wordLength = 0;
             this->wordHeight = 0;
             this->wordTrailingWhitespace = 0;
@@ -314,8 +314,8 @@ struct TextParser {
                 TextParser::word.push_back(op);
                 this->wordTrailingWhitespace = 0;
                 this->wordLength += imageWidth;
-                this->wordHeight = max(wordHeight, size.height());
-                this->thisLineHeight = max(this->wordHeight, this->thisLineHeight);
+                this->wordHeight = std::max(wordHeight, size.height());
+                this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
                 if (cursor.x > txt.dimensions.width()) {
                     txt.dimensions.width() = cursor.x;
                 }
@@ -329,14 +329,14 @@ struct TextParser {
 };
 
 GlyphRenderStack TextParser::stack;
-vector<TextOpcode> TextParser::word;
+std::vector<TextOpcode> TextParser::word;
 
 BitmapText::BitmapText(const BitmapTextOptions &options):
     font(options.font),
     options(options)
 {}
 
-BitmapText &BitmapText::setFont(shared_ptr<BitmapFont> font) {
+BitmapText &BitmapText::setFont(std::shared_ptr<BitmapFont> font) {
     this->font = font;
     return *this;
 }

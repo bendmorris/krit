@@ -173,13 +173,13 @@ void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, cons
     }
 }
 
-SpriteStyle LayoutRoot::parseStyle(string &s) {
+SpriteStyle LayoutRoot::parseStyle(std::string &s) {
     SpriteStyle style;
-    stringstream stream(s);
-    string token, key, value;
+    std::stringstream stream(s);
+    std::string token, key, value;
     while (getline(stream, token, ';')) {
         size_t index = token.find(":");
-        if (index != string::npos) {
+        if (index != std::string::npos) {
             key = token.substr(0, index);
             value = token.substr(index + 1);
             if (key == "color") {
@@ -222,8 +222,8 @@ void parseBackdrop(LayoutParseData *data, std::unordered_map<std::string, std::s
     Backdrop *backdrop = new Backdrop(src);
     node->attachSprite(backdrop);
     for (auto &it: attrMap) {
-        const string &key = it.first;
-        const string &value = it.second;
+        const std::string &key = it.first;
+        const std::string &value = it.second;
         if (key == "color") {
             backdrop->color = ParseUtil::parseColor(value);
         } else if (key == "alpha") {
@@ -418,8 +418,8 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
     data->root->nodes.emplace_back(node);
     data->node = node;
     for (auto &it: attrMap) {
-        const string &key = it.first;
-        const string &value = it.second;
+        const std::string &key = it.first;
+        const std::string &value = it.second;
         LayoutRoot::parseLayoutAttr(data, node, key, value);
     }
     if (!data->divs.empty()) {
@@ -433,7 +433,7 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
         bool horizontal = name[0] == 'h';
         data->divs.push(DivData(node, horizontal ? PositionHbox : PositionVbox));
     } else {
-        auto found = LayoutRoot::parsers.find(string(name));
+        auto found = LayoutRoot::parsers.find(std::string(name));
         if (found != LayoutRoot::parsers.end()) {
             if (found->second) found->second(data, attrMap);
         }

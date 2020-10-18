@@ -4,8 +4,6 @@
 #include <cstring>
 #include <string>
 
-using namespace std;
-
 namespace krit {
 
 struct StringSlice {
@@ -26,7 +24,7 @@ struct StringSlice {
         return strncmp(this->str, other, this->length);
     }
 
-    int cmp(string other) {
+    int cmp(const std::string &other) {
         return this->cmp(other.c_str());
     }
 

@@ -22,13 +22,13 @@ struct Button: public NineSlice {
     double transitionTime = 0.15;
     double transition = 0;
 
-    Button(ImageRegion &base, int border, BitmapTextOptions &labelOptions, const string &labelText)
+    Button(ImageRegion &base, int border, BitmapTextOptions &labelOptions, const std::string &labelText)
         : Button(base, border, border, border, border, labelOptions, labelText) {}
 
-    Button(ImageRegion &base, int borderWidth, int borderHeight, BitmapTextOptions &labelOptions, const string &labelText)
+    Button(ImageRegion &base, int borderWidth, int borderHeight, BitmapTextOptions &labelOptions, const std::string &labelText)
         : Button(base, borderWidth, borderWidth, borderHeight, borderHeight, labelOptions, labelText) {}
 
-    Button(ImageRegion &base, int lw, int rw, int th, int bh, BitmapTextOptions &labelOptions, const string &labelText)
+    Button(ImageRegion &base, int lw, int rw, int th, int bh, BitmapTextOptions &labelOptions, const std::string &labelText)
         : NineSlice(base, lw, rw, th, bh), label(labelOptions)
     {
         label.setText(labelText);

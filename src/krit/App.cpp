@@ -20,7 +20,9 @@ void sigintHandler(int sig_num) {
 } 
 
 App::App(KritOptions &options):
-    dimensions(options.width, options.height) {}
+    dimensions(options.width, options.height),
+    framerate(options.framerate),
+    fixedFramerate(options.fixedFramerate) {}
 
 void App::run() {
     current = this;
@@ -48,8 +50,8 @@ void App::run() {
 
     checkForGlErrors("SDL init");
 
-    double frameDelta = 1.0 / FPS;
-    double frameDelta2 = 1.0 / (FPS + 1);
+    double frameDelta = 1.0 / fixedFramerate;
+    double frameDelta2 = 1.0 / (fixedFramerate + 1);
     
     // base context structs
     AssetContext asset(engine.assetCache);

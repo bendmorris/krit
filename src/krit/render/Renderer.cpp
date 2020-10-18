@@ -347,6 +347,14 @@ template <> void Renderer::drawCall<DrawMaterial, Material>(Material &material) 
                     glUniform4f(loc, uniform.vec4Value[0], uniform.vec4Value[1], uniform.vec4Value[2], uniform.vec4Value[3]);
                     break;
                 }
+                case UniformFloat1v: {
+                    glUniform1fv(loc, uniform.floatData.first, uniform.floatData.second);
+                    break;
+                }
+                case UniformFloat2v: {
+                    glUniform2fv(loc, uniform.floatData.first, uniform.floatData.second);
+                    break;
+                }
                 case UniformFloat3v: {
                     glUniform3fv(loc, uniform.floatData.first, uniform.floatData.second);
                     break;

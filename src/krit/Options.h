@@ -14,7 +14,8 @@ struct KritOptions {
     int height = 240;
     int windowWidth = -1;
     int windowHeight = -1;
-    int fps = 60;
+    int framerate;
+    int fixedFramerate;
     void *userData;
 
     KritOptions() {}
@@ -36,8 +37,9 @@ struct KritOptions {
         return *this;
     }
 
-    KritOptions &setFrameRate(int f) {
-        this->fps = f;
+    KritOptions &setFrameRate(int free, int fixed) {
+        this->framerate = free;
+        this->fixedFramerate = fixed;
         return *this;
     }
 };

@@ -30,7 +30,7 @@ struct BitmapTextOptions {
     double lineSpacing = 0;
     bool dynamic = true;
 
-    BitmapTextOptions(shared_ptr<BitmapFont> font): font(font) {}
+    BitmapTextOptions(std::shared_ptr<BitmapFont> font): font(font) {}
 
     BitmapTextOptions &setSize(int size) { this->size = size; return *this; }
     BitmapTextOptions &setAlign(AlignType align) { this->align = align; return *this; }

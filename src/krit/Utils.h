@@ -1,6 +1,7 @@
 #ifndef KRIT_UTILS
 #define KRIT_UTILS
 
+#include <cassert>
 #include <cmath>
 #include <functional>
 #include <random>
@@ -11,6 +12,13 @@ namespace krit {
 
 extern std::random_device rd;
 extern std::mt19937 rng;
+
+template <typename T> T clamp(T v, T min, T max) {
+    assert(min <= max);
+    if (v < min) return min;
+    if (v > max) return max;
+    return v;
+}
 
 template <typename T> T lerp(T v1, T v2, T mix) {
     if (mix <= 0) return v1;

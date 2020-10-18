@@ -74,6 +74,7 @@ template <size_t N> struct FrameBuffer: public BaseFrameBuffer {
     }
 
     ImageData getTexture(int index = 0) {
+        _resize();
         return ImageData(textures[index], currentSize);
     }
 };

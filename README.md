@@ -12,3 +12,5 @@ Features:
 - Scoped asset manager for textures, sound, data files and custom asset types
 - Text rendering using bitmap fonts
 - Built-in support for Spine skeletal animation
+- Script in JS using QuickJS
+
