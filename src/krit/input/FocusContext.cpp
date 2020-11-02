@@ -4,7 +4,7 @@ namespace krit {
 
 void FocusContext::setFocus(UpdateContext *ctx, VisibleSprite *sprite) {
     auto lostFocus = this->focus;
-    for (int i = 0; i < registeredObjects.size(); ++i) {
+    for (size_t i = 0; i < registeredObjects.size(); ++i) {
         if (registeredObjects[i].first == sprite) {
             focus = i;
             break;
@@ -27,7 +27,7 @@ void FocusContext::changeFocus(UpdateContext *ctx, bool forward) {
     if (this->focus < 0) {
         this->focus = this->registeredObjects.size() - 1;
     }
-    if (this->focus >= this->registeredObjects.size()) {
+    if (this->focus >= static_cast<int>(this->registeredObjects.size())) {
         this->focus = 0;
     }
     auto gotFocus = this->focus;

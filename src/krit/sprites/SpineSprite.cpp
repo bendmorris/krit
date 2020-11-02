@@ -109,111 +109,17 @@ void SpineSprite::update(UpdateContext &ctx) {
     }
 }
 
-static void _applyArc(FloatPoint &base, FloatPoint &tip, float arc) {
-    FloatPoint diff(tip);
-    diff.subtract(base).multiply(pow(1 - arc, 2));
-    base.add(diff);
-}
-
 void SpineSprite::render(RenderContext &ctx) {
-    switch (this->effect) {
-        case GhostEffect: {
-            this->advance(-this->ghost.time * this->ghost.frames);
-            for (int i = 0; i < this->ghost.frames; ++i) {
-                Color c(this->ghost.color);
-                c.a = (this->color.a * (i + 1) / this->ghost.frames) * this->ghost.color.a;
-                this->_render(ctx, true, this->ghost.slot, c);
-                this->advance(this->ghost.time);
-            }
-            break;
-        }
-        case TrailEffect: {
-            auto slotTip = this->skeleton->getSlots()[this->trail.tip],
-                slotBase = this->skeleton->getSlots()[this->trail.base];
-            if (!(slotTip || slotBase)) {
-                break;
-            }
-            double trailTime = this->trail.time;
-            if (trailTime > 0) {
-                auto slotTrack = this->trail.trackPart > -1 ? this->skeleton->getSlots()[this->trail.trackPart] : nullptr;
-                float inc = -trailTime / this->trail.slices;
-                DrawKey key;
-                key.smooth = SmoothLinear;
-                key.blend = BlendMode::Add;
-                FloatPoint lastTip, lastBase, curTip, curBase;
-                float total = 0;
-                for (int i = 0; i < this->trail.slices; ++i) {
-                    auto attachTip = slotTip->getAttachment(),
-                        attachBase = slotBase->getAttachment();
-                    if ((this->trail.elapsed - 0.05) - total + inc < 0) {
-                        break;
-                    } else {
-                        total -= inc;
-                    }
-                    if (!(attachTip || attachBase) ||
-                        !attachTip->getRTTI().isExactly(spine::PointAttachment::rtti) ||
-                        !attachBase->getRTTI().isExactly(spine::PointAttachment::rtti))
-                    {
-                        this->advance(inc);
-                        continue;
-                    }
-                    spine::PointAttachment
-                        *pointTip = static_cast<spine::PointAttachment*>(attachTip),
-                        *pointBase = static_cast<spine::PointAttachment*>(attachBase);
-                    pointTip->computeWorldPosition(slotTip->getBone(), curTip.x, curTip.y);
-                    pointBase->computeWorldPosition(slotBase->getBone(), curBase.x, curBase.y);
-                    if (i > this->trail.slices - this->trail.arc) {
-                        _applyArc(curBase, curTip, static_cast<float>(this->trail.slices - i) / this->trail.arc);
-                    }
-                    if ((!slotTrack || slotTrack->getAttachment()) && lastTip.x && lastTip.y && curTip.x && curTip.y && lastTip.x != curTip.x && lastTip.y != curTip.y) {
-                        Color c(this->trail.color);
-                        c.a = this->trail.color.a * (0.5 + (1 - static_cast<float>(i) / this->trail.slices) / 2);
-                        _renderTrail(key, ctx, lastTip, lastBase, curTip, curBase, c);
-                    }
-                    this->advance(inc);
-                    lastTip.setTo(curTip);
-                    lastBase.setTo(curBase);
-                }
-                this->advance(total);
-            }
-            this->trail.elapsed += ctx.elapsed;
-            break;
-        }
-        default: {}
-    }
-    this->_render(ctx, false, 0, Color::black());
-}
-
-void SpineSprite::_renderTrail(DrawKey &key, RenderContext &ctx, FloatPoint lastTip, FloatPoint lastBase, FloatPoint curTip, FloatPoint curBase, Color &color) {
-    Triangle t1(lastTip.x, lastTip.y, lastBase.x, lastBase.y, curTip.x, curTip.y);
-    Triangle t2(lastBase.x, lastBase.y, curTip.x, curTip.y, curBase.x, curBase.y);
-    t1.scale(this->scale.x, this->scale.y);
-    t1.translate(this->position);
-    t2.scale(this->scale.x, this->scale.y);
-    t2.translate(this->position);
-    ctx.addTriangle(key, t1, t1, color);
-    ctx.addTriangle(key, t2, t2, color);
-}
-
-void SpineSprite::_render(RenderContext &ctx, bool ghost, int ghostSlot, Color ghostColor) {
     spine::Skeleton &skeleton = *this->skeleton;
     spine::Vector<spine::Slot*> &drawOrder = skeleton.getDrawOrder();
     size_t size = drawOrder.size();
     for (size_t i = 0; i < size; ++i) {
         spine::Slot *slot = drawOrder[i];
-        if (ghost && ((ghostSlot != -1) && slot->getData().getIndex() != ghostSlot)) {
-            continue;
-        }
         Color color;
-        if (ghost) {
-            color = ghostColor;
-            color.a = ghostColor.a * skeleton.getColor().a * slot->getColor().a;
-        } else {
-            color.r = this->color.r * skeleton.getColor().r * slot->getColor().r;
-            color.g = this->color.g * skeleton.getColor().g * slot->getColor().g;
-            color.b = this->color.b * skeleton.getColor().b * slot->getColor().b;
-            color.a = this->color.a * skeleton.getColor().a * slot->getColor().a;
-        }
+        color.r = this->color.r * skeleton.getColor().r * slot->getColor().r;
+        color.g = this->color.g * skeleton.getColor().g * slot->getColor().g;
+        color.b = this->color.b * skeleton.getColor().b * slot->getColor().b;
+        color.a = this->color.a * skeleton.getColor().a * slot->getColor().a;
         spine::Attachment *attachment = slot->getAttachment();
         if (!attachment) {
             continue;

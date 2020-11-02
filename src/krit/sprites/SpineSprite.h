@@ -61,45 +61,12 @@ struct SkeletonBinaryData {
     }
 };
 
-enum SpineEffectType {
-    NoSpineEffect,
-    GhostEffect,
-    TrailEffect,
-};
-
-struct GhostData {
-    int slot;
-    int frames = 0;
-    Color color = Color::white();
-    double time = 0;
-};
-
-struct TrailData {
-    int tip;
-    int base;
-    int trackPart;
-    int slices = 0;
-    int arc = 0;
-    double time = 0;
-    double elapsed = 0;
-    Color color = Color::white();
-};
-
 struct SpineSprite: public VisibleSprite {
     static float worldVertices[1024];
     static spine::String _customSkin;
 
     double angle = 0;
     double rate = 1;
-
-    SpineEffectType effect = NoSpineEffect;
-    union {
-        GhostData ghost;
-        TrailData trail;
-    };
-
-    std::string trailTip;
-    std::string trailBase;
 
     std::shared_ptr<SkeletonBinaryData> bin;
     spine::Skeleton *skeleton;
@@ -142,14 +109,10 @@ struct SpineSprite: public VisibleSprite {
     }
 
     void update(UpdateContext &ctx) override;
-    void render(RenderContext &ctx) override;
+    virtual void render(RenderContext &ctx) override;
     Dimensions getSize() override { return Dimensions(0, 0); }
     void resize(double w, double h) override {}
     void advance(float time);
-
-    private:
-        void _render(RenderContext &ctx, bool ghost, int ghostSlot, Color ghostColor);
-        void _renderTrail(DrawKey &key, RenderContext &ctx, FloatPoint lastTip, FloatPoint lastBase, FloatPoint curTip, FloatPoint curBase, Color &color);
 };
 
 }

@@ -9,9 +9,9 @@
 namespace krit {
 
 struct Sprite {
-    virtual void render(RenderContext &ctx) {}
-    virtual void update(UpdateContext &ctx) {}
-    virtual void fixedUpdate(UpdateContext &ctx) {}
+    virtual void render(RenderContext &) {}
+    virtual void update(UpdateContext &) {}
+    virtual void fixedUpdate(UpdateContext &) {}
 };
 
 struct SpriteStyle {

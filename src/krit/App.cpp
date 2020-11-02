@@ -103,7 +103,7 @@ void App::run() {
             }
             ++ctx.frameCount;
             ++ctx.frameId;
-            
+            ctx.elapsed = frameDelta;
             engine.fixedUpdate(ctx);
         }
         if (accumulator > frameDelta2) {

@@ -11,6 +11,8 @@ const AssetInfo Assets::_assets[AssetCount] = {
         .path = "{{ asset.path }}",
         {% if asset.type == 'Image': %}
         .properties = AssetProperties({{ asset.width }}, {{ asset.height }}),
+        {% else %}
+        .properties = AssetProperties(),
         {% endif %}
     },
     {% endfor %}

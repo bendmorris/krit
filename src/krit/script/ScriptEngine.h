@@ -3,6 +3,7 @@
 
 #include "krit/ecs/Entity.h"
 #include "quickjs.h"
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -16,12 +17,21 @@ namespace krit {
 template <typename T> JSValue _valueToJS(JSContext *ctx, T val);
 template <typename T> void _valueFromJS(JSContext *ctx, T *dest, JSValue val);
 
+template <> inline void _valueFromJS(JSContext *ctx, void *dest, JSValue arg) { }
 template <> inline JSValue _valueToJS(JSContext *ctx, bool arg) { return JS_NewBool(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, bool *dest, JSValue arg) { *dest = JS_ToBool(ctx, arg); }
 template <> inline JSValue _valueToJS(JSContext *ctx, int arg) { return JS_NewInt32(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, int *dest, JSValue arg) { JS_ToInt32(ctx, dest, arg); }
 template <> inline JSValue _valueToJS(JSContext *ctx, double arg) { return JS_NewFloat64(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, double *dest, JSValue arg) { JS_ToFloat64(ctx, dest, arg); }
+template <> inline JSValue _valueToJS(JSContext *ctx, JSValue arg) { return arg; }
+template <> inline void _valueFromJS(JSContext *ctx, JSValue *dest, JSValue arg) { JS_DupValue(ctx, arg); *dest = arg; }
+template <> inline JSValue _valueToJS(JSContext *ctx, char *s) { return JS_NewString(ctx, s); }
+template <> inline void _valueFromJS(JSContext *ctx, char **s, JSValue arg) {
+    const char *val = JS_ToCString(ctx, arg);
+    *s = new char[strlen(val) + 1];
+    strcpy(*s, val);
+}
 
 template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head head, Tail... tail) {
     _unpackCallArgs<Head>(ctx, args, head);
@@ -30,11 +40,11 @@ template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, 
 template <typename Head> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head head) {
     args[0] = _valueToJS<Head>(ctx, head);
 }
-template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValue *args) {
+template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValue *args, Head head, Tail... tail) {
     _freeArgs<Head>(ctx, args);
-    _freeArgs<Tail...>(ctx, &args[1]);
+    _freeArgs<Tail...>(ctx, args[1]);
 }
-template <typename Head> void _freeArgs(JSContext *ctx, JSValue *args) {
+template <typename Head> void _freeArgs(JSContext *ctx, JSValue *args, Head head) {
     JS_FreeValue(ctx, args[0]);
 }
 
@@ -73,23 +83,34 @@ struct ScriptEngine {
     }
     char *evalToString(const std::string &scriptName, const char *src, size_t len);
 
-    template <typename ReturnValue, typename... ArgTypes> ReturnValue call(const std::string &functionName, ArgTypes... args) {
-        return this->call<ArgTypes...>(functionName.c_str(), args...);
+    /**
+     * Passing `functionName` as a string.
+     */
+    template <typename ReturnValue, typename... ArgTypes> void call(const std::string &functionName, ReturnValue *dest, ArgTypes... args) {
+        return this->call<ReturnValue, ArgTypes...>(functionName.c_str(), dest, args...);
     }
-    template <typename ReturnValue, typename... ArgTypes> ReturnValue call(const char *functionName, ArgTypes... args) {
-        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
 
+    /**
+     * Passing `functionName` as a const char *.
+     */
+    template <typename ReturnValue, typename... ArgTypes> void call(const char *functionName, ReturnValue *dest, ArgTypes... args) {
+        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
+        this->call<ReturnValue, ArgTypes...>(func, dest, args...);
+        JS_FreeValue(ctx, func);
+    }
+
+    template <typename ReturnValue, typename... ArgTypes> void call(JSValue func, ReturnValue *destination, ArgTypes... args) {
         JSValue jsArgs[sizeof...(ArgTypes)];
         _unpackCallArgs<ArgTypes...>(this->ctx, jsArgs, args...);
 
-        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
-        ReturnValue result;
-        _valueFromJS<ReturnValue>(ctx, &result, jsResult);
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, sizeof...(ArgTypes), jsArgs);
+        checkForErrors();
+        if (destination) {
+            _valueFromJS<ReturnValue>(ctx, destination, jsResult);
+        }
         JS_FreeValue(ctx, jsResult);
-        JS_FreeValue(ctx, func);
         _freeArgs<ArgTypes...>(ctx, jsArgs, args...);
         update();
-        return result;
     }
 
     void update();

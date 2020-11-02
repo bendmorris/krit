@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
+#include <cassert>
 
 namespace krit {
 
@@ -119,6 +120,9 @@ void setBlendMode(BlendMode mode) {
             glBlendEquation(GL_FUNC_ADD);
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
+        }
+        default: {
+            assert(false);
         }
     }
     checkForGlErrors("setBlendMode");

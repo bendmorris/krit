@@ -50,7 +50,7 @@ template <typename T> T weightedChoice(WeightedCollection<T> weights) {
     std::uniform_real_distribution<double> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
-    for (int i = 1; i < weights.size(); ++i) {
+    for (size_t i = 1; i < weights.size(); ++i) {
         auto &next = weights[i];
         double cumulativeProbability = 0;
         int weight = next.second;
@@ -70,7 +70,7 @@ template <typename T, typename... Args> T weightedChoice(WeightedCollection<T> w
     std::uniform_real_distribution<double> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
-    for (int i = 1; i < weights.size(); ++i) {
+    for (size_t i = 1; i < weights.size(); ++i) {
         auto &next = weights[i];
         double cumulativeProbability = 0;
         int weight = next.second;

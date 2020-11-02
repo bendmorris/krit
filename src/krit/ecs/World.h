@@ -116,7 +116,7 @@ template <typename... Components> struct World {
             this->_addAll<T, Tail...>(e, id, tail...);
         }
 
-        template<typename T, typename Head> void _addAll(T &e, EntityId id, Head head) {
+        template<typename T, typename Head> void _addAll(T &e, EntityId id, Head) {
             auto &map = std::get<find_first<std::tuple<Components...>, Head>::value>(this->components);
             map.insert(std::make_pair(id, e.template get<Head>()));
         }
@@ -125,7 +125,7 @@ template <typename... Components> struct World {
             this->_removeAll<Head>(e, head);
             this->_removeAll<Tail...>(e, tail...);
         }
-        template <typename Head> void _removeAll(EntityId e, Head head) {
+        template <typename Head> void _removeAll(EntityId e, Head) {
             this->remove<Head>(e);
         }
 
@@ -133,7 +133,7 @@ template <typename... Components> struct World {
             this->_clearAll<Head>(head);
             this->_clearAll<Tail...>(tail...);
         }
-        template <typename Head> void _clearAll(Head head) {
+        template <typename Head> void _clearAll(Head) {
             auto &map = std::get<find_first<std::tuple<Components...>, Head>::value>(this->components);
             map.clear();
         }

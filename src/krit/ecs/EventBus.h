@@ -44,7 +44,7 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
             this->_clearAll<i, Head>(head);
             this->_clearAll<i + 1, Tail...>(tail...);
         }
-        template <int i, typename Head> void _clearAll(Head head) {
+        template <int i, typename Head> void _clearAll(Head) {
             auto &events = std::get<i>(this->events);
             events.clear();
         }
@@ -52,7 +52,7 @@ template <typename EventType, typename... EventDataTypes> struct EventBus {
             this->_stepAll<i, Head>(head);
             this->_stepAll<i + 1, Tail...>(tail...);
         }
-        template <int i, typename Head> void _stepAll(Head head) {
+        template <int i, typename Head> void _stepAll(Head) {
             auto &events = std::get<i>(this->events);
             auto &nextEvents = std::get<i>(this->nextEvents);
             auto &callbacks = std::get<i>(this->callbacks);

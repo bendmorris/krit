@@ -4,8 +4,9 @@
 namespace krit {
 
 EmissionTrack::EmissionTrack(UpdateContext &ctx, ParticleEmission *data, float elapsed):
-    data(data), elapsed(elapsed),
-    image(data->atlas.empty() ? ctx.asset->getImage(data->region) : ctx.asset->getTextureAtlas(data->atlas)->getRegion(data->region))
+    data(data),
+    image(data->atlas.empty() ? ctx.asset->getImage(data->region) : ctx.asset->getTextureAtlas(data->atlas)->getRegion(data->region)),
+    elapsed(elapsed)
 {
     image.blendMode = data->blend;
     image.centerOrigin();
@@ -65,7 +66,7 @@ void Emitter::update(UpdateContext &ctx) {
         emission.elapsed += elapsed;
         int current = pcount(emission.data->time, emission.data->duration, emission.data->count, emission.elapsed);
         for (int i = 0; i < current - last; ++i) {
-            if (particles.size() < emission.data->layer + 1) {
+            if (particles.size() < static_cast<size_t>(emission.data->layer + 1)) {
                 particles.resize(emission.data->layer + 1);
             }
             auto &particles = this->particles[emission.data->layer];
@@ -86,8 +87,8 @@ void Emitter::update(UpdateContext &ctx) {
 
     // update effects to generate new emissions
     for (auto &effect : effects) {
-        float duration = effect.data->duration();
-        float elapsed = ctx.elapsed;
+        // float duration = effect.data->duration();
+        // float elapsed = ctx.elapsed;
         float last = effect.elapsed;
         effect.elapsed += ctx.elapsed;
         
@@ -98,7 +99,7 @@ void Emitter::update(UpdateContext &ctx) {
             }
         }
     }
-    for (int i = 0; i < effects.size(); ++i) {
+    for (size_t i = 0; i < effects.size(); ++i) {
         auto &effect = effects[i];
         if (effect.elapsed > effect.data->duration()) {
             if (effect.continuous) {
