@@ -18,14 +18,19 @@ template <typename T> JSValue _valueToJS(JSContext *ctx, T val);
 template <typename T> void _valueFromJS(JSContext *ctx, T *dest, JSValue val);
 
 template <> inline void _valueFromJS(JSContext *ctx, void *dest, JSValue arg) { }
+
 template <> inline JSValue _valueToJS(JSContext *ctx, bool arg) { return JS_NewBool(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, bool *dest, JSValue arg) { *dest = JS_ToBool(ctx, arg); }
+
 template <> inline JSValue _valueToJS(JSContext *ctx, int arg) { return JS_NewInt32(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, int *dest, JSValue arg) { JS_ToInt32(ctx, dest, arg); }
+
 template <> inline JSValue _valueToJS(JSContext *ctx, double arg) { return JS_NewFloat64(ctx, arg); }
 template <> inline void _valueFromJS(JSContext *ctx, double *dest, JSValue arg) { JS_ToFloat64(ctx, dest, arg); }
-template <> inline JSValue _valueToJS(JSContext *ctx, JSValue arg) { return arg; }
+
+template <> inline JSValue _valueToJS(JSContext *ctx, JSValue arg) { JS_DupValue(ctx, arg); return arg; }
 template <> inline void _valueFromJS(JSContext *ctx, JSValue *dest, JSValue arg) { JS_DupValue(ctx, arg); *dest = arg; }
+
 template <> inline JSValue _valueToJS(JSContext *ctx, char *s) { return JS_NewString(ctx, s); }
 template <> inline void _valueFromJS(JSContext *ctx, char **s, JSValue arg) {
     const char *val = JS_ToCString(ctx, arg);
@@ -33,19 +38,20 @@ template <> inline void _valueFromJS(JSContext *ctx, char **s, JSValue arg) {
     strcpy(*s, val);
 }
 
+template <typename Head> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head head) {
+    args[0] = _valueToJS<Head>(ctx, head);
+}
 template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head head, Tail... tail) {
     _unpackCallArgs<Head>(ctx, args, head);
     _unpackCallArgs<Tail...>(ctx, &args[1], tail...);
 }
-template <typename Head> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head head) {
-    args[0] = _valueToJS<Head>(ctx, head);
-}
-template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValue *args, Head head, Tail... tail) {
-    _freeArgs<Head>(ctx, args);
-    _freeArgs<Tail...>(ctx, args[1]);
-}
+
 template <typename Head> void _freeArgs(JSContext *ctx, JSValue *args, Head head) {
     JS_FreeValue(ctx, args[0]);
+}
+template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValue *args, Head head, Tail... tail) {
+    _freeArgs<Head>(ctx, args, head);
+    _freeArgs<Tail...>(ctx, &args[1], tail...);
 }
 
 /**
@@ -104,7 +110,7 @@ struct ScriptEngine {
         _unpackCallArgs<ArgTypes...>(this->ctx, jsArgs, args...);
 
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, sizeof...(ArgTypes), jsArgs);
-        checkForErrors();
+        checkForErrors(jsResult);
         if (destination) {
             _valueFromJS<ReturnValue>(ctx, destination, jsResult);
         }
@@ -115,6 +121,7 @@ struct ScriptEngine {
 
     void update();
     void checkForErrors();
+    void checkForErrors(JSValue);
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 };

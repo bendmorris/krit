@@ -25,12 +25,13 @@ template <typename... Components> struct World {
     template <typename... TemplateComponents> void add(EntityTemplate<TemplateComponents...> &e) {
         EntityId id = this->newEntity();
         this->_addAll<EntityTemplate<TemplateComponents...>, TemplateComponents...>(e, id, TemplateComponents()...);
+        allEntities[id] = true;
     }
 
     /**
      * Add a single component attached to an existing entity.
      */
-    template <typename ComponentType, class... Args> ComponentType &add(Entity e, Args&&... args) { return this->add<ComponentType, Args...>(args...); }
+    template <typename ComponentType, class... Args> ComponentType &add(const Entity &e, Args&&... args) { return this->add<ComponentType, Args...>(args...); }
     template <typename ComponentType, class... Args> ComponentType &add(EntityId e, Args&&... args) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         map.emplace(std::piecewise_construct,
@@ -43,7 +44,7 @@ template <typename... Components> struct World {
     /**
      * Returns `true` if the entity has the specified component attached.
      */
-    template <typename ComponentType> bool has(Entity e) { return this->has<ComponentType>(e.id); }
+    template <typename ComponentType> bool has(const Entity &e) { return this->has<ComponentType>(e.id); }
     template <typename ComponentType> bool has(EntityId e) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         auto it = map.find(e);
@@ -53,7 +54,7 @@ template <typename... Components> struct World {
     /**
      * Returns a reference to the entity's specific component.
      */
-    template <typename ComponentType> ComponentType &get(Entity e) { return this->get<ComponentType>(e.id); }
+    template <typename ComponentType> ComponentType &get(const Entity &e) { return this->get<ComponentType>(e.id); }
     template <typename ComponentType> ComponentType &get(EntityId e) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         return map[e];
@@ -62,7 +63,7 @@ template <typename... Components> struct World {
     /**
      * Returns a pointer to the component, which can be null if it doesn't exist.
      */
-    template <typename ComponentType> ComponentType *maybeGet(Entity e) { return this->maybeGet<ComponentType>(e.id); }
+    template <typename ComponentType> ComponentType *maybeGet(const Entity &e) { return this->maybeGet<ComponentType>(e.id); }
     template <typename ComponentType> ComponentType *maybeGet(EntityId e) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         auto it = map.find(e);
@@ -72,7 +73,7 @@ template <typename... Components> struct World {
     /**
      * Remove a specific component from an entity.
      */
-    template <typename ComponentType> void remove(Entity e) { this->remove<ComponentType>(e.id); }
+    template <typename ComponentType> void remove(const Entity &e) { this->remove<ComponentType>(e.id); }
     template <typename ComponentType> void remove(EntityId e) {
         auto &map = std::get<find_first<std::tuple<Components...>, ComponentType>::value>(this->components);
         map.erase(e);
@@ -81,11 +82,12 @@ template <typename... Components> struct World {
     /**
      * Removes all components attached to this entity.
      */
-    void removeAll(Entity e) { this->removeAll(e.id); }
+    void removeAll(const Entity &e) { this->removeAll(e.id); }
     void removeAll(EntityId e) {
         --count;
         this->_removeAll<Components...>(e, Components()...);
-        this->freeList.push_back(e);
+        this->recycleList.push_back(e);
+        allEntities.erase(e);
     }
 
     EntityId newEntity() {
@@ -100,16 +102,28 @@ template <typename... Components> struct World {
         return e;
     }
 
+    bool exists(EntityId e) {
+        return allEntities.find(e) != allEntities.end();
+    }
+
     void clear() {
         this->_clearAll<Components...>(Components()...);
         this->next = Entity::NO_ENTITY + 1;
         freeList.clear();
+        recycleList.clear();
+        allEntities.clear();
+    }
+
+    void recycleEntities() {
+        std::move(this->recycleList.begin(), this->recycleList.end(), std::back_inserter(this->freeList));
+        this->recycleList.clear();
     }
 
     private:
+        std::unordered_map<EntityId, bool> allEntities;
         std::tuple<std::unordered_map<EntityId, Components>...> components;
-        unsigned int next = Entity::NO_ENTITY + 1;
-        std::vector<EntityId> freeList;
+        EntityId next = Entity::NO_ENTITY + 1;
+        std::vector<EntityId> freeList, recycleList;
 
         template <typename T, typename Head, typename... Tail> void _addAll(T &e, EntityId id, Head head, Tail... tail) {
             this->_addAll<T, Head>(e, id, head);

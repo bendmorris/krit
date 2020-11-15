@@ -63,7 +63,7 @@ ScriptEngine::~ScriptEngine() {
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
     JSValue result = JS_Eval(ctx, src, len, scriptName, JS_EVAL_TYPE_MODULE);
     if (JS_IsException(result) || JS_IsError(ctx, result)) {
-        printf("SCRIPT ERROR: %s\n", scriptName);
+        printf("error evaluating script: %s\n", scriptName);
         js_std_dump_error1(ctx, result);
     }
     JS_FreeValue(ctx, result);
@@ -97,12 +97,15 @@ void ScriptEngine::update() {
 }
 
 void ScriptEngine::checkForErrors() {
-    JSValue exception_val;
-    exception_val = JS_GetException(ctx);
-    if (JS_IsException(exception_val)) {
+    JSValue exception_val = JS_GetException(ctx);
+    checkForErrors(exception_val);
+    JS_FreeValue(ctx, exception_val);
+}
+
+void ScriptEngine::checkForErrors(JSValue exception_val) {
+    if (JS_IsError(ctx, exception_val) || JS_IsException(exception_val)) {
         js_std_dump_error1(ctx, exception_val);
     }
-    JS_FreeValue(ctx, exception_val);
 }
 
 }

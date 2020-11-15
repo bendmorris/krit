@@ -461,11 +461,11 @@ std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"button", &parseButton},
 };
 
-LayoutRoot::LayoutRoot(std::string path, AssetContext &asset)
+LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset)
 {
     XML_Parser parser = XML_ParserCreate(nullptr);
     LayoutParseData data;
-    data.path = &path;
+    data.path = (std::string*)&path;
     data.node = nullptr;
     data.root = this;
     data.asset = &asset;

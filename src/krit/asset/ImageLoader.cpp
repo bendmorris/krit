@@ -60,9 +60,7 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
             glGenerateMipmap(GL_TEXTURE_2D);
             checkForGlErrors("asset load");
 
-            TaskManager::instance->push([surface](UpdateContext &) {
-                SDL_FreeSurface(surface);
-            });
+            SDL_FreeSurface(surface);
         });
     });
 

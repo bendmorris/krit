@@ -140,7 +140,7 @@ struct LayoutRoot: public Sprite {
     std::unordered_map<std::string, LayoutNode*> nodeMap;
 
     LayoutRoot() {}
-    LayoutRoot(std::string path, AssetContext &asset);
+    LayoutRoot(const std::string &path, AssetContext &asset);
 
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);

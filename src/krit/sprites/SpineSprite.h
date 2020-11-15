@@ -78,6 +78,7 @@ struct SpineSprite: public VisibleSprite {
 
     SpineSprite(AssetContext &asset, const std::string &id);
     SpineSprite(AssetContext &asset, const AssetInfo &info);
+    ~SpineSprite();
 
     void setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
     void addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);

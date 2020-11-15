@@ -34,6 +34,12 @@ SpineSprite::SpineSprite(AssetContext &asset, const AssetInfo &info) {
     this->skin = new spine::Skin(spine::String("custom"));
 }
 
+SpineSprite::~SpineSprite() {
+    delete this->skeleton;
+    delete this->animationState;
+    delete this->skin;
+}
+
 float SpineSprite::worldVertices[1024] = {0};
 
 std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {
