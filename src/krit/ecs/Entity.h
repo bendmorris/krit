@@ -6,7 +6,7 @@
 
 namespace krit {
 
-typedef uint16_t EntityId;
+typedef uint32_t EntityId;
 
 struct Entity {
     static const int NO_ENTITY = 0;

@@ -89,34 +89,91 @@ struct ScriptEngine {
     }
     char *evalToString(const std::string &scriptName, const char *src, size_t len);
 
-    /**
-     * Passing `functionName` as a string.
-     */
-    template <typename ReturnValue, typename... ArgTypes> void call(const std::string &functionName, ReturnValue *dest, ArgTypes... args) {
-        return this->call<ReturnValue, ArgTypes...>(functionName.c_str(), dest, args...);
-    }
-
-    /**
-     * Passing `functionName` as a const char *.
-     */
-    template <typename ReturnValue, typename... ArgTypes> void call(const char *functionName, ReturnValue *dest, ArgTypes... args) {
-        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
-        this->call<ReturnValue, ArgTypes...>(func, dest, args...);
-        JS_FreeValue(ctx, func);
-    }
-
-    template <typename ReturnValue, typename... ArgTypes> void call(JSValue func, ReturnValue *destination, ArgTypes... args) {
-        JSValue jsArgs[sizeof...(ArgTypes)];
-        _unpackCallArgs<ArgTypes...>(this->ctx, jsArgs, args...);
-
-        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, sizeof...(ArgTypes), jsArgs);
+    template <typename ReturnValue> void callPut(ReturnValue *dest, JSValue func) {
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors(jsResult);
-        if (destination) {
-            _valueFromJS<ReturnValue>(ctx, destination, jsResult);
+        if (dest) {
+            _valueFromJS<ReturnValue>(ctx, dest, jsResult);
         }
         JS_FreeValue(ctx, jsResult);
-        _freeArgs<ArgTypes...>(ctx, jsArgs, args...);
         update();
+    }
+    template <typename ReturnValue, typename Arg, typename... ArgTypes> void callPut(ReturnValue *dest, JSValue func, Arg arg, ArgTypes... args) {
+        JSValue jsArgs[1 + sizeof...(ArgTypes)];
+        _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
+
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
+        checkForErrors(jsResult);
+        if (dest) {
+            _valueFromJS<ReturnValue>(ctx, dest, jsResult);
+        }
+        JS_FreeValue(ctx, jsResult);
+        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        update();
+    }
+    template <typename ReturnValue, typename... ArgTypes> void callPut(const char *functionName, ReturnValue *dest, ArgTypes... args) {
+        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
+        this->callPut<ReturnValue, ArgTypes...>(func, dest, args...);
+        JS_FreeValue(ctx, func);
+    }
+    template <typename ReturnValue, typename... ArgTypes> void callPut(const std::string &functionName, ReturnValue *dest, ArgTypes... args) {
+        return this->callPut<ReturnValue, ArgTypes...>(functionName.c_str(), dest, args...);
+    }
+
+
+    template <typename ReturnValue> ReturnValue callReturn(JSValue func) {
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
+        checkForErrors(jsResult);
+        ReturnValue dest;
+        _valueFromJS<ReturnValue>(ctx, &dest, jsResult);
+        JS_FreeValue(ctx, jsResult);
+        update();
+        return dest;
+    }
+    template <typename ReturnValue, typename Arg, typename... ArgTypes> ReturnValue callReturn(JSValue func, Arg arg, ArgTypes... args) {
+        JSValue jsArgs[1 + sizeof...(ArgTypes)];
+        _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
+        checkForErrors(jsResult);
+        ReturnValue dest;
+        _valueFromJS<ReturnValue>(ctx, &dest, jsResult);
+        JS_FreeValue(ctx, jsResult);
+        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        update();
+        return dest;
+    }
+    template <typename ReturnValue, typename... ArgTypes> ReturnValue callReturn(const char *functionName, ArgTypes... args) {
+        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
+        ReturnValue result = this->callReturn<ReturnValue, ArgTypes...>(func, args...);
+        JS_FreeValue(ctx, func);
+        return result;
+    }
+    template <typename ReturnValue, typename... ArgTypes> ReturnValue callReturn(const std::string &functionName, ArgTypes... args) {
+        return this->callReturn<ReturnValue, ArgTypes...>(functionName.c_str(), args...);
+    }
+
+    void callVoid(JSValue func) {
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
+        checkForErrors(jsResult);
+        JS_FreeValue(ctx, jsResult);
+        update();
+    }
+    template <typename Arg, typename... ArgTypes> void callVoid(JSValue func, Arg arg, ArgTypes... args) {
+        JSValue jsArgs[1 + sizeof...(ArgTypes)];
+        _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
+        JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
+        checkForErrors(jsResult);
+        JS_FreeValue(ctx, jsResult);
+        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        update();
+    }
+    template <typename... ArgTypes> void callVoid(const char *functionName, ArgTypes... args) {
+        JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
+        this->callVoid<ReturnValue, ArgTypes...>(func, args...);
+        JS_FreeValue(ctx, func);
+    }
+    template <typename... ArgTypes> void callVoid(const std::string &functionName, ArgTypes... args) {
+        this->callVoid<ArgTypes...>(functionName.c_str(), args...);
     }
 
     void update();
