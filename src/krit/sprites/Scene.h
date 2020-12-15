@@ -6,6 +6,7 @@
 #include "krit/input/InputContext.h"
 #include "krit/input/MouseContext.h"
 #include "krit/Sprite.h"
+#include "krit/script/ScriptEngine.h"
 
 namespace krit {
 
@@ -41,6 +42,25 @@ struct Scene: public Sprite {
         float maxAlpha = 0;
         double fadeDuration = 0;
         bool fadingOut = false;
+};
+
+struct ScriptScene: public Scene {
+    ScriptEngine &engine;
+    JSValue _update;
+    JSValue _fixedUpdate;
+    JSValue _render;
+
+    ScriptScene(UpdateContext &ctx, ScriptEngine &engine):
+        Scene(ctx),
+        engine(engine),
+        _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
+        _fixedUpdate(JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
+        _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render"))
+    {}
+
+    void update(UpdateContext &ctx) override  { engine.callVoid(_update, ctx); }
+    void fixedUpdate(UpdateContext &ctx) override  { engine.callVoid(_fixedUpdate, ctx); }
+    void render(RenderContext &ctx) override  { engine.callVoid(_render, ctx); }
 };
 
 }

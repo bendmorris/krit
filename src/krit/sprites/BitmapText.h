@@ -30,6 +30,7 @@ struct BitmapTextOptions {
     double lineSpacing = 0;
     bool dynamic = true;
 
+    BitmapTextOptions() {}
     BitmapTextOptions(std::shared_ptr<BitmapFont> font): font(font) {}
 
     BitmapTextOptions &setSize(int size) { this->size = size; return *this; }
@@ -67,6 +68,13 @@ enum TextOpcodeType {
     RenderSprite,
 };
 
+struct NewlineData {
+    Dimensions first;
+    AlignType second;
+
+    NewlineData(const Dimensions &d, AlignType a): first(d), second(a) {}
+};
+
 union TextOpcodeData {
     bool present;
     Color color;
@@ -74,7 +82,7 @@ union TextOpcodeData {
     AlignType align;
     CustomRenderFunction *custom = nullptr;
     StringSlice text;
-    std::pair<Dimensions, AlignType> newLine;
+    NewlineData newLine;
     VisibleSprite *sprite;
 
     TextOpcodeData(): present(false) {}
@@ -91,6 +99,7 @@ struct TextOpcode {
     TextOpcodeType type;
     TextOpcodeData data;
 
+    TextOpcode() = default;
     TextOpcode(TextOpcodeType type, TextOpcodeData data): type(type), data(data) {}
     TextOpcode(TextOpcodeType type): type(type) {}
 };
@@ -103,7 +112,7 @@ struct FormatTagOptions {
     CustomRenderFunction *custom = nullptr;
     VisibleSprite *sprite = nullptr;
 
-    FormatTagOptions() {}
+    FormatTagOptions() = default;
 
     FormatTagOptions &setColor(Color c) { this->color = Option<Color>(c); return *this; }
     FormatTagOptions &setScale(double s) { this->scale = Option<double>(s); return *this; }
@@ -131,6 +140,7 @@ struct BitmapText: public VisibleSprite {
     int charCount = -1;
     int maxChars = 0;
 
+    BitmapText() = default;
     BitmapText(const BitmapTextOptions &options);
 
     BitmapText &setFont(std::shared_ptr<BitmapFont> font);

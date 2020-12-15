@@ -125,6 +125,7 @@ void App::run() {
     }
 
     TaskManager::instance->killed = true;
+    exit(0);
 }
 
 MouseButton sdlMouseButton(int b) {

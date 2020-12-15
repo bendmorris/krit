@@ -23,11 +23,19 @@ include_directories(/usr/include/SDL2)
 include_directories(imgui)
 include_directories(quickjs)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
+include_directories(${KRIT_INCLUDE_PATHS})
 
 string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
+file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
+    CONFIGURE_DEPENDS
+    ${CMAKE_CURRENT_BINARY_DIR}/script/*.cpp
+)
+
 add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.cpp
     ${KRIT_SRC_FILES}
 )
 target_link_libraries(${PROJECT_NAME}
@@ -66,3 +74,12 @@ add_custom_target(
     BYPRODUCTS assets.zip
 )
 add_dependencies(compile-assets copy-assets)
+
+if(KRIT_SCRIPT_BRIDGE_PATH)
+    add_custom_target(
+        generate-bridge ALL
+        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} ${CMAKE_CURRENT_BINARY_DIR}
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
+    )
+    add_dependencies(${PROJECT_NAME} generate-bridge)
+endif()

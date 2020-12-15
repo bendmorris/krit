@@ -1,0 +1,16 @@
+#ifndef KRIT_SCRIPT_SCRIPTBRIDGE
+#define KRIT_SCRIPT_SCRIPTBRIDGE
+
+#include "krit/script/ScriptEngine.h"
+
+namespace krit {
+
+{% for bridgeFunc in bridgeFuncs %}
+JS_FUNC({{ bridgeFunc.fullName }});
+{% endfor %}
+
+void initScriptBridge(ScriptEngine &engine);
+
+}
+
+#endif

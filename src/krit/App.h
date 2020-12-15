@@ -36,7 +36,7 @@ struct App {
     /**
      * Run the app; will continue until
      */
-    void run();
+    [[ noreturn ]] void run();
 
     /**
      * Ends the run() loop.

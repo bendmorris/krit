@@ -1,0 +1,120 @@
+#include "krit/script/ScriptClass.h"
+#include "quickjs.h"
+#include <string>
+
+{% for wrapper in wrappers %}
+
+{% for import in wrapper.import %}
+#include "{{ import }}"
+{% endfor %}
+
+namespace {{wrapper.namespace}} {
+
+{% for prop in wrapper.props %}
+static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    if (!p) {
+        return JS_EXCEPTION;
+    }
+    {% if prop.tags.getter %}
+    const {{ prop.cppType.type }} &v = {% if prop.pointer %}&{{ '*' | repeat(prop.cppType.pointer) }}{% endif %}p->{{ prop.tags.getter }}();
+    {% else %}
+    const {{ prop.cppType.type }} &v = {% if prop.pointer %}&{% endif %}{{ '*' | repeat(prop.cppType.pointer) }}p->{{ prop.name }};
+    {% endif %}
+    return valueToJs(ctx, v);
+}
+
+{% if not prop.tags.readonly %}
+static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    if (!p) {
+        return JS_EXCEPTION;
+    }
+    {% if prop.tags.getter %}
+    jsToValue(ctx, p->{{ prop.tags.getter }}(), val);
+    {% else %}
+    jsToValue(ctx, p->{{ prop.name }}, val);
+    {% endif %}
+    return JS_UNDEFINED;
+}
+{% endif %}
+{% endfor %}
+
+{% for method in wrapper.methods %}
+static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    {% set comma = joiner() %}
+    {% for param in method.params %}
+    {{ param.cppType.type }} arg{{ loop.index }};
+    jsToValue(ctx, arg{{ loop.index }}, argv[{{ loop.index - 1 }}]);
+    {% endfor %}
+    {% if method.returnCppType %}
+    auto {% if method.returnCppType.reference %}&{% endif %}rt =
+    {% endif %}
+    p->{{method.name}}(
+        {% for param in method.params %}
+        {{ comma() }} {% if param.pointer %}&{% endif %} arg{{ loop.index }}
+        {% endfor %}
+    );
+    {% if method.returnCppType %}
+    return valueToJs(ctx, rt);
+    {% else %}
+    return JS_UNDEFINED;
+    {% endif %}
+}
+{% endfor %}
+
+}
+
+namespace krit {
+
+static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
+    {% for prop in wrapper.props %}
+    JS_CGETSET_DEF("{{ prop.name }}", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
+    {% endfor %}
+    {% for method in wrapper.methods %}
+    JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ wrapper.namespace }}::js_{{ wrapper.name }}_{{ method.name }}),
+    {% endfor %}
+};
+
+static JSClassDef classDef{{wrapper.name}} = {
+    "{{ wrapper.name }}",
+    .finalizer = nullptr,
+};
+
+template <> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs<ScriptClass{{ wrapper.name }}>() {
+    return std::make_pair(protoFuncs{{ wrapper.name }}, countof(protoFuncs{{ wrapper.name }}));
+}
+
+template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
+    return &classDef{{ wrapper.name }};
+}
+
+template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    JS_SetOpaque(val, (void*)&arg);
+    return val;
+}
+template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} &dest, JSValue val) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    dest = *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+}
+
+template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    JS_SetOpaque(val, (void*)arg);
+    return val;
+}
+template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* &dest, JSValue val) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    dest = static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+}
+
+}
+
+{% endfor %}

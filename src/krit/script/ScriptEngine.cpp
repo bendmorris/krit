@@ -1,9 +1,11 @@
 #include "krit/script/ScriptEngine.h"
+#include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptBridge.h"
 #include <cstring>
 
 namespace krit {
 
-JSRuntime *ScriptEngine::rt = nullptr;
+JSRuntime *ScriptEngine::rt = JS_NewRuntime();
 
 static void js_dump_obj(JSContext *ctx, FILE *f, JSValueConst val) {
     const char *str;
@@ -46,14 +48,51 @@ static void js_std_dump_error1(JSContext *ctx, JSValueConst exception_val) {
     }
 }
 
+std::vector<JSClassID> ScriptEngine::classIds(ScriptClassCount);
+
+template <int N> static void initScriptClasses() {
+    JSRuntime *rt = ScriptEngine::rt;
+    auto &classIds = ScriptEngine::classIds;
+    JSClassDef *classDef = scriptClassDef<N>();
+    JS_NewClassID(&classIds[N]);
+    JS_NewClass(rt, classIds[N], classDef);
+
+    initScriptClasses<N + 1>();
+}
+
+template <> void initScriptClasses<ScriptClassCount>() {}
+
+template <int N> static void registerScriptClasses(ScriptEngine *engine) {
+    JSContext *ctx = engine->ctx;
+    auto funcs = scriptClassProtoFuncs<N>();
+    JSValue proto = JS_NewObject(ctx);
+    JS_SetPropertyFunctionList(ctx, proto, funcs.first, funcs.second);
+    JS_SetClassProto(ctx, engine->classIds[N], proto);
+
+    registerScriptClasses<N + 1>(engine);
+}
+
+template <> void registerScriptClasses<ScriptClassCount>(ScriptEngine *engine) {}
+
 ScriptEngine::ScriptEngine() {
+    static bool initialized = false;
+    if (!initialized) {
+        initialized = true;
+        initScriptClasses<0>();
+    }
+
     ctx = JS_NewContext(rt);
     JS_SetContextOpaque(ctx, this);
     exports = JS_NewObject(ctx);
     JSValue globalObj = JS_GetGlobalObject(ctx);
     JS_SetPropertyStr(ctx, globalObj, "exports", exports);
     JS_FreeValue(ctx, globalObj);
+
+    registerScriptClasses<0>(this);
+
+    initScriptBridge(*this);
 }
+
 
 ScriptEngine::~ScriptEngine() {
     JS_FreeValue(ctx, exports);

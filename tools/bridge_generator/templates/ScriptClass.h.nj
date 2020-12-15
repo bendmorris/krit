@@ -1,0 +1,32 @@
+#ifndef KRIT_SCRIPT_SCRIPTCLASS
+#define KRIT_SCRIPT_SCRIPTCLASS
+
+#include "krit/script/ScriptEngine.h"
+
+{% for wrapper in wrappers %}
+namespace {{ wrapper.namespace }} {
+    struct {{ wrapper.name }};
+}
+{% endfor %}
+
+namespace krit {
+
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
+
+enum ScriptClass {
+    {% for wrapper in wrappers %}
+    ScriptClass{{ wrapper.name }},
+    {% endfor %}
+    ScriptClassCount,
+};
+
+{% for wrapper in wrappers %}
+template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg);
+template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} &dest, JSValue val);
+template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg);
+template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* &dest, JSValue val);
+{% endfor %}
+
+}
+
+#endif

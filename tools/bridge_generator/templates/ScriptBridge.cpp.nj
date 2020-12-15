@@ -1,0 +1,30 @@
+#include "krit/script/ScriptBridge.h"
+#include "krit/script/ScriptEngine.h"
+#include "quickjs.h"
+
+namespace krit {
+
+void initScriptBridge(ScriptEngine &engine) {
+    JSContext *ctx = engine.ctx;
+    JSValue globalObj = JS_GetGlobalObject(ctx);
+    JSValue bridge = globalObj;
+    {% macro bridgeNamespace(contents) %}
+    {
+        {% if contents.namespace %}
+        JSValue oldBridge = bridge;
+        JSValue bridge = JS_NewObject(ctx);
+        JS_SetPropertyStr(ctx, oldBridge, "{{ contents.namespace }}", bridge);
+        {% endif %}
+        {% for function in contents.functions %}
+        JS_SetPropertyStr(ctx, bridge, "{{ function.name }}", JS_NewCFunction(ctx, js_{{ function.fullName }}, "{{ function.name }}", {{ function.params.length }}));
+        {% endfor %}
+        {% for namespace in contents.namespaces %}
+        {{ bridgeNamespace(namespace) }}
+        {% endfor %}
+    }
+    {% endmacro %}
+    {{ bridgeNamespace(bridges) }}
+    JS_FreeValue(ctx, globalObj);
+}
+
+}

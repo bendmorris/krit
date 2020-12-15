@@ -123,7 +123,7 @@ template <typename ModelType> struct DataModel {
     /**
      * Given a single YAML node, emplace a data element into `data`.
      */
-    virtual void parseItem(yaml_document_t *doc, yaml_node_t *node) = 0;
+    virtual void parseItem(yaml_document_t *doc, yaml_node_t *node) {};
 
     private:
         std::vector<ModelType> data;
