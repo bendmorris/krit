@@ -1,7 +1,7 @@
 #ifndef KRIT_SCRIPT_SCRIPTCLASS
 #define KRIT_SCRIPT_SCRIPTCLASS
 
-#include "krit/script/ScriptEngine.h"
+#include "krit/script/ScriptValue.h"
 
 {% for wrapper in wrappers %}
 namespace {{ wrapper.namespace }} {
@@ -21,10 +21,11 @@ enum ScriptClass {
 };
 
 {% for wrapper in wrappers %}
-template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg);
-template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} &dest, JSValue val);
-template <> inline JSValue valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg);
-template <> inline void jsToValue(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* &dest, JSValue val);
+template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &val);
+template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::jsToValue(JSContext *ctx, JSValue val);
+
+template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} * const &val);
+template <> {{ wrapper.namespace }}::{{ wrapper.name }}* ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::jsToValue(JSContext *ctx, JSValue val);
 {% endfor %}
 
 }

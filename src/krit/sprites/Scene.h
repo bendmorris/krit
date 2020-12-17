@@ -58,9 +58,9 @@ struct ScriptScene: public Scene {
         _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render"))
     {}
 
-    void update(UpdateContext &ctx) override  { engine.callVoid(_update, ctx); }
-    void fixedUpdate(UpdateContext &ctx) override  { engine.callVoid(_fixedUpdate, ctx); }
-    void render(RenderContext &ctx) override  { engine.callVoid(_render, ctx); }
+    void update(UpdateContext &ctx) override;
+    void fixedUpdate(UpdateContext &ctx) override;
+    void render(RenderContext &ctx) override;
 };
 
 }

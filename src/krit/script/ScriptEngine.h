@@ -1,73 +1,30 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
-#include "krit/ecs/Entity.h"
+#include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptFinalizer.h"
+#include "krit/script/ScriptValue.h"
 #include "quickjs.h"
 #include <cstring>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+namespace krit {
+
+template <class T, std::size_t = sizeof(T)> std::true_type is_complete_impl(T *);
+std::false_type is_complete_impl(...);
+
+template <class T> using is_complete = decltype(is_complete_impl(std::declval<T*>()));
+
 #define JS_FUNC(n) JSValue js_##n(JSContext *ctx, JSValueConst this_val, int argc, JSValueConst *argv)
 #define JS_GLOBAL_FUNC(n, a) JS_SetPropertyStr(ctx, globalObj, #n, JS_NewCFunction(ctx, js_##n, #n, a))
 #define JS_GLOBAL_FUNC2(n, f, a) JS_SetPropertyStr(ctx, globalObj, #n, JS_NewCFunction(ctx, f, #n, a))
 #define JS_METHOD(obj, n, a) JS_SetPropertyStr(ctx, obj, #n, JS_NewCFunction(ctx, js_##n, #n, a))
-
-namespace krit {
-
-template <typename T> JSValue valueToJs(JSContext *ctx, const T &val);
-template <typename T> void jsToValue(JSContext *ctx, T &dest, JSValue val);
-
-template <> inline JSValue valueToJs(JSContext *ctx, const bool &arg) { return JS_NewBool(ctx, arg); }
-template <> inline void jsToValue(JSContext *ctx, bool &dest, JSValue arg) { dest = JS_ToBool(ctx, arg); }
-
-template <> inline JSValue valueToJs(JSContext *ctx, const int &arg) { return JS_NewInt32(ctx, arg); }
-template <> inline void jsToValue(JSContext *ctx, int &dest, JSValue arg) { JS_ToInt32(ctx, &dest, arg); }
-
-template <> inline JSValue valueToJs(JSContext *ctx, const float &arg) { return JS_NewFloat64(ctx, arg); }
-template <> inline void jsToValue(JSContext *ctx, float &dest, JSValue arg) { double d; JS_ToFloat64(ctx, &d, arg); dest = d; }
-
-template <> inline JSValue valueToJs(JSContext *ctx, const double &arg) { return JS_NewFloat64(ctx, arg); }
-template <> inline void jsToValue(JSContext *ctx, double &dest, JSValue arg) { JS_ToFloat64(ctx, &dest, arg); }
-
-template <> inline JSValue valueToJs(JSContext *ctx, const JSValue &arg) { JS_DupValue(ctx, arg); return arg; }
-template <> inline void jsToValue(JSContext *ctx, JSValue &dest, JSValue arg) { JS_DupValue(ctx, arg); dest = arg; }
-
-template <> inline JSValue valueToJs(JSContext *ctx, char * const &s) { return JS_NewString(ctx, s); }
-template <> inline void jsToValue(JSContext *ctx, char * &s, JSValue arg) {
-    const char *val = JS_ToCString(ctx, arg);
-    s = new char[strlen(val) + 1];
-    strcpy(s, val);
-}
-
-template <> inline JSValue valueToJs(JSContext *ctx, const std::string &s) { return JS_NewString(ctx, s.c_str()); }
-template <> inline void jsToValue(JSContext *ctx, std::string &dest, JSValue arg) {
-    char *s;
-    jsToValue(ctx, s, arg);
-    dest = s;
-}
-
-template <typename T> inline JSValue valueToJs(JSContext *ctx, const std::unordered_map<std::string, T> &s) {
-    JSValue obj = JS_NewObject(ctx);
-    for (auto it = s.begin(); it != s.end(); ++it) {
-        JS_SetPropertyStr(ctx, obj, it->first.c_str(), valueToJs(ctx, &it->second));
-    }
-    return obj;
-}
-
-template <typename T> inline JSValue valueToJs(JSContext *ctx, const std::vector<T> &v) {
-    JSValue arr = JS_NewArray(ctx);
-    JSValue push = JS_GetPropertyStr(ctx, arr, "push");
-    for (size_t i = 0; i < v->size(); ++i) {
-        JSValue arg = valueToJs(ctx, &v[i]);
-        JS_Call(ctx, push, arr, 1, &arg);
-    }
-    JS_FreeValue(ctx, push);
-    return arr;
-}
+#define GET_ENGINE ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
 
 template <typename Head> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head) {
-    args[0] = valueToJs<Head>(ctx, head);
+    args[0] = ScriptValue<Head>::valueToJs(ctx, head);
 }
 template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head, Tail&... tail) {
     _unpackCallArgs<Head>(ctx, args, head);
@@ -122,7 +79,7 @@ struct ScriptEngine {
     template <typename ReturnValue> void callPut(ReturnValue &dest, JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors(jsResult);
-        jsToValue<ReturnValue>(ctx, dest, jsResult);
+        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
     }
@@ -132,7 +89,7 @@ struct ScriptEngine {
 
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors(jsResult);
-        jsToValue<ReturnValue>(ctx, dest, jsResult);
+        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
         update();
@@ -151,7 +108,7 @@ struct ScriptEngine {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors(jsResult);
         ReturnValue dest;
-        jsToValue<ReturnValue>(ctx, dest, jsResult);
+        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
         return dest;
@@ -162,7 +119,7 @@ struct ScriptEngine {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors(jsResult);
         ReturnValue dest;
-        jsToValue<ReturnValue>(ctx, dest, jsResult);
+        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
         update();
@@ -206,7 +163,14 @@ struct ScriptEngine {
     void checkForErrors();
     void checkForErrors(JSValue);
 
+    void addFinalizer(JSValue obj, ScriptClass e);
+
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
+
+    friend struct ScriptFinalizer;
+
+    private:
+        JSValue finalizerSymbol;
 };
 
 template <int C> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs();

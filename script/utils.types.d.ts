@@ -3,8 +3,8 @@
  * @import krit/utils/Color.h
  */
 interface Color {
-    r: number,
-    g: number,
-    b: number,
-    a: number,
+    r: float,
+    g: float,
+    b: float,
+    a: float,
 }

@@ -1,6 +1,7 @@
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptBridge.h"
+#include "krit/script/ScriptFinalizer.h"
 #include <cstring>
 
 namespace krit {
@@ -85,11 +86,12 @@ ScriptEngine::ScriptEngine() {
     JS_SetContextOpaque(ctx, this);
     exports = JS_NewObject(ctx);
     JSValue globalObj = JS_GetGlobalObject(ctx);
+
     JS_SetPropertyStr(ctx, globalObj, "exports", exports);
     JS_FreeValue(ctx, globalObj);
 
+    ScriptFinalizer::init(this);
     registerScriptClasses<0>(this);
-
     initScriptBridge(*this);
 }
 

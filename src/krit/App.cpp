@@ -66,9 +66,9 @@ void App::run() {
     ctx.camera = &engine.camera;
     ctx.input = &input;
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
+    ctx.userData = engine.userData;
 
     UpdateContext *update = &ctx;
-    update->userData = engine.userData;
 
     double accumulator = 0, elapsed;
     std::chrono::steady_clock clock;

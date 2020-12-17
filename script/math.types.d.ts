@@ -25,3 +25,9 @@ interface IntPoint {
  * @import krit/math/Dimensions.h
  */
 interface Dimensions extends Point {}
+
+/**
+ * @namespace krit
+ * @import krit/math/Dimensions.h
+ */
+interface IntDimensions extends IntPoint {}

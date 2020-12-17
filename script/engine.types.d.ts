@@ -4,6 +4,8 @@
  */
 interface UpdateContext {
     /** @readonly true */ elapsed: number,
+    camera: Pointer<Camera>,
+    window: Pointer<IntDimensions>,
 }
 
 /**
@@ -11,3 +13,13 @@ interface UpdateContext {
  * @import krit/render/RenderContext.h
  */
 interface RenderContext extends UpdateContext {}
+
+/**
+ * @namespace krit
+ * @import krit/Camera.h
+ */
+interface Camera {
+    position: Point,
+    offset: Point,
+    anchor: Point,
+}

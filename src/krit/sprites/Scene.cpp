@@ -2,6 +2,7 @@
 #include "krit/Engine.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/DrawCommand.h"
+#include "krit/script/ScriptClass.h"
 
 namespace krit {
 
@@ -47,5 +48,9 @@ void Scene::render(RenderContext &ctx) {
     }
     ctx.camera = oldCamera;
 }
+
+void ScriptScene::update(UpdateContext &ctx) { engine.callVoid(_update); }
+void ScriptScene::fixedUpdate(UpdateContext &ctx) { engine.callVoid(_fixedUpdate); }
+void ScriptScene::render(RenderContext &ctx) { engine.callVoid(_render); }
 
 }

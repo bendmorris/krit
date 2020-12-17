@@ -11,5 +11,5 @@ interface DataItem {
 interface DataModel<T> {
     getById: (id: string) => T,
     newItem: () => Reference<T>,
-    finish: (x: T) => void,
+    finish: (x: Reference<T>) => void,
 }
