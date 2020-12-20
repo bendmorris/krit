@@ -62,9 +62,9 @@ void App::run() {
     ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &dimensions;
-    ctx.asset = &asset;
+    engine.asset = ctx.asset = &asset;
+    engine.input = ctx.input = &input;
     ctx.camera = &engine.camera;
-    ctx.input = &input;
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
     ctx.userData = engine.userData;
 
@@ -75,9 +75,8 @@ void App::run() {
     auto frameStart = clock.now();
     auto frameFinish = frameStart;
     // bool lockFramerate = true;
-    int cores = SDL_GetCPUCount();
 
-    TaskManager taskManager(ctx, std::min(4, std::max(2, cores - 2)));
+    TaskManager taskManager(ctx, 3);
     renderer.init(window);
 
     invoke(engine.onBegin, update);
@@ -161,6 +160,14 @@ void App::handleEvents(UpdateContext &context) {
                         dimensions.setTo(w, h);
                         break;
                     }
+                    case SDL_WINDOWEVENT_ENTER: {
+                        engine.controls.mouse.registerOver(true);
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_LEAVE: {
+                        engine.controls.mouse.registerOver(false);
+                        break;
+                    }
                 }
                 break;
             }
@@ -188,20 +195,12 @@ void App::handleEvents(UpdateContext &context) {
                 }
                 break;
             }
-            case SDL_MOUSEMOTION: {
-                engine.controls.mouse.registerPos(event.motion.x, event.motion.y);
-                break;
-            }
-            case SDL_WINDOWEVENT_ENTER: {
-                engine.controls.mouse.registerOver(true);
-                break;
-            }
-            case SDL_WINDOWEVENT_LEAVE: {
-                engine.controls.mouse.registerOver(false);
-                break;
-            }
         }
     }
+
+    int mouseX, mouseY;
+    SDL_GetMouseState(&mouseX, &mouseY);
+    engine.controls.mouse.registerPos(mouseX, mouseY);
 }
 
 void App::setFullScreen(bool full) {

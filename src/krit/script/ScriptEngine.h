@@ -71,10 +71,10 @@ struct ScriptEngine {
         this->eval(scriptName.c_str(), src.c_str(), src.length());
     }
     void eval(const char *scriptName, const char *src, size_t len);
-    char *evalToString(const std::string &scriptName, const std::string &src) {
+    std::string evalToString(const std::string &scriptName, const std::string &src) {
         return this->evalToString(scriptName, src.c_str(), src.length());
     }
-    char *evalToString(const std::string &scriptName, const char *src, size_t len);
+    std::string evalToString(const std::string &scriptName, const char *src, size_t len);
 
     template <typename ReturnValue> void callPut(ReturnValue &dest, JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
@@ -164,6 +164,8 @@ struct ScriptEngine {
     void checkForErrors(JSValue);
 
     void addFinalizer(JSValue obj, ScriptClass e);
+    JSValue create(ScriptClass e, void *data);
+    JSValue createOwned(ScriptClass e, void *data);
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 

@@ -9,7 +9,7 @@ namespace krit {
 void MouseContext::update(UpdateContext &ctx) {
     MouseManager &mouse = ctx.engine->controls.mouse;
     Point mousePos = mouse.mousePos;
-    ctx.camera->untransformPoint(nullptr, mousePos);
+    ctx.camera->untransformPoint(mousePos);
 
     bool fellThrough = true;
     if (this->active) {

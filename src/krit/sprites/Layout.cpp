@@ -471,6 +471,7 @@ LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset)
     data.asset = &asset;
     XML_SetUserData(parser, &data);
     XML_SetElementHandler(parser, layoutStartElement, layoutEndElement);
+    // FIXME: use the regular asset system for this
     char buf[1024];
     FILE *fp = fopen(path.c_str(), "rb");
     do {
@@ -482,6 +483,25 @@ LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset)
             panic("%s: failed to parse layout XML!", path.c_str());
         }
     } while (true);
+    XML_ParserFree(parser);
+}
+
+void LayoutRoot::parse(const std::string &markup, AssetContext &asset) {
+    this->parse(markup.c_str(), markup.size(), asset);
+}
+
+void LayoutRoot::parse(const char *markup, size_t length, AssetContext &asset) {
+    XML_Parser parser = XML_ParserCreate(nullptr);
+    LayoutParseData data;
+    data.path = nullptr;
+    data.node = nullptr;
+    data.root = this;
+    data.asset = &asset;
+    XML_SetUserData(parser, &data);
+    XML_SetElementHandler(parser, layoutStartElement, layoutEndElement);
+    if (XML_Parse(parser, markup, length, 1) == XML_STATUS_ERROR) {
+        panic("failed to parse layout XML!\n\n%s\n", markup);
+    }
     XML_ParserFree(parser);
 }
 

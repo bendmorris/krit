@@ -6,6 +6,7 @@ interface UpdateContext {
     /** @readonly true */ elapsed: number,
     camera: Pointer<Camera>,
     window: Pointer<IntDimensions>,
+    elapsed: number,
 }
 
 /**
@@ -22,4 +23,9 @@ interface Camera {
     position: Point,
     offset: Point,
     anchor: Point,
+    dimensions: Dimensions,
+
+    center: () => void,
+    transformPoint: (p: Reference<Point>) => void,
+    untransformPoint: (p: Reference<Point>) => void,
 }

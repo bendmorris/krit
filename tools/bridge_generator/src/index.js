@@ -63,8 +63,8 @@ function cppType(t) {
     const s = checker.typeToString(t);
     // arrays are vectors
     if (checker.isArrayType(t)) {
-        const { subType, pointer } = cppType(t.resolvedTypeArguments[0]);
-        return { type: `std::vector<${subType.type}${'*'.repeat(pointer)}>`, pointer: 0 };
+        const subType = cppType(t.resolvedTypeArguments[0]);
+        return { type: `std::vector<${subType.type}${'*'.repeat(subType.pointer)}>`, pointer: 0 };
     }
     // known builtin types
     if (typeMap.has(s)) {
@@ -161,7 +161,7 @@ for (const sourceFile of program.getSourceFiles()) {
                     if (options[tagName] && Array.isArray(options[tagName])) {
                         options[tagName].push(tag.comment);
                     } else {
-                        options[tagName] = tag.comment;
+                        options[tagName] = tagify(tag.comment);
                     }
                 }
             }
@@ -175,6 +175,7 @@ for (const sourceFile of program.getSourceFiles()) {
                         name: prop.name,
                         returnCppType: cppType(functionType.getReturnType()),
                         params: [],
+                        tags: [],
                     };
                     for (const param of functionType.getParameters()) {
                         const spec = {
@@ -186,6 +187,9 @@ for (const sourceFile of program.getSourceFiles()) {
                             spec.tags[tag.tagName.text] = tagify(tag.comment);
                         }
                         method.params.push(spec);
+                    }
+                    for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
+                        method.tags[tag.tagName.text] = tagify(tag.comment);
                     }
                     options.methods.push(method);
                 } else {

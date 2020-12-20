@@ -34,10 +34,11 @@ static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueCo
         return JS_EXCEPTION;
     }
     {% if prop.tags.getter %}
-    p->{{ prop.tags.getter }}() = ScriptValue<{{ prop.cppType.type }}{{ '*' | repeat(prop.cppType.pointer) }}>::jsToValue(ctx, val);
+    p->{{ prop.tags.getter }}() =
     {% else %}
-    p->{{ prop.name }} = ScriptValue<{{ prop.cppType.type }}{{ '*' | repeat(prop.cppType.pointer) }}>::jsToValue(ctx, val);
+    p->{{ prop.name }} =
     {% endif %}
+        {% if prop.tags.cast %}static_cast<{{ prop.tags.cast }}>({% endif %}ScriptValue<{{ prop.cppType.type }}{{ '*' | repeat(prop.cppType.pointer) }}>::jsToValue(ctx, val){% if prop.tags.cast %}){% endif %};
     return JS_UNDEFINED;
 }
 {% endif %}
@@ -45,22 +46,33 @@ static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueCo
 
 {% for method in wrapper.methods %}
 static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
+{% if method.tags.convert %}
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    void *p = JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    JSValue finalizerSymbol = JS_GetPropertyStr(ctx, this_val, "__finalizerSymbol");
+    JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
+    JSValue val = engine->createOwned(ScriptClass{{ method.returnCppType.type }}, p);
+    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, this_val, atom)) {
+        JSValue finalizer = JS_GetProperty(ctx, this_val, atom);
+        JS_SetProperty(ctx, val, atom, JS_DupValue(ctx, finalizer));
+        JS_DeleteProperty(ctx, this_val, atom, 0);
+    }
+    return val;
+{% else %}
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
     {% set comma = joiner() %}
-    {% if method.returnCppType %}
-    auto {% if method.returnCppType.reference %}&{% endif %}rt =
-    {% endif %}
-    p->{{method.name}}(
+    {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}p->{{method.name}}(
         {% for param in method.params %}
         {{ comma() }} {% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
         {% endfor %}
     );
     {% if method.returnCppType %}
-    return ScriptValue<{{ method.returnCppType.type }}>::valueToJs(ctx, rt);
+    return ScriptValue<{{ method.returnCppType.type }}{{ '*' | repeat(method.returnCppType.pointer) }}>::valueToJs(ctx, rt);
     {% else %}
     return JS_UNDEFINED;
     {% endif %}
+{% endif %}
 }
 {% endfor %}
 
@@ -90,6 +102,7 @@ template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
     return &classDef{{ wrapper.name }};
 }
 
+{% if not wrapper.pointerOnly %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
@@ -100,8 +113,11 @@ template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.n
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     return *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
 }
-
+{% endif %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg) {
+    if (!arg) {
+        return JS_UNDEFINED;
+    }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
     JS_SetOpaque(val, (void*)arg);

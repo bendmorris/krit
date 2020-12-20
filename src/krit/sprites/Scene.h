@@ -47,16 +47,12 @@ struct Scene: public Sprite {
 struct ScriptScene: public Scene {
     ScriptEngine &engine;
     JSValue _update;
+    JSValue _updateUi;
     JSValue _fixedUpdate;
     JSValue _render;
+    JSValue _renderUi;
 
-    ScriptScene(UpdateContext &ctx, ScriptEngine &engine):
-        Scene(ctx),
-        engine(engine),
-        _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
-        _fixedUpdate(JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
-        _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render"))
-    {}
+    ScriptScene(UpdateContext &ctx, ScriptEngine &engine);
 
     void update(UpdateContext &ctx) override;
     void fixedUpdate(UpdateContext &ctx) override;

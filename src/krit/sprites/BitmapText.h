@@ -157,6 +157,8 @@ struct BitmapText: public VisibleSprite {
             this->textDimensions.height() * s * scale.y
         );
     }
+    double width() { this->refresh(); double s = this->baseScale(); return this->textDimensions.width() * s * scale.x; }
+    double height() { this->refresh(); double s = this->baseScale(); return this->textDimensions.height() * s * scale.y; }
     void resize(double, double) override;
     void render(RenderContext &ctx) override;
 

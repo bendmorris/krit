@@ -91,6 +91,8 @@ struct LayoutNode: public VisibleSprite {
         return *this;
     }
 
+    VisibleSprite *getSprite() { return this->sprite.get(); }
+
     bool isVisible() {
         return this->visible && (!this->parent || this->parent->isVisible());
     }
@@ -126,6 +128,12 @@ struct LayoutParseData {
 typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
 
 struct LayoutRoot: public Sprite {
+    static LayoutRoot *fromMarkup(const std::string &markup, AssetContext &asset) {
+        LayoutRoot *root = new LayoutRoot();
+        root->parse(markup, asset);
+        return root;
+    }
+
     static std::unordered_map<std::string, LayoutParseFunction*> parsers;
     static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value);
     static SpriteStyle parseStyle(std::string &s);
@@ -141,6 +149,9 @@ struct LayoutRoot: public Sprite {
 
     LayoutRoot() {}
     LayoutRoot(const std::string &path, AssetContext &asset);
+
+    void parse(const char *markup, size_t len, AssetContext &asset);
+    void parse(const std::string &markup, AssetContext &asset);
 
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);

@@ -8,7 +8,7 @@ static JSClassID finalizerId;
 static void genericFinalizer(JSRuntime *rt, JSValue val) {
     void *ptr = JS_GetOpaque(val, finalizerId);
     if (ptr) {
-        free(ptr);
+        // free(ptr);
         JS_SetOpaque(val, nullptr);
     }
 }

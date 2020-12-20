@@ -58,11 +58,11 @@ struct Camera {
     Camera &keepWidth(int minHeight, int maxHeight);
     Camera &keepHeight(int minWidth, int maxWidth);
     Camera &move(double x, double y);
-    Point &transformPoint(CameraTransform *transform, Point &p);
-    Point &untransformPoint(CameraTransform *transform, Point &p);
-    Dimensions &scaleDimensions(CameraTransform *transform, Dimensions &d);
-    Dimensions &unscaleDimensions(CameraTransform *transform, Dimensions &d);
-    Matrix &transformMatrix(CameraTransform *transform, Matrix &m);
+    Point &transformPoint(Point &p);
+    Point &untransformPoint(Point &p);
+    Dimensions &scaleDimensions(Dimensions &d);
+    Dimensions &unscaleDimensions(Dimensions &d);
+    Matrix &transformMatrix(Matrix &m);
 
     void update(UpdateContext &context);
 };

@@ -14,8 +14,6 @@ struct DrawCommandBuffer;
 
 struct RenderContext: public UpdateContext {
     DrawCommandBuffer *drawCommandBuffer = nullptr;
-    CameraTransform *transform = nullptr;
-    Point offset;
     bool debugDraw = false;
 
     RenderContext() {}
@@ -28,18 +26,16 @@ struct RenderContext: public UpdateContext {
     void addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv, Color color);
 
     Point &transformPoint(Point &point) {
-        point.add(this->offset);
         if (this->camera) {
-            this->camera->transformPoint(this->transform, point);
+            this->camera->transformPoint(point);
         }
         return point;
     }
 
     Point &untransformPoint(Point &point) {
         if (this->camera) {
-            this->camera->untransformPoint(this->transform, point);
+            this->camera->untransformPoint(point);
         }
-        point.subtract(this->offset);
         return point;
     }
 
@@ -66,9 +62,8 @@ struct RenderContext: public UpdateContext {
     // TODO: untransformTriangle
 
     Matrix &transformMatrix(Matrix &m) {
-        m.translate(this->offset.x, this->offset.y);
         if (this->camera) {
-            this->camera->transformMatrix(this->transform, m);
+            this->camera->transformMatrix(m);
         }
         return m;
     }
@@ -77,14 +72,14 @@ struct RenderContext: public UpdateContext {
 
     Dimensions &transformDimensions(Dimensions &d) {
         if (this->camera) {
-            this->camera->scaleDimensions(this->transform, d);
+            this->camera->scaleDimensions(d);
         }
         return d;
     }
 
     Dimensions &untransformDimensions(Dimensions &d) {
         if (this->camera) {
-            this->camera->unscaleDimensions(this->transform, d);
+            this->camera->unscaleDimensions(d);
         }
         return d;
     }

@@ -21,11 +21,8 @@ Camera &Camera::move(double x, double y) {
     return *this;
 }
 
-Point &Camera::transformPoint(CameraTransform *transform, Point &p) {
+Point &Camera::transformPoint(Point &p) {
     Point position = this->position;
-    if (transform) {
-        position.multiply(transform->scroll.x, transform->scroll.y);
-    }
     return p
         .add(-position.x + offset.x, -position.y + offset.y)
         .add(anchor.x * dimensions.width(), anchor.y * dimensions.height())
@@ -33,31 +30,25 @@ Point &Camera::transformPoint(CameraTransform *transform, Point &p) {
     ;
 }
 
-Point &Camera::untransformPoint(CameraTransform *transform, Point &p) {
+Point &Camera::untransformPoint(Point &p) {
     Point position = this->position;
-    if (transform) {
-        position.multiply(transform->scroll.x, transform->scroll.y);
-    }
     return p
+        .divide(scale.x, scale.y)
         .subtract(anchor.x * dimensions.width(), anchor.y * dimensions.height())
         .subtract(-position.x + offset.x, -position.y + offset.y)
-        .divide(scale.x, scale.y)
     ;
 }
 
-Dimensions &Camera::scaleDimensions(CameraTransform *transform, Dimensions &d) {
+Dimensions &Camera::scaleDimensions(Dimensions &d) {
     return d.setTo(d.width() * scale.x, d.height() * scale.y);
 }
 
-Dimensions &Camera::unscaleDimensions(CameraTransform *transform, Dimensions &d) {
+Dimensions &Camera::unscaleDimensions(Dimensions &d) {
     return d.setTo(d.width() / scale.x, d.height() / scale.y);
 }
 
-Matrix &Camera::transformMatrix(CameraTransform *transform, Matrix &m) {
+Matrix &Camera::transformMatrix(Matrix &m) {
     Point position = this->position;
-    if (transform) {
-        position.multiply(transform->scroll.x, transform->scroll.y);
-    }
     return m
         .translate(-position.x + offset.x, -position.y + offset.y)
         .translate(anchor.x * dimensions.width(), anchor.y * dimensions.height())

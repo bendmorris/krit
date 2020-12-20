@@ -1,8 +1,11 @@
 #include "krit/sprites/Scene.h"
 #include "krit/Engine.h"
+#include "krit/AssetId.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/DrawCommand.h"
 #include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptValue.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
 
@@ -49,8 +52,29 @@ void Scene::render(RenderContext &ctx) {
     ctx.camera = oldCamera;
 }
 
-void ScriptScene::update(UpdateContext &ctx) { engine.callVoid(_update); }
-void ScriptScene::fixedUpdate(UpdateContext &ctx) { engine.callVoid(_fixedUpdate); }
-void ScriptScene::render(RenderContext &ctx) { engine.callVoid(_render); }
+ScriptScene::ScriptScene(UpdateContext &ctx, ScriptEngine &engine):
+    Scene(ctx),
+    engine(engine),
+    _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
+    _updateUi(JS_GetPropertyStr(engine.ctx, engine.exports, "updateUi")),
+    _fixedUpdate(JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
+    _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render")),
+    _renderUi(JS_GetPropertyStr(engine.ctx, engine.exports, "renderUi"))
+{
+}
+
+void ScriptScene::fixedUpdate(UpdateContext &ctx) { engine.callVoid(_fixedUpdate, ctx); }
+void ScriptScene::update(UpdateContext &ctx) {
+    engine.callVoid(_update, ctx);
+    ctx.camera = &ctx.engine->uiCamera;
+    engine.callVoid(_updateUi, ctx);
+    ctx.camera = &ctx.engine->camera;
+}
+void ScriptScene::render(RenderContext &ctx) {
+    engine.callVoid(_render, ctx);
+    ctx.camera = &ctx.engine->uiCamera;
+    engine.callVoid(_renderUi, ctx);
+    ctx.camera = &ctx.engine->camera;
+}
 
 }
