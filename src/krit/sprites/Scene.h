@@ -3,8 +3,6 @@
 
 #include "krit/asset/AssetContext.h"
 #include "krit/sprites/Layout.h"
-#include "krit/input/InputContext.h"
-#include "krit/input/MouseContext.h"
 #include "krit/Sprite.h"
 #include "krit/script/ScriptEngine.h"
 
@@ -12,8 +10,6 @@ namespace krit {
 
 struct Scene: public Sprite {
     AssetContext asset;
-    InputContext input;
-    MouseContext mouseContext;
     LayoutRoot layout;
 
     virtual void render(RenderContext &ctx) override;

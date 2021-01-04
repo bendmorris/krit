@@ -58,7 +58,7 @@ struct App {
         bool running = false;
         bool full = false;
 
-        void handleEvents(UpdateContext&);
+        void handleEvents();
 
     friend struct Editor;
     friend struct Renderer;

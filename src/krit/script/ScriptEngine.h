@@ -1,11 +1,13 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
+#include "krit/UpdateContext.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptFinalizer.h"
 #include "krit/script/ScriptValue.h"
 #include "quickjs.h"
 #include <cstring>
+#include <list>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +40,12 @@ template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValu
     _freeArgs<Head>(ctx, args, head);
     _freeArgs<Tail...>(ctx, &args[1], tail...);
 }
+
+struct DelayRequest {
+    double duration;
+    JSValue resolve;
+    JSValue reject;
+};
 
 /**
  * ScriptEngine currently assumes the use of QuickJS.
@@ -78,7 +86,7 @@ struct ScriptEngine {
 
     template <typename ReturnValue> void callPut(ReturnValue &dest, JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
-        checkForErrors(jsResult);
+        checkForErrors();
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
@@ -88,7 +96,7 @@ struct ScriptEngine {
         _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
 
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
-        checkForErrors(jsResult);
+        checkForErrors();
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
@@ -106,7 +114,7 @@ struct ScriptEngine {
 
     template <typename ReturnValue> ReturnValue callReturn(JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
-        checkForErrors(jsResult);
+        checkForErrors();
         ReturnValue dest;
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
@@ -117,7 +125,7 @@ struct ScriptEngine {
         JSValue jsArgs[1 + sizeof...(ArgTypes)];
         _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
-        checkForErrors(jsResult);
+        checkForErrors();
         ReturnValue dest;
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
@@ -137,7 +145,7 @@ struct ScriptEngine {
 
     void callVoid(JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
-        checkForErrors(jsResult);
+        checkForErrors();
         JS_FreeValue(ctx, jsResult);
         update();
     }
@@ -145,7 +153,7 @@ struct ScriptEngine {
         JSValue jsArgs[1 + sizeof...(ArgTypes)];
         _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
-        checkForErrors(jsResult);
+        checkForErrors();
         JS_FreeValue(ctx, jsResult);
         _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
         update();
@@ -159,6 +167,7 @@ struct ScriptEngine {
         this->callVoid<ArgTypes...>(functionName.c_str(), args...);
     }
 
+    void update(UpdateContext &ctx);
     void update();
     void checkForErrors();
     void checkForErrors(JSValue);
@@ -169,10 +178,13 @@ struct ScriptEngine {
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 
+    JSValue delay(double duration);
+
     friend struct ScriptFinalizer;
 
     private:
         JSValue finalizerSymbol;
+        std::list<DelayRequest> delayPromises;
 };
 
 template <int C> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs();

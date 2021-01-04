@@ -1,8 +1,8 @@
 #ifndef KRIT_ENGINE
 #define KRIT_ENGINE
 
-#include "krit/asset/AssetCache.h"
-#include "krit/input/ControlBindings.h"
+#include "krit/asset/AssetContext.h"
+#include "krit/input/InputContext.h"
 #include "krit/render/RenderContext.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
@@ -38,6 +38,7 @@ struct Engine {
     bool paused = false;
     bool fixedFrameRate = false;
     bool finished = false;
+    double speed = 1;
 
     UpdateSignal onBegin = nullptr;
     UpdateSignal onUpdate = nullptr;
@@ -46,11 +47,9 @@ struct Engine {
     RenderSignal postRender = nullptr;
     std::list<TimedEvent> events;
 
-    InputContext *input;
-    AssetContext *asset;
-
+    InputContext input;
+    AssetContext asset;
     AssetCache assetCache;
-    ControlBindings controls;
 
     Color bgColor = Color::black();
 
@@ -60,7 +59,7 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
-    Engine() {}
+    Engine(): asset(assetCache) {}
 
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
@@ -70,7 +69,6 @@ struct Engine {
     void addTree(Sprite *root, Camera *camera = nullptr);
     Sprite *getRoot(int index) { return trees[index].root.get(); }
     void setRoot(int index, Sprite *root);
-    void reset() { controls.reset(); }
     void quit() { finished = true; }
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }

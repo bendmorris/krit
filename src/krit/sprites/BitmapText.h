@@ -59,10 +59,12 @@ enum TextOpcodeType {
     SetScale,
     SetAlign,
     SetCustom,
+    SetFont,
     PopColor,
     PopScale,
     PopAlign,
     PopCustom,
+    PopFont,
     TextBlock,
     NewLine,
     RenderSprite,
@@ -84,6 +86,7 @@ union TextOpcodeData {
     StringSlice text;
     NewlineData newLine;
     VisibleSprite *sprite;
+    BitmapFont *font;
 
     TextOpcodeData(): present(false) {}
     TextOpcodeData(Color color): color(color) {}
@@ -93,6 +96,7 @@ union TextOpcodeData {
     TextOpcodeData(StringSlice text): text(text) {}
     TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
     TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
+    TextOpcodeData(BitmapFont *font): font(font) {}
 };
 
 struct TextOpcode {
@@ -111,6 +115,7 @@ struct FormatTagOptions {
     bool newline = false;
     CustomRenderFunction *custom = nullptr;
     VisibleSprite *sprite = nullptr;
+    BitmapFont *font = nullptr;
 
     FormatTagOptions() = default;
 
@@ -120,6 +125,7 @@ struct FormatTagOptions {
     FormatTagOptions &setNewline() { this->newline = true; return *this; }
     FormatTagOptions &setCustom(CustomRenderFunction *c) { this->custom = c; return *this; }
     FormatTagOptions &setSprite(VisibleSprite *s) { this->sprite = s; return *this; }
+    FormatTagOptions &setFont(BitmapFont *f) { this->font = f; return *this; }
 };
 
 struct TextParser;

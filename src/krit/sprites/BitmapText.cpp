@@ -22,7 +22,7 @@ template <typename T> void clearStack(std::stack<T> &stack) {
 }
 
 struct GlyphRenderStack {
-    // std::stack<std::shared_ptr<BitmapFont>> font;
+    std::stack<BitmapFont*> font;
     // std::stack<int> size;
     std::stack<double> scale;
     std::stack<Color> color;
@@ -32,7 +32,7 @@ struct GlyphRenderStack {
     GlyphRenderStack() {}
 
     void clear() {
-        // clearStack(this->font);
+        clearStack(this->font);
         // clearStack(this->size);
         clearStack(this->scale);
         clearStack(this->color);
@@ -59,6 +59,7 @@ struct TextParser {
     double wordTrailingWhitespace = 0;
     double wordHeight = 0;
     double currentScale = 1;
+    BitmapFont *currentFont;
     AlignType currentAlign = LeftAlign;
     int newLineIndex = 0;
 
@@ -68,7 +69,7 @@ struct TextParser {
         TextParser::word.clear();
         GlyphRenderStack &st = TextParser::stack;
         st.clear();
-        // st.font.push(txt.options.font);
+        st.font.push(this->currentFont = txt.options.font.get());
         // st.size.push(txt.options.size);
         st.scale.push(1);
         st.color.push(txt.color);
@@ -105,7 +106,7 @@ struct TextParser {
                 if (this->wordSegment[this->wordSegment.length] == 0) {
                     break;
                 } else {
-                    this->wordHeight = std::max(this->wordHeight, txt.font->lineHeight * this->currentScale);
+                    this->wordHeight = std::max(this->wordHeight, this->currentFont->lineHeight * this->currentScale);
                     char c = this->wordSegment[this->wordSegment.length];
                     switch (c) {
                         case '\n': {
@@ -116,7 +117,7 @@ struct TextParser {
                         }
                         default: {
                             this->wordSegment.length++;
-                            GlyphData &glyph = txt.font->getGlyph(c);
+                            GlyphData &glyph = this->currentFont->getGlyph(c);
                             if (glyph.id) {
                                 int xAdvance = glyph.xAdvance;
                                 this->wordSegmentLength += xAdvance * this->currentScale;
@@ -191,6 +192,10 @@ struct TextParser {
             if (tag.newline && !close) {
                 this->addOp(txt, TextOpcode(NewLine, TextOpcodeData(Dimensions(), LeftAlign)));
             }
+            if (tag.font) {
+                if (close) this->addOp(txt, TextOpcode(PopFont));
+                else this->addOp(txt, TextOpcode(SetFont, TextOpcodeData(tag.font)));
+            }
         }
     }
 
@@ -204,7 +209,7 @@ struct TextParser {
             txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
         }
         if (append) {
-            this->thisLineHeight = txt.font->lineHeight * this->currentScale;
+            this->thisLineHeight = this->currentFont->lineHeight * this->currentScale;
             txt.opcodes.push_back(TextOpcode(
                 NewLine,
                 TextOpcodeData(Dimensions(), this->currentAlign)
@@ -229,7 +234,7 @@ struct TextParser {
         this->flushWordSegment(txt);
         if (!TextParser::word.empty()) {
             this->trailingWhitespace = this->wordTrailingWhitespace;
-            double baseScale = static_cast<double>(txt.options.size) / txt.font->size;
+            double baseScale = static_cast<double>(txt.options.size) / this->currentFont->size;
             if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width() / baseScale) {
                 this->newLine(txt, true);
                 this->cursor.x = this->wordLength;
@@ -300,17 +305,30 @@ struct TextParser {
             case PopAlign: {
                 this->flushWord(txt);
                 TextParser::stack.align.pop();
-                AlignType align = TextParser::stack.align.top();
                 if (this->cursor.x > 0) {
                     this->newLine(txt, true);
                 }
-                this->currentAlign = align;
+                this->currentAlign = TextParser::stack.align.top();
+                break;
+            }
+            case SetFont: {
+                BitmapFont *f = op.data.font;
+                this->flushWord(txt);
+                TextParser::stack.font.push(this->currentFont = f);
+                TextParser::word.push_back(op);
+                break;
+            }
+            case PopFont: {
+                this->flushWord(txt);
+                TextParser::stack.font.pop();
+                this->currentFont = TextParser::stack.font.top();
+                TextParser::word.push_back(TextOpcode(SetFont, TextOpcodeData(this->currentFont)));
                 break;
             }
             case RenderSprite: {
                 auto sprite = op.data.sprite;
                 auto size = sprite->getSize();
-                double imageWidth = size.width();
+                double imageWidth = size.width() * currentScale;
                 TextParser::word.push_back(op);
                 this->wordTrailingWhitespace = 0;
                 this->wordLength += imageWidth;
@@ -390,6 +408,7 @@ void BitmapText::render(RenderContext &ctx) {
     CustomRenderFunction *custom = nullptr;
     double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
+    BitmapFont *font = this->font.get();
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
             case SetColor: {
@@ -429,12 +448,17 @@ void BitmapText::render(RenderContext &ctx) {
                     custom(&ctx, this, &renderData);
                 }
                 auto size = sprite->getSize();
+                sprite->scale.setTo(baseScale * scale.x, baseScale * scale.y);
                 sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y + (thisLineHeight * scale.y * baseScale - size.height()));
                 Color originalColor(sprite->color);
                 sprite->color = sprite->color * this->color;
                 sprite->render(ctx);
                 sprite->color = originalColor;
                 cursor.x += size.width();
+                break;
+            }
+            case SetFont: {
+                font = op.data.font;
                 break;
             }
             case TextBlock: {
@@ -444,7 +468,7 @@ void BitmapText::render(RenderContext &ctx) {
                         return;
                     }
                     unsigned char c = txt[i];
-                    GlyphData &glyph = this->font->getGlyph(c);
+                    GlyphData &glyph = font->getGlyph(c);
                     if (glyph.id && glyph.id == c) {
                         int xAdvance = glyph.xAdvance;
                         GlyphRenderData renderData(
@@ -455,8 +479,8 @@ void BitmapText::render(RenderContext &ctx) {
                         );
                         if (lastId != -1) {
                             int64_t key = (static_cast<int64_t>(lastId) << 32) | glyph.id;
-                            auto found = this->font->kerningTable.find(key);
-                            if (found != this->font->kerningTable.end()) {
+                            auto found = font->kerningTable.find(key);
+                            if (found != font->kerningTable.end()) {
                                 double kern = found->second * renderData.scale.x * this->scale.x * baseScale;
                                 if (kern < 0) {
                                     cursor.x += kern;
@@ -478,7 +502,7 @@ void BitmapText::render(RenderContext &ctx) {
                                 .scale(renderData.scale.x * this->scale.x * baseScale, renderData.scale.y * this->scale.y * baseScale)
                                 .translate(this->position.x + renderData.position.x, this->position.y + renderData.position.y);
                             DrawKey key;
-                            key.image = this->font->getPage(glyph.page);
+                            key.image = font->getPage(glyph.page);
                             key.smooth = this->smooth;
                             key.blend = this->blendMode;
                             ctx.addRect(key, glyph.rect, matrix, renderData.color);
@@ -489,6 +513,7 @@ void BitmapText::render(RenderContext &ctx) {
                         lastId = -1;
                     }
                 }
+                break;
             }
             // other opcodes (e.g. the Pop variants) are removed during parsing
             default: {}

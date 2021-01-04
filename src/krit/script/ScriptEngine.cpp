@@ -153,4 +153,44 @@ JSValue ScriptEngine::createOwned(ScriptClass e, void *data) {
     return val;
 }
 
+JSValue ScriptEngine::delay(double duration) {
+    // create the promise; retain the `then` function
+    JSValue resolvingFuncs[2];
+    JSValue promise = JS_NewPromiseCapability(ctx, resolvingFuncs);
+
+    // insert into our tracked promises
+    bool inserted = false;
+    for (auto it = this->delayPromises.begin(); it != this->delayPromises.end(); ++it) {
+        if (it->duration <= 0) continue;
+        if (duration < it->duration) {
+            it->duration -= duration;
+            this->delayPromises.emplace(it, DelayRequest { .duration = duration, .resolve = JS_DupValue(ctx, resolvingFuncs[0]), .reject = JS_DupValue(ctx, resolvingFuncs[1]) });
+            inserted = true;
+            break;
+        } else {
+            duration -= it->duration;
+        }
+    }
+    if (!inserted) {
+        this->delayPromises.emplace_back(DelayRequest { .duration = duration, .resolve = JS_DupValue(ctx, resolvingFuncs[0]), .reject = JS_DupValue(ctx, resolvingFuncs[1]) });
+    }
+
+    return promise;
+}
+
+void ScriptEngine::update(UpdateContext &ctx) {
+    if (!this->delayPromises.empty()) {
+        this->delayPromises.front().duration -= ctx.elapsed;
+        while (!this->delayPromises.empty() && this->delayPromises.front().duration <= 0) {
+            // complete this delay
+            JSValue resolve = this->delayPromises.front().resolve;
+            JSValue reject = this->delayPromises.front().reject;
+            JS_FreeValue(this->ctx, JS_Call(this->ctx, resolve, JS_UNDEFINED, 0, nullptr));
+            JS_FreeValue(this->ctx, resolve);
+            JS_FreeValue(this->ctx, reject);
+            this->delayPromises.pop_front();
+        }
+    }
+}
+
 }

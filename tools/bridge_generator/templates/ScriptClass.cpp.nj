@@ -3,6 +3,14 @@
 #include "quickjs.h"
 #include <string>
 
+template <typename I> static std::string n2hexstr(I w, size_t hex_len = sizeof(I)<<1) {
+    static const char* digits = "0123456789abcdef";
+    std::string rc(hex_len,'0');
+    for (size_t i=0, j=(hex_len-1)*4 ; i<hex_len; ++i,j-=4)
+        rc[i] = digits[(w>>j) & 0x0f];
+    return rc;
+}
+
 {% for wrapper in wrappers %}
 
 {% for import in wrapper.import %}
@@ -11,13 +19,27 @@
 
 namespace {{wrapper.namespace}} {
 
+static JSValue js_{{wrapper.name}}_get_internal_id(JSContext *ctx, JSValueConst this_val) {
+    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    if (!p) {
+        return JS_UNDEFINED;
+    }
+    return JS_NewInt64(ctx, (int64_t)p);
+}
+
 {% for prop in wrapper.props %}
 static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
     if (!p) {
         return JS_EXCEPTION;
     }
+    {% if prop.cppType.pointer > 0 %}
+    if (!{% if prop.pointer %}&{% endif %}p->{% if prop.tags.getter %}{{ prop.tags.getter }}(){% else %}{{ prop.name }}{% endif %}) {
+        return JS_NULL;
+    }
+    {% endif %}
     {% if prop.tags.getter %}
     const {{ prop.cppType.type }} &v = {% if prop.pointer %}&{{ '*' | repeat(prop.cppType.pointer) }}{% endif %}p->{{ prop.tags.getter }}();
     {% else %}
@@ -28,7 +50,7 @@ static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueCo
 
 {% if not prop.tags.readonly %}
 static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
     if (!p) {
         return JS_EXCEPTION;
@@ -43,6 +65,13 @@ static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueCo
 }
 {% endif %}
 {% endfor %}
+
+static JS_FUNC({{wrapper.name}}_toString) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    void *p = JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    std::string s = "<{{wrapper.name}}@" + n2hexstr((int64_t)p) + ">";
+    return JS_NewString(ctx, s.c_str());
+}
 
 {% for method in wrapper.methods %}
 static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
@@ -64,7 +93,7 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
     {% set comma = joiner() %}
     {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}p->{{method.name}}(
         {% for param in method.params %}
-        {{ comma() }} {% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
+        {{ comma() }}{% if param.tags.cast %}({{ param.tags.cast }}){% endif %}{% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
         {% endfor %}
     );
     {% if method.returnCppType %}
@@ -81,9 +110,11 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
 namespace krit {
 
 static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
+    JS_CGETSET_DEF("__id", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_internal_id, nullptr),
     {% for prop in wrapper.props %}
     JS_CGETSET_DEF("{{ prop.name }}", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
     {% endfor %}
+    JS_CFUNC_DEF("toString", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}_toString),
     {% for method in wrapper.methods %}
     JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ wrapper.namespace }}::js_{{ wrapper.name }}_{{ method.name }}),
     {% endfor %}
@@ -102,13 +133,13 @@ template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
     return &classDef{{ wrapper.name }};
 }
 
-{% if not wrapper.pointerOnly %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
     JS_SetOpaque(val, (void*)&arg);
     return val;
 }
+{% if not wrapper.pointerOnly %}
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::jsToValue(JSContext *ctx, JSValue val) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     return *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
@@ -116,7 +147,7 @@ template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.n
 {% endif %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg) {
     if (!arg) {
-        return JS_UNDEFINED;
+        return JS_NULL;
     }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);

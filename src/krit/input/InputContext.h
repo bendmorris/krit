@@ -2,8 +2,6 @@
 #define KRIT_INPUT_INPUT
 
 #include "krit/utils/Signal.h"
-#include "krit/input/ControlBindings.h"
-#include "krit/input/InputEvent.h"
 #include "krit/input/Key.h"
 #include "krit/input/Mouse.h"
 #include "krit/UpdateContext.h"
@@ -13,59 +11,114 @@
 
 namespace krit {
 
-struct ActionContext {
-    const Action action = 0;
-    LevelData level;
+typedef int Action;
 
-    ActionContext(Action action, LevelData level): action(action), level(level) {}
-};
-
-typedef Signal2<ActionContext*, UpdateContext*> InputSignal;
-
-struct InputCallbacks {
-    InputSignal onStart;
-    InputSignal onActive;
-    InputSignal onFinish;
-    double delay = 0;
-    double timer = 0;
-
-    InputCallbacks(InputSignal onStart, InputSignal onActive, InputSignal onFinish, double delay = 0)
-        : onStart(onStart), onActive(onActive), onFinish(onFinish), delay(delay) {}
+struct ActionEvent {
+    Action action;
+    int state;
+    int prevState;
 };
 
 struct InputContext {
-    bool enabled = true;
-    UpdateSignal onUpdate = nullptr;
+    struct KeyManager {
+        std::unordered_map<int, Action> keyMappings;
 
-    std::unordered_map<Action, InputCallbacks> actionMappings;
-    std::unordered_map<InputType, bool> actionStates;
-    std::unordered_map<InputType, LevelData> active;
+        KeyManager() {}
 
-    ControlBindings &bindings;
+        void define(Key keyCode, Action action) {
+            this->keyMappings.insert(std::make_pair(keyCode, action));
+        }
 
-    InputContext(ControlBindings &bindings): bindings(bindings) {}
+        void undefine(Key keyCode) {
+            this->keyMappings.erase(keyCode);
+        }
 
-    void update(UpdateContext &ctx);
+        void registerKeyState(InputContext &ctx, Key keyCode, int state) {
+            auto it = keyMappings.find(keyCode);
+            if (it != keyMappings.end()) {
+                ctx.addEvent(it->second, state);
+            }
+        }
+    };
 
-    void bind(Action action, InputSignal onStart = nullptr, InputSignal onActive = nullptr, InputSignal onFinish = nullptr, double delay = 0) {
-        this->actionMappings.insert(std::make_pair(action, InputCallbacks(onStart, onActive, onFinish, delay)));
+    struct MouseManager {
+        Point mousePos;
+        bool mouseOver = false;
+
+        Action mappings[4] = {0};
+        bool active[4] = {0};
+
+        MouseManager(): mousePos(-1, -1) {}
+
+        void define(MouseButton btn, Action action) {
+            this->mappings[btn] = action;
+        }
+
+        void undefine(MouseButton btn) {
+            this->mappings[btn] = 0;
+        }
+
+        void registerMouseState(InputContext &ctx, MouseButton btn, int state) {
+            Action it = mappings[btn];
+            if (it) {
+                ctx.addEvent(it, state);
+            }
+        }
+
+        void registerOver(bool over) {
+            this->mouseOver = over;
+        }
+
+        void registerPos(int x, int y) {
+            this->mousePos.setTo(x, y);
+        }
+    };
+
+    KeyManager key;
+    MouseManager mouse;
+
+    std::unordered_map<Action, int> states;
+    std::unordered_map<Action, bool> seen;
+    std::vector<ActionEvent> events;
+
+    InputContext() {}
+
+    void startFrame() {
+        seen.clear();
+        events.clear();
     }
 
-    void unbind(Action action) {
-        this->actionMappings.erase(action);
+    void addEvent(Action action, int state) {
+        events.emplace_back((ActionEvent) { .action = action, .state = state, .prevState = states[action] });
+        states[action] = state;
+        seen[action] = true;
     }
 
-    void clear() {
-        this->actionMappings.clear();
+    void endFrame() {
+        auto it = states.begin();
+        while (it != states.end()) {
+            if (!seen[it->first]) {
+                if (it->second) {
+                    addEvent(it->first, it->second);
+                    ++it;
+                } else {
+                    it = states.erase(it);
+                }
+            } else {
+                ++it;
+            }
+        }
     }
 
-    bool isActive(Action action) {
-        return this->active.find(action) != this->active.end();
-    }
+    void keyDown(Key key) { this->key.registerKeyState(*this, key, 1); }
+    void keyUp(Key key) { this->key.registerKeyState(*this, key, 0); }
+    void mouseDown(MouseButton btn) { this->mouse.registerMouseState(*this, btn, 1); }
+    void mouseUp(MouseButton btn) { this->mouse.registerMouseState(*this, btn, 0); }
 
-    void activate(Action action, LevelData &l) {
-        this->active.insert(std::make_pair(action, l));
-    }
+    void bindKey(Key key, Action action) { this->key.define(key, action); }
+    void bindMouse(MouseButton btn, Action action) { this->mouse.define(btn, action); }
+    void registerMousePos(int x, int y) { mouse.registerPos(x, y); }
+    void registerMouseOver(bool over) { mouse.registerOver(over); }
 };
 
 }

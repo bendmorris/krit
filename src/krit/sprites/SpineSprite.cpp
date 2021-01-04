@@ -58,7 +58,7 @@ std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {
     return std::static_pointer_cast<void>(bin);
 }
 
-void SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, double speed, float mix) {
+float SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, double speed, float mix) {
     auto trackEntry = this->animationState->setAnimation(track, spine::String(name.c_str()), loop);
     if (speed != 1) {
         trackEntry->setTimeScale(speed);
@@ -66,13 +66,15 @@ void SpineSprite::setAnimation(size_t track, const std::string &name, bool loop,
     if (mix >= 0) {
         trackEntry->setMixTime(mix);
     }
+    return trackEntry->getAnimationEnd();
 }
 
-void SpineSprite::addAnimation(size_t track, const std::string &name, bool loop, float delay, float mix) {
+float SpineSprite::addAnimation(size_t track, const std::string &name, bool loop, float delay, float mix) {
     auto trackEntry = this->animationState->addAnimation(track, spine::String(name.c_str()), loop, delay);
     if (mix >= 0) {
         trackEntry->setMixTime(mix);
     }
+    return trackEntry->getAnimationEnd();
 }
 
 spine::String SpineSprite::_customSkin("custom");

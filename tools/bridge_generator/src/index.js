@@ -108,11 +108,20 @@ function defineFunction(node, functionType, namespace=[]) {
     const type = cppType(returnType);
     const func = {
         name,
+        namespace: 'krit',
         fullName: namespace.concat(name).join('_'),
-        namespace,
+        bridgeNamespace: namespace,
         returnCppType: type,
         params: [],
+        tags: {},
     };
+    for (const tag of ts.getJSDocTags(node)) {
+        if (tag.tagName.text === 'namespace') {
+            func.namespace = tag.comment;
+        } else {
+            func.tags[tag.tagName.text] = tagify(tag.comment);
+        }
+    }
     for (const param of functionType.getParameters()) {
         const type = cppType(checker.getTypeOfSymbolAtLocation(param, node));
         func.params.push({
@@ -219,17 +228,17 @@ for (const sourceFile of program.getSourceFiles()) {
 const bridges = { namespaces: [], functions: [] };
 for (const f of functions) {
     let bridge = bridges;
-    for (const name of f.namespace) {
+    for (const name of f.bridgeNamespace) {
         let existing;
         for (const namespace of bridge.namespaces) {
-            if (namespace.namespace === name) {
+            if (namespace.bridgeNamespace === name) {
                 existing = namespace;
                 break;
             }
         }
         if (!existing) {
             bridge.namespaces.push(existing = {
-                namespace: name,
+                bridgeNamespace: name,
                 functions: [],
                 namespaces: [],
             });

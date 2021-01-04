@@ -10,13 +10,13 @@ void initScriptBridge(ScriptEngine &engine) {
     JSValue bridge = globalObj;
     {% macro bridgeNamespace(contents) %}
     {
-        {% if contents.namespace %}
+        {% if contents.bridgeNamespace %}
         JSValue oldBridge = bridge;
         JSValue bridge = JS_NewObject(ctx);
-        JS_SetPropertyStr(ctx, oldBridge, "{{ contents.namespace }}", bridge);
+        JS_SetPropertyStr(ctx, oldBridge, "{{ contents.bridgeNamespace }}", bridge);
         {% endif %}
         {% for function in contents.functions %}
-        JS_SetPropertyStr(ctx, bridge, "{{ function.name }}", JS_NewCFunction(ctx, js_{{ function.fullName }}, "{{ function.name }}", {{ function.params.length }}));
+        JS_SetPropertyStr(ctx, bridge, "{{ function.name }}", JS_NewCFunction(ctx, {{ function.namespace }}::js_{{ function.fullName }}, "{{ function.name }}", {{ function.params.length }}));
         {% endfor %}
         {% for namespace in contents.namespaces %}
         {{ bridgeNamespace(namespace) }}

@@ -50,7 +50,6 @@ void Engine::update(UpdateContext &ctx) {
 
     // actual update cycle
     invoke(onUpdate, &ctx);
-    controls.update(ctx);
     camera.update(ctx);
     uiCamera.update(ctx);
     for (auto &tree : trees) {

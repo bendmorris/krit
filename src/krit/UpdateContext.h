@@ -9,7 +9,6 @@ struct App;
 struct Camera;
 struct Engine;
 struct AssetContext;
-struct ControlBindings;
 struct InputContext;
 
 struct UpdateContext {
@@ -21,7 +20,6 @@ struct UpdateContext {
     krit::IntDimensions *window = nullptr;
     krit::Camera *camera = nullptr;
     krit::AssetContext *asset = nullptr;
-    krit::InputContext *input = nullptr;
     void *userData = nullptr;
 
     UpdateContext() {}

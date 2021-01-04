@@ -195,7 +195,7 @@ void Renderer::init(SDL_Window *window) {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         checkForGlErrors("imgui texImage2D");
 
-        io.Fonts->TexID = (void*)Editor::imguiTextureId;
+        io.Fonts->TexID = (void*)(intptr_t)Editor::imguiTextureId;
         Editor::imguiInitialized = true;
 
         glGenVertexArrays(1, &this->vao);

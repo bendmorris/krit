@@ -31,4 +31,18 @@ JS_FUNC(process_exit) {
     exit(code);
 }
 
+JS_FUNC(__id) {
+    return JS_GetPropertyStr(ctx, argv[0], "__id");
+}
+
+/**
+ * Returns a Promise which resolves in a specific amount of time.
+ */
+JS_FUNC(timeout) {
+    GET_ENGINE;
+    double duration;
+    JS_ToFloat64(ctx, &duration, argv[0]);
+    return engine->delay(duration);
+}
+
 }

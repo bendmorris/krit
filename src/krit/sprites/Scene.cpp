@@ -10,9 +10,9 @@
 namespace krit {
 
 Scene::Scene(UpdateContext &ctx):
-    asset(ctx.asset->cache), input(ctx.engine->controls) {}
+    asset(ctx.asset->cache) {}
 Scene::Scene(UpdateContext &ctx, const std::string &layoutPath):
-    asset(ctx.asset->cache), input(ctx.engine->controls), layout(layoutPath, *ctx.asset) {}
+    asset(ctx.asset->cache), layout(layoutPath, *ctx.asset) {}
 
 void Scene::update(UpdateContext &ctx) {
     if (this->fadingOut && this->fadeColor.a < this->maxAlpha) {
@@ -27,10 +27,7 @@ void Scene::update(UpdateContext &ctx) {
         }
     }
     ctx.asset = &asset;
-    ctx.input = &input;
-    this->input.update(ctx);
     this->layout.update(ctx);
-    this->mouseContext.update(ctx);
 }
 
 void Scene::render(RenderContext &ctx) {

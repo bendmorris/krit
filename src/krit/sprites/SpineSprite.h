@@ -80,8 +80,8 @@ struct SpineSprite: public VisibleSprite {
     SpineSprite(AssetContext &asset, const AssetInfo &info);
     ~SpineSprite();
 
-    void setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
-    void addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
+    float setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
+    float addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
 
     void setAttachment(const std::string &slot, const std::string &attachment) {
         this->skeleton->setAttachment(spine::String(slot.c_str()), spine::String(attachment.c_str()));

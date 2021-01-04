@@ -55,15 +55,14 @@ void App::run() {
     
     // base context structs
     AssetContext asset(engine.assetCache);
-    InputContext input(engine.controls);
+    InputContext input;
 
     // the RenderContext will be upcast to an UpdateContext during the update phase
     RenderContext ctx;
     ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &dimensions;
-    engine.asset = ctx.asset = &asset;
-    engine.input = ctx.input = &input;
+    ctx.asset = &engine.asset;
     ctx.camera = &engine.camera;
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
     ctx.userData = engine.userData;
@@ -87,13 +86,14 @@ void App::run() {
         TaskManager::work(taskManager.renderQueue, ctx);
         // do {
         frameFinish = clock.now();
-        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0;
+        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0 * engine.speed;
         // } while (lockFramerate && elapsed < frameDelta2);
         accumulator += elapsed;
         ctx.elapsed = ctx.frameCount = 0;
 
-        engine.reset();
-        handleEvents(ctx);
+        engine.input.startFrame();
+        handleEvents();
+        engine.input.endFrame();
 
         while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
             accumulator -= frameDelta;
@@ -110,7 +110,6 @@ void App::run() {
         }
 
         ctx.elapsed = elapsed;
-        input.update(ctx);
         engine.update(ctx);
         if (engine.finished) {
             quit();
@@ -135,7 +134,8 @@ MouseButton sdlMouseButton(int b) {
     }
 }
 
-void App::handleEvents(UpdateContext &context) {
+void App::handleEvents() {
+    static bool seenMouseEvent = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         bool handleKey = true,
@@ -161,51 +161,64 @@ void App::handleEvents(UpdateContext &context) {
                         break;
                     }
                     case SDL_WINDOWEVENT_ENTER: {
-                        engine.controls.mouse.registerOver(true);
+                        engine.input.registerMouseOver(true);
                         break;
                     }
                     case SDL_WINDOWEVENT_LEAVE: {
-                        engine.controls.mouse.registerOver(false);
+                        engine.input.registerMouseOver(false);
                         break;
                     }
                 }
                 break;
             }
             case SDL_KEYDOWN: {
-                if (handleKey) {
-                    engine.controls.key.registerDown(static_cast<Key>(event.key.keysym.scancode));
+                if (!event.key.repeat) {
+                    if (handleKey) {
+                        engine.input.keyDown(static_cast<Key>(event.key.keysym.scancode));
+                    }
                 }
                 break;
             }
             case SDL_KEYUP: {
                 if (handleKey) {
-                    engine.controls.key.registerUp(static_cast<Key>(event.key.keysym.scancode));
+                    engine.input.keyUp(static_cast<Key>(event.key.keysym.scancode));
                 }
                 break;
             }
             case SDL_MOUSEBUTTONDOWN: {
                 if (handleMouse) {
-                    engine.controls.mouse.registerDown(sdlMouseButton(event.button.button));
+                    engine.input.mouseDown(sdlMouseButton(event.button.button));
                 }
                 break;
             }
             case SDL_MOUSEBUTTONUP: {
                 if (handleMouse) {
-                    engine.controls.mouse.registerUp(sdlMouseButton(event.button.button));
+                    engine.input.mouseUp(sdlMouseButton(event.button.button));
                 }
+                break;
+            }
+            case SDL_MOUSEMOTION: {
+                seenMouseEvent = true;
                 break;
             }
         }
     }
 
-    int mouseX, mouseY;
-    SDL_GetMouseState(&mouseX, &mouseY);
-    engine.controls.mouse.registerPos(mouseX, mouseY);
+    // the mouse position will return (0,0) if we haven't had any mouse events,
+    // but since this is a valid position, we use (-1,-1) for no position;
+    // therefore, we need to avoid asking for position until a SDL_MOUSEMOTION
+    // event has been seen
+    if (seenMouseEvent) {
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+        engine.input.registerMousePos(mouseX, mouseY);
+    }
 }
 
 void App::setFullScreen(bool full) {
     SDL_SetWindowFullscreen(this->window, full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
     this->full = full;
+    SDL_WarpMouseInWindow(this->window, this->dimensions.width()/2, this->dimensions.height()/2);
 }
 
 }

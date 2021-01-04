@@ -21,8 +21,8 @@ enum ScriptClass {
 };
 
 {% for wrapper in wrappers %}
-{% if not wrapper.pointerOnly %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &val);
+{% if not wrapper.pointerOnly %}
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::jsToValue(JSContext *ctx, JSValue val);
 {% endif %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} * const &val);

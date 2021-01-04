@@ -3,14 +3,14 @@
 
 #include "krit/script/ScriptEngine.h"
 
-namespace krit {
-
 {% for bridgeFunc in bridgeFuncs %}
-JS_FUNC({{ bridgeFunc.fullName }});
+namespace {{ bridgeFunc.namespace }} {
+    JS_FUNC({{ bridgeFunc.fullName }});
+}
 {% endfor %}
 
-void initScriptBridge(ScriptEngine &engine);
-
+namespace krit {
+    void initScriptBridge(ScriptEngine &engine);
 }
 
 #endif

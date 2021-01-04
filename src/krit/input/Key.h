@@ -11,8 +11,6 @@
 
 namespace krit {
 
-class InputContext;
-
 enum Key {
     KeyA = SDL_SCANCODE_A,
     KeyB = SDL_SCANCODE_B,
@@ -254,51 +252,6 @@ enum Key {
     KeySleep = SDL_SCANCODE_SLEEP,
     KeyApp1 = SDL_SCANCODE_APP1,
     KeyApp2 = SDL_SCANCODE_APP2,
-};
-
-struct KeyManager {
-    std::unordered_map<int, Action> keyMappings;
-    std::unordered_map<int, bool> active;
-
-    KeyManager(std::vector<InputEvent> *events): events(events) {}
-
-    void update() {
-        for (auto &it : this->active) {
-            this->keyEvent(static_cast<Key>(it.first), InputActive);
-        }
-    }
-
-    void define(Key keyCode, Action action) {
-        this->keyMappings.insert(std::make_pair(keyCode, action));
-    }
-
-    void undefine(Key keyCode) {
-        this->keyMappings.erase(keyCode);
-    }
-
-    void registerDown(Key keyCode) {
-        if (this->keyMappings.count(keyCode) && !this->active.count(keyCode)) {
-            this->active.insert(std::make_pair(keyCode, true));
-            this->keyEvent(keyCode, InputStart);
-        }
-    }
-
-    void registerUp(Key keyCode) {
-        if (this->keyMappings.count(keyCode) && this->active.count(keyCode)) {
-            this->active.erase(keyCode);
-            this->keyEvent(keyCode, InputFinish);
-        }
-    }
-
-    private:
-        std::vector<InputEvent> *events;
-
-        void keyEvent(Key key, InputEventType eventType) {
-            auto found = this->keyMappings.find(static_cast<int>(key));
-            if (found != this->keyMappings.end()) {
-                this->events->emplace_back(eventType, found->second, LevelData(eventType != InputFinish));
-            }
-        }
 };
 
 }
