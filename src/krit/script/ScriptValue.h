@@ -39,7 +39,9 @@ template <typename T> struct ScriptValue<std::vector<T>> {
         JSValue push = JS_GetPropertyStr(ctx, arr, "push");
         for (size_t i = 0; i < v.size(); ++i) {
             JSValue arg = ScriptValue<T>::valueToJs(ctx, v[i]);
-            JS_Call(ctx, push, arr, 1, &arg);
+            JSValue ret = JS_Call(ctx, push, arr, 1, &arg);
+            JS_FreeValue(ctx, ret);
+            JS_FreeValue(ctx, arg);
         }
         JS_FreeValue(ctx, push);
         return arr;

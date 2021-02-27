@@ -77,6 +77,8 @@ ScriptEngine::ScriptEngine() {
         initScriptClasses<0>();
     }
 
+    JS_SetRuntimeOpaque(rt, this);
+
     ctx = JS_NewContext(rt);
     JS_SetContextOpaque(ctx, this);
     exports = JS_NewObject(ctx);

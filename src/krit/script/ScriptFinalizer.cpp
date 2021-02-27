@@ -3,28 +3,7 @@
 
 namespace krit {
 
-static JSClassID finalizerId;
-
-static void genericFinalizer(JSRuntime *rt, JSValue val) {
-    void *ptr = JS_GetOpaque(val, finalizerId);
-    if (ptr) {
-        // free(ptr);
-        JS_SetOpaque(val, nullptr);
-    }
-}
-
-static JSClassDef classDef = {
-    "Finalizer",
-    .finalizer = genericFinalizer,
-};
-
 void ScriptFinalizer::init(ScriptEngine *engine) {
-    static bool initialized;
-    if (!initialized) {
-        JS_NewClassID(&finalizerId);
-        JS_NewClass(ScriptEngine::rt, finalizerId, &classDef);
-    }
-
     JSContext *ctx = engine->ctx;
 
     JSValue globalObj = JS_GetGlobalObject(ctx);
@@ -35,14 +14,10 @@ void ScriptFinalizer::init(ScriptEngine *engine) {
     JS_FreeValue(ctx, finalizerName);
     JS_FreeValue(ctx, symbol);
     JS_FreeValue(ctx, globalObj);
-
-    JSValue proto = JS_NewObject(ctx);
-    JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
-    JS_SetClassProto(ctx, finalizerId, proto);
 }
 
 void ScriptEngine::addFinalizer(JSValue obj, ScriptClass classId) {
-    JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
+    JSValue finalizer = JS_NewObjectClass(ctx, classIds[classId + 1]);
     void *opaque = JS_GetOpaque(obj, classIds[classId]);
     if (!opaque) {
         panic("error: trying to create finalizer for null pointer; possible invalid class ID (%i)\n", (int)classId);

@@ -78,9 +78,9 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
 {% if method.tags.convert %}
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     void *p = JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]);
-    JSValue finalizerSymbol = JS_GetPropertyStr(ctx, this_val, "__finalizerSymbol");
+    JSValue finalizerSymbol = engine->finalizerSymbol;
     JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
-    JSValue val = engine->createOwned(ScriptClass{{ method.returnCppType.type }}, p);
+    JSValue val = engine->create(ScriptClass{{ method.returnCppType.type }}, p);
     if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, this_val, atom)) {
         JSValue finalizer = JS_GetProperty(ctx, this_val, atom);
         JS_SetProperty(ctx, val, atom, JS_DupValue(ctx, finalizer));
@@ -109,6 +109,8 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
 
 namespace krit {
 
+// script class definition
+
 static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
     JS_CGETSET_DEF("__id", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_internal_id, nullptr),
     {% for prop in wrapper.props %}
@@ -132,6 +134,33 @@ template <> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFunc
 template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
     return &classDef{{ wrapper.name }};
 }
+
+// finalizer definition
+
+static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetRuntimeOpaque(rt));
+    {{ wrapper.namespace }}::{{ wrapper.name }} *p = static_cast<{{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque(val, engine->classIds[ScriptClass{{ wrapper.name }}Finalizer]));
+    if (p) {
+        delete p;
+    }
+}
+
+static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}Finalizer[] = {};
+
+static JSClassDef classDef{{wrapper.name}}Finalizer = {
+    "{{ wrapper.name }}Finalizer",
+    .finalizer = finalize{{wrapper.name}},
+};
+
+template <> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs<ScriptClass{{ wrapper.name }}Finalizer>() {
+    return std::make_pair(protoFuncs{{ wrapper.name }}, countof(protoFuncs{{ wrapper.name }}));
+}
+
+template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}Finalizer>() {
+    return &classDef{{ wrapper.name }}Finalizer;
+}
+
+// conversions
 
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));

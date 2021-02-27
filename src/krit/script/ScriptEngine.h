@@ -33,14 +33,6 @@ template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, 
     _unpackCallArgs<Tail...>(ctx, &args[1], tail...);
 }
 
-template <typename Head> void _freeArgs(JSContext *ctx, JSValue *args, Head &head) {
-    JS_FreeValue(ctx, args[0]);
-}
-template <typename Head, typename... Tail> void _freeArgs(JSContext *ctx, JSValue *args, Head &head, Tail&... tail) {
-    _freeArgs<Head>(ctx, args, head);
-    _freeArgs<Tail...>(ctx, &args[1], tail...);
-}
-
 struct DelayRequest {
     double duration;
     JSValue resolve;
@@ -69,6 +61,7 @@ struct ScriptEngine {
     JSContext *ctx = nullptr;
     JSValue exports;
     void *userData;
+    JSValue finalizerSymbol;
 
     ScriptEngine();
     ~ScriptEngine();
@@ -99,7 +92,9 @@ struct ScriptEngine {
         checkForErrors();
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
-        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
+            JS_FreeValue(ctx, jsArgs[i]);
+        }
         update();
     }
     template <typename ReturnValue, typename... ArgTypes> void callPut(const char *functionName, ReturnValue &dest, ArgTypes&... args) {
@@ -129,7 +124,9 @@ struct ScriptEngine {
         ReturnValue dest;
         ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
-        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
+            JS_FreeValue(ctx, jsArgs[i]);
+        }
         update();
         return dest;
     }
@@ -155,7 +152,9 @@ struct ScriptEngine {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors();
         JS_FreeValue(ctx, jsResult);
-        _freeArgs<Arg, ArgTypes...>(ctx, jsArgs, arg, args...);
+        for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
+            JS_FreeValue(ctx, jsArgs[i]);
+        }
         update();
     }
     template <typename... ArgTypes> void callVoid(const char *functionName, ArgTypes&... args) {
@@ -183,7 +182,6 @@ struct ScriptEngine {
     friend struct ScriptFinalizer;
 
     private:
-        JSValue finalizerSymbol;
         std::list<DelayRequest> delayPromises;
 };
 

@@ -16,6 +16,8 @@ struct DataItem {
 };
 
 template <typename ModelType> struct DataModel {
+    virtual ~DataModel() = default;
+
     ModelType &getById(const std::string &id) {
         auto it = this->idMap.find(id);
         if (it == this->idMap.end()) {

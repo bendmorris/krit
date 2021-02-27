@@ -16,6 +16,7 @@ namespace krit {
 enum ScriptClass {
     {% for wrapper in wrappers %}
     ScriptClass{{ wrapper.name }},
+    ScriptClass{{ wrapper.name }}Finalizer,
     {% endfor %}
     ScriptClassCount,
 };

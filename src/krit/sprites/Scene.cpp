@@ -60,7 +60,9 @@ ScriptScene::ScriptScene(UpdateContext &ctx, ScriptEngine &engine):
 {
 }
 
-void ScriptScene::fixedUpdate(UpdateContext &ctx) { engine.callVoid(_fixedUpdate, ctx); }
+void ScriptScene::fixedUpdate(UpdateContext &ctx) {
+    engine.callVoid(_fixedUpdate, ctx);
+}
 void ScriptScene::update(UpdateContext &ctx) {
     engine.callVoid(_update, ctx);
     ctx.camera = &ctx.engine->uiCamera;

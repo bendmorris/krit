@@ -12,6 +12,8 @@ struct Sprite {
     virtual void render(RenderContext &) {}
     virtual void update(UpdateContext &) {}
     virtual void fixedUpdate(UpdateContext &) {}
+
+    virtual ~Sprite() = default;
 };
 
 struct SpriteStyle {
@@ -43,6 +45,7 @@ struct VisibleSprite: public Sprite, public SpriteStyle {
     SmoothingMode smooth = SmoothMipmap;
 
     VisibleSprite() {}
+    virtual ~VisibleSprite() = default;
 
     double &width() { return this->dimensions.width(); }
     double &height() { return this->dimensions.height(); }
