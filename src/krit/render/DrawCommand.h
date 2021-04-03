@@ -25,7 +25,8 @@ struct RenderContext;
 
 enum DrawCommandType {
     DrawTriangles,
-    SetClipRect,
+    PushClipRect,
+    PopClipRect,
     SetRenderTarget,
     DrawMaterial,
     ClearColor,
@@ -37,6 +38,7 @@ enum DrawCommandType {
 struct DrawCommandBuffer: public CommandBuffer<
     DrawCall,
     Rectangle,
+    char,
     BaseFrameBuffer*,
     Material,
     Color,
@@ -44,7 +46,8 @@ struct DrawCommandBuffer: public CommandBuffer<
 > {
     DrawCommandBuffer() {
         this->get<DrawTriangles>().reserve(0x40);
-        this->get<SetClipRect>().reserve(0x10);
+        this->get<PushClipRect>().reserve(0x10);
+        this->get<PopClipRect>().reserve(0x10);
         this->get<SetRenderTarget>().reserve(0x10);
         this->get<DrawMaterial>().reserve(0x10);
         this->get<ClearColor>().reserve(0x10);
@@ -55,9 +58,13 @@ struct DrawCommandBuffer: public CommandBuffer<
     void addTriangle(RenderContext &ctx, DrawKey &key, Triangle &t, Triangle &uv, Color color);
     void addRect(RenderContext &ctx, DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
 
-    void setClip(Rectangle &clip) {
-        auto &rect = this->emplace_back<SetClipRect>();
+    void pushClip(Rectangle &clip) {
+        auto &rect = this->emplace_back<PushClipRect>();
         rect.setTo(clip);
+    }
+
+    void popClip() {
+        this->emplace_back<PopClipRect>();
     }
 
     void setRenderTarget(BaseFrameBuffer *fb = nullptr) {

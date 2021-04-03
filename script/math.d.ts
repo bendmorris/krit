@@ -79,3 +79,25 @@ interface AnchoredMeasurement {
     value: Measurement;
     anchor: number;
 }
+
+/**
+ * @namespace krit
+ * @import krit/math/Rectangle.h
+ */
+interface Rectangle {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+/**
+ * @namespace krit
+ * @import krit/math/Rectangle.h
+ */
+ interface IntRectangle {
+    x: integer;
+    y: integer;
+    width: integer;
+    height: integer;
+}

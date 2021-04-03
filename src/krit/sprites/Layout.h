@@ -38,10 +38,12 @@ struct LayoutNode: public VisibleSprite {
     bool stretch = false;
     bool keepSize = false;
     bool visible = true;
+    bool clip = false;
 
     PositionMode positionMode = PositionAbsolute;
-    LayoutNode *parent = nullptr;
-    LayoutNode *prevSibling = nullptr;
+    PositionMode childPositionMode = PositionAbsolute;
+    std::unique_ptr<LayoutNode> nextSibling;
+    std::unique_ptr<LayoutNode> firstChild;
     double siblingSpacing = 0;
 
     LayoutNode() {}
@@ -93,11 +95,7 @@ struct LayoutNode: public VisibleSprite {
 
     VisibleSprite *getSprite() { return this->sprite.get(); }
 
-    bool isVisible() {
-        return this->visible && (!this->parent || this->parent->isVisible());
-    }
-
-    void reflow(UpdateContext &ctx);
+    void reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
 
     Point getPosition() override { return this->position; }
     Dimensions getSize() override { return this->keepSize ? this->dimensions : (this->sprite ? this->sprite->getSize() : Dimensions(this->width.measure(0), this->height.measure(0))); }
@@ -109,20 +107,12 @@ struct LayoutNode: public VisibleSprite {
 
 struct LayoutRoot;
 
-struct DivData {
-    LayoutNode *div;
-    LayoutNode *lastChild = nullptr;
-    PositionMode mode;
-
-    DivData(LayoutNode *div, PositionMode mode): div(div), mode(mode) {}
-};
-
 struct LayoutParseData {
     std::string *path;
     LayoutRoot *root;
     LayoutNode *node;
     AssetContext *asset;
-    std::stack<DivData> divs;
+    std::stack<LayoutNode*> layoutStack;
 };
 
 typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
@@ -144,7 +134,7 @@ struct LayoutRoot: public Sprite {
         parsers.insert(std::make_pair(tag, f));
     }
 
-    std::vector<std::unique_ptr<LayoutNode>> nodes;
+    std::unique_ptr<LayoutNode> rootNode;
     std::unordered_map<std::string, LayoutNode*> nodeMap;
 
     LayoutRoot() {}
@@ -164,14 +154,15 @@ struct LayoutRoot: public Sprite {
     }
 
     void update(UpdateContext &ctx) override {
-        for (std::unique_ptr<LayoutNode> &node : this->nodes) {
-            node->update(ctx);
+        if (rootNode) {
+            rootNode->update(ctx);
+            rootNode->reflow(ctx, nullptr, nullptr);
         }
     }
 
     void render(RenderContext &ctx) override {
-        for (std::unique_ptr<LayoutNode> &node : this->nodes) {
-            node->render(ctx);
+        if (rootNode) {
+            rootNode->render(ctx);
         }
     }
 };

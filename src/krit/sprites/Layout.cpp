@@ -15,27 +15,45 @@
 namespace krit {
 
 void LayoutNode::update(UpdateContext &ctx) {
-    this->reflow(ctx);
     if (this->sprite) {
         this->sprite->update(ctx);
+    }
+    LayoutNode *child = this->firstChild.get();
+    while (child) {
+        child->update(ctx);
+        child = child->nextSibling.get();
     }
 }
 
 void LayoutNode::render(RenderContext &ctx) {
-    if (this->isVisible() && this->sprite) {
+    if (!this->visible) {
+        return;
+    }
+    if (this->clip) {
+        ctx.pushClip(Rectangle(this->position.x, this->position.y, this->dimensions.width(), this->dimensions.height()));
+    }
+    if (this->sprite) {
         this->sprite->render(ctx);
+    }
+    LayoutNode *child = this->firstChild.get();
+    while (child) {
+        child->render(ctx);
+        child = child->nextSibling.get();
+    }
+    if (this->clip) {
+        ctx.popClip();
     }
 }
 
-void LayoutNode::reflow(UpdateContext &ctx) {
+void LayoutNode::reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
     double x, y, availableWidth, availableHeight;
-    if (this->parent) {
-        Point position = this->parent->position;
-        Dimensions dims = this->parent->dimensions;
-        double paddingTop = this->parent->paddingTop().measure(dims.height());
-        double paddingBottom = this->parent->paddingBottom().measure(dims.height());
-        double paddingLeft = this->parent->paddingLeft().measure(dims.width());
-        double paddingRight = this->parent->paddingRight().measure(dims.width());
+    if (parent) {
+        Point position = parent->position;
+        Dimensions dims = parent->dimensions;
+        double paddingTop = parent->paddingTop().measure(dims.height());
+        double paddingBottom = parent->paddingBottom().measure(dims.height());
+        double paddingLeft = parent->paddingLeft().measure(dims.width());
+        double paddingRight = parent->paddingRight().measure(dims.width());
         x = position.x + paddingLeft;
         y = position.y + paddingTop;
         availableWidth = dims.width() - paddingLeft - paddingRight;
@@ -61,7 +79,7 @@ void LayoutNode::reflow(UpdateContext &ctx) {
         case PositionHbox:
         case PositionVbox: {
             bool horizontal = this->positionMode == PositionHbox;
-            if (!this->prevSibling) {
+            if (!prevSibling) {
                 // first child element; set to top left
                 if (horizontal) {
                     ex = x;
@@ -72,14 +90,14 @@ void LayoutNode::reflow(UpdateContext &ctx) {
                 }
             } else {
                 // position relative to previous child
-                Point siblingPos = this->prevSibling->getPosition();
-                Dimensions siblingSize = this->prevSibling->getSize();
+                Point siblingPos = prevSibling->getPosition();
+                Dimensions siblingSize = prevSibling->getSize();
                 if (horizontal) {
-                    double spacing = this->parent->spacing.measure(availableWidth);
+                    double spacing = parent->spacing.measure(availableWidth);
                     ex = siblingPos.x + siblingSize.width() + spacing;
                     ey = y + this->y.measure(availableHeight, spriteSize.height());
                 } else {
-                    double spacing = this->parent->spacing.measure(availableHeight);
+                    double spacing = parent->spacing.measure(availableHeight);
                     ex = x + this->x.measure(availableWidth, spriteSize.width());
                     ey = siblingPos.y + siblingSize.height() + spacing;
                 }
@@ -95,6 +113,13 @@ void LayoutNode::reflow(UpdateContext &ctx) {
         if (this->stretch) {
             this->sprite->resize(width, height);
         }
+    }
+
+    LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
+    while (child) {
+        child->reflow(ctx, this, prevChild);
+        prevChild = child;
+        child = child->nextSibling.get();
     }
 }
 
@@ -273,6 +298,13 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
             else if (value == "center") txt->options.align = CenterAlign;
             else if (value == "right") txt->options.align = RightAlign;
             else panic("unexpected value for text alignment: %s", value.c_str());
+        } else if (key == "tabStops") {
+            std::stringstream stream(value);
+            std::string token;
+            while (getline(stream, token, ',')) {
+                int stop = atoi(token.c_str());
+                txt->tabStops.push_back(stop);
+            }
         }
     }
 }
@@ -407,6 +439,11 @@ void parseDiv(LayoutParseData *data, std::unordered_map<std::string, std::string
     data->node->keepSize = true;
 }
 
+void parseClip(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+    data->node->keepSize = true;
+    data->node->clip = true;
+}
+
 void parsePlaceholder(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
     data->node->keepSize = false;
 }
@@ -415,30 +452,26 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
     LayoutParseData *data = static_cast<LayoutParseData*>(userData);
     std::unordered_map<std::string, std::string> &attrMap = collectAttrs(attrs);
     LayoutNode *node = new LayoutNode();
-    data->root->nodes.emplace_back(node);
     data->node = node;
     for (auto &it: attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         LayoutRoot::parseLayoutAttr(data, node, key, value);
     }
-    if (!data->divs.empty()) {
-        auto &top = data->divs.top();
-        node->parent = top.div;
-        node->prevSibling = top.lastChild;
-        node->positionMode = top.mode;
-        top.lastChild = node;
+    if (!data->layoutStack.empty()) {
+        auto top = data->layoutStack.top();
+        node->positionMode = top->childPositionMode;
     }
     if (!strcmp(name, "hbox") || !strcmp(name, "vbox")) {
         bool horizontal = name[0] == 'h';
-        data->divs.push(DivData(node, horizontal ? PositionHbox : PositionVbox));
+        node->childPositionMode = horizontal ? PositionHbox : PositionVbox;
     } else {
         auto found = LayoutRoot::parsers.find(std::string(name));
         if (found != LayoutRoot::parsers.end()) {
             if (found->second) found->second(data, attrMap);
         }
-        data->divs.push(DivData(node, PositionAbsolute));
     }
+    data->layoutStack.push(node);
     std::unordered_map<std::string, std::string>::const_iterator it;
     if ((it = attrMap.find("id")) != attrMap.end()) {
         data->root->nodeMap.insert(std::make_pair(it->second, node));
@@ -447,11 +480,29 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
 
 void layoutEndElement(void *userData, const char *name) {
     LayoutParseData *data = static_cast<LayoutParseData*>(userData);
-    data->divs.pop();
+    auto node = data->layoutStack.top();
+    data->layoutStack.pop();
+    if (data->layoutStack.empty()) {
+        // this is the layout root
+        data->node = node;
+    } else {
+        // parent this node
+        auto parent = data->layoutStack.top();
+        if (!parent->firstChild) {
+            parent->firstChild = std::unique_ptr<LayoutNode>(node);
+        } else {
+            LayoutNode *child = parent->firstChild.get();
+            while (child->nextSibling) {
+                child = child->nextSibling.get();
+            }
+            child->nextSibling = std::unique_ptr<LayoutNode>(node);
+        }
+    }
 }
 
 std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"div", &parseDiv},
+    {"clip", &parseClip},
     {"placeholder", &parsePlaceholder},
     {"img", &parseImg},
     {"backdrop", &parseBackdrop},
@@ -461,8 +512,7 @@ std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"button", &parseButton},
 };
 
-LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset)
-{
+LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset) {
     XML_Parser parser = XML_ParserCreate(nullptr);
     LayoutParseData data;
     data.path = (std::string*)&path;
@@ -484,6 +534,7 @@ LayoutRoot::LayoutRoot(const std::string &path, AssetContext &asset)
         }
     } while (true);
     XML_ParserFree(parser);
+    this->rootNode = std::unique_ptr<LayoutNode>(data.node);
 }
 
 void LayoutRoot::parse(const std::string &markup, AssetContext &asset) {
@@ -503,6 +554,7 @@ void LayoutRoot::parse(const char *markup, size_t length, AssetContext &asset) {
         panic("failed to parse layout XML!\n\n%s\n", markup);
     }
     XML_ParserFree(parser);
+    this->rootNode = std::unique_ptr<LayoutNode>(data.node);
 }
 
 }

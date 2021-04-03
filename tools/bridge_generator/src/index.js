@@ -9,6 +9,7 @@ const typeMap = new Map(Object.entries({
     'number': { type: 'double', pointer: 0 },
     'integer': { type: 'int', pointer: 0 },
     'float': { type: 'float', pointer: 0 },
+    // 'cstring': { type: 'const char', pointer: 1 },
     'string': { type: 'std::string', pointer: 0 },
     'any': { type: 'JSValue', pointer: 0 },
 }));

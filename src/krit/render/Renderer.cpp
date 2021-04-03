@@ -209,8 +209,25 @@ void Renderer::init(SDL_Window *window) {
     }
 }
 
-template <> void Renderer::drawCall<SetClipRect, Rectangle>(Rectangle &clipRect) {
-    glScissor(clipRect.x, this->height - clipRect.y - clipRect.height, clipRect.width, clipRect.height);
+template <> void Renderer::drawCall<PushClipRect, Rectangle>(Rectangle &clipRect) {
+    clipStack.emplace_back();
+    Rectangle &newClip = clipStack.back();
+    if (clipStack.size() > 1) {
+        newClip.setTo(clipRect.overlap(clipStack[clipStack.size() - 2]));
+    } else {
+        newClip.setTo(clipRect);
+    }
+    glScissor(newClip.x, this->height - newClip.y - newClip.height, newClip.width, newClip.height);
+}
+
+template <> void Renderer::drawCall<PopClipRect, char>(char &_) {
+    clipStack.pop_back();
+    if (clipStack.empty()) {
+        glScissor(0, 0, this->width, this->height);
+    } else {
+        Rectangle &newClip = clipStack.back();
+        glScissor(newClip.x, this->height - newClip.y - newClip.height, newClip.width, newClip.height);
+    }
 }
 
 template <> void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer*>(BaseFrameBuffer *&fb) {
@@ -408,7 +425,8 @@ void Renderer::renderFrame(RenderContext &ctx) {
             #define DISPATCH_COMMAND(cmd) case cmd: this->drawCall<cmd>(this->drawCommandBuffer.get<cmd>()[index]); break;
 
             DISPATCH_COMMAND(DrawTriangles)
-            DISPATCH_COMMAND(SetClipRect)
+            DISPATCH_COMMAND(PushClipRect)
+            DISPATCH_COMMAND(PopClipRect)
             DISPATCH_COMMAND(SetRenderTarget)
             DISPATCH_COMMAND(DrawMaterial)
             DISPATCH_COMMAND(ClearColor)

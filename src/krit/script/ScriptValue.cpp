@@ -4,7 +4,7 @@ namespace krit {
 
 template<> JSValue ScriptValue<JSValue>::valueToJs(JSContext *ctx, const JSValue &val ) { JS_DupValue(ctx, val ); return val ; }
 template<> JSValue ScriptValue<JSValue*>::valueToJs(JSContext *ctx, JSValue * const &val) { if (!val) return JS_UNDEFINED; JS_DupValue(ctx, *val ); return *val ; }
-template<> JSValue ScriptValue<JSValue>::jsToValue(JSContext *ctx, JSValue val ) { return val ; }
+template<> JSValue ScriptValue<JSValue>::jsToValue(JSContext *ctx, JSValue val ) { return JS_DupValue(ctx, val) ; }
 
 template<> JSValue ScriptValue<bool>::valueToJs(JSContext *ctx, const bool &val ) { return JS_NewBool(ctx, val ); }
 template<> JSValue ScriptValue<bool*>::valueToJs(JSContext *ctx, bool * const &val) { return !val ? JS_UNDEFINED : JS_NewBool(ctx, *val ); }

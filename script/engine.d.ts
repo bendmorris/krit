@@ -40,7 +40,10 @@ interface UpdateContext {
  * @namespace krit
  * @import krit/render/RenderContext.h
  */
-interface RenderContext extends UpdateContext {}
+interface RenderContext extends UpdateContext {
+    pushClip(rect: Rectangle): void;
+    popClip(): void;
+}
 
 /**
  * @namespace krit

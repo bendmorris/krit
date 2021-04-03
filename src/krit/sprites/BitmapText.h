@@ -3,6 +3,7 @@
 
 #include "krit/asset/AssetContext.h"
 #include "krit/asset/BitmapFont.h"
+#include "krit/asset/ScalableFont.h"
 #include "krit/render/BlendMode.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Option.h"
@@ -40,14 +41,14 @@ struct BitmapTextOptions {
 };
 
 struct GlyphRenderData {
-    char c = 0;
+    int32_t c = 0;
     Color color;
     ScaleFactor scale;
     Point position;
 
     GlyphRenderData() {}
     GlyphRenderData(const Point &position): position(position) {}
-    GlyphRenderData(char c, Color color, ScaleFactor &scale, const Point &position):
+    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale, const Point &position):
         c(c), color(color), scale(scale), position(position) {}
 };
 
@@ -68,6 +69,7 @@ enum TextOpcodeType {
     TextBlock,
     NewLine,
     RenderSprite,
+    Tab,
 };
 
 struct NewlineData {
@@ -113,6 +115,7 @@ struct FormatTagOptions {
     Option<double> scale;
     Option<AlignType> align;
     bool newline = false;
+    bool tab = false;
     CustomRenderFunction *custom = nullptr;
     VisibleSprite *sprite = nullptr;
     BitmapFont *font = nullptr;
@@ -123,6 +126,7 @@ struct FormatTagOptions {
     FormatTagOptions &setScale(double s) { this->scale = Option<double>(s); return *this; }
     FormatTagOptions &setAlign(AlignType a) { this->align = Option<AlignType>(a); return *this; }
     FormatTagOptions &setNewline() { this->newline = true; return *this; }
+    FormatTagOptions &setTab() { this->tab = true; return *this; }
     FormatTagOptions &setCustom(CustomRenderFunction *c) { this->custom = c; return *this; }
     FormatTagOptions &setSprite(VisibleSprite *s) { this->sprite = s; return *this; }
     FormatTagOptions &setFont(BitmapFont *f) { this->font = f; return *this; }
@@ -145,6 +149,7 @@ struct BitmapText: public VisibleSprite {
     BitmapTextOptions options;
     int charCount = -1;
     int maxChars = 0;
+    std::vector<double> tabStops;
 
     BitmapText() = default;
     BitmapText(const BitmapTextOptions &options);

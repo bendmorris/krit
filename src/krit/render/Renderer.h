@@ -30,6 +30,7 @@ struct Renderer {
         RenderFloat *bufferPtr = nullptr;
         unsigned int triangleCount;
         bool initialized = false;
+        std::vector<Rectangle> clipStack;
 
         int width = 0;
         int height = 0;

@@ -2,6 +2,7 @@
 #define KRIT_ASSET_BITMAP_FONT
 
 #include "krit/asset/AssetLoader.h"
+#include "krit/asset/Font.h"
 #include "krit/render/ImageData.h"
 #include "krit/Math.h"
 #include <cstdint>
@@ -15,32 +16,30 @@ namespace krit {
 
 struct AssetCache;
 
-struct GlyphData {
-    int page = 0;
-    int id = 0;
-    IntRectangle rect;
-    IntPoint offset;
-    int xAdvance = 0;
-
-    GlyphData() {}
-};
-
-struct BitmapFont {
-    int size;
-    int lineHeight;
+struct BitmapFont: public Font {
     std::vector<std::shared_ptr<ImageData>> pages;
     GlyphData glyphData[0x100];
     std::unordered_map<int64_t, int> kerningTable;
     AssetCache *cache;
 
     BitmapFont(AssetCache *cache, const char *path);
+    ~BitmapFont() override = default;
 
-    GlyphData &getGlyph(int c) {
+    GlyphData getGlyph(int c) override {
         return this->glyphData[c];
     }
 
-    std::shared_ptr<ImageData> &getPage(int i) {
+    std::shared_ptr<ImageData> &getPage(int i) override {
         return this->pages[i];
+    }
+
+    double kern(int32_t lastChar, int32_t thisChar) {
+        int64_t key = (static_cast<int64_t>(lastChar) << 32) | thisChar;
+        auto found = kerningTable.find(key);
+        if (found != kerningTable.end()) {
+            return found->second;
+        }
+        return 0;
     }
 };
 

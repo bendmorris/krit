@@ -7,6 +7,7 @@ enum AssetType {
     ImageAsset,
     AtlasAsset,
     BitmapFontAsset,
+    ScalableFontAsset,
     TextAsset,
     SpineSkeletonAsset,
 };

@@ -11,6 +11,7 @@ std::unordered_map<std::string, FormatTagOptions> BitmapText::formatTags = {
     {"left", FormatTagOptions().setAlign(LeftAlign)},
     {"center", FormatTagOptions().setAlign(CenterAlign)},
     {"right", FormatTagOptions().setAlign(RightAlign)},
+    {"tab", FormatTagOptions().setTab()},
 };
 
 void BitmapText::addFormatTag(std::string tagName, FormatTagOptions tagOptions) {
@@ -62,6 +63,7 @@ struct TextParser {
     BitmapFont *currentFont;
     AlignType currentAlign = LeftAlign;
     int newLineIndex = 0;
+    size_t tabIndex = 0;
 
     void parseText(BitmapText &txt, std::string &s, bool rich) {
         txt.opcodes.clear();
@@ -117,7 +119,7 @@ struct TextParser {
                         }
                         default: {
                             this->wordSegment.length++;
-                            GlyphData &glyph = this->currentFont->getGlyph(c);
+                            GlyphData glyph = this->currentFont->getGlyph(c);
                             if (glyph.id) {
                                 int xAdvance = glyph.xAdvance;
                                 this->wordSegmentLength += xAdvance * this->currentScale;
@@ -192,6 +194,9 @@ struct TextParser {
             if (tag.newline && !close) {
                 this->addOp(txt, TextOpcode(NewLine, TextOpcodeData(Dimensions(), LeftAlign)));
             }
+            if (tag.tab && !close) {
+                this->addOp(txt, TextOpcode(Tab, TextOpcodeData()));
+            }
             if (tag.font) {
                 if (close) this->addOp(txt, TextOpcode(PopFont));
                 else this->addOp(txt, TextOpcode(SetFont, TextOpcodeData(tag.font)));
@@ -217,6 +222,7 @@ struct TextParser {
             this->cursor.x = this->trailingWhitespace = 0;
             this->newLineIndex = txt.opcodes.size() - 1;
         }
+        this->tabIndex = 0;
     }
 
     void flushWordSegment(BitmapText &txt) {
@@ -339,6 +345,14 @@ struct TextParser {
                 }
                 break;
             }
+            case Tab: {
+                if (this->tabIndex < txt.tabStops.size()) {
+                    this->flushWord(txt);
+                    cursor.x = txt.tabStops[this->tabIndex];
+                    txt.opcodes.push_back(op);
+                }
+                break;
+            }
             default: {
                 TextParser::word.push_back(op);
             }
@@ -408,6 +422,7 @@ void BitmapText::render(RenderContext &ctx) {
     CustomRenderFunction *custom = nullptr;
     double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
+    size_t tabIndex = 0;
     BitmapFont *font = this->font.get();
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
@@ -424,6 +439,7 @@ void BitmapText::render(RenderContext &ctx) {
                 break;
             }
             case NewLine: {
+                tabIndex = 0;
                 Dimensions &dims = op.data.newLine.first;
                 double align;
                 switch (op.data.newLine.second) {
@@ -468,7 +484,7 @@ void BitmapText::render(RenderContext &ctx) {
                         return;
                     }
                     unsigned char c = txt[i];
-                    GlyphData &glyph = font->getGlyph(c);
+                    GlyphData glyph = font->getGlyph(c);
                     if (glyph.id && glyph.id == c) {
                         int xAdvance = glyph.xAdvance;
                         GlyphRenderData renderData(
@@ -478,14 +494,10 @@ void BitmapText::render(RenderContext &ctx) {
                             cursor
                         );
                         if (lastId != -1) {
-                            int64_t key = (static_cast<int64_t>(lastId) << 32) | glyph.id;
-                            auto found = font->kerningTable.find(key);
-                            if (found != font->kerningTable.end()) {
-                                double kern = found->second * renderData.scale.x * this->scale.x * baseScale;
-                                if (kern < 0) {
-                                    cursor.x += kern;
-                                    renderData.position.x += kern;
-                                }
+                            double kern = font->kern(lastId, glyph.id) * renderData.scale.x * this->scale.x * baseScale;
+                            if (kern < 0) {
+                                cursor.x += kern;
+                                renderData.position.x += kern;
                             }
                         }
                         if (c == ' ' || c == '\t') {
@@ -513,6 +525,10 @@ void BitmapText::render(RenderContext &ctx) {
                         lastId = -1;
                     }
                 }
+                break;
+            }
+            case Tab: {
+                cursor.x = this->tabStops[tabIndex++];
                 break;
             }
             // other opcodes (e.g. the Pop variants) are removed during parsing

@@ -18,8 +18,8 @@ struct RenderContext: public UpdateContext {
 
     RenderContext() {}
 
-    void setClip(Rectangle rect);
-    void clearClip();
+    void pushClip(Rectangle rect);
+    void popClip();
     void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
     void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
     void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color);

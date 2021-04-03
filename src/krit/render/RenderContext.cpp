@@ -3,14 +3,13 @@
 
 namespace krit {
 
-void RenderContext::setClip(Rectangle rect) {
+void RenderContext::pushClip(Rectangle rect) {
     this->transformRect(rect);
-    this->drawCommandBuffer->setClip(rect);
+    this->drawCommandBuffer->pushClip(rect);
 }
 
-void RenderContext::clearClip() {
-    Rectangle r;
-    this->drawCommandBuffer->setClip(r);
+void RenderContext::popClip() {
+    this->drawCommandBuffer->popClip();
 }
 
 void RenderContext::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color) {

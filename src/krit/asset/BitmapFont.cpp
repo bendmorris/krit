@@ -113,7 +113,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
     }
 }
 
-BitmapFont::BitmapFont(AssetCache *cache, const char *path): cache(cache) {
+BitmapFont::BitmapFont(AssetCache *cache, const char *path): Font(), cache(cache) {
     // font
     //   info: size
     //   common: lineheight
