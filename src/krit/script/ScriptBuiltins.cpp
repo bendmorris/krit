@@ -23,7 +23,7 @@ JS_FUNC(console_log) {
     return JS_UNDEFINED;
 }
 
-JS_FUNC(process_exit) {
+JS_FUNC(exit) {
     int code = 0;
     if (argc > 0) {
         JS_ToInt32(ctx, &code, argv[0]);

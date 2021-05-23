@@ -45,7 +45,37 @@ void LayoutNode::render(RenderContext &ctx) {
     }
 }
 
-void LayoutNode::reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
+void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
+    double availableWidth, availableHeight;
+    if (parent) {
+        Dimensions dims = parent->dimensions;
+        double paddingTop = parent->paddingTop().measure(dims.height());
+        double paddingBottom = parent->paddingBottom().measure(dims.height());
+        double paddingLeft = parent->paddingLeft().measure(dims.width());
+        double paddingRight = parent->paddingRight().measure(dims.width());
+        availableWidth = dims.width() - paddingLeft - paddingRight;
+        availableHeight = dims.height() - paddingTop - paddingBottom;
+    } else {
+        availableWidth = ctx.window->width() / ctx.camera->scale.x;
+        availableHeight = ctx.window->height() / ctx.camera->scale.y;
+    }
+    double width = this->width.measure(availableWidth);
+    double height = this->height.measure(availableHeight);
+
+    this->dimensions.setTo(width, height);
+    if (this->sprite && this->stretch) {
+        this->sprite->resize(width, height);
+    }
+
+    LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
+    while (child) {
+        child->measure(ctx, this, prevChild);
+        prevChild = child;
+        child = child->nextSibling.get();
+    }
+}
+
+void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
     double x, y, availableWidth, availableHeight;
     if (parent) {
         Point position = parent->position;
@@ -65,8 +95,6 @@ void LayoutNode::reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prev
         availableHeight = ctx.window->height() / ctx.camera->scale.y;
     }
     Dimensions spriteSize = this->getSize();
-    double width = this->width.measure(availableWidth);
-    double height = this->height.measure(availableHeight);
 
     double ex, ey;
     switch (this->positionMode) {
@@ -107,17 +135,13 @@ void LayoutNode::reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prev
     }
 
     this->position.setTo(ex, ey);
-    this->dimensions.setTo(width, height);
     if (this->sprite) {
         this->sprite->move(ex, ey);
-        if (this->stretch) {
-            this->sprite->resize(width, height);
-        }
     }
 
     LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
     while (child) {
-        child->reflow(ctx, this, prevChild);
+        child->arrange(ctx, this, prevChild);
         prevChild = child;
         child = child->nextSibling.get();
     }
@@ -305,6 +329,8 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
                 int stop = atoi(token.c_str());
                 txt->tabStops.push_back(stop);
             }
+        } else if (key == "baseColor") {
+            txt->baseColor = ParseUtil::parseColor(value);
         }
     }
 }
@@ -488,15 +514,7 @@ void layoutEndElement(void *userData, const char *name) {
     } else {
         // parent this node
         auto parent = data->layoutStack.top();
-        if (!parent->firstChild) {
-            parent->firstChild = std::unique_ptr<LayoutNode>(node);
-        } else {
-            LayoutNode *child = parent->firstChild.get();
-            while (child->nextSibling) {
-                child = child->nextSibling.get();
-            }
-            child->nextSibling = std::unique_ptr<LayoutNode>(node);
-        }
+        parent->addChild(node);
     }
 }
 

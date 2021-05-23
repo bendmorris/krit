@@ -21,8 +21,11 @@ void sigintHandler(int sig_num) {
 
 App::App(KritOptions &options):
     dimensions(options.width, options.height),
+    fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight),
     framerate(options.framerate),
-    fixedFramerate(options.fixedFramerate) {}
+    fixedFramerate(options.fixedFramerate),
+    startFullscreen(options.fullscreen)
+{}
 
 void App::run() {
     current = this;
@@ -77,6 +80,10 @@ void App::run() {
 
     TaskManager taskManager(ctx, 3);
     renderer.init(window);
+
+    if (startFullscreen) {
+        this->setFullScreen(true);
+    }
 
     invoke(engine.onBegin, update);
 
@@ -216,8 +223,18 @@ void App::handleEvents() {
 }
 
 void App::setFullScreen(bool full) {
-    SDL_SetWindowFullscreen(this->window, full ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-    this->full = full;
+    if ((this->full = full)) {
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode(0, &mode);
+        if (fullScreenDimensions.width() > 0 && fullScreenDimensions.height() > 0) {
+            mode.w = fullScreenDimensions.width();
+            mode.h = fullScreenDimensions.height();
+        }
+        SDL_SetWindowDisplayMode(this->window, &mode);
+        SDL_SetWindowFullscreen(this->window, SDL_WINDOW_FULLSCREEN);
+    } else {
+        SDL_SetWindowFullscreen(this->window, 0);
+    }
     SDL_WarpMouseInWindow(this->window, this->dimensions.width()/2, this->dimensions.height()/2);
 }
 

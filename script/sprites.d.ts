@@ -2,25 +2,18 @@
  * @namespace krit
  * @import krit/Sprite.h
  */
-interface Sprite {
+declare class Sprite {
     update(ctx: Reference<UpdateContext>): void;
     render(ctx: Reference<RenderContext>): void;
-
-    /** @convert */ toVisibleSprite(): VisibleSprite;
-    /** @convert */ toBackdrop(): Backdrop;
-    /** @convert */ toBitmapText(): BitmapText;
-    /** @convert */ toImage(): Image;
-    /** @convert */ toLayoutNode(): LayoutNode;
-    /** @convert */ toLayoutRoot(): LayoutRoot;
-    /** @convert */ toNineSlice(): NineSlice;
-    /** @convert */ toSpineSprite(): SpineSprite;
 }
 
 /**
  * @namespace krit
  * @import krit/Sprite.h
  */
-interface VisibleSprite extends Sprite {
+declare class VisibleSprite extends Sprite {
+    static from(value: Sprite): VisibleSprite;
+
     /** @readonly */ position: Point;
     /** @readonly */ dimensions: Dimensions;
     /** @readonly */ scale: ScaleFactor;
@@ -30,14 +23,16 @@ interface VisibleSprite extends Sprite {
 /**
  * @namespace krit
  * @import krit/sprites/BitmapText.h
- * @convertFrom VisibleSprite
  */
-interface BitmapText extends VisibleSprite {
+declare class BitmapText extends VisibleSprite {
+    static from(value: Sprite): BitmapText;
+
     /** @readonly @getter width */ width: number;
     /** @readonly @getter height */ height: number;
     charCount: integer;
     /** @readonly */ maxChars: integer;
     /** @readonly */ text: string;
+    baseColor: Color;
 
     refresh(): void;
     setText(s: string): void;
@@ -49,7 +44,9 @@ interface BitmapText extends VisibleSprite {
  * @namespace krit
  * @import krit/sprites/Image.h
  */
-interface Image extends VisibleSprite {
+declare class Image extends VisibleSprite {
+    static from(value: Sprite): Image;
+
     /** @readonly */ origin: Point;
     /** @readonly @getter width */ width: integer;
     /** @readonly @getter height */ height: integer;
@@ -61,19 +58,25 @@ interface Image extends VisibleSprite {
  * @namespace krit
  * @import krit/sprites/NineSlice.h
  */
-interface NineSlice extends VisibleSprite {}
+declare class NineSlice extends VisibleSprite {
+    static from(value: Sprite): NineSlice;
+}
 
 /**
  * @namespace krit
  * @import krit/sprites/Backdrop.h
  */
-interface Backdrop extends VisibleSprite {}
+declare class Backdrop extends VisibleSprite {
+    static from(value: Sprite): Backdrop;
+}
 
 /**
  * @namespace krit
  * @import krit/sprites/SpineSprite.h
  */
-interface SpineSprite extends VisibleSprite {
+declare class SpineSprite extends VisibleSprite {
+    static from(value: Sprite): SpineSprite;
+
     setSkin(name: string): void;
     setAnimation(track: integer, name: string, loop: boolean): float;
 }
@@ -83,7 +86,9 @@ interface SpineSprite extends VisibleSprite {
  * @import krit/sprites/Layout.h
  * @pointerOnly
  */
-interface LayoutNode extends VisibleSprite {
+declare class LayoutNode extends VisibleSprite {
+    static from(value: Sprite): LayoutNode;
+
     x: AnchoredMeasurement;
     y: AnchoredMeasurement;
     width: Measurement;
@@ -99,6 +104,8 @@ interface LayoutNode extends VisibleSprite {
 
     getSprite(): Pointer<VisibleSprite>;
     attachSprite(s: Pointer<VisibleSprite>): void;
+    addChild(node: Pointer<LayoutNode>): void;
+    clearChildren(): void;
 }
 
 /**
@@ -106,7 +113,9 @@ interface LayoutNode extends VisibleSprite {
  * @import krit/sprites/Layout.h
  * @pointerOnly
  */
-interface LayoutRoot extends Sprite {
+declare class LayoutRoot extends Sprite {
+    static from(value: Sprite): LayoutRoot;
+
     getById(id: string): Pointer<VisibleSprite>;
     getNodeById(id: string): Pointer<LayoutNode>;
 }

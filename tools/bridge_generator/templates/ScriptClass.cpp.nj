@@ -73,21 +73,30 @@ static JS_FUNC({{wrapper.name}}_toString) {
     return JS_NewString(ctx, s.c_str());
 }
 
-{% for method in wrapper.methods %}
-static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
-{% if method.tags.convert %}
+{% if wrapper.from %}
+JS_FUNC({{wrapper.name}}___from__) {
+    if (JS_IsUndefined(argv[0])) {
+        return JS_UNDEFINED;
+    }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    void *p = JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    void *p = JS_GetOpaque2(ctx, argv[0], 0);
     JSValue finalizerSymbol = engine->finalizerSymbol;
     JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
-    JSValue val = engine->create(ScriptClass{{ method.returnCppType.type }}, p);
-    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, this_val, atom)) {
-        JSValue finalizer = JS_GetProperty(ctx, this_val, atom);
-        JS_SetProperty(ctx, val, atom, JS_DupValue(ctx, finalizer));
-        JS_DeleteProperty(ctx, this_val, atom, 0);
+    bool owned = false;
+    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
+        // if this was owned, we'll transfer ownership to the return value
+        owned = true;
+        JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
+        JS_SetOpaque(finalizer, nullptr);
+        JS_DeleteProperty(ctx, argv[0], atom, 0);
     }
+    JSValue val = owned ? engine->createOwned(ScriptClass{{ wrapper.name }}, p) : engine->create(ScriptClass{{ wrapper.name }}, p);
     return val;
-{% else %}
+}
+{% endif %}
+
+{% for method in wrapper.methods %}
+static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
     {% set comma = joiner() %}
@@ -101,7 +110,6 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
     {% else %}
     return JS_UNDEFINED;
     {% endif %}
-{% endif %}
 }
 {% endfor %}
 
@@ -117,6 +125,9 @@ static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
     JS_CGETSET_DEF("{{ prop.name }}", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
     {% endfor %}
     JS_CFUNC_DEF("toString", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}_toString),
+    {% if wrapper.from %}
+    JS_CFUNC_DEF("from", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}___from__),
+    {% endif %}
     {% for method in wrapper.methods %}
     JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ wrapper.namespace }}::js_{{ wrapper.name }}_{{ method.name }}),
     {% endfor %}
@@ -138,9 +149,10 @@ template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
 // finalizer definition
 
 static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetRuntimeOpaque(rt));
-    {{ wrapper.namespace }}::{{ wrapper.name }} *p = static_cast<{{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque(val, engine->classIds[ScriptClass{{ wrapper.name }}Finalizer]));
+    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetRuntimeOpaque(rt));
+    {{ wrapper.namespace }}::{{ wrapper.name }} *p = static_cast<{{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque(val, 0));
     if (p) {
+        // puts("deleted {{wrapper.name}}");
         delete p;
     }
 }
@@ -170,8 +182,8 @@ template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::va
 }
 {% if not wrapper.pointerOnly %}
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::jsToValue(JSContext *ctx, JSValue val) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    return *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    return *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, 0));
 }
 {% endif %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }}* const &arg) {
@@ -184,8 +196,8 @@ template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::v
     return val;
 }
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} *ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::jsToValue(JSContext *ctx, JSValue val) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    return static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    return static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, 0));
 }
 
 

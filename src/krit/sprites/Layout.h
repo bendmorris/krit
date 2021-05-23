@@ -93,15 +93,35 @@ struct LayoutNode: public VisibleSprite {
         return *this;
     }
 
+    void addChild(LayoutNode *node) {
+        if (!this->firstChild) {
+            this->firstChild = std::unique_ptr<LayoutNode>(node);
+        } else {
+            LayoutNode *child = this->firstChild.get();
+            while (child->nextSibling) {
+                child = child->nextSibling.get();
+            }
+            child->nextSibling = std::unique_ptr<LayoutNode>(node);
+        }
+    }
+
+    void clearChildren() {
+        this->firstChild = nullptr;
+    }
+
     VisibleSprite *getSprite() { return this->sprite.get(); }
 
-    void reflow(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
+    void reflow(UpdateContext &ctx) { 
+        measure(ctx, nullptr, nullptr);
+        arrange(ctx, nullptr, nullptr);
+    }
+    void measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
+    void arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
 
     Point getPosition() override { return this->position; }
     Dimensions getSize() override { return this->keepSize ? this->dimensions : (this->sprite ? this->sprite->getSize() : Dimensions(this->width.measure(0), this->height.measure(0))); }
 
     void update(UpdateContext &ctx) override;
-
     void render(RenderContext &ctx) override;
 };
 
@@ -156,7 +176,7 @@ struct LayoutRoot: public Sprite {
     void update(UpdateContext &ctx) override {
         if (rootNode) {
             rootNode->update(ctx);
-            rootNode->reflow(ctx, nullptr, nullptr);
+            rootNode->reflow(ctx);
         }
     }
 

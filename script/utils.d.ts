@@ -7,4 +7,7 @@ interface Color {
     g: float,
     b: float,
     a: float,
+
+    setTo(c: integer): void;
+    lerpInPlace(c: integer, mix: number): void;
 }

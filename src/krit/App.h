@@ -20,6 +20,7 @@ struct App {
     std::string title;
     Engine engine;
     IntDimensions dimensions;
+    IntDimensions fullScreenDimensions;
     Renderer renderer;
     // AudioBackend audio;
     int framerate;
@@ -57,6 +58,7 @@ struct App {
         SDL_Surface *surface;
         bool running = false;
         bool full = false;
+        bool startFullscreen = false;
 
         void handleEvents();
 

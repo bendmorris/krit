@@ -145,11 +145,11 @@ struct BitmapText: public VisibleSprite {
 
     std::string text;
     Dimensions textDimensions;
-    std::shared_ptr<BitmapFont> font;
     BitmapTextOptions options;
     int charCount = -1;
     int maxChars = 0;
     std::vector<double> tabStops;
+    Color baseColor = Color::white();
 
     BitmapText() = default;
     BitmapText(const BitmapTextOptions &options);
@@ -159,7 +159,7 @@ struct BitmapText: public VisibleSprite {
     BitmapText &setRichText(const std::string &text);
     BitmapText &refresh();
 
-    double baseScale() { return static_cast<double>(this->options.size) / this->font->size; }
+    double baseScale() { return static_cast<double>(this->options.size) / this->options.font->size; }
     Dimensions getSize() override {
         this->refresh();
         double s = this->baseScale();

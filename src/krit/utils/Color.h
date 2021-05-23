@@ -27,10 +27,15 @@ struct Color {
         return *this;
     }
 
+    void setTo(unsigned c) { *this = c; }
+
     bool operator==(const Color &other) { return r == other.r && g == other.g && b == other.b && a == other.a; }
     bool operator!=(const Color &other) { return !(*this == other); }
 
     Color operator*(const Color &other) { return Color(this->r * other.r, this->g * other.g, this->b * other.b, this->a * other.a); }
+
+    void lerpInPlace(const Color &other, float mix) { *this = this->lerp(other, mix); }
+    void lerpInPlace(unsigned c, float mix) { *this = this->lerp(c, mix); }
 
     Color lerp(const Color &other, float mix) {
         if (mix <= 0) {

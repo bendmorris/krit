@@ -9,6 +9,7 @@ const typeMap = new Map(Object.entries({
     'number': { type: 'double', pointer: 0 },
     'integer': { type: 'int', pointer: 0 },
     'float': { type: 'float', pointer: 0 },
+    'size_t': { type: 'size_t', pointer: 0 },
     // 'cstring': { type: 'const char', pointer: 1 },
     'string': { type: 'std::string', pointer: 0 },
     'any': { type: 'JSValue', pointer: 0 },
@@ -48,9 +49,7 @@ const filePaths = [].concat(...basePaths.map(function walk(dir) {
     return results;
 }));
 
-const program = ts.createProgram(filePaths, {
-    typeRoots: basePaths,
-});
+const program = ts.createProgram(filePaths, { typeRoots: basePaths });
 let checker = program.getTypeChecker();
 
 function cppType(t) {
@@ -139,22 +138,35 @@ for (const sourceFile of program.getSourceFiles()) {
     }
     ts.forEachChild(sourceFile, function visit(node) {
         if (ts.isVariableStatement(node)) {
-            // this node defines a namespace
-            for (const decl of node.declarationList.declarations) {
-                const namespace = decl.name.text;
-                const type = checker.getTypeAtLocation(decl);
-                for (const prop of checker.getPropertiesOfType(type)) {
-                    // for each prop, define either a function or a sub-namespace
-                    // TODO: support nested sub-namespaces
-                    const propType = checker.getTypeOfSymbolAtLocation(prop, decl).getCallSignatures()[0];
-                    defineFunction(prop.valueDeclaration, propType, [namespace]);
+            let isNamespace = false;
+            if (node.jsDoc) {
+                for (const doc of node.jsDoc) {
+                    for (const tag of doc.tags) {
+                        if (tag.tagName.text === 'namespace') {
+                            isNamespace = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (isNamespace) {
+                // this node defines a namespace
+                for (const decl of node.declarationList.declarations) {
+                    const namespace = decl.name.text;
+                    const type = checker.getTypeAtLocation(decl);
+                    for (const prop of checker.getPropertiesOfType(type)) {
+                        // for each prop, define either a function or a sub-namespace
+                        // TODO: support nested sub-namespaces
+                        const propType = checker.getTypeOfSymbolAtLocation(prop, decl).getCallSignatures()[0];
+                        defineFunction(prop.valueDeclaration, propType, [namespace]);
+                    }
                 }
             }
         } else if (ts.isFunctionDeclaration(node)) {
             // this node defines a function
             const functionType = checker.getTypeAtLocation(node).getCallSignatures()[0];
             defineFunction(node, functionType);
-        } else if (ts.isInterfaceDeclaration(node)) {
+        } else if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
             if (!node.jsDoc) {
                 return;
             }
@@ -164,6 +176,7 @@ for (const sourceFile of program.getSourceFiles()) {
                 props: [],
                 methods: [],
                 import: [],
+                from: false,
             };
             for (const doc of node.jsDoc) {
                 for (const tag of doc.tags) {
@@ -176,6 +189,9 @@ for (const sourceFile of program.getSourceFiles()) {
                 }
             }
             const type = checker.getTypeAtLocation(node);
+            if (type.symbol.exports && type.symbol.exports.has('from')) {
+                options.from = true;
+            }
             for (const prop of checker.getPropertiesOfType(type)) {
                 const propType = checker.getTypeOfSymbolAtLocation(prop, node);
                 if (checker.typeToString(propType).indexOf('=>') !== -1) {

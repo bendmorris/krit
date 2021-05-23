@@ -74,7 +74,7 @@ struct TextParser {
         st.font.push(this->currentFont = txt.options.font.get());
         // st.size.push(txt.options.size);
         st.scale.push(1);
-        st.color.push(txt.color);
+        st.color.push(txt.baseColor);
         st.align.push(this->currentAlign = txt.options.align);
         st.custom.push(nullptr);
         int tagEnd = 0;
@@ -364,12 +364,11 @@ GlyphRenderStack TextParser::stack;
 std::vector<TextOpcode> TextParser::word;
 
 BitmapText::BitmapText(const BitmapTextOptions &options):
-    font(options.font),
     options(options)
 {}
 
 BitmapText &BitmapText::setFont(std::shared_ptr<BitmapFont> font) {
-    this->font = font;
+    this->options.font = font;
     return *this;
 }
 
@@ -413,8 +412,9 @@ void BitmapText::resize(double w, double h) {
 
 void BitmapText::render(RenderContext &ctx) {
     this->refresh();
-    Color color = this->color;
-    double baseScale = static_cast<double>(this->options.size) / this->font->size;
+    Color color = this->color * this->baseColor;
+    BitmapFont *font = this->options.font.get();
+    double baseScale = static_cast<double>(this->options.size) / font->size;
     ScaleFactor scale;
     double thisLineHeight = 0;
     int lastId = -1;
@@ -423,7 +423,6 @@ void BitmapText::render(RenderContext &ctx) {
     double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
-    BitmapFont *font = this->font.get();
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
             case SetColor: {
