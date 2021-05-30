@@ -1,12 +1,9 @@
-#ifndef KRIT_ASSET_ASSET_CACHE
-#define KRIT_ASSET_ASSET_CACHE
+#ifndef KRIT_ASSET_ASSETCACHE
+#define KRIT_ASSET_ASSETCACHE
 
 #include "krit/asset/AssetLoader.h"
 #include "krit/asset/AssetType.h"
-#include "krit/asset/BitmapFont.h"
-#include "krit/asset/ImageLoader.h"
-#include "krit/asset/TextLoader.h"
-#include "krit/asset/TextureAtlas.h"
+#include "krit/Assets.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -14,53 +11,61 @@
 
 namespace krit {
 
-typedef std::unordered_map<int, std::weak_ptr<void>> AssetCacheMap;
+enum AssetId: int;
 
 /**
- * A single AssetCache is used per Engine to load and manage assets. The cache
- * is usually not used directly, but through an AssetContext, which manages the
- * set of assets needed for a given scope.
+ * An AssetCache is a collection of assets with the same lifetime; it holds
+ * references to these assets and will prevent them from being destroyed before
+ * the cache.
  *
- * When an AssetContext doesn't contain a needed asset, it will request one
- * from the AssetCache. The AssetCache stores weak pointers to previously
- * loaded assets, so it can return a reference to the existing asset if still
- * live, or load and cache a weak pointer otherwise.
+ * A global cache is responsible for actual loading of assets, so if multiple
+ * AssetCaches concurrently load the same asset, they'll receive a pointer to
+ * the same loaded instance; only when all of those caches are destroyed will
+ * the asset be unloaded.
  */
 struct AssetCache {
-    TextLoader txtLoader;
-    ImageLoader imgLoader;
-    BitmapFontLoader bmfLoader;
-    TextureAtlasLoader atlasLoader;
+    static std::unordered_map<int, std::weak_ptr<void>> globalCache;
 
-    AssetCache(): bmfLoader(this), atlasLoader(this) {
-        this->registerLoader(&this->txtLoader);
-        this->registerLoader(&this->imgLoader);
-        this->registerLoader(&this->bmfLoader);
-        this->registerLoader(&this->atlasLoader);
+    std::unordered_map<int, std::shared_ptr<void>> cache;
+
+    template <typename T> std::shared_ptr<T> get(const std::string &path) {
+        return this->get<T>(Assets::byPath(path));
     }
-
-    void registerLoader(AssetLoader *loader) {
-        AssetType type = loader->type();
-        this->loaders.insert(std::make_pair(type, loader));
-        AssetCacheMap assetMap;
-        assetMap.reserve(16);
-        this->assets.insert(std::make_pair(type, std::move(assetMap)));
+    template <typename T> std::shared_ptr<T> get(const AssetId id) {
+        return this->get<T>(Assets::byId((int)id));
     }
-
-    bool registered(AssetType id) {
-        return this->loaders.find(id) != this->loaders.end();
+    template <typename T> std::shared_ptr<T> get(int id) {
+        return this->get<T>(Assets::byId(id));
     }
-
-    bool isLoaded(AssetType type, std::shared_ptr<void> asset) {
-        return loaders[type]->isLoaded(asset);
+    template <typename T> std::shared_ptr<T> get(const AssetInfo &info) {
+        int id = info.id;
+        {
+            auto it = cache.find(id);
+            if (it != cache.end()) {
+                // we have a live reference to this resource
+                return std::static_pointer_cast<T>(it->second);
+            }
+        }
+        {
+            auto it = globalCache.find(id);
+            if (it != globalCache.end()) {
+                // we can reuse a global reference
+                std::shared_ptr<void> v = it->second.lock();
+                if (v) {
+                    std::shared_ptr<T> ptr = std::static_pointer_cast<T>(v);
+                    cache[id] = ptr;
+                    return ptr;
+                }
+            }
+        }
+        // we need to load this asset
+        std::shared_ptr<T> asset = std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
+            AssetLoader<T>::unloadAsset(ptr);
+        });
+        globalCache[id] = std::weak_ptr<void>(asset);
+        cache[id] = asset;
+        return asset;
     }
-
-    std::shared_ptr<void> get(const std::string &path);
-    std::shared_ptr<void> get(const AssetInfo &info);
-
-    private:
-        std::unordered_map<int, AssetCacheMap> assets;
-        std::unordered_map<int, AssetLoader*> loaders;
 };
 
 }

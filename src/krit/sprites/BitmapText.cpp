@@ -44,11 +44,11 @@ struct GlyphRenderStack {
 
 /**
  * Utility structure to parse format tags from a string of text and generate a
- * Vector of TextOpcodes.
+ * Vector of BitmapTextOpcodes.
  */
-struct TextParser {
+struct BitmapTextParser {
     static GlyphRenderStack stack;
-    static std::vector<TextOpcode> word;
+    static std::vector<BitmapTextOpcode> word;
 
     double thisLineHeight = 0;
     Point cursor;
@@ -68,8 +68,8 @@ struct TextParser {
     void parseText(BitmapText &txt, std::string &s, bool rich) {
         txt.opcodes.clear();
         txt.textDimensions.setTo(0, 0);
-        TextParser::word.clear();
-        GlyphRenderStack &st = TextParser::stack;
+        BitmapTextParser::word.clear();
+        GlyphRenderStack &st = BitmapTextParser::stack;
         st.clear();
         st.font.push(this->currentFont = txt.options.font.get());
         // st.size.push(txt.options.size);
@@ -81,7 +81,7 @@ struct TextParser {
 
         this->wordSegment = StringSlice(&s[0], 0);
 
-        txt.opcodes.push_back(TextOpcode(NewLine, TextOpcodeData(Dimensions(), txt.options.align)));
+        txt.opcodes.push_back(BitmapTextOpcode(NewLine, BitmapTextOpcodeData(Dimensions(), txt.options.align)));
 
         while (true) {
             StringSlice tag;
@@ -99,7 +99,7 @@ struct TextParser {
                         --tagLength;
                     }
                     tag.setTo(&this->wordSegment[this->wordSegment.length + 1], tagLength);
-                    this->wordSegment.setTo(&this->wordSegment.str[tagEnd + 1], 0);
+                    this->wordSegment.setTo(&this->wordSegment.data[tagEnd + 1], 0);
                 }
             }
             if (tag.length > 0) {
@@ -114,7 +114,7 @@ struct TextParser {
                         case '\n': {
                             this->flushWord(txt);
                             this->newLine(txt, true);
-                            this->wordSegment.str = &this->wordSegment.str[1];
+                            this->wordSegment.data = &this->wordSegment.data[1];
                             break;
                         }
                         default: {
@@ -166,40 +166,40 @@ struct TextParser {
         bool close = false;
         if (tagName[0] == '/') {
             close = true;
-            tagName.setTo(tagName.str + 1, tagName.length - 1);
+            tagName.setTo(tagName.data + 1, tagName.length - 1);
         }
-        tagStr.assign(tagName.str, tagName.length);
+        tagStr.assign(tagName.data, tagName.length);
         auto found = BitmapText::formatTags.find(tagStr);
         if (found != BitmapText::formatTags.end()) {
             FormatTagOptions &tag = found->second;
             if (tag.color.present) {
-                if (close) this->addOp(txt, TextOpcode(PopColor));
-                else this->addOp(txt, TextOpcode(SetColor, TextOpcodeData(tag.color.value)));
+                if (close) this->addOp(txt, BitmapTextOpcode(PopColor));
+                else this->addOp(txt, BitmapTextOpcode(SetColor, BitmapTextOpcodeData(tag.color.value)));
             }
             if (tag.scale.present) {
-                if (close) this->addOp(txt, TextOpcode(PopScale));
-                else this->addOp(txt, TextOpcode(SetScale, TextOpcodeData(tag.scale.value)));
+                if (close) this->addOp(txt, BitmapTextOpcode(PopScale));
+                else this->addOp(txt, BitmapTextOpcode(SetScale, BitmapTextOpcodeData(tag.scale.value)));
             }
             if (tag.align.present) {
-                if (close) this->addOp(txt, TextOpcode(PopAlign));
-                else this->addOp(txt, TextOpcode(SetAlign, TextOpcodeData(tag.align.value)));
+                if (close) this->addOp(txt, BitmapTextOpcode(PopAlign));
+                else this->addOp(txt, BitmapTextOpcode(SetAlign, BitmapTextOpcodeData(tag.align.value)));
             }
             if (tag.custom != nullptr) {
-                if (close) this->addOp(txt, TextOpcode(PopCustom));
-                else this->addOp(txt, TextOpcode(SetCustom, TextOpcodeData(tag.custom)));
+                if (close) this->addOp(txt, BitmapTextOpcode(PopCustom));
+                else this->addOp(txt, BitmapTextOpcode(SetCustom, BitmapTextOpcodeData(tag.custom)));
             }
             if (tag.sprite) {
-                this->addOp(txt, TextOpcode(RenderSprite, TextOpcodeData(tag.sprite)));
+                this->addOp(txt, BitmapTextOpcode(RenderSprite, BitmapTextOpcodeData(tag.sprite)));
             }
             if (tag.newline && !close) {
-                this->addOp(txt, TextOpcode(NewLine, TextOpcodeData(Dimensions(), LeftAlign)));
+                this->addOp(txt, BitmapTextOpcode(NewLine, BitmapTextOpcodeData(Dimensions(), LeftAlign)));
             }
             if (tag.tab && !close) {
-                this->addOp(txt, TextOpcode(Tab, TextOpcodeData()));
+                this->addOp(txt, BitmapTextOpcode(Tab, BitmapTextOpcodeData()));
             }
             if (tag.font) {
-                if (close) this->addOp(txt, TextOpcode(PopFont));
-                else this->addOp(txt, TextOpcode(SetFont, TextOpcodeData(tag.font)));
+                if (close) this->addOp(txt, BitmapTextOpcode(PopFont));
+                else this->addOp(txt, BitmapTextOpcode(SetFont, BitmapTextOpcodeData(tag.font)));
             }
         }
     }
@@ -215,9 +215,9 @@ struct TextParser {
         }
         if (append) {
             this->thisLineHeight = this->currentFont->lineHeight * this->currentScale;
-            txt.opcodes.push_back(TextOpcode(
+            txt.opcodes.push_back(BitmapTextOpcode(
                 NewLine,
-                TextOpcodeData(Dimensions(), this->currentAlign)
+                BitmapTextOpcodeData(Dimensions(), this->currentAlign)
             ));
             this->cursor.x = this->trailingWhitespace = 0;
             this->newLineIndex = txt.opcodes.size() - 1;
@@ -227,8 +227,8 @@ struct TextParser {
 
     void flushWordSegment(BitmapText &txt) {
         if (this->wordSegment.length > 0) {
-            TextParser::word.push_back(TextOpcode(TextBlock, TextOpcodeData(this->wordSegment)));
-            this->wordSegment.setTo(&this->wordSegment.str[this->wordSegment.length], 0);
+            BitmapTextParser::word.push_back(BitmapTextOpcode(TextBlock, BitmapTextOpcodeData(this->wordSegment)));
+            this->wordSegment.setTo(&this->wordSegment.data[this->wordSegment.length], 0);
             this->wordLength += this->wordSegmentLength;
             this->wordTrailingWhitespace = this->wordSegmentTrailingWhitespace;
             this->wordSegmentLength = 0;
@@ -238,7 +238,7 @@ struct TextParser {
 
     void flushWord(BitmapText &txt) {
         this->flushWordSegment(txt);
-        if (!TextParser::word.empty()) {
+        if (!BitmapTextParser::word.empty()) {
             this->trailingWhitespace = this->wordTrailingWhitespace;
             double baseScale = static_cast<double>(txt.options.size) / this->currentFont->size;
             if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width() / baseScale) {
@@ -247,10 +247,10 @@ struct TextParser {
             } else {
                 this->cursor.x += this->wordLength;
             }
-            for (TextOpcode &op: TextParser::word) {
+            for (BitmapTextOpcode &op: BitmapTextParser::word) {
                 txt.opcodes.push_back(op);
             }
-            TextParser::word.clear();
+            BitmapTextParser::word.clear();
             this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
             this->wordLength = 0;
             this->wordHeight = 0;
@@ -258,40 +258,40 @@ struct TextParser {
         }
     }
 
-    void addOp(BitmapText &txt, TextOpcode op) {
+    void addOp(BitmapText &txt, BitmapTextOpcode op) {
         switch (op.type) {
             case SetScale: {
                 double v = op.data.number;
-                TextParser::stack.scale.push(this->currentScale = v);
-                TextParser::word.push_back(op);
+                BitmapTextParser::stack.scale.push(this->currentScale = v);
+                BitmapTextParser::word.push_back(op);
                 break;
             }
             case PopScale: {
-                TextParser::stack.scale.pop();
-                this->currentScale = TextParser::stack.scale.top();
-                TextParser::word.push_back(TextOpcode(SetScale, TextOpcodeData(this->currentScale)));
+                BitmapTextParser::stack.scale.pop();
+                this->currentScale = BitmapTextParser::stack.scale.top();
+                BitmapTextParser::word.push_back(BitmapTextOpcode(SetScale, BitmapTextOpcodeData(this->currentScale)));
                 break;
             }
             case SetColor: {
                 Color &v = op.data.color;
-                TextParser::stack.color.push(v);
-                TextParser::word.push_back(op);
+                BitmapTextParser::stack.color.push(v);
+                BitmapTextParser::word.push_back(op);
                 break;
             }
             case PopColor: {
-                TextParser::stack.color.pop();
-                TextParser::word.push_back(TextOpcode(SetColor, TextOpcodeData(TextParser::stack.color.top())));
+                BitmapTextParser::stack.color.pop();
+                BitmapTextParser::word.push_back(BitmapTextOpcode(SetColor, BitmapTextOpcodeData(BitmapTextParser::stack.color.top())));
                 break;
             }
             case SetCustom: {
                 CustomRenderFunction *f = op.data.custom;
-                TextParser::stack.custom.push(f);
-                TextParser::word.push_back(op);
+                BitmapTextParser::stack.custom.push(f);
+                BitmapTextParser::word.push_back(op);
                 break;
             }
             case PopCustom: {
-                TextParser::stack.custom.pop();
-                TextParser::word.push_back(TextOpcode(SetCustom, TextOpcodeData(TextParser::stack.custom.top())));
+                BitmapTextParser::stack.custom.pop();
+                BitmapTextParser::word.push_back(BitmapTextOpcode(SetCustom, BitmapTextOpcodeData(BitmapTextParser::stack.custom.top())));
                 break;
             }
             case NewLine: {
@@ -305,37 +305,37 @@ struct TextParser {
                 if (this->cursor.x > 0) {
                     this->newLine(txt, true);
                 }
-                TextParser::stack.align.push(this->currentAlign = v);
+                BitmapTextParser::stack.align.push(this->currentAlign = v);
                 break;
             }
             case PopAlign: {
                 this->flushWord(txt);
-                TextParser::stack.align.pop();
+                BitmapTextParser::stack.align.pop();
                 if (this->cursor.x > 0) {
                     this->newLine(txt, true);
                 }
-                this->currentAlign = TextParser::stack.align.top();
+                this->currentAlign = BitmapTextParser::stack.align.top();
                 break;
             }
             case SetFont: {
                 BitmapFont *f = op.data.font;
                 this->flushWord(txt);
-                TextParser::stack.font.push(this->currentFont = f);
-                TextParser::word.push_back(op);
+                BitmapTextParser::stack.font.push(this->currentFont = f);
+                BitmapTextParser::word.push_back(op);
                 break;
             }
             case PopFont: {
                 this->flushWord(txt);
-                TextParser::stack.font.pop();
-                this->currentFont = TextParser::stack.font.top();
-                TextParser::word.push_back(TextOpcode(SetFont, TextOpcodeData(this->currentFont)));
+                BitmapTextParser::stack.font.pop();
+                this->currentFont = BitmapTextParser::stack.font.top();
+                BitmapTextParser::word.push_back(BitmapTextOpcode(SetFont, BitmapTextOpcodeData(this->currentFont)));
                 break;
             }
             case RenderSprite: {
                 auto sprite = op.data.sprite;
                 auto size = sprite->getSize();
                 double imageWidth = size.width() * currentScale;
-                TextParser::word.push_back(op);
+                BitmapTextParser::word.push_back(op);
                 this->wordTrailingWhitespace = 0;
                 this->wordLength += imageWidth;
                 this->wordHeight = std::max(wordHeight, size.height());
@@ -354,14 +354,14 @@ struct TextParser {
                 break;
             }
             default: {
-                TextParser::word.push_back(op);
+                BitmapTextParser::word.push_back(op);
             }
         }
     }
 };
 
-GlyphRenderStack TextParser::stack;
-std::vector<TextOpcode> TextParser::word;
+GlyphRenderStack BitmapTextParser::stack;
+std::vector<BitmapTextOpcode> BitmapTextParser::word;
 
 BitmapText::BitmapText(const BitmapTextOptions &options):
     options(options)
@@ -392,7 +392,7 @@ BitmapText &BitmapText::setRichText(const std::string &text) {
 
 BitmapText &BitmapText::refresh() {
     if (this->dirty) {
-        TextParser parser;
+        BitmapTextParser parser;
         parser.parseText(*this, this->text, this->rich);
         this->dirty = false;
     }
@@ -423,7 +423,7 @@ void BitmapText::render(RenderContext &ctx) {
     double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
-    for (TextOpcode &op: this->opcodes) {
+    for (BitmapTextOpcode &op: this->opcodes) {
         switch (op.type) {
             case SetColor: {
                 color = this->color * op.data.color;

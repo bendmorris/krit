@@ -1,5 +1,5 @@
-#include "krit/asset/ImageLoader.h"
 #include "krit/sprites/SpineSprite.h"
+#include "krit/App.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/Assets.h"
 #include "krit/io/Io.h"
@@ -17,18 +17,16 @@ spine::SpineExtension *spine::getDefaultExtension() {
 
 namespace krit {
 
-SpineSprite::SpineSprite(AssetContext &asset, const std::string &id):
-    SpineSprite(asset, Assets::byPath(id)) {}
+SpineTextureLoader SpineTextureLoader::instance;
 
-SpineSprite::SpineSprite(AssetContext &asset, const AssetInfo &info) {
-    if (!asset.cache.registered(SpineSkeletonAsset)) {
-        SpineLoader *loader = new SpineLoader(&asset.cache);
-        asset.cache.registerLoader(loader);
-    }
+SpineSprite::SpineSprite(const std::string &id):
+    SpineSprite(Assets::byPath(id)) {}
+
+SpineSprite::SpineSprite(const AssetInfo &info) {
     spine::Bone::setYDown(true);
 
     // load skeleton/animation data
-    this->bin = std::static_pointer_cast<SkeletonBinaryData>(asset.get(info));
+    this->bin = App::ctx.engine->getSpine(info);
     this->skeleton = new spine::Skeleton(&this->skeletonData());
     this->animationState = new spine::AnimationState(&this->animationStateData());
     this->skin = new spine::Skin(spine::String("custom"));
@@ -42,20 +40,24 @@ SpineSprite::~SpineSprite() {
 
 float SpineSprite::worldVertices[1024] = {0};
 
-std::shared_ptr<void> SpineLoader::loadAsset(const AssetInfo &info) {
+template<> SkeletonBinaryData *AssetLoader<SkeletonBinaryData>::loadAsset(const AssetInfo &info) {
     const spine::String &atlasName((info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
     const spine::String &skelName((info.path).c_str());
-    spine::Atlas *atlas = new spine::Atlas(atlasName, &this->textureLoader);
+    spine::Atlas *atlas = new spine::Atlas(atlasName, &SpineTextureLoader::instance);
     spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
     spine::SkeletonData *skeletonData = binary->readSkeletonDataFile(skelName);
     spine::AnimationStateData *animationStateData = new spine::AnimationStateData(skeletonData);
-    std::shared_ptr<SkeletonBinaryData> bin = std::make_shared<SkeletonBinaryData>(
+    SkeletonBinaryData *bin = new SkeletonBinaryData(
         atlas,
         binary,
         skeletonData,
         animationStateData
     );
-    return std::static_pointer_cast<void>(bin);
+    return bin;
+}
+
+template<> void AssetLoader<SkeletonBinaryData>::unloadAsset(SkeletonBinaryData *bin) {
+    delete bin;
 }
 
 float SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, double speed, float mix) {

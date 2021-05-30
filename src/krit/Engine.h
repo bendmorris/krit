@@ -1,7 +1,7 @@
 #ifndef KRIT_ENGINE
 #define KRIT_ENGINE
 
-#include "krit/asset/AssetContext.h"
+#include "krit/asset/AssetCache.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/RenderContext.h"
 #include "krit/utils/Color.h"
@@ -22,10 +22,15 @@ struct TimedEvent {
         : delay(delay), interval(interval), signal(signal), userData(userData) {}
 };
 
-struct AssetContext;
 struct InputContext;
 struct Sprite;
 struct Editor;
+struct StringSlice;
+struct ImageData;
+struct TextureAtlas;
+struct Font;
+struct BitmapFont;
+struct SkeletonBinaryData;
 
 struct SpriteTree {
     std::unique_ptr<Sprite> root;
@@ -48,8 +53,7 @@ struct Engine {
     std::list<TimedEvent> events;
 
     InputContext input;
-    AssetContext asset;
-    AssetCache assetCache;
+    std::vector<AssetCache*> assetCaches;
 
     Color bgColor = Color::black();
 
@@ -59,7 +63,9 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
-    Engine(): asset(assetCache) {}
+    Engine() {
+        assetCaches.emplace_back(new AssetCache());
+    }
 
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
@@ -72,6 +78,15 @@ struct Engine {
     void quit() { finished = true; }
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
+
+    #define DECLARE_ASSET_GETTER(N, T) \
+        template <typename Arg> std::shared_ptr<T> get##N(const Arg &arg) { return assetCaches.back()->get<T>(arg); }
+    DECLARE_ASSET_GETTER(Text, StringSlice)
+    DECLARE_ASSET_GETTER(Image, ImageData)
+    DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
+    DECLARE_ASSET_GETTER(Font, Font)
+    DECLARE_ASSET_GETTER(BitmapFont, BitmapFont)
+    DECLARE_ASSET_GETTER(Spine, SkeletonBinaryData)
 };
 
 }

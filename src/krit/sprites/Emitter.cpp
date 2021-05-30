@@ -1,11 +1,13 @@
 #include "krit/sprites/Emitter.h"
+#include "krit/App.h"
+#include "krit/asset/TextureAtlas.h"
 #include <cmath>
 
 namespace krit {
 
-EmissionTrack::EmissionTrack(UpdateContext &ctx, ParticleEmission *data, float elapsed):
+EmissionTrack::EmissionTrack(ParticleEmission *data, float elapsed):
     data(data),
-    image(data->atlas.empty() ? ctx.asset->getImage(data->region) : ctx.asset->getTextureAtlas(data->atlas)->getRegion(data->region)),
+    image(data->atlas.empty() ? App::ctx.engine->getImage(data->region) : App::ctx.engine->getAtlas(data->atlas)->getRegion(data->region)),
     elapsed(elapsed)
 {
     image.blendMode = data->blend;
@@ -94,7 +96,7 @@ void Emitter::update(UpdateContext &ctx) {
         
         for (auto &emission : effect.data->timeline) {
             if ((!last || emission.time < last) && emission.time < effect.elapsed) {
-                emissions.emplace_back(ctx, &emission, emission.time - effect.elapsed);
+                emissions.emplace_back(&emission, emission.time - effect.elapsed);
                 emissions.back().position.setTo(effect.position);
             }
         }

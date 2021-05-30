@@ -16,13 +16,23 @@ namespace krit {
 
 struct AssetCache;
 
-struct BitmapFont: public Font {
+struct BitmapFontBase {
+    int size = 0;
+    int lineHeight = 0;
+
+    virtual GlyphData getGlyph(int c) = 0;
+    virtual std::shared_ptr<ImageData> &getPage(int i) = 0;
+    virtual double kern(int32_t lastChar, int32_t thisChar) = 0;
+
+    virtual ~BitmapFontBase() {}
+};
+
+struct BitmapFont: public BitmapFontBase {
     std::vector<std::shared_ptr<ImageData>> pages;
     GlyphData glyphData[0x100];
     std::unordered_map<int64_t, int> kerningTable;
-    AssetCache *cache;
 
-    BitmapFont(AssetCache *cache, const char *path);
+    BitmapFont(const char *path);
     ~BitmapFont() override = default;
 
     GlyphData getGlyph(int c) override {
@@ -40,18 +50,6 @@ struct BitmapFont: public Font {
             return found->second;
         }
         return 0;
-    }
-};
-
-struct BitmapFontLoader: public AssetLoader {
-    AssetCache *cache;
-
-    BitmapFontLoader(AssetCache *cache): cache(cache) {}
-
-    AssetType type() override { return BitmapFontAsset; }
-    std::shared_ptr<void> loadAsset(const AssetInfo &info) override {
-        std::shared_ptr<BitmapFont> font = std::make_shared<BitmapFont>(this->cache, info.path.c_str());
-        return font;
     }
 };
 

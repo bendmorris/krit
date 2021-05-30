@@ -1,13 +1,13 @@
 #ifndef KRIT_SPRITES_BITMAPTEXT
 #define KRIT_SPRITES_BITMAPTEXT
 
-#include "krit/asset/AssetContext.h"
 #include "krit/asset/BitmapFont.h"
 #include "krit/asset/ScalableFont.h"
 #include "krit/render/BlendMode.h"
+#include "krit/sprites/TextBase.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Option.h"
-#include "krit/utils/StringSlice.h"
+#include "krit/utils/Slice.h"
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 #include <string>
@@ -16,12 +16,6 @@
 #include <vector>
 
 namespace krit {
-
-enum AlignType {
-    LeftAlign,
-    CenterAlign,
-    RightAlign,
-};
 
 struct BitmapTextOptions {
     std::shared_ptr<BitmapFont> font;
@@ -40,22 +34,10 @@ struct BitmapTextOptions {
     BitmapTextOptions &setLineSpacing(double spacing) { this->lineSpacing = spacing; return *this; }
 };
 
-struct GlyphRenderData {
-    int32_t c = 0;
-    Color color;
-    ScaleFactor scale;
-    Point position;
-
-    GlyphRenderData() {}
-    GlyphRenderData(const Point &position): position(position) {}
-    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale, const Point &position):
-        c(c), color(color), scale(scale), position(position) {}
-};
-
 class BitmapText;
 typedef void CustomRenderFunction(RenderContext*, BitmapText*, GlyphRenderData*);
 
-enum TextOpcodeType {
+enum BitmapTextOpcodeType {
     SetColor,
     SetScale,
     SetAlign,
@@ -72,14 +54,7 @@ enum TextOpcodeType {
     Tab,
 };
 
-struct NewlineData {
-    Dimensions first;
-    AlignType second;
-
-    NewlineData(const Dimensions &d, AlignType a): first(d), second(a) {}
-};
-
-union TextOpcodeData {
+union BitmapTextOpcodeData {
     bool present;
     Color color;
     double number;
@@ -90,24 +65,24 @@ union TextOpcodeData {
     VisibleSprite *sprite;
     BitmapFont *font;
 
-    TextOpcodeData(): present(false) {}
-    TextOpcodeData(Color color): color(color) {}
-    TextOpcodeData(double number): number(number) {}
-    TextOpcodeData(AlignType align): align(align) {}
-    TextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
-    TextOpcodeData(StringSlice text): text(text) {}
-    TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
-    TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
-    TextOpcodeData(BitmapFont *font): font(font) {}
+    BitmapTextOpcodeData(): present(false) {}
+    BitmapTextOpcodeData(Color color): color(color) {}
+    BitmapTextOpcodeData(double number): number(number) {}
+    BitmapTextOpcodeData(AlignType align): align(align) {}
+    BitmapTextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
+    BitmapTextOpcodeData(StringSlice text): text(text) {}
+    BitmapTextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
+    BitmapTextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
+    BitmapTextOpcodeData(BitmapFont *font): font(font) {}
 };
 
-struct TextOpcode {
-    TextOpcodeType type;
-    TextOpcodeData data;
+struct BitmapTextOpcode {
+    BitmapTextOpcodeType type;
+    BitmapTextOpcodeData data;
 
-    TextOpcode() = default;
-    TextOpcode(TextOpcodeType type, TextOpcodeData data): type(type), data(data) {}
-    TextOpcode(TextOpcodeType type): type(type) {}
+    BitmapTextOpcode() = default;
+    BitmapTextOpcode(BitmapTextOpcodeType type, BitmapTextOpcodeData data): type(type), data(data) {}
+    BitmapTextOpcode(BitmapTextOpcodeType type): type(type) {}
 };
 
 struct FormatTagOptions {
@@ -132,7 +107,7 @@ struct FormatTagOptions {
     FormatTagOptions &setFont(BitmapFont *f) { this->font = f; return *this; }
 };
 
-struct TextParser;
+struct BitmapTextParser;
 
 /**
  * Text using bitmap fonts, supporting format tags to change the size, color,
@@ -174,10 +149,10 @@ struct BitmapText: public VisibleSprite {
     void render(RenderContext &ctx) override;
 
     private:
-        std::vector<TextOpcode> opcodes;
+        std::vector<BitmapTextOpcode> opcodes;
         bool rich = false;
         bool dirty = false;
-        friend struct TextParser;
+        friend struct BitmapTextParser;
 };
 
 }

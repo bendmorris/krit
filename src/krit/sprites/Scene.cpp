@@ -9,11 +9,6 @@
 
 namespace krit {
 
-Scene::Scene(UpdateContext &ctx):
-    asset(ctx.asset->cache) {}
-Scene::Scene(UpdateContext &ctx, const std::string &layoutPath):
-    asset(ctx.asset->cache), layout(layoutPath, *ctx.asset) {}
-
 void Scene::update(UpdateContext &ctx) {
     if (this->fadingOut && this->fadeColor.a < this->maxAlpha) {
         this->fadeColor.a += ctx.elapsed / this->fadeDuration;
@@ -26,7 +21,6 @@ void Scene::update(UpdateContext &ctx) {
             this->fadeColor.a = 0;
         }
     }
-    ctx.asset = &asset;
     this->layout.update(ctx);
 }
 
@@ -49,8 +43,8 @@ void Scene::render(RenderContext &ctx) {
     ctx.camera = oldCamera;
 }
 
-ScriptScene::ScriptScene(UpdateContext &ctx, ScriptEngine &engine):
-    Scene(ctx),
+ScriptScene::ScriptScene(ScriptEngine &engine):
+    Scene(),
     engine(engine),
     _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
     _updateUi(JS_GetPropertyStr(engine.ctx, engine.exports, "updateUi")),

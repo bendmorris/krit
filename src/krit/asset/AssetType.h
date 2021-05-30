@@ -6,8 +6,8 @@ namespace krit {
 enum AssetType {
     ImageAsset,
     AtlasAsset,
+    FontAsset,
     BitmapFontAsset,
-    ScalableFontAsset,
     TextAsset,
     SpineSkeletonAsset,
 };

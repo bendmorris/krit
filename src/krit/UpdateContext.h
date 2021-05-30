@@ -8,7 +8,6 @@ namespace krit {
 struct App;
 struct Camera;
 struct Engine;
-struct AssetContext;
 struct InputContext;
 
 struct UpdateContext {
@@ -19,7 +18,6 @@ struct UpdateContext {
     krit::Engine *engine = nullptr;
     krit::IntDimensions *window = nullptr;
     krit::Camera *camera = nullptr;
-    krit::AssetContext *asset = nullptr;
     void *userData = nullptr;
 
     UpdateContext() {}

@@ -1,7 +1,6 @@
 #ifndef KRIT_SPRITES_SCENE
 #define KRIT_SPRITES_SCENE
 
-#include "krit/asset/AssetContext.h"
 #include "krit/sprites/Layout.h"
 #include "krit/Sprite.h"
 #include "krit/script/ScriptEngine.h"
@@ -9,14 +8,13 @@
 namespace krit {
 
 struct Scene: public Sprite {
-    AssetContext asset;
     LayoutRoot layout;
 
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 
-    Scene(UpdateContext &ctx);
-    Scene(UpdateContext &ctx, const std::string &layoutPath);
+    Scene() {}
+    Scene(const std::string &layoutPath): layout(layoutPath) {}
 
     void fadeOut(Color color, double fadeDuration = 0.5) {
         this->fadeColor = color;
@@ -48,7 +46,7 @@ struct ScriptScene: public Scene {
     JSValue _render;
     JSValue _renderUi;
 
-    ScriptScene(UpdateContext &ctx, ScriptEngine &engine);
+    ScriptScene(ScriptEngine &engine);
 
     void update(UpdateContext &ctx) override;
     void fixedUpdate(UpdateContext &ctx) override;

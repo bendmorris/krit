@@ -1,5 +1,5 @@
 #include "krit/App.h"
-#include "krit/asset/AssetContext.h"
+#include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/input/Mouse.h"
 #include "krit/TaskManager.h"
@@ -14,6 +14,7 @@
 namespace krit {
 
 static App *current;
+RenderContext App::ctx;
 
 void sigintHandler(int sig_num) { 
     current->quit();
@@ -28,9 +29,15 @@ App::App(KritOptions &options):
 {}
 
 void App::run() {
+    if (ctx.app) {
+        panic("can only have a single App running at once");
+    }
     current = this;
 
     std::signal(SIGINT, sigintHandler);
+
+    // freetype
+    Font::init();
 
     // SDL
     SDL_Init(SDL_INIT_VIDEO);
@@ -57,15 +64,12 @@ void App::run() {
     double frameDelta2 = 1.0 / (fixedFramerate + 1);
     
     // base context structs
-    AssetContext asset(engine.assetCache);
     InputContext input;
 
     // the RenderContext will be upcast to an UpdateContext during the update phase
-    RenderContext ctx;
     ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &dimensions;
-    ctx.asset = &engine.asset;
     ctx.camera = &engine.camera;
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
     ctx.userData = engine.userData;

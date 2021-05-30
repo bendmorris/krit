@@ -7,6 +7,11 @@
 #include "krit/render/ImageData.h"
 #include "krit/utils/Color.h"
 #include <memory>
+#include <unordered_map>
+
+struct hb_face_t;
+struct hb_font_t;
+struct hb_buffer_t;
 
 namespace krit {
 
@@ -20,15 +25,30 @@ struct GlyphData {
     GlyphData() {}
 };
 
+struct GlyphCache {
+    
+};
+
 struct Font {
-    int size = 0;
-    int lineHeight = 0;
+    static void init();
 
-    virtual GlyphData getGlyph(int c) = 0;
-    virtual std::shared_ptr<ImageData> &getPage(int i) = 0;
-    virtual double kern(int32_t lastChar, int32_t thisChar) = 0;
+    static const int SCALE = 8;
 
-    virtual ~Font() {}
+    static std::unordered_map<std::string, Font*> fontRegistry;
+    static Font *getFont(const std::string &name) { return fontRegistry[name]; }
+    static void registerFont(const std::string &name);
+
+    Font(const char *fontData, size_t fontDataLen);
+
+    size_t lineHeight(size_t pointSize);
+    ImageData getGlyph(uint32_t glyphId);
+    void shape(hb_buffer_t *buf, size_t pointSize);
+
+    private:
+        hb_face_t *face;
+        hb_font_t *font;
+        void *ftFace;
+        void *fontData;
 };
 
 }

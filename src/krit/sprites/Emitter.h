@@ -1,7 +1,6 @@
 #ifndef KRIT_SPRITES_EMITTER
 #define KRIT_SPRITES_EMITTER
 
-#include "krit/asset/AssetContext.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/particles/Particle.h"
@@ -26,7 +25,7 @@ struct EmissionTrack {
     Image image;
     float elapsed = 0;
 
-    EmissionTrack(UpdateContext &ctx, ParticleEmission *data, float elapsed = 0);
+    EmissionTrack(ParticleEmission *data, float elapsed = 0);
 };
 
 struct ParticleTrack {

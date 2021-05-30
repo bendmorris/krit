@@ -17,6 +17,8 @@ const int FPS = 60;
 struct Editor;
 
 struct App {
+    static RenderContext ctx;
+
     std::string title;
     Engine engine;
     IntDimensions dimensions;

@@ -1,8 +1,8 @@
 #ifndef KRIT_SPRITES_LAYOUT
 #define KRIT_SPRITES_LAYOUT
 
-#include "krit/asset/AssetContext.h"
 #include "krit/Sprite.h"
+#include "krit/render/ImageRegion.h"
 #include <memory>
 #include <stack>
 #include <string>
@@ -131,16 +131,15 @@ struct LayoutParseData {
     std::string *path;
     LayoutRoot *root;
     LayoutNode *node;
-    AssetContext *asset;
     std::stack<LayoutNode*> layoutStack;
 };
 
 typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
 
 struct LayoutRoot: public Sprite {
-    static LayoutRoot *fromMarkup(const std::string &markup, AssetContext &asset) {
+    static LayoutRoot *fromMarkup(const std::string &markup) {
         LayoutRoot *root = new LayoutRoot();
-        root->parse(markup, asset);
+        root->parse(markup);
         return root;
     }
 
@@ -148,7 +147,7 @@ struct LayoutRoot: public Sprite {
     static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value);
     static SpriteStyle parseStyle(std::string &s);
     static void parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e);
-    static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap, AssetContext *asset);
+    static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap);
 
     static void addParser(const std::string &tag, LayoutParseFunction *f) {
         parsers.insert(std::make_pair(tag, f));
@@ -158,10 +157,10 @@ struct LayoutRoot: public Sprite {
     std::unordered_map<std::string, LayoutNode*> nodeMap;
 
     LayoutRoot() {}
-    LayoutRoot(const std::string &path, AssetContext &asset);
+    LayoutRoot(const std::string &path);
 
-    void parse(const char *markup, size_t len, AssetContext &asset);
-    void parse(const std::string &markup, AssetContext &asset);
+    void parse(const char *markup, size_t len);
+    void parse(const std::string &markup);
 
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);

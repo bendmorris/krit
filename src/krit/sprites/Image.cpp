@@ -1,7 +1,10 @@
+#include "krit/App.h"
 #include "krit/Camera.h"
 #include "krit/sprites/Image.h"
 
 namespace krit {
+
+Image::Image(const std::string &id): region(App::ctx.engine->getImage(id)) {}
 
 void Image::render(RenderContext &ctx) {
     if (this->color.a <= 0) {

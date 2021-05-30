@@ -1,4 +1,5 @@
 #include "krit/asset/TextureAtlas.h"
+#include "krit/App.h"
 #include "krit/asset/AssetCache.h"
 #include "krit/Assets.h"
 #include "krit/io/Io.h"
@@ -22,7 +23,7 @@ std::pair<int, int> parseTuple(std::string &x) {
     return std::make_pair(a, b);
 }
 
-TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
+TextureAtlas::TextureAtlas(const std::string &path) {
     char *data = IoRead::read(path);
     std::string s(data);
     std::istringstream input(s);
@@ -35,7 +36,7 @@ TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
         std::string pageName = line;
         size_t lastSlash = path.rfind("/");
         std::string s = (lastSlash == std::string::npos) ? pageName : (path.substr(0, lastSlash) + "/" + pageName);
-        std::shared_ptr<ImageData> image = std::static_pointer_cast<ImageData>(assetCache->get(Assets::byPath(s)));
+        std::shared_ptr<ImageData> image = App::ctx.engine->getImage(Assets::byPath(s));
 
         while (std::getline(input, line) && line.find(':') != std::string::npos) {}
         while (!line.empty()) {
@@ -64,6 +65,15 @@ TextureAtlas::TextureAtlas(AssetCache *assetCache, const std::string &path) {
             this->regions.insert(std::make_pair(regionName, region));
         }
     }
+}
+
+template<> TextureAtlas *AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
+    TextureAtlas *atlas = new TextureAtlas(info.path);
+    return atlas;
+}
+
+template<> void AssetLoader<TextureAtlas>::unloadAsset(TextureAtlas *atlas) {
+    delete atlas;
 }
 
 }

@@ -1,8 +1,8 @@
 #ifndef KRIT_SPRITES_SPINESPRITE
 #define KRIT_SPRITES_SPINESPRITE
 
+#include "krit/App.h"
 #include "krit/asset/AssetCache.h"
-#include "krit/asset/AssetContext.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
@@ -16,13 +16,11 @@
 namespace krit {
 
 struct SpineTextureLoader: public spine::TextureLoader {
-    AssetCache *cache;
-
-    SpineTextureLoader(AssetCache *cache): cache(cache) {}
-    ~SpineTextureLoader() {}
+    static SpineTextureLoader instance;
 
     void load(spine::AtlasPage &page, const spine::String &path) override {
-        std::shared_ptr<ImageData> texture = std::static_pointer_cast<ImageData>(this->cache->get(std::string(path.buffer())));
+        std::string assetName(path.buffer());
+        std::shared_ptr<ImageData> texture = App::ctx.engine->getImage(assetName);
         ImageRegion *region = new ImageRegion(texture);
         page.setRendererObject(region);
         page.width = texture->width();
@@ -33,16 +31,6 @@ struct SpineTextureLoader: public spine::TextureLoader {
         ImageRegion *region = static_cast<ImageRegion*>(texture);
         delete region;
     }
-};
-
-struct SpineLoader: public AssetLoader {
-    AssetCache *cache;
-    SpineTextureLoader textureLoader;
-
-    SpineLoader(AssetCache *cache): cache(cache), textureLoader(cache) {}
-
-    AssetType type() override { return SpineSkeletonAsset; }
-    std::shared_ptr<void> loadAsset(const AssetInfo &info) override;
 };
 
 struct SkeletonBinaryData {
@@ -76,8 +64,8 @@ struct SpineSprite: public VisibleSprite {
     spine::SkeletonData &skeletonData() { return *this->bin->skeletonData; }
     spine::AnimationStateData &animationStateData() { return *this->bin->animationStateData; }
 
-    SpineSprite(AssetContext &asset, const std::string &id);
-    SpineSprite(AssetContext &asset, const AssetInfo &info);
+    SpineSprite(const std::string &id);
+    SpineSprite(const AssetInfo &info);
     ~SpineSprite();
 
     float setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);

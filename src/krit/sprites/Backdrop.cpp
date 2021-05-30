@@ -1,7 +1,10 @@
-#include "krit/Camera.h"
 #include "krit/sprites/Backdrop.h"
+#include "krit/App.h"
+#include "krit/Camera.h"
 
 namespace krit {
+
+Backdrop::Backdrop(const std::string &id): region(App::ctx.engine->getImage(id)) {}
 
 void Backdrop::render(RenderContext &ctx) {
     if (this->color.a <= 0) {

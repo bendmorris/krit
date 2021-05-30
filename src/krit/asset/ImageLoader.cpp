@@ -1,4 +1,4 @@
-#include "krit/asset/ImageLoader.h"
+#include "krit/asset/AssetLoader.h"
 #include "krit/App.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
@@ -14,14 +14,8 @@
 
 namespace krit {
 
-std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
-    std::shared_ptr<ImageData> img(new ImageData(), [](ImageData *img) {
-        GLuint texture = img->texture;
-        TaskManager::instance->pushRender([texture](RenderContext&) {
-            puts("DELETE");
-            glDeleteTextures(1, &texture);
-        });
-    });
+template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
+    ImageData *img = new ImageData();
     img->dimensions.setTo(info.properties.dimensions);
 
     TaskManager::instance->push([info, img](UpdateContext &) {
@@ -47,7 +41,7 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
         }
         SDL_UnlockSurface(surface);
 
-        TaskManager::instance->pushRender([img, surface, mode](RenderContext &render) {
+        TaskManager::instance->pushRender([info, img, surface, mode](RenderContext &render) {
             // upload texture
             glActiveTexture(GL_TEXTURE0);
             checkForGlErrors("active texture");
@@ -65,6 +59,15 @@ std::shared_ptr<void> ImageLoader::loadAsset(const AssetInfo &info) {
     });
 
     return img;
+}
+
+template<> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
+    GLuint texture = img->texture;
+    TaskManager::instance->pushRender([texture](RenderContext&) {
+        puts("DELETE");
+        glDeleteTextures(1, &texture);
+    });
+    delete img;
 }
 
 }

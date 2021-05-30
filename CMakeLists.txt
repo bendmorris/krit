@@ -6,6 +6,8 @@ find_package(OpenGL REQUIRED)
 find_package(OpenAL REQUIRED)
 find_package(GLEW REQUIRED)
 #find_package(libzip REQUIRED)
+find_package(harfbuzz REQUIRED)
+find_package(Freetype REQUIRED)
 
 add_definitions(
     "-DIMGUI_IMPL_OPENGL_LOADER_GLEW"
@@ -49,8 +51,11 @@ target_link_libraries(${PROJECT_NAME}
     "-Wl,--gc-sections"
     "-lGLEW"
     "-lzip"
+    "-lfreetype"
+    "-lharfbuzz"
     ${CMAKE_CURRENT_SOURCE_DIR}/quickjs/libquickjs.a
 )
+target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 add_custom_target(
     quickjs

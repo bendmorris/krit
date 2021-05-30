@@ -3,7 +3,6 @@
 
 #include "krit/Sprite.h"
 #include "krit/Math.h"
-#include "krit/asset/AssetContext.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
@@ -17,7 +16,7 @@ struct Backdrop: public VisibleSprite {
     bool repeatX = true;
     bool repeatY = true;
 
-    Backdrop(AssetContext &asset, const std::string &id): region(asset.getImage(id)) {}
+    Backdrop(const std::string &id);
     Backdrop(ImageRegion region): region(region) {}
 
     int &width() { return this->region.rect.width; }

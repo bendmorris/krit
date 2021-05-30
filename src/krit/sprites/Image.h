@@ -1,7 +1,6 @@
 #ifndef KRIT_SPRITES_IMAGE
 #define KRIT_SPRITES_IMAGE
 
-#include "krit/asset/AssetContext.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
@@ -16,7 +15,7 @@ struct Image: public VisibleSprite {
     float angle = 0;
     ImageRegion region;
 
-    Image(AssetContext &asset, const std::string &id): region(asset.getImage(id)) {}
+    Image(const std::string &id);
     Image(ImageRegion region): region(region) {}
 
     int &width() { return this->region.rect.width; }

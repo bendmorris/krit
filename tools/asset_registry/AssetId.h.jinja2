@@ -2,7 +2,7 @@
 #ifndef KRIT_ASSETID
 #define KRIT_ASSETID
 
-enum AssetId {
+enum AssetId: int {
     {% for asset in assets: -%}
     {{ asset.assetId }} = {{ loop.index - 1 }},
     {% endfor -%}

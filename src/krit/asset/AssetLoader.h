@@ -8,12 +8,22 @@
 
 namespace krit {
 
-struct AssetLoader {
-    virtual AssetType type() { return TextAsset; }
-    virtual size_t initialSize() { return 16; }
-    virtual std::shared_ptr<void> loadAsset(const AssetInfo&) = 0;
-    virtual bool isLoaded(std::shared_ptr<void>) { return true; }
+template <typename T> struct AssetLoader {
+    static T *loadAsset(const AssetInfo&);
+    static void unloadAsset(T *asset);
 };
+
+#define DECLARE_ASSET_LOADER(T) template<> T *AssetLoader<T>::loadAsset(const AssetInfo&); template<> void AssetLoader<T>::unloadAsset(T *asset);
+#define DECLARE_ASSET_LOADER2(T) struct T; DECLARE_ASSET_LOADER(T);
+
+DECLARE_ASSET_LOADER2(ImageData)
+DECLARE_ASSET_LOADER2(TextureAtlas)
+DECLARE_ASSET_LOADER2(SkeletonBinaryData)
+DECLARE_ASSET_LOADER2(Font)
+DECLARE_ASSET_LOADER2(BitmapFont)
+DECLARE_ASSET_LOADER2(StringSlice)
+
+#undef DECLARE_ASSET_LOADER
 
 }
 
