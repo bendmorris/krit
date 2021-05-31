@@ -281,7 +281,7 @@ struct TextParser {
     }
 
     void flushWord(Text &txt) {
-        if (txt.wordWrap && cursor.x + wordLength > txt.dimensions.width()) {
+        if (txt.wordWrap && (cursor.x + wordLength) * txt.size / FONT_SCALE > txt.dimensions.width()) {
             newLine(txt, false);
         }
         txt.opcodes.insert(txt.opcodes.end(), std::make_move_iterator(word.begin()), std::make_move_iterator(word.end()));
