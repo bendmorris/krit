@@ -21,8 +21,11 @@ namespace {
 
 SpriteShader *defaultTextureSpriteShader;
 SpriteShader *defaultColorSpriteShader;
+SpriteShader *defaultTextSpriteShader;
 
-SpriteShader *getDefaultTextureShader() {
+}
+
+SpriteShader *Renderer::getDefaultTextureShader() {
     if (!defaultTextureSpriteShader) {
         defaultTextureSpriteShader = new SpriteShader(R"(
 // Krit texture vertex shader
@@ -56,9 +59,10 @@ void main(void) {
     return defaultTextureSpriteShader;
 }
 
-SpriteShader *getDefaultColorShader() {
+SpriteShader *Renderer::getDefaultColorShader() {
     if (!defaultColorSpriteShader) {
-        defaultColorSpriteShader = new SpriteShader(R"(// Krit color vertex shader
+        defaultColorSpriteShader = new SpriteShader(R"(
+// Krit color vertex shader
 attribute vec4 aPosition;
 attribute vec4 aColor;
 varying vec4 vColor;
@@ -79,6 +83,38 @@ void main(void) {
     return defaultColorSpriteShader;
 }
 
+SpriteShader *Renderer::getDefaultTextShader() {
+    if (!defaultTextSpriteShader) {
+        defaultTextSpriteShader = new SpriteShader(R"(
+// Krit text vertex shader
+attribute vec4 aPosition;
+attribute vec2 aTexCoord;
+attribute vec4 aColor;
+varying vec2 vTexCoord;
+varying vec4 vColor;
+uniform mat4 uMatrix;
+
+void main(void) {
+    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
+    vTexCoord = aTexCoord;
+    gl_Position = uMatrix * aPosition;
+}
+)",R"(// Krit text fragment shader
+varying vec4 vColor;
+varying vec2 vTexCoord;
+uniform sampler2D uImage;
+
+void main(void) {
+    vec4 color = texture2D(uImage, vTexCoord);
+    if (color.r == 0.0) {
+        discard;
+    } else {
+        gl_FragColor = vec4(color.r, color.r, color.r, color.r) * vColor;
+    }
+}
+)");
+    }
+    return defaultTextSpriteShader;
 }
 
 SDL_mutex *Renderer::renderMutex = SDL_CreateMutex();

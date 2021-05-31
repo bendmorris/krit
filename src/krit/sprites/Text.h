@@ -5,6 +5,7 @@
 #include "krit/sprites/TextBase.h"
 #include "krit/utils/Option.h"
 #include "krit/Sprite.h"
+#include <cassert>
 
 struct hb_buffer_t;
 struct hb_font_t;
@@ -16,7 +17,7 @@ struct Text;
 typedef void CustomTextRenderFunction(RenderContext*, Text*, GlyphRenderData*);
 
 struct TextOptions {
-    Font *font;
+    Font *font = nullptr;
     int size = 16;
     AlignType align = LeftAlign;
     bool wordWrap = false;
@@ -25,7 +26,7 @@ struct TextOptions {
     TextOptions() {}
 
     TextOptions &setFont(Font *font) { this->font = font; return *this; }
-    TextOptions &setFont(const std::string &name) { this->font = Font::getFont(name); return *this; }
+    TextOptions &setFont(const std::string &name) { this->font = Font::getFont(name); assert(this->font); return *this; }
     TextOptions &setSize(int size) { this->size = size; return *this; }
     TextOptions &setAlign(AlignType align) { this->align = align; return *this; }
     TextOptions &setWordWrap(bool wrap) { this->wordWrap = wrap; return *this; }
@@ -50,9 +51,10 @@ struct TextFormatTagOptions {
     TextFormatTagOptions &setSprite(VisibleSprite *s) { this->sprite = s; return *this; }
 };
 
-struct TextGlyphData {
-    uint32_t codepoint;
-    int32_t xOffset, yOffset, xAdvance, yAdvance;
+struct GlyphBlockData {
+    size_t startIndex;
+    size_t glyphs;
+    double trailingWhitespace;
 };
 
 union TextOpcodeData {
@@ -61,7 +63,7 @@ union TextOpcodeData {
     double number;
     AlignType align;
     CustomTextRenderFunction *custom = nullptr;
-    std::pair<size_t, size_t> glyphBlock;
+    GlyphBlockData glyphBlock;
     NewlineData newLine;
     VisibleSprite *sprite;
 
@@ -70,7 +72,7 @@ union TextOpcodeData {
     TextOpcodeData(double number): number(number) {}
     TextOpcodeData(AlignType align): align(align) {}
     TextOpcodeData(CustomTextRenderFunction *custom): custom(custom) {}
-    TextOpcodeData(size_t startIndex, size_t glyphs): glyphBlock(startIndex, glyphs) {}
+    TextOpcodeData(size_t startIndex, size_t glyphs, double trailingWhitespace): glyphBlock { .startIndex = startIndex, .glyphs = glyphs, .trailingWhitespace = trailingWhitespace } {}
     TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
     TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
 };
@@ -84,18 +86,21 @@ struct TextOpcode {
     TextOpcode() = default;
     TextOpcode(TextOpcodeType type, TextOpcodeData data): type(type), data(data) {}
     TextOpcode(TextOpcodeType type): type(type) {}
+
+    void debugPrint();
 };
 
-struct Text: public VisibleSprite {
+struct Text: public VisibleSprite, public TextOptions {
     static std::unordered_map<std::string, TextFormatTagOptions> formatTags;
 
     static void addFormatTag(std::string, TextFormatTagOptions);
 
-    TextOptions options;
     int charCount = -1;
     int maxChars = 0;
     std::vector<double> tabStops;
     Color baseColor = Color::white();
+    std::string text;
+    Dimensions textDimensions;
 
     Text() = default;
     Text(const TextOptions &options);
@@ -115,14 +120,12 @@ struct Text: public VisibleSprite {
     void render(RenderContext &ctx) override;
 
     private:
-        std::string text;
         std::vector<TextOpcode> opcodes;
-        Font *font = nullptr;
         hb_buffer_t *hbBuf = nullptr;
         bool rich = false;
         bool dirty = false;
-        Dimensions textDimensions;
         friend struct TextParser;
+        double lineHeight;
 };
 
 }

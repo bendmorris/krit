@@ -16,11 +16,21 @@ namespace krit {
 
 struct AssetCache;
 
+struct BitmapGlyphData {
+    int page = 0;
+    int id = 0;
+    IntRectangle rect;
+    IntPoint offset;
+    int xAdvance = 0;
+
+    BitmapGlyphData() {}
+};
+
 struct BitmapFontBase {
     int size = 0;
     int lineHeight = 0;
 
-    virtual GlyphData getGlyph(int c) = 0;
+    virtual BitmapGlyphData getGlyph(int c) = 0;
     virtual std::shared_ptr<ImageData> &getPage(int i) = 0;
     virtual double kern(int32_t lastChar, int32_t thisChar) = 0;
 
@@ -29,13 +39,13 @@ struct BitmapFontBase {
 
 struct BitmapFont: public BitmapFontBase {
     std::vector<std::shared_ptr<ImageData>> pages;
-    GlyphData glyphData[0x100];
+    BitmapGlyphData glyphData[0x100];
     std::unordered_map<int64_t, int> kerningTable;
 
     BitmapFont(const char *path);
     ~BitmapFont() override = default;
 
-    GlyphData getGlyph(int c) override {
+    BitmapGlyphData getGlyph(int c) override {
         return this->glyphData[c];
     }
 

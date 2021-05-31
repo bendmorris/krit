@@ -2,11 +2,15 @@
 #ifndef KRIT_ASSETID
 #define KRIT_ASSETID
 
+namespace krit {
+
 enum AssetId: int {
     {% for asset in assets: -%}
     {{ asset.assetId }} = {{ loop.index - 1 }},
     {% endfor -%}
     AssetCount,
 };
+
+}
 
 #endif

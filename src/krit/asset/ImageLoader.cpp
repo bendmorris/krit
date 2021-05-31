@@ -28,6 +28,7 @@ template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         uint8_t *pixels = static_cast<uint8_t*>(surface->pixels);
         double f = 0;
         unsigned int mode = GL_RGB;
+        // FIXME: do this ahead of time
         if (surface->format->BytesPerPixel == 4) {
             // premultiply alpha
             for (int i = 0; i < size; ++i) {

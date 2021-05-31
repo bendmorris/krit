@@ -119,7 +119,7 @@ struct BitmapTextParser {
                         }
                         default: {
                             this->wordSegment.length++;
-                            GlyphData glyph = this->currentFont->getGlyph(c);
+                            BitmapGlyphData glyph = this->currentFont->getGlyph(c);
                             if (glyph.id) {
                                 int xAdvance = glyph.xAdvance;
                                 this->wordSegmentLength += xAdvance * this->currentScale;
@@ -483,7 +483,7 @@ void BitmapText::render(RenderContext &ctx) {
                         return;
                     }
                     unsigned char c = txt[i];
-                    GlyphData glyph = font->getGlyph(c);
+                    BitmapGlyphData glyph = font->getGlyph(c);
                     if (glyph.id && glyph.id == c) {
                         int xAdvance = glyph.xAdvance;
                         GlyphRenderData renderData(

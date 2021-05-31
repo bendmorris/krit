@@ -22,6 +22,10 @@ struct Renderer {
     void init(SDL_Window *window);
     void renderFrame(RenderContext &ctx);
 
+    SpriteShader *getDefaultTextureShader();
+    SpriteShader *getDefaultColorShader();
+    SpriteShader *getDefaultTextShader();
+
     private:
         std::vector<char> renderData;
         GLuint vao;

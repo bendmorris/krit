@@ -80,7 +80,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
             attr = attr + 2;
         }
     } else if (!strcmp(name, "char")) {
-        GlyphData glyphData;
+        BitmapGlyphData glyphData;
         const char **attr = attrs;
         while (*attr) {
             if (*(attr + 1)) {

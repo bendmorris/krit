@@ -7,6 +7,7 @@
 #include "krit/sprites/Image.h"
 #include "krit/sprites/NineSlice.h"
 #include "krit/sprites/SpineSprite.h"
+#include "krit/sprites/Text.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Parse.h"
 #include "expat.h"
@@ -336,6 +337,49 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
     }
 }
 
+void parseText(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+    LayoutNode *node = data->node;
+
+    // parse text options first
+    TextOptions options;
+    options.setFont(attrMap["font"]);
+    std::unordered_map<std::string, std::string>::const_iterator it;
+    for (auto &it: attrMap) {
+        const std::string &key = it.first;
+        const std::string &value = it.second;
+        if (key == "size") options.size = stoi(value);
+        else if (key == "wrap") options.wordWrap = ParseUtil::parseBool(value);
+        else if (key == "align") {
+            if (value == "left") options.align = LeftAlign;
+            else if (value == "center") options.align = CenterAlign;
+            else if (value == "right") options.align = RightAlign;
+            else panic("unexpected value for text alignment: %s", value.c_str());
+        }
+    }
+    Text *txt = new Text(options);
+    LayoutRoot::parseAndApplyStyle(attrMap, txt);
+    node->attachSprite(txt);
+
+    for (auto &it : attrMap) {
+        const std::string &key = it.first;
+        const std::string &value = it.second;
+        if (key == "tabStops") {
+            std::stringstream stream(value);
+            std::string token;
+            while (getline(stream, token, ',')) {
+                int stop = atoi(token.c_str());
+                txt->tabStops.push_back(stop);
+            }
+        } else if (key == "baseColor") {
+            txt->baseColor = ParseUtil::parseColor(value);
+        } else if (key == "rich") {
+            txt->setRichText(value);
+        } else if (key == "text") {
+            txt->setText(value);
+        }
+    }
+}
+
 void parseSpine(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
 
@@ -526,6 +570,7 @@ std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
     {"img", &parseImg},
     {"backdrop", &parseBackdrop},
     {"label", &parseLabel},
+    {"text", &parseText},
     {"spine", &parseSpine},
     {"nineslice", &parseNineSlice},
     {"button", &parseButton},

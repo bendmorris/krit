@@ -1,15 +1,32 @@
 #include "krit/asset/Font.h"
+#include "krit/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
+#include "krit/render/ImageData.h"
+#include "krit/render/RenderContext.h"
+#include "krit/render/Renderer.h"
 #include "krit/utils/Panic.h"
 #include "harfbuzz/hb.h"
 #include <cassert>
+#include <cstring>
 #include "freetype2/ft2build.h"
 #include FT_FREETYPE_H
 
 namespace krit {
 
+template<> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
+    int length;
+    char *content = IoRead::read(info.path, &length);
+    Font *font = new Font(info.path, content, length);
+    return font;
+}
+
+template<> void AssetLoader<Font>::unloadAsset(Font *font) {
+    delete font;
+}
+
 static FT_Library ftLibrary;
+std::unordered_map<std::string, Font*> Font::fontRegistry;
 
 void Font::init() {
     int error = FT_Init_FreeType(&ftLibrary);
@@ -18,19 +35,33 @@ void Font::init() {
     }
 }
 
-std::unordered_map<std::string, Font*> Font::fontRegistry;
-
-void Font::registerFont(const std::string &name) {
-    // TODO
+void Font::commit() {
+    for (auto &it : fontRegistry) {
+        it.second->commitChanges();
+    }
 }
 
-Font::Font(const char *fontData, size_t fontDataLen) {
+void Font::flush() {
+    for (auto &it : fontRegistry) {
+        it.second->flushCache();
+    }
+}
+
+void Font::registerFont(const std::string &name, AssetId id) {
+    fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byId(id));
+}
+
+void Font::registerFont(const std::string &name, const std::string &path) {
+    fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byPath(path));
+}
+
+Font::Font(const std::string &path, const char *fontData, size_t fontDataLen): path(path), glyphCache(this), nextGlyphCache(this) {
     this->fontData = (void*)fontData;
     // harfbuzz face initialization
     hb_blob_t *blob = hb_blob_create(fontData, fontDataLen, HB_MEMORY_MODE_READONLY, nullptr, nullptr);
     face = hb_face_create(blob, 0);
     font = hb_font_create(face);
-    hb_font_set_scale(font, SCALE, SCALE);
+    hb_font_set_scale(font, 64, 64);
     // freetype face initialization
     int error = FT_New_Memory_Face(ftLibrary, (const FT_Byte*)fontData, fontDataLen, 0, (FT_Face*)&ftFace);
     if (error) {
@@ -38,27 +69,122 @@ Font::Font(const char *fontData, size_t fontDataLen) {
     }
 }
 
-size_t Font::lineHeight(size_t pointSize) {
-    hb_font_set_ptem(font, pointSize);
-    hb_font_extents_t extents;
-    hb_font_get_h_extents(font, &extents);
-    return extents.line_gap / SCALE;
-}
-
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
-    hb_font_set_ptem(font, pointSize);
+    hb_font_set_ppem(font, pointSize, pointSize);
     hb_shape(font, buf, nullptr, 0);
 }
 
-template<> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
-    int length;
-    char *content = IoRead::read(info.path, &length);
-    Font *font = new Font(content, length);
-    return font;
+void Font::commitChanges() {
+    if (glyphCache.img) glyphCache.commitChanges();
+    if (nextGlyphCache.img) nextGlyphCache.commitChanges();
 }
 
-template<> void AssetLoader<Font>::unloadAsset(Font *font) {
-    delete font;
+void Font::flushCache() {
+    if (nextGlyphCache.img) {
+        glyphCache = nextGlyphCache;
+        nextGlyphCache = GlyphCache(this);
+    }
+}
+
+GlyphData &Font::getGlyph(uint32_t codePoint, float size) {
+    if (!nextGlyphCache.img) {
+        if (!glyphCache.img) {
+            glyphCache.createTexture();
+        }
+        GlyphData *found = glyphCache.getGlyph(codePoint, size);
+        if (found) {
+            return *found;
+        }
+        nextGlyphCache.createTexture();
+    }
+    GlyphData *found = nextGlyphCache.getGlyph(codePoint, size);
+    if (!found) {
+        panic("ran out of space in backup texture");
+    }
+    return *found;
+}
+
+GlyphCache::~GlyphCache() {
+    if (pixelData) {
+        free(pixelData);
+    }
+}
+
+GlyphData *GlyphCache::getGlyph(uint32_t codePoint, float size) {
+    {
+        // check if we already contain this glyph at this size
+        auto it = glyphs.find(GlyphSize(codePoint, size));
+        if (it != glyphs.end()) {
+            return &it->second;
+        }
+    }
+    FT_Face face = (FT_Face)font->ftFace;
+    FT_Set_Pixel_Sizes(face, size, size);
+    FT_Load_Glyph(face, codePoint, FT_LOAD_DEFAULT);
+    FT_GlyphSlot slot = face->glyph;
+    int width = slot->bitmap.width;
+    int height = slot->bitmap.rows;
+    int neededWidth = (width / SIZE_PRECISION + (width % SIZE_PRECISION ? 1 : 0)) * SIZE_PRECISION;
+    int x = 0;
+    {
+        // search columns for space
+        for (auto &column : columns) {
+            if (CACHE_TEXTURE_SIZE - column.height >= height + PADDING * 2 && column.width >= neededWidth && column.width < neededWidth * 2) {
+                // use this one
+                auto it = glyphs.emplace(
+                    std::piecewise_construct,
+                    std::make_tuple(codePoint, size),
+                    std::make_tuple(ImageRegion(img, IntRectangle(x + PADDING, column.height + PADDING, width, height)), slot->bitmap_left, slot->bitmap_top)
+                );
+                column.height += height + PADDING * 2;
+                pending.emplace_back(codePoint, size);
+                return &it.first->second;
+            }
+            x += column.width + PADDING * 2;
+        }
+        // TODO: for last column, allow expanding column size up to 2x
+    }
+    {
+        // if no space found, create new column
+        if (CACHE_TEXTURE_SIZE - x > neededWidth + PADDING * 2) {
+            columns.emplace_back(neededWidth, height + PADDING * 2);
+            auto it = glyphs.emplace(
+                std::piecewise_construct,
+                std::make_tuple(codePoint, size),
+                std::make_tuple(ImageRegion(img, IntRectangle(x + PADDING, PADDING, width, height)), slot->bitmap_left, slot->bitmap_top)
+            );
+            pending.emplace_back(codePoint, size);
+            return &it.first->second;
+        }
+    }
+    return nullptr;
+}
+
+void GlyphCache::createTexture() {
+    GLuint textureId;
+    glGenTextures(1, &textureId);
+    img = std::make_shared<ImageData>(textureId, IntDimensions(CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE));
+    pixelData = (uint8_t*)calloc(CACHE_TEXTURE_SIZE * CACHE_TEXTURE_SIZE, 1);
+}
+
+void GlyphCache::commitChanges() {
+    if (!pending.empty()) {
+        FT_Face face = (FT_Face)font->ftFace;
+        FT_GlyphSlot slot = face->glyph;
+        // iterate over pending glyphs
+        for (auto &it : pending) {
+            GlyphData &glyphData = glyphs[GlyphSize(it.glyphIndex, it.size)];
+            FT_Set_Pixel_Sizes(face, it.size, it.size);
+            FT_Load_Glyph(face, it.glyphIndex, FT_LOAD_RENDER);
+            for (unsigned int i = 0; i < slot->bitmap.rows; ++i) {
+                memcpy(&pixelData[(glyphData.region.y() + i) * CACHE_TEXTURE_SIZE + glyphData.region.x()], &slot->bitmap.buffer[slot->bitmap.width * i], slot->bitmap.width);
+            }
+        }
+        // upload the texture
+        glBindTexture(GL_TEXTURE_2D, img->texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pixelData);
+        pending.clear();
+    }
 }
 
 }

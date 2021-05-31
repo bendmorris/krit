@@ -128,9 +128,12 @@ void App::run() {
         frameStart = frameFinish;
 
         SDL_LockMutex(renderer.renderMutex);
+        Font::commit();
         engine.render(ctx);
         renderer.renderFrame(ctx);
         SDL_UnlockMutex(renderer.renderMutex);
+
+        Font::flush();
     }
 
     TaskManager::instance->killed = true;

@@ -1,10 +1,13 @@
 #include "krit/sprites/Text.h"
+#include "krit/App.h"
 #include "krit/utils/Slice.h"
 #include "harfbuzz/hb.h"
 #include <cassert>
 #include <stack>
 
 namespace krit {
+
+static const int FONT_SCALE = 64;
 
 enum TextOpcodeType: int {
     SetColor,
@@ -17,6 +20,7 @@ enum TextOpcodeType: int {
     NewLine,
     RenderSprite,
     Tab,
+    Whitespace,
 };
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
@@ -37,12 +41,12 @@ template <typename T> void clearStack(std::stack<T> &stack) {
     while (!stack.empty()) stack.pop();
 }
 
-struct GlyphRenderStack {
+struct TextRenderStack {
     std::stack<Color> color;
     std::stack<AlignType> align;
     std::stack<CustomTextRenderFunction*> custom;
 
-    GlyphRenderStack() {}
+    TextRenderStack() {}
 
     void clear() {
         clearStack(this->color);
@@ -51,50 +55,91 @@ struct GlyphRenderStack {
     }
 };
 
-struct GlyphSequence {
-    size_t startIndex = 0;
-    size_t length = 0;
-    double trailingWhitespace = 0;
-    double horizontalSize = 0;
-
-    void append(const GlyphSequence &other) {
-        assert(other.startIndex == startIndex + length);
-        length += other.length;
-        horizontalSize += trailingWhitespace + other.horizontalSize;
-        trailingWhitespace = other.trailingWhitespace;
+void TextOpcode::debugPrint() {
+    switch (this->type) {
+        case SetColor: {
+            printf("SetColor");
+            break;
+        }
+        case SetAlign: {
+            printf("SetAlign");
+            break;
+        }
+        case SetCustom: {
+            printf("SetCustom");
+            break;
+        }
+        case PopColor: {
+            printf("PopColor");
+            break;
+        }
+        case PopAlign: {
+            printf("PopAlign");
+            break;
+        }
+        case PopCustom: {
+            printf("PopCustom");
+            break;
+        }
+        case GlyphBlock: {
+            printf("GlyphBlock");
+            break;
+        }
+        case NewLine: {
+            printf("NewLine");
+            break;
+        }
+        case RenderSprite: {
+            printf("RenderSprite");
+            break;
+        }
+        case Tab: {
+            printf("Tab");
+            break;
+        }
+        case Whitespace: {
+            printf("Whitespace");
+            break;
+        }
     }
-
-    bool empty() { return length; }
-};
+}
 
 /**
  * Utility structure to parse format tags from a string of text and generate a
  * Vector of TextOpcodes.
  */
 struct TextParser {
-    static GlyphRenderStack stack;
-    static std::vector<TextOpcode> word;
+    static TextRenderStack stack;
 
-    double lineHeight = 0;
     Point cursor;
 
-    GlyphSequence currentLine;
-    GlyphSequence currentWord;
     AlignType currentAlign = LeftAlign;
     int newLineIndex = 0;
     size_t tabIndex = 0;
+
+    std::vector<TextOpcode> word;
+    int wordLength = 0;
     
     hb_buffer_t *hbBuf;
 
     void parseText(Text &txt, std::string &s, bool rich) {
+        txt.opcodes.clear();
+        txt.textDimensions.setTo(0, 0);
+        txt.maxChars = 0;
+
+        if (s.empty()) {
+            return;
+        }
+
         if (txt.hbBuf) {
             hb_buffer_clear_contents(txt.hbBuf);
         } else {
             txt.hbBuf = hb_buffer_create();
-            hb_buffer_set_direction(txt.hbBuf, HB_DIRECTION_LTR);
-            hb_buffer_set_script(txt.hbBuf, HB_SCRIPT_LATIN);
-            hb_buffer_set_language(txt.hbBuf, hb_language_from_string("en", -1));
         }
+        hb_buffer_set_direction(txt.hbBuf, HB_DIRECTION_LTR);
+        hb_buffer_set_script(txt.hbBuf, HB_SCRIPT_LATIN);
+        hb_buffer_set_language(txt.hbBuf, hb_language_from_string("en", -1));
+        hb_buffer_set_cluster_level(txt.hbBuf, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
 
         hb_buffer_t *hbBuf = txt.hbBuf;
     
@@ -111,6 +156,8 @@ struct TextParser {
                         break;
                     }
                 }
+            } else if (s[i] == '\n') {
+                tagLocations.emplace_back(i, 1);
             }
         }
         std::string rawText;
@@ -129,10 +176,10 @@ struct TextParser {
                     ++offset;
                     --len;
                 }
-                if (s[offset + len] == '>') {
+                if (s[offset + len - 1] == '>') {
                     --len;
                 }
-                if (s[offset + len] == '/') {
+                if (s[offset + len - 1] == '/') {
                     --len;
                 }
                 tags.emplace_back(l.first - tagNameOffset, StringSlice(&s[offset], len));
@@ -154,58 +201,66 @@ struct TextParser {
 
         // use harfbuzz to shape the text
         hb_buffer_add_utf8(hbBuf, rawText.c_str(), rawText.size(), 0, -1);
-        txt.font->shape(hbBuf, txt.options.size);
+        {
+            unsigned int glyphCount;
+            hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(hbBuf, &glyphCount);
+            for (size_t i = 0; i < glyphCount; ++i) {
+                glyphInfo[i].cluster = i;
+            }
+        }
+        
+        txt.font->shape(hbBuf, txt.size * FONT_SCALE);
         unsigned int glyphCount;
         hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(hbBuf, &glyphCount);
         hb_glyph_position_t *glyphPos = hb_buffer_get_glyph_positions(hbBuf, &glyphCount);
 
         // iterate over characters/tags and handle them
-        txt.opcodes.clear();
-        txt.textDimensions.setTo(0, 0);
-        TextParser::word.clear();
-        GlyphRenderStack &st = TextParser::stack;
+        TextRenderStack &st = TextParser::stack;
         st.clear();
         st.color.push(txt.baseColor);
-        st.align.push(this->currentAlign = txt.options.align);
+        st.align.push(this->currentAlign = txt.align);
         st.custom.push(nullptr);
-        txt.opcodes.push_back(TextOpcode(NewLine, TextOpcodeData(Dimensions(), txt.options.align)));
+        word.clear();
+        txt.opcodes.push_back(TextOpcode(NewLine, TextOpcodeData(Dimensions(), txt.align)));
         txt.maxChars = rawText.size();
 
-        lineHeight = txt.font->lineHeight(txt.options.size);
-        currentLine = GlyphSequence();
-        currentWord = GlyphSequence();
+        hb_font_extents_t extents;
+        hb_font_get_h_extents(txt.font->font, &extents);
+        txt.lineHeight = (extents.ascender - extents.descender + extents.line_gap);// * txt.size / FONT_SCALE;
+        newLineIndex = 0;
 
         size_t tagPointer = 0;
         for (size_t i = 0; i < glyphCount; ++i) {
-            auto &_glyphInfo = glyphInfo[i];
+            hb_glyph_info_t &_glyphInfo = glyphInfo[i];
+            hb_glyph_position_t &_glyphPos = glyphPos[i];
             size_t txtPointer = _glyphInfo.cluster;
             // handle any tags that came before this glyph
-            while (tagPointer < tags.size() && tags[tagPointer].first >= txtPointer) {
+            while (tagPointer < tags.size() && tags[tagPointer].first <= txtPointer) {
                 this->addTag(txt, tags[tagPointer++].second);
             }
             // handle this glyph
             uint32_t c = rawText[txtPointer];
             switch (c) {
-                case '\n': {
-                    this->flushWord(txt);
-                    this->newLine(txt, true);
+                case ' ': {
+                    flushWord(txt);
+                    cursor.x += _glyphPos.x_advance;
+                    if (txt.opcodes.back().type == Whitespace) {
+                        txt.opcodes.back().data.number += _glyphPos.x_advance;
+                    } else {
+                        txt.opcodes.push_back(TextOpcode(Whitespace, TextOpcodeData((double)_glyphPos.x_advance)));
+                    }
                     break;
                 }
                 default: {
-                    if (currentWord.startIndex < 0) {
-                        currentWord.startIndex = i;
-                    }
-                    ++currentWord.length;
-                    hb_glyph_position_t _glyphPos = glyphPos[i];
-                    int xAdvance = _glyphPos.x_advance;
-                    currentWord.horizontalSize += xAdvance;
-                    if (c == ' ') {
-                        currentWord.trailingWhitespace += xAdvance;
+                    auto &cur = word.empty() ? txt.opcodes : word;
+                    auto &back = cur.back();
+                    if (back.type == GlyphBlock && back.data.glyphBlock.startIndex + back.data.glyphBlock.glyphs == i) {
+                        // add this glyph to the existing opcode
+                        ++back.data.glyphBlock.glyphs;
+                        cursor.x += _glyphPos.x_advance;
                     } else {
-                        currentWord.trailingWhitespace = 0;
-                    }
-                    if (c == ' ') {
-                        this->flushWord(txt);
+                        word.emplace_back(TextOpcode(GlyphBlock, TextOpcodeData(i, 1, 0)));
+                        wordLength += _glyphPos.x_advance;
                     }
                 }
             }
@@ -214,8 +269,25 @@ struct TextParser {
             this->addTag(txt, tags[tagPointer++].second);
         }
         
-        this->flushWord(txt);
-        this->newLine(txt, false);
+        this->newLine(txt);
+        
+        // for (auto &op : txt.opcodes) {
+        //     op.debugPrint();
+        //     printf(" ");
+        // }
+        // puts("");
+
+        txt.maxChars = glyphCount;
+    }
+
+    void flushWord(Text &txt) {
+        if (txt.wordWrap && cursor.x + wordLength > txt.dimensions.width()) {
+            newLine(txt, false);
+        }
+        txt.opcodes.insert(txt.opcodes.end(), std::make_move_iterator(word.begin()), std::make_move_iterator(word.end()));
+        word.clear();
+        cursor.x += wordLength;
+        wordLength = 0;
     }
 
     void addTag(Text &txt, StringSlice tagName) {
@@ -253,43 +325,29 @@ struct TextParser {
         }
     }
 
-    void newLine(Text &txt, bool append) {
+    void newLine(Text &txt, bool canBreak = true) {
+        if (canBreak) {
+            this->flushWord(txt);
+        }
         if (txt.opcodes[this->newLineIndex].type == NewLine) {
             // std::pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
             // update the size of the preceding line
-            double add = this->lineHeight + (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
-            this->cursor.y += this->lineHeight + add;
-            txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, add);
+            double add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
+            this->cursor.y += txt.lineHeight + add;
+            txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, txt.lineHeight + add);
             txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
         }
-        if (append) {
-            txt.opcodes.push_back(TextOpcode(
-                NewLine,
-                TextOpcodeData(Dimensions(), this->currentAlign)
-            ));
-            this->cursor.x = currentLine.trailingWhitespace = 0;
-            this->newLineIndex = txt.opcodes.size() - 1;
-        }
+        txt.opcodes.push_back(TextOpcode(
+            NewLine,
+            TextOpcodeData(Dimensions(), this->currentAlign)
+        ));
+        this->newLineIndex = txt.opcodes.size() - 1;
         this->tabIndex = 0;
-    }
-
-    void flushWord(Text &txt) {
-        if (!word.empty()) {
-            currentLine.trailingWhitespace = currentWord.trailingWhitespace;
-            if (txt.options.wordWrap && cursor.x > 0 && cursor.x - currentLine.trailingWhitespace + currentWord.horizontalSize > txt.dimensions.width()) {
-                this->newLine(txt, true);
-                this->cursor.x = currentWord.horizontalSize;
-            } else {
-                this->cursor.x += currentWord.horizontalSize;
-            }
-            for (TextOpcode &op: TextParser::word) {
-                txt.opcodes.push_back(op);
-            }
-            TextParser::word.clear();
-            currentWord.startIndex = -1;
-            currentWord.length = 0;
-            currentWord.trailingWhitespace = 0;
-        }
+        txt.textDimensions.setTo(
+            std::max(txt.textDimensions.width(), cursor.x * txt.size / FONT_SCALE),
+            cursor.y * txt.size / FONT_SCALE
+        );
+        cursor.x = 0;
     }
 
     void addOp(Text &txt, TextOpcode op) {
@@ -297,44 +355,41 @@ struct TextParser {
             case SetColor: {
                 Color &v = op.data.color;
                 TextParser::stack.color.push(v);
-                TextParser::word.push_back(op);
+                word.push_back(op);
                 break;
             }
             case PopColor: {
                 TextParser::stack.color.pop();
-                TextParser::word.push_back(TextOpcode(SetColor, TextOpcodeData(TextParser::stack.color.top())));
+                word.push_back(TextOpcode(SetColor, TextOpcodeData(TextParser::stack.color.top())));
                 break;
             }
             case SetCustom: {
                 CustomTextRenderFunction *f = op.data.custom;
                 TextParser::stack.custom.push(f);
-                TextParser::word.push_back(op);
+                word.push_back(op);
                 break;
             }
             case PopCustom: {
                 TextParser::stack.custom.pop();
-                TextParser::word.push_back(TextOpcode(SetCustom, TextOpcodeData(TextParser::stack.custom.top())));
+                word.push_back(TextOpcode(SetCustom, TextOpcodeData(TextParser::stack.custom.top())));
                 break;
             }
             case NewLine: {
-                this->flushWord(txt);
-                this->newLine(txt, true);
+                newLine(txt);
                 break;
             }
             case SetAlign: {
                 AlignType &v = op.data.align;
-                this->flushWord(txt);
-                if (this->cursor.x > 0) {
-                    this->newLine(txt, true);
+                if (this->cursor.x + wordLength > 0) {
+                    this->newLine(txt);
                 }
                 TextParser::stack.align.push(this->currentAlign = v);
                 break;
             }
             case PopAlign: {
-                this->flushWord(txt);
                 TextParser::stack.align.pop();
-                if (this->cursor.x > 0) {
-                    this->newLine(txt, true);
+                if (this->cursor.x + wordLength > 0) {
+                    this->newLine(txt);
                 }
                 this->currentAlign = TextParser::stack.align.top();
                 break;
@@ -343,30 +398,30 @@ struct TextParser {
                 auto sprite = op.data.sprite;
                 auto size = sprite->getSize();
                 double imageWidth = size.width();
-                TextParser::word.push_back(op);
-                currentWord.trailingWhitespace = 0;
-                currentWord.horizontalSize += imageWidth;
-                // this->wordHeight = std::max(wordHeight, size.height());
-                // this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
-                if (cursor.x > txt.dimensions.width()) {
-                    txt.dimensions.width() = cursor.x;
-                }
+                word.push_back(op);
+                wordLength += imageWidth;
                 break;
             }
             case Tab: {
                 if (this->tabIndex < txt.tabStops.size()) {
-                    this->flushWord(txt);
+                    flushWord(txt);
                     cursor.x = txt.tabStops[this->tabIndex];
-                    txt.opcodes.push_back(op);
+                    word.push_back(op);
                 }
                 break;
             }
             default: {
-                TextParser::word.push_back(op);
+                word.push_back(op);
             }
         }
     }
 };
+
+TextRenderStack TextParser::stack;
+
+Text::Text(const TextOptions &options): TextOptions(options) {
+    assert(font);
+}
 
 Text::~Text() {
     if (hbBuf) {
@@ -386,7 +441,7 @@ Text &Text::refresh() {
 }
 
 void Text::resize(double w, double h) {
-    if (this->options.wordWrap) {
+    if (this->wordWrap) {
         if ((this->dimensions.width() != static_cast<int>(w)) || (this->dimensions.height() != static_cast<int>(h))) {
             this->dirty = true;
             this->dimensions.setTo(w, h);
@@ -399,14 +454,15 @@ void Text::resize(double w, double h) {
 void Text::render(RenderContext &ctx) {
     this->refresh();
 
-    // Font *font = this->options.font;
     Color color = this->color * this->baseColor;
-    double thisLineHeight = 0;
     Point cursor;
     CustomTextRenderFunction *custom = nullptr;
-    double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
+    double totalWidth = this->wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
+
+    float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
+    float size = this->size * cameraScale;
 
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
@@ -428,16 +484,12 @@ void Text::render(RenderContext &ctx) {
                     case RightAlign: align = 1; break;
                 }
                 cursor.setTo(
-                    (totalWidth - dims.width()) * this->scale.x * align,
-                    cursor.y + thisLineHeight * this->scale.y
+                    (totalWidth - dims.width()) * align,
+                    cursor.y + lineHeight
                 );
-                thisLineHeight = dims.height();
                 break;
             }
             case RenderSprite: {
-                if (charCount > -1 && --charCount < 0) {
-                    return;
-                }
                 auto sprite = op.data.sprite;
                 GlyphRenderData renderData(cursor);
                 if (custom) {
@@ -445,7 +497,7 @@ void Text::render(RenderContext &ctx) {
                 }
                 auto size = sprite->getSize();
                 sprite->scale.setTo(scale);
-                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y + (thisLineHeight * scale.y - size.height()));
+                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y + (lineHeight * scale.y - size.height()));
                 Color originalColor(sprite->color);
                 sprite->color = sprite->color * this->color;
                 sprite->render(ctx);
@@ -453,56 +505,49 @@ void Text::render(RenderContext &ctx) {
                 cursor.x += size.width();
                 break;
             }
-            // case GlyphBlock: {
-            //     StringSlice &txt = op.data.rawText;
-            //     for (size_t i = 0; i < txt.length; ++i) {
-            //         if (charCount > -1 && --charCount < 0) {
-            //             return;
-            //         }
-            //         unsigned char c = txt[i];
-            //         GlyphData glyph = font->getGlyph(c);
-            //         if (glyph.id && glyph.id == c) {
-            //             int xAdvance = glyph.xAdvance;
-            //             GlyphRenderData renderData(
-            //                 c,
-            //                 color,
-            //                 scale,
-            //                 cursor
-            //             );
-            //             if (lastId != -1) {
-            //                 double kern = font->kern(lastId, glyph.id) * renderData.scale.x * this->scale.x * baseScale;
-            //                 if (kern < 0) {
-            //                     cursor.x += kern;
-            //                     renderData.position.x += kern;
-            //                 }
-            //             }
-            //             if (c == ' ' || c == '\t') {
-            //                 // it's whitespace; just advance the cursor and move on
-            //                 lastId = -1;
-            //             // TODO: escape characters
-            //             } else {
-            //                 // if (this->options.dynamic && custom) {
-            //                 //     custom(&ctx, this, &renderData);
-            //                 // }
-            //                 // Matrix matrix;
-            //                 // matrix
-            //                 //     .translate(glyph.offset.x, glyph.offset.y)
-            //                 //     .scale(renderData.scale.x * this->scale.x * baseScale, renderData.scale.y * this->scale.y * baseScale)
-            //                 //     .translate(this->position.x + renderData.position.x, this->position.y + renderData.position.y);
-            //                 // DrawKey key;
-            //                 // key.image = font->getPage(glyph.page);
-            //                 // key.smooth = this->smooth;
-            //                 // key.blend = this->blendMode;
-            //                 // ctx.addRect(key, glyph.rect, matrix, renderData.color);
-            //             }
-            //             cursor.x += xAdvance * renderData.scale.x * this->scale.x * baseScale;
-            //             lastId = glyph.id;
-            //         } else {
-            //             lastId = -1;
-            //         }
-            //     }
-            //     break;
-            // }
+            case GlyphBlock: {
+                unsigned int glyphCount;
+                hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(hbBuf, &glyphCount);
+                hb_glyph_position_t *glyphPos = hb_buffer_get_glyph_positions(hbBuf, &glyphCount);
+                for (size_t i = op.data.glyphBlock.startIndex; i < op.data.glyphBlock.startIndex + op.data.glyphBlock.glyphs; ++i) {
+                    hb_glyph_info_t _info = glyphInfo[i];
+                    hb_glyph_position_t _pos = glyphPos[i];
+                    GlyphData &glyph = font->getGlyph(_info.codepoint, size);
+
+                    GlyphRenderData renderData(
+                        _info.codepoint,
+                        color,
+                        scale, // FIXME
+                        Point((cursor.x + _pos.x_offset) * static_cast<float>(this->size) / 64, (cursor.y + _pos.y_offset) * static_cast<float>(this->size) / 64)
+                    );
+                    if (custom) {
+                        custom(&ctx, this, &renderData);
+                    }
+                    Matrix matrix;
+                    matrix.translate(position.x, position.y);
+                    matrix.translate(renderData.position.x, renderData.position.y);
+                    ctx.camera->transformMatrix(matrix);
+                    matrix.translate(glyph.offset.x, -glyph.offset.y);
+                    matrix.a = matrix.d = 1;
+                    matrix.b = matrix.c = 0;
+                    DrawKey key;
+                    key.image = glyph.region.img;
+                    key.smooth = this->smooth == SmoothingMode::SmoothMipmap ? SmoothingMode::SmoothLinear : this->smooth;
+                    key.blend = blendMode;
+                    key.shader = this->shader ? this->shader : ctx.app->renderer.getDefaultTextShader();
+                    ctx.addRectRaw(key, glyph.region.rect, matrix, renderData.color);
+
+                    cursor.x += _pos.x_advance;
+                    if (charCount > -1 && --charCount <= 0) {
+                        return;
+                    }
+                }
+                break;
+            }
+            case Whitespace: {
+                cursor.x += op.data.number;
+                break;
+            }
             case Tab: {
                 cursor.x = this->tabStops[tabIndex++];
                 break;
@@ -511,6 +556,24 @@ void Text::render(RenderContext &ctx) {
             default: {}
         }
     }
+}
+
+Text &Text::setText(const std::string &text) {
+    if (this->rich || text != this->text) {
+        this->text = text;
+        this->rich = false;
+        this->dirty = true;
+    }
+    return *this;
+}
+
+Text &Text::setRichText(const std::string &text) {
+    if (!this->rich || text != this->text) {
+        this->text = text;
+        this->rich = true;
+        this->dirty = true;
+    }
+    return *this;
 }
 
 }
