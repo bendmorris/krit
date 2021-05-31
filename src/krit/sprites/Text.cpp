@@ -463,6 +463,7 @@ void Text::render(RenderContext &ctx) {
 
     float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
     float size = this->size * cameraScale;
+    float fontScale = std::ceil(size) / cameraScale / 64.0;
 
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
@@ -512,27 +513,29 @@ void Text::render(RenderContext &ctx) {
                 for (size_t i = op.data.glyphBlock.startIndex; i < op.data.glyphBlock.startIndex + op.data.glyphBlock.glyphs; ++i) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
-                    GlyphData &glyph = font->getGlyph(_info.codepoint, size);
+                    GlyphData &glyph = font->getGlyph(_info.codepoint, std::ceil(size));
 
                     GlyphRenderData renderData(
                         _info.codepoint,
                         color,
                         scale, // FIXME
-                        Point((cursor.x + _pos.x_offset) * static_cast<float>(this->size) / 64, (cursor.y + _pos.y_offset) * static_cast<float>(this->size) / 64)
+                        Point((cursor.x + _pos.x_offset) * fontScale, (cursor.y - _pos.y_offset) * fontScale)
                     );
                     if (custom) {
                         custom(&ctx, this, &renderData);
                     }
                     Matrix matrix;
                     matrix.translate(position.x, position.y);
-                    matrix.translate(renderData.position.x, renderData.position.y);
                     ctx.camera->transformMatrix(matrix);
-                    matrix.translate(glyph.offset.x, -glyph.offset.y);
+                    matrix.tx = std::round(matrix.tx);
+                    matrix.ty = std::round(matrix.ty);
                     matrix.a = matrix.d = 1;
                     matrix.b = matrix.c = 0;
+                    matrix.translate(std::round(renderData.position.x * cameraScale), std::round(renderData.position.y * cameraScale));
+                    matrix.translate(std::round(glyph.offset.x), std::round(-glyph.offset.y));
                     DrawKey key;
                     key.image = glyph.region.img;
-                    key.smooth = this->smooth == SmoothingMode::SmoothMipmap ? SmoothingMode::SmoothLinear : this->smooth;
+                    key.smooth = SmoothingMode::SmoothNearest;//->smooth == SmoothingMode::SmoothMipmap ? SmoothingMode::SmoothLinear : this->smooth;
                     key.blend = blendMode;
                     key.shader = this->shader ? this->shader : ctx.app->renderer.getDefaultTextShader();
                     ctx.addRectRaw(key, glyph.region.rect, matrix, renderData.color);

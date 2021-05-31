@@ -76,7 +76,7 @@ void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_shape(font, buf, nullptr, 0);
 }
 
-GlyphData &Font::getGlyph(uint32_t codePoint, float size) {
+GlyphData &Font::getGlyph(uint32_t codePoint, unsigned int size) {
     if (!nextGlyphCache.img) {
         if (!glyphCache.img) {
             glyphCache.createTexture();
@@ -100,7 +100,7 @@ GlyphCache::~GlyphCache() {
     }
 }
 
-GlyphData *GlyphCache::getGlyph(Font *font, uint32_t codePoint, float size) {
+GlyphData *GlyphCache::getGlyph(Font *font, uint32_t codePoint, unsigned int size) {
     {
         // check if we already contain this glyph at this size
         auto it = glyphs.find(GlyphSize(font, codePoint, size));
@@ -174,6 +174,7 @@ void GlyphCache::commitChanges() {
         // upload the texture
         glBindTexture(GL_TEXTURE_2D, img->texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE, pixelData);
+        // glGenerateMipmap(GL_TEXTURE_2D);
         pending.clear();
     }
 }
