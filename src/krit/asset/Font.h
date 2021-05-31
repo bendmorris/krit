@@ -18,16 +18,24 @@ struct hb_buffer_t;
 
 namespace krit {
 
+struct Font;
 struct Text;
 struct TextParser;
 enum AssetId: int;
 
 struct GlyphSize {
+    Font *font;
     uint32_t glyphIndex;
     float size;
 
-    GlyphSize(uint32_t glyphIndex, float size): glyphIndex(glyphIndex), size(size) {}
-    bool operator==(const GlyphSize &other) const { return glyphIndex == other.glyphIndex && size == other.size; }
+    GlyphSize(Font *font, uint32_t glyphIndex, float size): font(font), glyphIndex(glyphIndex), size(size) {}
+    bool operator==(const GlyphSize &other) const { return font == other.font && glyphIndex == other.glyphIndex && size == other.size; }
+};
+
+struct GlyphSizeHash {
+    std::size_t operator()(const GlyphSize &size) const {
+        return std::hash<uint32_t>()(size.glyphIndex) ^ std::hash<float>()(size.size);
+    }
 };
 
 struct GlyphData {
@@ -36,12 +44,6 @@ struct GlyphData {
 
     GlyphData() {}
     GlyphData(ImageRegion region, double x, double y): region(region), offset(x, y) {}
-};
-
-struct GlyphSizeHash {
-    std::size_t operator()(const GlyphSize &size) const {
-        return std::hash<uint32_t>()(size.glyphIndex) ^ std::hash<float>()(size.size);
-    }
 };
  
 struct ColumnData {
@@ -62,18 +64,19 @@ struct GlyphCache {
     std::vector<ColumnData> columns;
     std::vector<GlyphSize> pending;
     std::shared_ptr<ImageData> img;
-    Font *font;
     uint8_t *pixelData = nullptr;
 
-    GlyphCache(Font *font): font(font) {}
+    GlyphCache() {}
     ~GlyphCache();
 
-    GlyphData *getGlyph(uint32_t codePoint, float size);
+    GlyphData *getGlyph(Font *font, uint32_t codePoint, float size);
     void createTexture();
     void commitChanges();
 };
 
 struct Font {
+    static GlyphCache glyphCache, nextGlyphCache;
+
     static void init();
     static void commit();
     static void flush();
@@ -98,8 +101,6 @@ struct Font {
     void flushCache();
 
     private:
-        GlyphCache glyphCache, nextGlyphCache;
-
         hb_face_t *face;
         hb_font_t *font;
         void *ftFace;

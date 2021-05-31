@@ -14,6 +14,8 @@
 
 namespace krit {
 
+GlyphCache Font::glyphCache, Font::nextGlyphCache;
+
 template<> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
     int length;
     char *content = IoRead::read(info.path, &length);
@@ -36,14 +38,14 @@ void Font::init() {
 }
 
 void Font::commit() {
-    for (auto &it : fontRegistry) {
-        it.second->commitChanges();
-    }
+    if (glyphCache.img) glyphCache.commitChanges();
+    if (nextGlyphCache.img) nextGlyphCache.commitChanges();
 }
 
 void Font::flush() {
-    for (auto &it : fontRegistry) {
-        it.second->flushCache();
+    if (nextGlyphCache.img) {
+        glyphCache = nextGlyphCache;
+        nextGlyphCache = GlyphCache();
     }
 }
 
@@ -55,7 +57,7 @@ void Font::registerFont(const std::string &name, const std::string &path) {
     fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byPath(path));
 }
 
-Font::Font(const std::string &path, const char *fontData, size_t fontDataLen): path(path), glyphCache(this), nextGlyphCache(this) {
+Font::Font(const std::string &path, const char *fontData, size_t fontDataLen): path(path) {
     this->fontData = (void*)fontData;
     // harfbuzz face initialization
     hb_blob_t *blob = hb_blob_create(fontData, fontDataLen, HB_MEMORY_MODE_READONLY, nullptr, nullptr);
@@ -74,30 +76,18 @@ void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_shape(font, buf, nullptr, 0);
 }
 
-void Font::commitChanges() {
-    if (glyphCache.img) glyphCache.commitChanges();
-    if (nextGlyphCache.img) nextGlyphCache.commitChanges();
-}
-
-void Font::flushCache() {
-    if (nextGlyphCache.img) {
-        glyphCache = nextGlyphCache;
-        nextGlyphCache = GlyphCache(this);
-    }
-}
-
 GlyphData &Font::getGlyph(uint32_t codePoint, float size) {
     if (!nextGlyphCache.img) {
         if (!glyphCache.img) {
             glyphCache.createTexture();
         }
-        GlyphData *found = glyphCache.getGlyph(codePoint, size);
+        GlyphData *found = glyphCache.getGlyph(this, codePoint, size);
         if (found) {
             return *found;
         }
         nextGlyphCache.createTexture();
     }
-    GlyphData *found = nextGlyphCache.getGlyph(codePoint, size);
+    GlyphData *found = nextGlyphCache.getGlyph(this, codePoint, size);
     if (!found) {
         panic("ran out of space in backup texture");
     }
@@ -110,10 +100,10 @@ GlyphCache::~GlyphCache() {
     }
 }
 
-GlyphData *GlyphCache::getGlyph(uint32_t codePoint, float size) {
+GlyphData *GlyphCache::getGlyph(Font *font, uint32_t codePoint, float size) {
     {
         // check if we already contain this glyph at this size
-        auto it = glyphs.find(GlyphSize(codePoint, size));
+        auto it = glyphs.find(GlyphSize(font, codePoint, size));
         if (it != glyphs.end()) {
             return &it->second;
         }
@@ -133,11 +123,11 @@ GlyphData *GlyphCache::getGlyph(uint32_t codePoint, float size) {
                 // use this one
                 auto it = glyphs.emplace(
                     std::piecewise_construct,
-                    std::make_tuple(codePoint, size),
+                    std::make_tuple(font, codePoint, size),
                     std::make_tuple(ImageRegion(img, IntRectangle(x + PADDING, column.height + PADDING, width, height)), slot->bitmap_left, slot->bitmap_top)
                 );
                 column.height += height + PADDING * 2;
-                pending.emplace_back(codePoint, size);
+                pending.emplace_back(font, codePoint, size);
                 return &it.first->second;
             }
             x += column.width + PADDING * 2;
@@ -150,10 +140,10 @@ GlyphData *GlyphCache::getGlyph(uint32_t codePoint, float size) {
             columns.emplace_back(neededWidth, height + PADDING * 2);
             auto it = glyphs.emplace(
                 std::piecewise_construct,
-                std::make_tuple(codePoint, size),
+                std::make_tuple(font, codePoint, size),
                 std::make_tuple(ImageRegion(img, IntRectangle(x + PADDING, PADDING, width, height)), slot->bitmap_left, slot->bitmap_top)
             );
-            pending.emplace_back(codePoint, size);
+            pending.emplace_back(font, codePoint, size);
             return &it.first->second;
         }
     }
@@ -169,11 +159,12 @@ void GlyphCache::createTexture() {
 
 void GlyphCache::commitChanges() {
     if (!pending.empty()) {
-        FT_Face face = (FT_Face)font->ftFace;
-        FT_GlyphSlot slot = face->glyph;
         // iterate over pending glyphs
         for (auto &it : pending) {
-            GlyphData &glyphData = glyphs[GlyphSize(it.glyphIndex, it.size)];
+            Font *font = it.font;
+            FT_Face face = (FT_Face)font->ftFace;
+            FT_GlyphSlot slot = face->glyph;
+            GlyphData &glyphData = glyphs[GlyphSize(it.font, it.glyphIndex, it.size)];
             FT_Set_Pixel_Sizes(face, it.size, it.size);
             FT_Load_Glyph(face, it.glyphIndex, FT_LOAD_RENDER);
             for (unsigned int i = 0; i < slot->bitmap.rows; ++i) {
