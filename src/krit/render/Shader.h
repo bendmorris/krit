@@ -16,6 +16,7 @@ struct Shader {
     const char *fragmentSource;
     GLint positionIndex = 0;
     GLint texCoordIndex = 0;
+    size_t bytesPerVertex = 0;
     std::unordered_map<std::string, GLint> uniformLocations;
 
     Shader(const char *vertexSource, const char *fragmentSource):
@@ -40,10 +41,6 @@ struct SpriteShader: public Shader {
     virtual void bindOrtho(GLfloat *matrix);
     virtual void unbind() override;
     virtual void prepare(DrawCall *drawCall, RenderFloat *buffer);
-
-    virtual int bytesPerVertex() {
-        return (2 /* position */ + 1 /* color */ + (this->texCoordIndex == -1 ? 0 : 2)) * sizeof(GLfloat);
-    }
 };
 
 }

@@ -9,6 +9,7 @@
 #include "krit/Camera.h"
 #include "krit/Sprite.h"
 #include <list>
+#include <string_view>
 
 namespace krit {
 
@@ -25,7 +26,6 @@ struct TimedEvent {
 struct InputContext;
 struct Sprite;
 struct Editor;
-struct StringSlice;
 struct ImageData;
 struct TextureAtlas;
 struct Font;
@@ -81,7 +81,6 @@ struct Engine {
 
     #define DECLARE_ASSET_GETTER(N, T) \
         template <typename Arg> std::shared_ptr<T> get##N(const Arg &arg) { return assetCaches.back()->get<T>(arg); }
-    DECLARE_ASSET_GETTER(Text, StringSlice)
     DECLARE_ASSET_GETTER(Image, ImageData)
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)

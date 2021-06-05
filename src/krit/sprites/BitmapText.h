@@ -7,10 +7,10 @@
 #include "krit/sprites/TextBase.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Option.h"
-#include "krit/utils/Slice.h"
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -60,7 +60,7 @@ union BitmapTextOpcodeData {
     double number;
     AlignType align;
     CustomRenderFunction *custom = nullptr;
-    StringSlice text;
+    std::string_view text;
     NewlineData newLine;
     VisibleSprite *sprite;
     BitmapFont *font;
@@ -70,7 +70,7 @@ union BitmapTextOpcodeData {
     BitmapTextOpcodeData(double number): number(number) {}
     BitmapTextOpcodeData(AlignType align): align(align) {}
     BitmapTextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
-    BitmapTextOpcodeData(StringSlice text): text(text) {}
+    BitmapTextOpcodeData(std::string_view text): text(text) {}
     BitmapTextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
     BitmapTextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
     BitmapTextOpcodeData(BitmapFont *font): font(font) {}

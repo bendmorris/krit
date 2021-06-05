@@ -2,7 +2,7 @@
 #define KRIT_ASSET_ASSETCACHE
 
 #include "krit/asset/AssetLoader.h"
-#include "krit/asset/AssetType.h"
+#include "krit/asset/AssetInfo.h"
 #include "krit/Assets.h"
 #include <memory>
 #include <string>
@@ -10,8 +10,6 @@
 #include <utility>
 
 namespace krit {
-
-enum AssetId: int;
 
 /**
  * An AssetCache is a collection of assets with the same lifetime; it holds
@@ -32,10 +30,10 @@ struct AssetCache {
         return this->get<T>(Assets::byPath(path));
     }
     template <typename T> std::shared_ptr<T> get(const AssetId id) {
-        return this->get<T>(Assets::byId((int)id));
+        return this->get<T>(Assets::byId(id));
     }
     template <typename T> std::shared_ptr<T> get(int id) {
-        return this->get<T>(Assets::byId(id));
+        return this->get<T>(Assets::byId((AssetId)id));
     }
     template <typename T> std::shared_ptr<T> get(const AssetInfo &info) {
         int id = info.id;

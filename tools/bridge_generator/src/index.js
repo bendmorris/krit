@@ -163,6 +163,9 @@ for (const sourceFile of program.getSourceFiles()) {
                 }
             }
         } else if (ts.isFunctionDeclaration(node)) {
+            if (!node.jsDoc) {
+                return;
+            }
             // this node defines a function
             const functionType = checker.getTypeAtLocation(node).getCallSignatures()[0];
             defineFunction(node, functionType);
@@ -273,6 +276,9 @@ if (!fs.existsSync(scriptDir)) {
 var env = nunjucks.configure({ autoescape: false });
 env.addFilter('repeat', function(str, count) {
     return str.repeat(count || 0);
+});
+env.addFilter('escapeName', function(str) {
+    return str.replace('$', '__dollar__');
 });
 
 function replaceIfDifferent(path, content) {

@@ -1,6 +1,5 @@
 #include "krit/sprites/Scene.h"
 #include "krit/Engine.h"
-#include "krit/AssetId.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/DrawCommand.h"
 #include "krit/script/ScriptClass.h"

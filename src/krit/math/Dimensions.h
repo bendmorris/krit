@@ -1,7 +1,7 @@
 #ifndef KRIT_MATH_DIMENSIONS
 #define KRIT_MATH_DIMENSIONS
 
-#include "./Point.h"
+#include "krit/math/Point.h"
 
 namespace krit {
 

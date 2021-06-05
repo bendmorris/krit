@@ -68,7 +68,7 @@ add_dependencies(${PROJECT_NAME} quickjs)
 add_custom_target(
     compile-assets ALL
     COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
-    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/AssetId.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
 )
 add_dependencies(${PROJECT_NAME} compile-assets)
 

@@ -1,10 +1,11 @@
 #ifndef KRIT_ASSET_ASSET_LOADER
 #define KRIT_ASSET_ASSET_LOADER
 
-#include <memory>
-#include <string>
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetType.h"
+#include <memory>
+#include <string>
+#include <string_view>
 
 namespace krit {
 
@@ -21,7 +22,7 @@ DECLARE_ASSET_LOADER2(TextureAtlas)
 DECLARE_ASSET_LOADER2(SkeletonBinaryData)
 DECLARE_ASSET_LOADER2(Font)
 DECLARE_ASSET_LOADER2(BitmapFont)
-DECLARE_ASSET_LOADER2(StringSlice)
+DECLARE_ASSET_LOADER(std::string_view)
 
 #undef DECLARE_ASSET_LOADER
 

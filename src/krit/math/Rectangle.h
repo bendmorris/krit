@@ -1,6 +1,7 @@
 #ifndef KRIT_MATH_RECTANGLE
 #define KRIT_MATH_RECTANGLE
 
+#include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
 #include <stdio.h>
 #include <algorithm>

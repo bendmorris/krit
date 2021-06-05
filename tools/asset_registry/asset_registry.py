@@ -28,7 +28,7 @@ def run(inputPath, outputDir):
                 asset['height'] = h
 
             assets.append(asset)
-    for artifact in ('Assets.cpp', 'AssetId.h'):
+    for artifact in ('Assets.cpp', 'Assets.h'):
         outPath = os.path.join(outputDir, artifact)
         existing = None
         if os.path.exists(outPath):

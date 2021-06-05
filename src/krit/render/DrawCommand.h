@@ -53,10 +53,10 @@ struct DrawCommandBuffer: public CommandBuffer<
         this->get<ClearColor>().reserve(0x10);
     }
 
-    DrawCall &getDrawCall(DrawKey &key);
+    DrawCall &getDrawCall(const DrawKey &key);
 
-    void addTriangle(RenderContext &ctx, DrawKey &key, Triangle &t, Triangle &uv, Color color);
-    void addRect(RenderContext &ctx, DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
+    void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t, const Triangle &uv, const Color &color);
+    void addRect(RenderContext &ctx, const DrawKey &key, const IntRectangle &rect, const Matrix &matrix, const Color &color);
 
     void pushClip(Rectangle &clip) {
         auto &rect = this->emplace_back<PushClipRect>();

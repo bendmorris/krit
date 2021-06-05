@@ -19,7 +19,9 @@ struct TriangleData {
     Color color;
 
     TriangleData() : t(Triangle()), uv(Triangle()), color(0) {}
-    TriangleData(Triangle &t, Triangle &uv, Color color) : t(t), uv(uv), color(color) {}
+    TriangleData(const Triangle &t, const Triangle &uv, const Color &color) : t(t), uv(uv), color(color) {}
+    TriangleData(float t1, float t2, float t3, float t4, float t5, float t6, float uv1, float uv2, float uv3, float uv4, float uv5, float uv6, const Color &color):
+        t(t1, t2, t3, t4, t5, t6), uv(uv1, uv2, uv3, uv4, uv5, uv6), color(color) {}
 
     /**
      * Returns the AABB containing this triangle.
@@ -34,7 +36,7 @@ struct DrawCall {
     DrawCall() {}
 
     DrawCall(DrawKey &key) : key(key) {
-        this->data.reserve(0x100);
+        this->data.reserve(0x1000);
     }
 
     size_t length() { return this->data.size(); }
@@ -47,8 +49,12 @@ struct DrawCall {
         this->data.clear();
     }
 
-    void addTriangle(Triangle &t, Triangle &uv, Color color) {
+    void addTriangle(const Triangle &t, const Triangle &uv, const Color &color) {
         this->data.emplace_back(t, uv, color);
+    }
+
+    inline void addTriangle(float t1, float t2, float t3, float t4, float t5, float t6, float uv1, float uv2, float uv3, float uv4, float uv5, float uv6, const Color &color) {
+        this->data.emplace_back(t1, t2, t3, t4, t5, t6, uv1, uv2, uv3, uv4, uv5, uv6, color);
     }
 };
 

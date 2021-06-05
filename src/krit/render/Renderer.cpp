@@ -194,12 +194,12 @@ void Renderer::init(SDL_Window *window) {
             panic(SDL_GetError());
         }
         SDL_GL_MakeCurrent(window, this->glContext);
-        // try to get adaptive vsync
-        int result = SDL_GL_SetSwapInterval(-1);
-        // fall back to regular vsync
-        if (result == -1) {
+        // // try to get adaptive vsync
+        // int result = SDL_GL_SetSwapInterval(-1);
+        // // fall back to regular vsync
+        // if (result == -1) {
             SDL_GL_SetSwapInterval(1);
-        }
+        // }
         glEnable(GL_MULTISAMPLE);
         glEnable(GL_BLEND);
         glDisable(GL_DEPTH_TEST);
@@ -331,7 +331,7 @@ template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall)
             setBlendMode(drawCall.key.blend);
             checkForGlErrors("set blend mode");
 
-            int dataSize = drawCall.length() * shader->bytesPerVertex() * 3;
+            int dataSize = drawCall.length() * shader->bytesPerVertex * 3;
             this->renderData.reserve(dataSize);
             glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[0]);
             checkForGlErrors("bind buffer");

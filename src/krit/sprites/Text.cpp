@@ -1,9 +1,10 @@
 #include "krit/sprites/Text.h"
 #include "krit/App.h"
-#include "krit/utils/Slice.h"
 #include "harfbuzz/hb.h"
 #include <cassert>
 #include <stack>
+#include <string>
+#include <string_view>
 
 namespace krit {
 
@@ -161,7 +162,7 @@ struct TextParser {
             }
         }
         std::string rawText;
-        std::vector<std::pair<size_t, StringSlice>> tags;
+        std::vector<std::pair<size_t, std::string_view>> tags;
         size_t tagNameOffset = 0;
         if (tagLocations.size()) {
             // add text before first tag
@@ -182,7 +183,7 @@ struct TextParser {
                 if (s[offset + len - 1] == '/') {
                     --len;
                 }
-                tags.emplace_back(l.first - tagNameOffset, StringSlice(&s[offset], len));
+                tags.emplace_back(l.first - tagNameOffset, std::string_view(&s[offset], len));
                 tagNameOffset += l.second;
                 if (l.first + l.second < s.size()) {
                     size_t startPos = l.first + l.second;
@@ -290,14 +291,14 @@ struct TextParser {
         wordLength = 0;
     }
 
-    void addTag(Text &txt, StringSlice tagName) {
+    void addTag(Text &txt, std::string_view tagName) {
         static std::string tagStr;
         bool close = false;
         if (tagName[0] == '/') {
             close = true;
-            tagName.setTo(tagName.data + 1, tagName.length - 1);
+            tagName = std::string_view(&tagName[1], tagName.length() - 1);
         }
-        tagStr.assign(tagName.data, tagName.length);
+        tagStr.assign(tagName.data(), tagName.length());
         auto found = Text::formatTags.find(tagStr);
         if (found != Text::formatTags.end()) {
             TextFormatTagOptions &tag = found->second;
@@ -464,6 +465,7 @@ void Text::render(RenderContext &ctx) {
     float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
     float size = this->size * cameraScale;
     float fontScale = std::ceil(size) / cameraScale / 64.0;
+    bool pixelPerfect = fontScale < 20;
 
     for (TextOpcode &op: this->opcodes) {
         switch (op.type) {
@@ -525,17 +527,27 @@ void Text::render(RenderContext &ctx) {
                         custom(&ctx, this, &renderData);
                     }
                     Matrix matrix;
-                    matrix.translate(position.x, position.y);
-                    ctx.camera->transformMatrix(matrix);
-                    matrix.tx = std::round(matrix.tx);
-                    matrix.ty = std::round(matrix.ty);
-                    matrix.a = matrix.d = 1;
-                    matrix.b = matrix.c = 0;
-                    matrix.translate(std::round(renderData.position.x * cameraScale), std::round(renderData.position.y * cameraScale));
-                    matrix.translate(std::round(glyph.offset.x), std::round(-glyph.offset.y));
                     DrawKey key;
+                    if (pixelPerfect) {
+                        key.smooth = SmoothingMode::SmoothNearest;
+                        matrix.translate(position.x, position.y);
+                        ctx.camera->transformMatrix(matrix);
+                        matrix.tx = std::round(matrix.tx);
+                        matrix.ty = std::round(matrix.ty);
+                        matrix.a = matrix.d = 1;
+                        matrix.b = matrix.c = 0;
+                        matrix.translate(std::round(renderData.position.x * cameraScale), std::round(renderData.position.y * cameraScale));
+                        matrix.translate(std::round(glyph.offset.x), std::round(-glyph.offset.y));
+                    } else {
+                        key.smooth = smooth == SmoothingMode::SmoothMipmap ? SmoothingMode::SmoothLinear : this->smooth;
+                        matrix.translate(position.x, position.y);
+                        matrix.translate(renderData.position.x, renderData.position.y);
+                        ctx.camera->transformMatrix(matrix);
+                        matrix.a = matrix.d = 1;
+                        matrix.b = matrix.c = 0;
+                        matrix.translate(glyph.offset.x, -glyph.offset.y);
+                    }
                     key.image = glyph.region.img;
-                    key.smooth = SmoothingMode::SmoothNearest;//->smooth == SmoothingMode::SmoothMipmap ? SmoothingMode::SmoothLinear : this->smooth;
                     key.blend = blendMode;
                     key.shader = this->shader ? this->shader : ctx.app->renderer.getDefaultTextShader();
                     ctx.addRectRaw(key, glyph.region.rect, matrix, renderData.color);

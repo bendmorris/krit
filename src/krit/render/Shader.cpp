@@ -66,6 +66,8 @@ void Shader::init() {
         checkForGlErrors("positionIndex");
         this->texCoordIndex = glGetAttribLocation(this->program, "aTexCoord");
         checkForGlErrors("texCoordIndex");
+
+        bytesPerVertex = (2 /* position */ + 1 /* color */ + (this->texCoordIndex == -1 ? 0 : 2)) * sizeof(GLfloat);
     }
 }
 
@@ -126,7 +128,7 @@ void SpriteShader::unbind() {
 }
 
 void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
-    int stride = this->bytesPerVertex();
+    int stride = this->bytesPerVertex;
     bool hasTexCoord = this->texCoordIndex > -1;
     int i = 0;
     RenderFloat *origin = nullptr;

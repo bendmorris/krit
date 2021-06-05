@@ -5,7 +5,7 @@
 
 {% for bridgeFunc in bridgeFuncs %}
 namespace {{ bridgeFunc.namespace }} {
-    JS_FUNC({{ bridgeFunc.fullName }});
+    JS_FUNC({{ bridgeFunc.fullName | escapeName }});
 }
 {% endfor %}
 

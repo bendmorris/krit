@@ -1,6 +1,7 @@
 #ifndef KRIT_ASSET_FONT
 #define KRIT_ASSET_FONT
 
+#include "krit/asset/AssetInfo.h"
 #include "krit/math/Point.h"
 #include "krit/math/ScaleFactor.h"
 #include "krit/math/Rectangle.h"
@@ -21,7 +22,6 @@ namespace krit {
 struct Font;
 struct Text;
 struct TextParser;
-enum AssetId: int;
 
 struct GlyphSize {
     Font *font;

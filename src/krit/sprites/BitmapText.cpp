@@ -2,6 +2,7 @@
 #include "krit/render/ImageRegion.h"
 #include <algorithm>
 #include <stack>
+#include <string_view>
 #include <utility>
 
 namespace krit {
@@ -53,7 +54,7 @@ struct BitmapTextParser {
     double thisLineHeight = 0;
     Point cursor;
     double trailingWhitespace = 0;
-    StringSlice wordSegment;
+    std::string_view wordSegment;
     double wordSegmentLength = 0;
     double wordSegmentTrailingWhitespace = 0;
     double wordLength = 0;
@@ -79,15 +80,15 @@ struct BitmapTextParser {
         st.custom.push(nullptr);
         int tagEnd = 0;
 
-        this->wordSegment = StringSlice(&s[0], 0);
+        this->wordSegment = std::string_view(&s[0], 0);
 
         txt.opcodes.push_back(BitmapTextOpcode(NewLine, BitmapTextOpcodeData(Dimensions(), txt.options.align)));
 
         while (true) {
-            StringSlice tag;
+            std::string_view tag;
             if (rich) {
                 // look for a tag starting at this position
-                if (this->wordSegment[this->wordSegment.length] == '<') {
+                if (this->wordSegment[this->wordSegment.length()] == '<') {
                     this->flushWord(txt);
                     tagEnd = 1;
                     while (this->wordSegment[tagEnd] != 0 && this->wordSegment[tagEnd] != '>') {
@@ -98,27 +99,27 @@ struct BitmapTextParser {
                     if (this->wordSegment[tagEnd - 1] == '/') {
                         --tagLength;
                     }
-                    tag.setTo(&this->wordSegment[this->wordSegment.length + 1], tagLength);
-                    this->wordSegment.setTo(&this->wordSegment.data[tagEnd + 1], 0);
+                    tag = std::string_view(&this->wordSegment[this->wordSegment.length() + 1], tagLength);
+                    this->wordSegment = std::string_view(&this->wordSegment.data()[tagEnd + 1], 0);
                 }
             }
-            if (tag.length > 0) {
+            if (tag.length() > 0) {
                 this->addTag(txt, tag);
             } else {
-                if (this->wordSegment[this->wordSegment.length] == 0) {
+                if (this->wordSegment[this->wordSegment.length()] == 0) {
                     break;
                 } else {
                     this->wordHeight = std::max(this->wordHeight, this->currentFont->lineHeight * this->currentScale);
-                    char c = this->wordSegment[this->wordSegment.length];
+                    char c = this->wordSegment[this->wordSegment.length()];
                     switch (c) {
                         case '\n': {
                             this->flushWord(txt);
                             this->newLine(txt, true);
-                            this->wordSegment.data = &this->wordSegment.data[1];
+                            this->wordSegment = std::string_view(&this->wordSegment.data()[1], this->wordSegment.length());
                             break;
                         }
                         default: {
-                            this->wordSegment.length++;
+                            this->wordSegment = std::string_view(this->wordSegment.data(), this->wordSegment.length() + 1);
                             BitmapGlyphData glyph = this->currentFont->getGlyph(c);
                             if (glyph.id) {
                                 int xAdvance = glyph.xAdvance;
@@ -150,7 +151,7 @@ struct BitmapTextParser {
                     // fallthrough
                 }
                 case TextBlock: {
-                    txt.maxChars += op.data.text.length;
+                    txt.maxChars += op.data.text.length();
                     break;
                 }
                 case RenderSprite:
@@ -161,14 +162,14 @@ struct BitmapTextParser {
         }
     }
 
-    void addTag(BitmapText &txt, StringSlice tagName) {
+    void addTag(BitmapText &txt, std::string_view tagName) {
         static std::string tagStr;
         bool close = false;
         if (tagName[0] == '/') {
             close = true;
-            tagName.setTo(tagName.data + 1, tagName.length - 1);
+            tagName = std::string_view(tagName.data() + 1, tagName.length() - 1);
         }
-        tagStr.assign(tagName.data, tagName.length);
+        tagStr.assign(tagName.data(), tagName.length());
         auto found = BitmapText::formatTags.find(tagStr);
         if (found != BitmapText::formatTags.end()) {
             FormatTagOptions &tag = found->second;
@@ -226,9 +227,9 @@ struct BitmapTextParser {
     }
 
     void flushWordSegment(BitmapText &txt) {
-        if (this->wordSegment.length > 0) {
+        if (this->wordSegment.length() > 0) {
             BitmapTextParser::word.push_back(BitmapTextOpcode(TextBlock, BitmapTextOpcodeData(this->wordSegment)));
-            this->wordSegment.setTo(&this->wordSegment.data[this->wordSegment.length], 0);
+            this->wordSegment = std::string_view(&this->wordSegment.data()[this->wordSegment.length()], 0);
             this->wordLength += this->wordSegmentLength;
             this->wordTrailingWhitespace = this->wordSegmentTrailingWhitespace;
             this->wordSegmentLength = 0;
@@ -477,8 +478,8 @@ void BitmapText::render(RenderContext &ctx) {
                 break;
             }
             case TextBlock: {
-                StringSlice &txt = op.data.text;
-                for (size_t i = 0; i < txt.length; ++i) {
+                std::string_view &txt = op.data.text;
+                for (size_t i = 0; i < txt.length(); ++i) {
                     if (charCount > -1 && --charCount < 0) {
                         return;
                     }
