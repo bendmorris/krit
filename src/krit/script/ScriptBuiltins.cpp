@@ -1,5 +1,6 @@
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptBridge.h"
+#include "krit/utils/Log.h"
 
 namespace krit {
 
@@ -22,6 +23,22 @@ JS_FUNC(console_log) {
     putchar('\n');
     return JS_UNDEFINED;
 }
+
+JS_FUNC(Log_setLogLevel) {
+    int level;
+    JS_ToInt32(ctx, &level, argv[0]);
+    Log::level = (LogLevel)level;
+    return JS_UNDEFINED;
+}
+
+#define DEFINE_LOG_METHOD(level) JS_FUNC(Log_##level) { const char *s = JS_ToCString(ctx, argv[0]); Log::level(s); JS_FreeCString(ctx, s); return JS_UNDEFINED; }
+DEFINE_LOG_METHOD(debug)
+DEFINE_LOG_METHOD(info)
+DEFINE_LOG_METHOD(warn)
+DEFINE_LOG_METHOD(error)
+DEFINE_LOG_METHOD(fatal)
+DEFINE_LOG_METHOD(success)
+#undef DEFINE_LOG_METHOD
 
 JS_FUNC(exit) {
     int code = 0;

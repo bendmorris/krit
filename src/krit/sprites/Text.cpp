@@ -1,10 +1,12 @@
 #include "krit/sprites/Text.h"
+#include "krit/utils/Utf8.h"
 #include "krit/App.h"
 #include "harfbuzz/hb.h"
 #include <cassert>
 #include <stack>
 #include <string>
 #include <string_view>
+
 
 namespace krit {
 
@@ -123,7 +125,7 @@ struct TextParser {
     
     hb_buffer_t *hbBuf;
 
-    void parseText(Text &txt, std::string &s, bool rich) {
+    void parseText(Text &txt, const std::string &s, bool rich) {
         txt.opcodes.clear();
         txt.textDimensions.setTo(0, 0);
         txt.maxChars = 0;
@@ -145,19 +147,21 @@ struct TextParser {
         hb_buffer_t *hbBuf = txt.hbBuf;
     
         // find all format tags, and generate a string with the text minus tags
-        // FIXME: when adding utf-8 support, iterate over codepoints, not chars
         // vector of (pos, length) tag locations from < to >
         std::vector<std::pair<size_t, size_t>> tagLocations;
-        for (size_t i = 0; i < s.size(); ++i) {
-            if (s[i] == '<') {
-                size_t startPos = i;
-                for (; i < s.size(); ++i) {
-                    if (s[i] == '>') {
-                        tagLocations.emplace_back(startPos, i - startPos + 1);
+        for (Utf8Iterator it = s.begin(); it != s.end(); ++it) {
+            size_t i = it.index();
+            char32_t c = *it;
+            if (c == '<') {
+                for (; it != s.end(); ++it) {
+                    size_t i2 = it.index();
+                    char32_t c2 = *it;
+                    if (c2 == '>') {
+                        tagLocations.emplace_back(i, i2 - i + 1);
                         break;
                     }
                 }
-            } else if (s[i] == '\n') {
+            } else if (c == '\n') {
                 tagLocations.emplace_back(i, 1);
             }
         }
@@ -231,6 +235,7 @@ struct TextParser {
         newLineIndex = 0;
 
         size_t tagPointer = 0;
+        Utf8Iterator it = s.begin();
         for (size_t i = 0; i < glyphCount; ++i) {
             hb_glyph_info_t &_glyphInfo = glyphInfo[i];
             hb_glyph_position_t &_glyphPos = glyphPos[i];
@@ -240,7 +245,10 @@ struct TextParser {
                 this->addTag(txt, tags[tagPointer++].second);
             }
             // handle this glyph
-            uint32_t c = rawText[txtPointer];
+            while (it.index() < txtPointer) {
+                ++it;
+            }
+            char32_t c = *it;
             switch (c) {
                 case ' ': {
                     flushWord(txt);

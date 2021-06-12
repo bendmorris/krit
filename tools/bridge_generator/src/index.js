@@ -220,6 +220,9 @@ for (const sourceFile of program.getSourceFiles()) {
                     for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
                         method.tags[tag.tagName.text] = tagify(tag.comment);
                     }
+                    if (method.tags.skip) {
+                        continue;
+                    }
                     options.methods.push(method);
                 } else {
                     // this is a property
@@ -230,6 +233,9 @@ for (const sourceFile of program.getSourceFiles()) {
                     let type = cppType(propType);
                     if (tags.cppType) {
                         type = { type: tags.cppType };
+                    }
+                    if (tags.skip) {
+                        continue;
                     }
                     options.props.push({
                         name: prop.name,

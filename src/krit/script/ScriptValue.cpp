@@ -34,6 +34,11 @@ template <> std::string ScriptValue<std::string>::jsToValue(JSContext *ctx, JSVa
 
 template <> JSValue ScriptValue<std::string_view>::valueToJs(JSContext *ctx, const std::string_view &s) { return JS_NewStringLen(ctx, s.data(), s.length()); }
 template <> JSValue ScriptValue<std::string_view*>::valueToJs(JSContext *ctx, std::string_view * const &s) { return !s ? JS_UNDEFINED : JS_NewStringLen(ctx, s->data(), s->length()); }
+template <> std::string_view ScriptValue<std::string_view>::jsToValue(JSContext *ctx, JSValue val) {
+    size_t len;
+    char *s = (char*)JS_ToCStringLen(ctx, &len, val);
+    return std::string_view(s, len);
+}
 
 // template <typename T> JSValue valueToJs(JSContext *ctx, const std::unordered_map<std::string, T> &s) {
 //     JSValue obj = JS_NewObject(ctx);

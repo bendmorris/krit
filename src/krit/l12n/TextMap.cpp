@@ -32,8 +32,9 @@ void TextMap::setLocale(const std::string &key) {
     }
 }
 
-std::string_view TextMap::getString(const std::string &key) {
-    return strings[std::string_view(key.data(), key.length())];
+std::string TextMap::getString(const std::string &key) {
+    auto s = strings[std::string_view(key.data(), key.length())];
+    return std::string(s.data(), s.size());
 }
 
 
