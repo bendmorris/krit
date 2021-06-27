@@ -11,6 +11,7 @@ const typeMap = new Map(Object.entries({
     'float': { type: 'float', pointer: 0 },
     'size_t': { type: 'size_t', pointer: 0 },
     // 'cstring': { type: 'const char', pointer: 1 },
+    'string_view': { type: 'std::string_view', pointer: 0 },
     'string': { type: 'std::string', pointer: 0 },
     'any': { type: 'JSValue', pointer: 0 },
 }));

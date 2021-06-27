@@ -3,6 +3,7 @@
 
 #include "krit/Sprite.h"
 #include "krit/render/ImageRegion.h"
+#include "krit/utils/Log.h"
 #include <memory>
 #include <stack>
 #include <string>
@@ -23,6 +24,7 @@ enum PositionMode {
     PositionAbsolute,
     PositionHbox,
     PositionVbox,
+    PositionFloat,
 };
 
 // TODO: opportunity for pooling everything here
@@ -40,11 +42,12 @@ struct LayoutNode: public VisibleSprite {
     bool visible = true;
     bool clip = false;
 
+    Point offset;
     PositionMode positionMode = PositionAbsolute;
     PositionMode childPositionMode = PositionAbsolute;
     std::unique_ptr<LayoutNode> nextSibling;
     std::unique_ptr<LayoutNode> firstChild;
-    double siblingSpacing = 0;
+    float siblingSpacing = 0;
 
     LayoutNode() {}
 
@@ -53,13 +56,13 @@ struct LayoutNode: public VisibleSprite {
     Measurement &paddingLeft() { return this->padding[2]; }
     Measurement &paddingRight() { return this->padding[3]; }
 
-    LayoutNode &setX(Measurement v, double anchor) {
+    LayoutNode &setX(Measurement v, float anchor) {
         this->x.value = v;
         this->x.anchor = anchor;
         return *this;
     }
 
-    LayoutNode &setY(Measurement v, double anchor) {
+    LayoutNode &setY(Measurement v, float anchor) {
         this->y.value = v;
         this->y.anchor = anchor;
         return *this;
@@ -121,6 +124,7 @@ struct LayoutNode: public VisibleSprite {
     Point getPosition() override { return this->position; }
     Dimensions getSize() override { return this->keepSize ? this->dimensions : (this->sprite ? this->sprite->getSize() : Dimensions(this->width.measure(0), this->height.measure(0))); }
 
+    void fixedUpdate(UpdateContext &ctx) override;
     void update(UpdateContext &ctx) override;
     void render(RenderContext &ctx) override;
 };
@@ -164,12 +168,32 @@ struct LayoutRoot: public Sprite {
 
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);
-        return (found != this->nodeMap.end()) ? found->second : nullptr;
+        if (found == this->nodeMap.end()) {
+            Log::error("missing layout node: %s", id.c_str());
+            return nullptr;
+        } else {
+            return found->second;
+        }
     }
 
     VisibleSprite *getById(const std::string &id) {
         LayoutNode *node = this->getNodeById(id);
-        return node ? node->sprite.get() : nullptr;
+        if (node) {
+            VisibleSprite *sprite = node->sprite.get();
+            if (!sprite) {
+                Log::error("empty layout element: %s", id.c_str());
+            }
+            return sprite;
+        } else {
+            Log::error("missing layout element: %s", id.c_str());
+            return nullptr;
+        }
+    }
+
+    void fixedUpdate(UpdateContext &ctx) override {
+        if (rootNode) {
+            rootNode->fixedUpdate(ctx);
+        }
     }
 
     void update(UpdateContext &ctx) override {

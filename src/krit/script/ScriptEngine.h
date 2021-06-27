@@ -34,7 +34,7 @@ template <typename Head, typename... Tail> void _unpackCallArgs(JSContext *ctx, 
 }
 
 struct DelayRequest {
-    double duration;
+    float duration;
     JSValue resolve;
     JSValue reject;
 };
@@ -177,7 +177,7 @@ struct ScriptEngine {
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 
-    JSValue delay(double duration);
+    JSValue delay(float duration);
 
     friend struct ScriptFinalizer;
 

@@ -20,14 +20,14 @@ template <typename T, class Self> class BasePoint {
             return this->x != other.x || this->y != other.y;
         }
 
-        Self &lerpInPlace(Self &other, double mix) {
+        Self &lerpInPlace(Self &other, float mix) {
             Self &derived = static_cast<Self&>(*this);
             derived.x = derived.x * (1 - mix) + other.x * mix;
             derived.y = derived.y * (1 - mix) + other.y * mix;
             return derived;
         }
 
-        Self lerp(Self &other, double mix) {
+        Self lerp(Self &other, float mix) {
             if (mix >= 1) return other;
             else if (mix <= 0) return static_cast<Self&>(*this);
             else return Self(
@@ -212,20 +212,20 @@ template <typename T, class Self> class BasePoint {
 
 };
 
-class Point: public BasePoint<double, Point> {
+class Point: public BasePoint<float, Point> {
     public:
         Point() {}
-        Point(double x, double y) : BasePoint<double, Point>(x, y) {}
+        Point(float x, float y) : BasePoint<float, Point>(x, y) {}
 };
 class IntPoint: public BasePoint<int, IntPoint> {
     public:
         IntPoint() {}
         IntPoint(int x, int y) : BasePoint<int, IntPoint>(x, y) {}
 };
-class FloatPoint: public BasePoint<float, FloatPoint> {
+class floatPoint: public BasePoint<float, floatPoint> {
     public:
-        FloatPoint() {}
-        FloatPoint(float x, float y) : BasePoint<float, FloatPoint>(x, y) {}
+        floatPoint() {}
+        floatPoint(float x, float y) : BasePoint<float, floatPoint>(x, y) {}
 };
 
 }

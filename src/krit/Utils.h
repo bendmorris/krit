@@ -26,11 +26,11 @@ template <typename T> T lerp(T v1, T v2, T mix) {
     else return (1 - mix) * v1 + mix * v2;
 }
 
-double maybeLerp(double t, double f(double));
+float maybeLerp(float t, float f(float));
 
-double noChange(double t);
-double easeInOut(double t);
-double easeOutBounce(double t);
+float noChange(float t);
+float easeInOut(float t);
+float easeOutBounce(float t);
 
 /**
  * Smooth, S-shaped interpolation between 0 and 1.
@@ -38,21 +38,21 @@ double easeOutBounce(double t);
  * Providing a template argument will apply the function to its result,
  * N times, creating an increasingly steep slope.
  */
-template <int N = 0> double smoothStep(double n) {
+template <int N = 0> float smoothStep(float n) {
     return smoothStep<0>(smoothStep<N - 1>(n));
 }
 
-template <> double smoothStep<0>(double n);
+template <> float smoothStep<0>(float n);
 
 template <typename T> using WeightedCollection = std::vector<std::pair<T, int>>;
 
 template <typename T> T weightedChoice(WeightedCollection<T> weights) {
-    std::uniform_real_distribution<double> r(0, 1);
+    std::uniform_real_distribution<float> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
     for (size_t i = 1; i < weights.size(); ++i) {
         auto &next = weights[i];
-        double cumulativeProbability = 0;
+        float cumulativeProbability = 0;
         int weight = next.second;
         if (weight > 0) {
             for (int j = 0; j < next.second; ++j) {
@@ -67,12 +67,12 @@ template <typename T> T weightedChoice(WeightedCollection<T> weights) {
 }
 
 template <typename T, typename... Args> T weightedChoice(WeightedCollection<T> weights, int fn(T, int, Args...), Args... args) {
-    std::uniform_real_distribution<double> r(0, 1);
+    std::uniform_real_distribution<float> r(0, 1);
     T current = weights[0].first;
     int currentIndex = weights[0].second;
     for (size_t i = 1; i < weights.size(); ++i) {
         auto &next = weights[i];
-        double cumulativeProbability = 0;
+        float cumulativeProbability = 0;
         int weight = next.second;
         weight = fn(next.first, weight, args...);
         if (weight > 0) {

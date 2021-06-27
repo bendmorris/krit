@@ -53,8 +53,8 @@ struct SpineSprite: public VisibleSprite {
     static float worldVertices[1024];
     static spine::String _customSkin;
 
-    double angle = 0;
-    double rate = 1;
+    float angle = 0;
+    float rate = 1;
 
     std::shared_ptr<SkeletonBinaryData> bin;
     spine::Skeleton *skeleton;
@@ -68,7 +68,7 @@ struct SpineSprite: public VisibleSprite {
     SpineSprite(const AssetInfo &info);
     ~SpineSprite();
 
-    float setAnimation(size_t track, const std::string &name, bool loop = true, double speed = 1, float mix = -1);
+    float setAnimation(size_t track, const std::string &name, bool loop = true, float speed = 1, float mix = -1);
     float addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
 
     void setAttachment(const std::string &slot, const std::string &attachment) {
@@ -100,7 +100,7 @@ struct SpineSprite: public VisibleSprite {
     void update(UpdateContext &ctx) override;
     virtual void render(RenderContext &ctx) override;
     Dimensions getSize() override { return Dimensions(0, 0); }
-    void resize(double w, double h) override {}
+    void resize(float w, float h) override {}
     void advance(float time);
 };
 

@@ -20,6 +20,10 @@ struct ImageRegion {
     int &y() { return this->rect.y; }
     int &width() { return this->rect.width; }
     int &height() { return this->rect.height; }
+
+    ImageRegion subRegion(int x, int y, int width, int height) {
+        return ImageRegion(img, this->x() + x, this->y() + y, width, height);
+    }
 };
 
 }

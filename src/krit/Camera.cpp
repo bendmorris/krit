@@ -16,7 +16,7 @@ Camera &Camera::keepHeight(int minWidth, int maxWidth) {
     return *this;
 }
 
-Camera &Camera::move(double x, double y) {
+Camera &Camera::move(float x, float y) {
     this->position.setTo(x, y);
     return *this;
 }
@@ -80,8 +80,8 @@ void Camera::update(UpdateContext &context) {
                 visibleHeight = max;
             }
             scale.setTo(
-                static_cast<double>(context.window->width()) / dimensions.width(),
-                static_cast<double>(context.window->height()) / visibleHeight
+                static_cast<float>(context.window->width()) / dimensions.width(),
+                static_cast<float>(context.window->height()) / visibleHeight
             );
             offset.y = (context.window->height() / scale.y - dimensions.height()) / 2;
             break;
@@ -96,8 +96,8 @@ void Camera::update(UpdateContext &context) {
                 visibleWidth = max;
             }
             scale.setTo(
-                static_cast<double>(context.window->width()) / visibleWidth,
-                static_cast<double>(context.window->height()) / dimensions.height()
+                static_cast<float>(context.window->width()) / visibleWidth,
+                static_cast<float>(context.window->height()) / dimensions.height()
             );
             offset.x = (context.window->width() / scale.x - dimensions.width()) / 2;
             break;

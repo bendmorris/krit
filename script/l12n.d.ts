@@ -7,5 +7,5 @@ interface TextMap {
 
     registerLocale(key: string, path: string): void;
     setLocale(key: string): void;
-    getString(key: string): string;
+    getString(key: string): string_view;
 }

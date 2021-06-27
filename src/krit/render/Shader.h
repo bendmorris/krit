@@ -8,6 +8,7 @@
 
 namespace krit {
 
+class DrawCommandBuffer;
 class DrawCall;
 
 struct Shader {
@@ -40,7 +41,7 @@ struct SpriteShader: public Shader {
     virtual void init() override;
     virtual void bindOrtho(GLfloat *matrix);
     virtual void unbind() override;
-    virtual void prepare(DrawCall *drawCall, RenderFloat *buffer);
+    virtual void prepare(DrawCommandBuffer *buf, DrawCall *drawCall, RenderFloat *buffer);
 };
 
 }

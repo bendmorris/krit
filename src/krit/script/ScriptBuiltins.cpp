@@ -49,6 +49,9 @@ JS_FUNC(exit) {
 }
 
 JS_FUNC(__id) {
+    if (JS_IsUndefined(argv[0]) || JS_IsNull(argv[0])) {
+        return JS_NewInt32(ctx, 0);
+    }
     return JS_GetPropertyStr(ctx, argv[0], "__id");
 }
 

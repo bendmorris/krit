@@ -35,48 +35,57 @@ enum DrawCommandType {
     DrawCommandTypeCount
 };
 
-struct DrawCommandBuffer: public CommandBuffer<
-    DrawCall,
-    Rectangle,
-    char,
-    BaseFrameBuffer*,
-    Material,
-    Color,
-    ImDrawData*
-> {
+struct DrawCommandBuffer {
+    std::vector<TriangleData> triangles;
+    CommandBuffer<
+        DrawCall,
+        Rectangle,
+        char,
+        BaseFrameBuffer*,
+        Material,
+        Color,
+        ImDrawData*
+    > buf;
+
     DrawCommandBuffer() {
-        this->get<DrawTriangles>().reserve(0x40);
-        this->get<PushClipRect>().reserve(0x10);
-        this->get<PopClipRect>().reserve(0x10);
-        this->get<SetRenderTarget>().reserve(0x10);
-        this->get<DrawMaterial>().reserve(0x10);
-        this->get<ClearColor>().reserve(0x10);
+        triangles.reserve(0x10000);
+        buf.get<DrawTriangles>().reserve(0x40);
+        buf.get<PushClipRect>().reserve(0x10);
+        buf.get<PopClipRect>().reserve(0x10);
+        buf.get<SetRenderTarget>().reserve(0x10);
+        buf.get<DrawMaterial>().reserve(0x10);
+        buf.get<ClearColor>().reserve(0x10);
     }
 
     DrawCall &getDrawCall(const DrawKey &key);
+
+    void clear() {
+        triangles.clear();
+        buf.clear();
+    }
 
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t, const Triangle &uv, const Color &color);
     void addRect(RenderContext &ctx, const DrawKey &key, const IntRectangle &rect, const Matrix &matrix, const Color &color);
 
     void pushClip(Rectangle &clip) {
-        auto &rect = this->emplace_back<PushClipRect>();
+        auto &rect = buf.emplace_back<PushClipRect>();
         rect.setTo(clip);
     }
 
     void popClip() {
-        this->emplace_back<PopClipRect>();
+        buf.emplace_back<PopClipRect>();
     }
 
     void setRenderTarget(BaseFrameBuffer *fb = nullptr) {
-        this->emplace_back<SetRenderTarget>(fb);
+        buf.emplace_back<SetRenderTarget>(fb);
     }
 
     void clearColor(const Color &color) {
-        this->emplace_back<ClearColor>(color);
+        buf.emplace_back<ClearColor>(color);
     }
 
     Material &addMaterial(Shader *shader) {
-        return this->emplace_back<DrawMaterial>(shader);
+        return buf.emplace_back<DrawMaterial>(shader);
     }
 };
 

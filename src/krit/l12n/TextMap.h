@@ -15,7 +15,7 @@ struct TextMap {
     void registerLocale(const std::string &key, AssetId id) { registerLocale(key, Assets::byId(id)); }
     void registerLocale(const std::string &key, const std::string &path) { registerLocale(key, Assets::byPath(path)); }
     void setLocale(const std::string &key);
-    std::string getString(const std::string &key);
+    std::string_view getString(const std::string &key);
 
     private:
         std::unordered_map<std::string, const AssetInfo*> locales;

@@ -83,6 +83,8 @@ struct InputContext {
 
     InputContext() {}
 
+    int state(Action action) { return states[action]; }
+
     void startFrame() {
         seen.clear();
         events.clear();

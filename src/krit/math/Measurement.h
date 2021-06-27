@@ -10,23 +10,23 @@ enum MeasurementType {
 
 struct Measurement {
     MeasurementType type;
-    double value;
+    float value;
 
-    Measurement(double value): type(Absolute), value(value) {}
-    Measurement(MeasurementType type, double value): type(type), value(value) {}
+    Measurement(float value): type(Absolute), value(value) {}
+    Measurement(MeasurementType type, float value): type(type), value(value) {}
 
-    double measure(double max) {
+    float measure(float max) {
         return type == Percent ? (value * max / 100) : value;
     }
 };
 
 struct AnchoredMeasurement {
     Measurement value;
-    double anchor;
+    float anchor;
 
-    AnchoredMeasurement(Measurement value, double anchor): value(value), anchor(anchor) {}
+    AnchoredMeasurement(Measurement value, float anchor): value(value), anchor(anchor) {}
 
-    double measure(double max, double size) {
+    float measure(float max, float size) {
         return this->value.measure(max) - size * this->anchor;
     }
 };

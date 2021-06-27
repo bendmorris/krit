@@ -98,10 +98,10 @@ template <typename T, typename Self> struct BaseRectangle {
     }
 };
 
-struct Rectangle: public BaseRectangle<double, Rectangle> {
+struct Rectangle: public BaseRectangle<float, Rectangle> {
     Rectangle() {}
-    Rectangle(double x, double y, double width, double height) : BaseRectangle<double, Rectangle>(x, y, width, height) {}
-    template<typename T, typename U> Rectangle(BasePoint<double, T> p, BasePoint<double, U> d) : Rectangle(p.x, p.y, d.x, d.y) {}
+    Rectangle(float x, float y, float width, float height) : BaseRectangle<float, Rectangle>(x, y, width, height) {}
+    template<typename T, typename U> Rectangle(BasePoint<float, T> p, BasePoint<float, U> d) : Rectangle(p.x, p.y, d.x, d.y) {}
 };
 
 struct IntRectangle: public BaseRectangle<int, IntRectangle> {

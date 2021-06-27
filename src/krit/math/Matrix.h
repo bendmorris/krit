@@ -7,13 +7,13 @@ namespace krit {
 
 class Matrix {
     public:
-        double a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0;
+        float a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0;
 
         Matrix() {}
-        Matrix(double a, double b, double c, double d, double tx, double ty)
+        Matrix(float a, float b, float c, float d, float tx, float ty)
             : a(a), b(b), c(c), d(d), tx(tx), ty(ty) {}
 
-        Matrix &setTo(double a, double b, double c, double d, double tx, double ty) {
+        Matrix &setTo(float a, float b, float c, float d, float tx, float ty) {
             this->a = a;
             this->b = b;
             this->c = c;
@@ -23,25 +23,25 @@ class Matrix {
             return *this;
         }
 
-        Matrix &rotate(double rads) {
-            double rcos = std::cos(rads);
-            double rsin = std::sin(rads);
-            double a0 = this->a * rcos - this->b * rsin;
+        Matrix &rotate(float rads) {
+            float rcos = std::cos(rads);
+            float rsin = std::sin(rads);
+            float a0 = this->a * rcos - this->b * rsin;
             this->b = this->a * rsin + this->b * rcos;
             this->a = a0;
 
-            double c0 = this->c * rcos - this->d * rsin;
+            float c0 = this->c * rcos - this->d * rsin;
             this->d = this->c * rsin + this->d * rcos;
             this->c = c0;
 
-            double t0 = this->tx * rcos - this->ty * rsin;
+            float t0 = this->tx * rcos - this->ty * rsin;
             this->ty = this->tx * rsin + this->ty * rcos;
             this->tx = t0;
 
             return *this;
         }
 
-        Matrix &scale(double sx, double sy) {
+        Matrix &scale(float sx, float sy) {
             this->a *= sx;
             this->b *= sy;
             this->c *= sx;
@@ -51,7 +51,7 @@ class Matrix {
             return *this;
         }
 
-        Matrix &translate(double tx, double ty) {
+        Matrix &translate(float tx, float ty) {
             this->tx += tx;
             this->ty += ty;
             return *this;

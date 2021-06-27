@@ -23,7 +23,7 @@ struct Overlay: public DevTool {
 
     int fpsBuffer[4] = {0};
     int index = 0;
-    double elapsed = 0;
+    float elapsed = 0;
 
     void draw(krit::RenderContext &ctx) override;
 };

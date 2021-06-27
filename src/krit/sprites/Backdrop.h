@@ -22,7 +22,7 @@ struct Backdrop: public VisibleSprite {
     int &width() { return this->region.rect.width; }
     int &height() { return this->region.rect.height; }
 
-    void resize(double w, double h) override { this->scale.setTo(w / this->width(), h / this->height()); }
+    void resize(float w, float h) override { this->scale.setTo(w / this->width(), h / this->height()); }
 
     void render(RenderContext &ctx) override;
 };

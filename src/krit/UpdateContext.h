@@ -11,7 +11,7 @@ struct Engine;
 struct InputContext;
 
 struct UpdateContext {
-    double elapsed;
+    float elapsed;
     unsigned int frameCount;
     unsigned int frameId;
     krit::App *app = nullptr;

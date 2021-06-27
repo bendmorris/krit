@@ -21,7 +21,7 @@ struct TextOptions {
     int size = 16;
     AlignType align = LeftAlign;
     bool wordWrap = false;
-    double lineSpacing = 0;
+    float lineSpacing = 0;
 
     TextOptions() {}
 
@@ -30,7 +30,7 @@ struct TextOptions {
     TextOptions &setSize(int size) { this->size = size; return *this; }
     TextOptions &setAlign(AlignType align) { this->align = align; return *this; }
     TextOptions &setWordWrap(bool wrap) { this->wordWrap = wrap; return *this; }
-    TextOptions &setLineSpacing(double spacing) { this->lineSpacing = spacing; return *this; }
+    TextOptions &setLineSpacing(float spacing) { this->lineSpacing = spacing; return *this; }
 };
 
 struct TextFormatTagOptions {
@@ -54,13 +54,13 @@ struct TextFormatTagOptions {
 struct GlyphBlockData {
     size_t startIndex;
     size_t glyphs;
-    double trailingWhitespace;
+    float trailingWhitespace;
 };
 
 union TextOpcodeData {
     bool present;
     Color color;
-    double number;
+    float number;
     AlignType align;
     CustomTextRenderFunction *custom = nullptr;
     GlyphBlockData glyphBlock;
@@ -69,10 +69,10 @@ union TextOpcodeData {
 
     TextOpcodeData(): present(false) {}
     TextOpcodeData(Color color): color(color) {}
-    TextOpcodeData(double number): number(number) {}
+    TextOpcodeData(float number): number(number) {}
     TextOpcodeData(AlignType align): align(align) {}
     TextOpcodeData(CustomTextRenderFunction *custom): custom(custom) {}
-    TextOpcodeData(size_t startIndex, size_t glyphs, double trailingWhitespace): glyphBlock { .startIndex = startIndex, .glyphs = glyphs, .trailingWhitespace = trailingWhitespace } {}
+    TextOpcodeData(size_t startIndex, size_t glyphs, float trailingWhitespace): glyphBlock { .startIndex = startIndex, .glyphs = glyphs, .trailingWhitespace = trailingWhitespace } {}
     TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
     TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
 };
@@ -97,13 +97,18 @@ struct Text: public VisibleSprite, public TextOptions {
 
     int charCount = -1;
     int maxChars = 0;
-    std::vector<double> tabStops;
+    std::vector<float> tabStops;
     Color baseColor = Color::white();
     std::string text;
     Dimensions textDimensions;
 
     Text() = default;
     Text(const TextOptions &options);
+    Text(const Text &other) {
+        *this = other;
+        this->hbBuf = nullptr;
+        this->dirty = true;
+    }
     virtual ~Text();
 
     Text &setText(const std::string &text);
@@ -114,9 +119,9 @@ struct Text: public VisibleSprite, public TextOptions {
     const Dimensions &getTextDimensions() { refresh(); return this->textDimensions; }
 
     Dimensions getSize() override { this->refresh(); return textDimensions; }
-    double width() { refresh(); return textDimensions.width(); }
-    double height() { refresh(); return textDimensions.height(); }
-    void resize(double, double) override;
+    float width() { refresh(); return textDimensions.width(); }
+    float height() { refresh(); return textDimensions.height(); }
+    void resize(float, float) override;
     void render(RenderContext &ctx) override;
 
     private:
@@ -125,7 +130,7 @@ struct Text: public VisibleSprite, public TextOptions {
         bool rich = false;
         bool dirty = false;
         friend struct TextParser;
-        double lineHeight;
+        float lineHeight;
 };
 
 }

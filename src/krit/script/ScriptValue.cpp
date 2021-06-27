@@ -29,16 +29,19 @@ template <> char *ScriptValue<char*>::jsToValue(JSContext *ctx, JSValue val) { r
 template <> JSValue ScriptValue<std::string>::valueToJs(JSContext *ctx, const std::string &s) { return JS_NewString(ctx, s.c_str()); }
 template <> JSValue ScriptValue<std::string*>::valueToJs(JSContext *ctx, std::string * const &s) { return !s ? JS_UNDEFINED : JS_NewString(ctx, s->c_str()); }
 template <> std::string ScriptValue<std::string>::jsToValue(JSContext *ctx, JSValue val) {
-    return std::string(ScriptValue<char*>::jsToValue(ctx, val));
+    auto s = ScriptValue<char*>::jsToValue(ctx, val);
+    auto str = std::string(s);
+    JS_FreeCString(ctx, s);
+    return str;
 }
 
 template <> JSValue ScriptValue<std::string_view>::valueToJs(JSContext *ctx, const std::string_view &s) { return JS_NewStringLen(ctx, s.data(), s.length()); }
 template <> JSValue ScriptValue<std::string_view*>::valueToJs(JSContext *ctx, std::string_view * const &s) { return !s ? JS_UNDEFINED : JS_NewStringLen(ctx, s->data(), s->length()); }
-template <> std::string_view ScriptValue<std::string_view>::jsToValue(JSContext *ctx, JSValue val) {
-    size_t len;
-    char *s = (char*)JS_ToCStringLen(ctx, &len, val);
-    return std::string_view(s, len);
-}
+// template <> std::string_view ScriptValue<std::string_view>::jsToValue(JSContext *ctx, JSValue val) {
+//     size_t len;
+//     char *s = (char*)JS_ToCStringLen(ctx, &len, val);
+//     return std::string_view(s, len);
+// }
 
 // template <typename T> JSValue valueToJs(JSContext *ctx, const std::unordered_map<std::string, T> &s) {
 //     JSValue obj = JS_NewObject(ctx);

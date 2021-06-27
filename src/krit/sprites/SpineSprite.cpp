@@ -60,7 +60,7 @@ template<> void AssetLoader<SkeletonBinaryData>::unloadAsset(SkeletonBinaryData 
     delete bin;
 }
 
-float SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, double speed, float mix) {
+float SpineSprite::setAnimation(size_t track, const std::string &name, bool loop, float speed, float mix) {
     auto trackEntry = this->animationState->setAnimation(track, spine::String(name.c_str()), loop);
     if (speed != 1) {
         trackEntry->setTimeScale(speed);
@@ -113,7 +113,7 @@ void SpineSprite::removeSkin(const std::string &name) {
 
 void SpineSprite::update(UpdateContext &ctx) {
     animationState->setTimeScale(this->rate);
-    double elapsed = ctx.elapsed;
+    float elapsed = ctx.elapsed;
     if (elapsed > 0) {
         this->advance(elapsed);
     }

@@ -26,7 +26,7 @@ template <typename T> void clearStack(std::stack<T> &stack) {
 struct GlyphRenderStack {
     std::stack<BitmapFont*> font;
     // std::stack<int> size;
-    std::stack<double> scale;
+    std::stack<float> scale;
     std::stack<Color> color;
     std::stack<AlignType> align;
     std::stack<CustomRenderFunction*> custom;
@@ -51,16 +51,16 @@ struct BitmapTextParser {
     static GlyphRenderStack stack;
     static std::vector<BitmapTextOpcode> word;
 
-    double thisLineHeight = 0;
+    float thisLineHeight = 0;
     Point cursor;
-    double trailingWhitespace = 0;
+    float trailingWhitespace = 0;
     std::string_view wordSegment;
-    double wordSegmentLength = 0;
-    double wordSegmentTrailingWhitespace = 0;
-    double wordLength = 0;
-    double wordTrailingWhitespace = 0;
-    double wordHeight = 0;
-    double currentScale = 1;
+    float wordSegmentLength = 0;
+    float wordSegmentTrailingWhitespace = 0;
+    float wordLength = 0;
+    float wordTrailingWhitespace = 0;
+    float wordHeight = 0;
+    float currentScale = 1;
     BitmapFont *currentFont;
     AlignType currentAlign = LeftAlign;
     int newLineIndex = 0;
@@ -209,7 +209,7 @@ struct BitmapTextParser {
         if (txt.opcodes[this->newLineIndex].type == NewLine) {
             // std::pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
             // update the size of the preceding line
-            double add = this->thisLineHeight + (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
+            float add = this->thisLineHeight + (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
             this->cursor.y += this->thisLineHeight + add;
             txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, add);
             txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
@@ -241,7 +241,7 @@ struct BitmapTextParser {
         this->flushWordSegment(txt);
         if (!BitmapTextParser::word.empty()) {
             this->trailingWhitespace = this->wordTrailingWhitespace;
-            double baseScale = static_cast<double>(txt.options.size) / this->currentFont->size;
+            float baseScale = static_cast<float>(txt.options.size) / this->currentFont->size;
             if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width() / baseScale) {
                 this->newLine(txt, true);
                 this->cursor.x = this->wordLength;
@@ -262,7 +262,7 @@ struct BitmapTextParser {
     void addOp(BitmapText &txt, BitmapTextOpcode op) {
         switch (op.type) {
             case SetScale: {
-                double v = op.data.number;
+                float v = op.data.number;
                 BitmapTextParser::stack.scale.push(this->currentScale = v);
                 BitmapTextParser::word.push_back(op);
                 break;
@@ -335,7 +335,7 @@ struct BitmapTextParser {
             case RenderSprite: {
                 auto sprite = op.data.sprite;
                 auto size = sprite->getSize();
-                double imageWidth = size.width() * currentScale;
+                float imageWidth = size.width() * currentScale;
                 BitmapTextParser::word.push_back(op);
                 this->wordTrailingWhitespace = 0;
                 this->wordLength += imageWidth;
@@ -400,7 +400,7 @@ BitmapText &BitmapText::refresh() {
     return *this;
 }
 
-void BitmapText::resize(double w, double h) {
+void BitmapText::resize(float w, float h) {
     if (this->options.wordWrap) {
         if ((this->dimensions.width() != static_cast<int>(w)) || (this->dimensions.height() != static_cast<int>(h))) {
             this->dirty = true;
@@ -415,13 +415,13 @@ void BitmapText::render(RenderContext &ctx) {
     this->refresh();
     Color color = this->color * this->baseColor;
     BitmapFont *font = this->options.font.get();
-    double baseScale = static_cast<double>(this->options.size) / font->size;
+    float baseScale = static_cast<float>(this->options.size) / font->size;
     ScaleFactor scale;
-    double thisLineHeight = 0;
+    float thisLineHeight = 0;
     int lastId = -1;
     Point cursor;
     CustomRenderFunction *custom = nullptr;
-    double totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
+    float totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
     for (BitmapTextOpcode &op: this->opcodes) {
@@ -441,7 +441,7 @@ void BitmapText::render(RenderContext &ctx) {
             case NewLine: {
                 tabIndex = 0;
                 Dimensions &dims = op.data.newLine.first;
-                double align;
+                float align;
                 switch (op.data.newLine.second) {
                     case LeftAlign: align = 0; break;
                     case CenterAlign: align = 0.5; break;
@@ -494,7 +494,7 @@ void BitmapText::render(RenderContext &ctx) {
                             cursor
                         );
                         if (lastId != -1) {
-                            double kern = font->kern(lastId, glyph.id) * renderData.scale.x * this->scale.x * baseScale;
+                            float kern = font->kern(lastId, glyph.id) * renderData.scale.x * this->scale.x * baseScale;
                             if (kern < 0) {
                                 cursor.x += kern;
                                 renderData.position.x += kern;

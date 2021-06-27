@@ -21,7 +21,7 @@ void Overlay::draw(krit::RenderContext &ctx) {
     if (ImGui::Begin("FPS", &pOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
         int next = (index++) % 4;
         fpsBuffer[next] = 1.0 / ctx.elapsed;
-        double total = 0;
+        float total = 0;
         for (int i = 0; i < 4; ++i) {
             total += fpsBuffer[next];
         }
@@ -71,7 +71,7 @@ void Editor::render(krit::RenderContext &ctx) {
 
         // frame will be finished in the render thread
         window = ctx.app->window;
-        ctx.drawCommandBuffer->emplace_back<RenderImGui>(ImGui::GetDrawData());
+        ctx.drawCommandBuffer->buf.emplace_back<RenderImGui>(ImGui::GetDrawData());
     }
 }
 

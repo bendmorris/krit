@@ -28,6 +28,7 @@ struct Color {
     }
 
     void setTo(unsigned c) { *this = c; }
+    void setTo(float r, float g, float b, float a) { this->r = r; this->g = g; this->b = b; this->a = a; }
 
     bool operator==(const Color &other) { return r == other.r && g == other.g && b == other.b && a == other.a; }
     bool operator!=(const Color &other) { return !(*this == other); }

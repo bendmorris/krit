@@ -2,7 +2,6 @@
 #define KRIT_SPRITES_BITMAPTEXT
 
 #include "krit/asset/BitmapFont.h"
-#include "krit/asset/ScalableFont.h"
 #include "krit/render/BlendMode.h"
 #include "krit/sprites/TextBase.h"
 #include "krit/utils/Color.h"
@@ -22,7 +21,7 @@ struct BitmapTextOptions {
     int size = 16;
     AlignType align = LeftAlign;
     bool wordWrap = false;
-    double lineSpacing = 0;
+    float lineSpacing = 0;
     bool dynamic = true;
 
     BitmapTextOptions() {}
@@ -31,7 +30,7 @@ struct BitmapTextOptions {
     BitmapTextOptions &setSize(int size) { this->size = size; return *this; }
     BitmapTextOptions &setAlign(AlignType align) { this->align = align; return *this; }
     BitmapTextOptions &setWordWrap(bool wrap) { this->wordWrap = wrap; return *this; }
-    BitmapTextOptions &setLineSpacing(double spacing) { this->lineSpacing = spacing; return *this; }
+    BitmapTextOptions &setLineSpacing(float spacing) { this->lineSpacing = spacing; return *this; }
 };
 
 class BitmapText;
@@ -57,7 +56,7 @@ enum BitmapTextOpcodeType {
 union BitmapTextOpcodeData {
     bool present;
     Color color;
-    double number;
+    float number;
     AlignType align;
     CustomRenderFunction *custom = nullptr;
     std::string_view text;
@@ -67,7 +66,7 @@ union BitmapTextOpcodeData {
 
     BitmapTextOpcodeData(): present(false) {}
     BitmapTextOpcodeData(Color color): color(color) {}
-    BitmapTextOpcodeData(double number): number(number) {}
+    BitmapTextOpcodeData(float number): number(number) {}
     BitmapTextOpcodeData(AlignType align): align(align) {}
     BitmapTextOpcodeData(CustomRenderFunction *custom): custom(custom) {}
     BitmapTextOpcodeData(std::string_view text): text(text) {}
@@ -87,7 +86,7 @@ struct BitmapTextOpcode {
 
 struct FormatTagOptions {
     Option<Color> color;
-    Option<double> scale;
+    Option<float> scale;
     Option<AlignType> align;
     bool newline = false;
     bool tab = false;
@@ -98,7 +97,7 @@ struct FormatTagOptions {
     FormatTagOptions() = default;
 
     FormatTagOptions &setColor(Color c) { this->color = Option<Color>(c); return *this; }
-    FormatTagOptions &setScale(double s) { this->scale = Option<double>(s); return *this; }
+    FormatTagOptions &setScale(float s) { this->scale = Option<float>(s); return *this; }
     FormatTagOptions &setAlign(AlignType a) { this->align = Option<AlignType>(a); return *this; }
     FormatTagOptions &setNewline() { this->newline = true; return *this; }
     FormatTagOptions &setTab() { this->tab = true; return *this; }
@@ -123,7 +122,7 @@ struct BitmapText: public VisibleSprite {
     BitmapTextOptions options;
     int charCount = -1;
     int maxChars = 0;
-    std::vector<double> tabStops;
+    std::vector<float> tabStops;
     Color baseColor = Color::white();
 
     BitmapText() = default;
@@ -134,18 +133,18 @@ struct BitmapText: public VisibleSprite {
     BitmapText &setRichText(const std::string &text);
     BitmapText &refresh();
 
-    double baseScale() { return static_cast<double>(this->options.size) / this->options.font->size; }
+    float baseScale() { return static_cast<float>(this->options.size) / this->options.font->size; }
     Dimensions getSize() override {
         this->refresh();
-        double s = this->baseScale();
+        float s = this->baseScale();
         return Dimensions(
             this->textDimensions.width() * s * scale.x,
             this->textDimensions.height() * s * scale.y
         );
     }
-    double width() { this->refresh(); double s = this->baseScale(); return this->textDimensions.width() * s * scale.x; }
-    double height() { this->refresh(); double s = this->baseScale(); return this->textDimensions.height() * s * scale.y; }
-    void resize(double, double) override;
+    float width() { this->refresh(); float s = this->baseScale(); return this->textDimensions.width() * s * scale.x; }
+    float height() { this->refresh(); float s = this->baseScale(); return this->textDimensions.height() * s * scale.y; }
+    void resize(float, float) override;
     void render(RenderContext &ctx) override;
 
     private:

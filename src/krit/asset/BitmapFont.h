@@ -32,7 +32,7 @@ struct BitmapFontBase {
 
     virtual BitmapGlyphData getGlyph(int c) = 0;
     virtual std::shared_ptr<ImageData> &getPage(int i) = 0;
-    virtual double kern(int32_t lastChar, int32_t thisChar) = 0;
+    virtual int kern(int32_t lastChar, int32_t thisChar) = 0;
 
     virtual ~BitmapFontBase() {}
 };
@@ -53,7 +53,7 @@ struct BitmapFont: public BitmapFontBase {
         return this->pages[i];
     }
 
-    double kern(int32_t lastChar, int32_t thisChar) {
+    int kern(int32_t lastChar, int32_t thisChar) {
         int64_t key = (static_cast<int64_t>(lastChar) << 32) | thisChar;
         auto found = kerningTable.find(key);
         if (found != kerningTable.end()) {

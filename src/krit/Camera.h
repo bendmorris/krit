@@ -32,8 +32,8 @@ struct Camera {
         } minMax;
     } scaleData;
 
-    double &width() { return this->dimensions.width(); }
-    double &height() { return this->dimensions.height(); }
+    float &width() { return this->dimensions.width(); }
+    float &height() { return this->dimensions.height(); }
 
     Camera &center() {
         this->anchor.setTo(0.5, 0.5);
@@ -57,7 +57,7 @@ struct Camera {
 
     Camera &keepWidth(int minHeight, int maxHeight);
     Camera &keepHeight(int minWidth, int maxWidth);
-    Camera &move(double x, double y);
+    Camera &move(float x, float y);
     Point &transformPoint(Point &p);
     Point &untransformPoint(Point &p);
     Dimensions &scaleDimensions(Dimensions &d);

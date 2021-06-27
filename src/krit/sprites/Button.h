@@ -19,8 +19,8 @@ struct Button: public NineSlice {
     bool pressed = false;
 
     SpriteStyle previousStyle;
-    double transitionTime = 0.15;
-    double transition = 0;
+    float transitionTime = 0.15;
+    float transition = 0;
 
     Button(ImageRegion &base, int border, BitmapTextOptions &labelOptions, const std::string &labelText)
         : Button(base, border, border, border, border, labelOptions, labelText) {}
@@ -36,7 +36,7 @@ struct Button: public NineSlice {
 
     Dimensions getSize() override { return Dimensions(this->width(), this->height()); }
 
-    void resize(double w, double h) override {
+    void resize(float w, float h) override {
         this->dimensions.setTo(w, h);
         this->label.refresh();
     }

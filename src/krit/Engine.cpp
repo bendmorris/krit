@@ -25,7 +25,7 @@ void Engine::update(UpdateContext &ctx) {
     // handle setTimeout events
     static std::list<TimedEvent> requeue;
     if (!this->events.empty()) {
-        double elapsed = ctx.elapsed;
+        float elapsed = ctx.elapsed;
         elapsed -= this->events.front().delay;
         this->events.front().delay -= ctx.elapsed;
         while (!this->events.empty() && this->events.front().delay < 0) {
@@ -35,7 +35,7 @@ void Engine::update(UpdateContext &ctx) {
             }
             this->events.pop_front();
             if (!this->events.empty() && elapsed > 0) {
-                double oldElapsed = elapsed;
+                float oldElapsed = elapsed;
                 elapsed -= this->events.front().delay;
                 this->events.front().delay -= oldElapsed;
             }
@@ -89,9 +89,9 @@ void Engine::render(RenderContext &ctx) {
     invoke(this->postRender, &ctx);
 }
 
-void Engine::setTimeout(CustomSignal s, double delay, void *userData) {
+void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
     bool inserted = false;
-    double interval = delay;
+    float interval = delay;
     for (auto it = this->events.begin(); it != this->events.end(); ++it) {
         if (it->delay <= 0) continue;
         if (delay < it->delay) {

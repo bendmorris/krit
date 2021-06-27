@@ -4,6 +4,7 @@
 #include "krit/asset/AssetLoader.h"
 #include "krit/render/ImageData.h"
 #include "krit/render/ImageRegion.h"
+#include "krit/utils/Log.h"
 #include "krit/Math.h"
 #include <memory>
 #include <string>
@@ -20,7 +21,11 @@ struct TextureAtlas {
 
     TextureAtlas(const std::string &path);
     ImageRegion &getRegion(const std::string &region) {
-        return this->regions.find(region)->second;
+        auto found = this->regions.find(region);
+        if (found == this->regions.end()) {
+            Log::fatal("couldn't find texture atlas region: %s\n", region.c_str());
+        }
+        return found->second;
     }
 };
 

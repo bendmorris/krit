@@ -4,6 +4,7 @@
 #include "krit/render/ImageData.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
+#include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "krit/TaskManager.h"
 #include <SDL.h>
@@ -26,7 +27,6 @@ template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         SDL_LockSurface(surface);
         int size = surface->w * surface->h;
         uint8_t *pixels = static_cast<uint8_t*>(surface->pixels);
-        double f = 0;
         unsigned int mode = GL_RGB;
         // FIXME: do this ahead of time
         if (surface->format->BytesPerPixel == 4) {
@@ -36,7 +36,6 @@ template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
                 pixels[i * 4] = (static_cast<uint32_t>(pixels[i * 4]) * a / 0xff);
                 pixels[i * 4 + 1] = (static_cast<uint32_t>(pixels[i * 4 + 1]) * a / 0xff);
                 pixels[i * 4 + 2] = (static_cast<uint32_t>(pixels[i * 4 + 2]) * a / 0xff);
-                f += pixels[i * 4];
             }
             mode = GL_RGBA;
         }
@@ -65,7 +64,7 @@ template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
 template<> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
     GLuint texture = img->texture;
     TaskManager::instance->pushRender([texture](RenderContext&) {
-        puts("DELETE");
+        Log::info("image deleted");
         glDeleteTextures(1, &texture);
     });
     delete img;

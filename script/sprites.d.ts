@@ -3,6 +3,7 @@
  * @import krit/Sprite.h
  */
 declare class Sprite {
+    fixedUpdate(ctx: Reference<UpdateContext>): void;
     update(ctx: Reference<UpdateContext>): void;
     render(ctx: Reference<RenderContext>): void;
 }
@@ -53,6 +54,7 @@ declare class BitmapText extends VisibleSprite {
     /** @readonly */ maxChars: integer;
     /** @readonly */ text: string;
     baseColor: Color;
+    /** @readonly */ textDimensions: Dimensions;
 
     refresh(): void;
     setText(s: string): void;
@@ -120,6 +122,7 @@ declare class LayoutNode extends VisibleSprite {
     stretch: boolean;
     keepSize: boolean;
     visible: boolean;
+    /** @readonly */ offset: Point;
 
     getSprite(): Pointer<VisibleSprite>;
     attachSprite(s: Pointer<VisibleSprite>): void;

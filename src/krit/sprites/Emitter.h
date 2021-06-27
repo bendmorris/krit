@@ -58,7 +58,7 @@ struct Emitter: public VisibleSprite {
     // TODO: add a way to pass in ParticleProperties to modify particles on spawn
 
     Dimensions getSize() override { return Dimensions(0, 0); }
-    void resize(double w, double h) override {}
+    void resize(float w, float h) override {}
     void clear();
 
     void update(UpdateContext &ctx) override;

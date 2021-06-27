@@ -76,7 +76,7 @@ void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_shape(font, buf, nullptr, 0);
 }
 
-GlyphData &Font::getGlyph(uint32_t codePoint, unsigned int size) {
+GlyphData &Font::getGlyph(char32_t codePoint, unsigned int size) {
     if (!nextGlyphCache.img) {
         if (!glyphCache.img) {
             glyphCache.createTexture();
@@ -100,7 +100,7 @@ GlyphCache::~GlyphCache() {
     }
 }
 
-GlyphData *GlyphCache::getGlyph(Font *font, uint32_t codePoint, unsigned int size) {
+GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint, unsigned int size) {
     {
         // check if we already contain this glyph at this size
         auto it = glyphs.find(GlyphSize(font, codePoint, size));

@@ -20,8 +20,8 @@ struct ParseUtil {
     static int parseInt(const std::string &s, int base = 10) {
         return std::stoi(s, 0, base);
     }
-    static double parseFloat(const std::string &s) {
-        return std::stod(s, 0);
+    static float parseFloat(const std::string &s) {
+        return std::stof(s, 0);
     }
     static Color parseColor(const std::string &s) {
         return Color(ParseUtil::parseInt(s, 16), 1.0);

@@ -5,6 +5,9 @@
  */
 interface Engine {
     input: InputContext;
+
+    pushAssetCache(): void;
+    popAssetCache(): void;
 }
 
 /**
@@ -13,6 +16,7 @@ interface Engine {
  */
 interface InputContext {
     /** @readonly */ events: ActionEvent[];
+    state(a: integer): integer;
 }
 
 /**
@@ -53,6 +57,7 @@ interface Camera {
     position: Point;
     offset: Point;
     anchor: Point;
+    scale: ScaleFactor;
     dimensions: Dimensions;
 
     center(): void;

@@ -19,10 +19,10 @@ template <typename T, class Self> class BaseDimensions: public BasePoint<T, Self
         }
 };
 
-class Dimensions: public BaseDimensions<double, Dimensions> {
+class Dimensions: public BaseDimensions<float, Dimensions> {
     public:
         Dimensions() {}
-        Dimensions(double x, double y): BaseDimensions<double, Dimensions>(x, y) {}
+        Dimensions(float x, float y): BaseDimensions<float, Dimensions>(x, y) {}
 };
 class IntDimensions: public BaseDimensions<int, IntDimensions> {
     public:

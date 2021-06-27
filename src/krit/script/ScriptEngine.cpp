@@ -155,7 +155,7 @@ JSValue ScriptEngine::createOwned(ScriptClass e, void *data) {
     return val;
 }
 
-JSValue ScriptEngine::delay(double duration) {
+JSValue ScriptEngine::delay(float duration) {
     // create the promise; retain the `then` function
     JSValue resolvingFuncs[2];
     JSValue promise = JS_NewPromiseCapability(ctx, resolvingFuncs);

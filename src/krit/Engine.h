@@ -14,12 +14,12 @@
 namespace krit {
 
 struct TimedEvent {
-    double delay;
-    double interval;
+    float delay;
+    float interval;
     CustomSignal signal;
     void *userData;
 
-    TimedEvent(double delay, double interval, CustomSignal signal, void *userData)
+    TimedEvent(float delay, float interval, CustomSignal signal, void *userData)
         : delay(delay), interval(interval), signal(signal), userData(userData) {}
 };
 
@@ -43,7 +43,7 @@ struct Engine {
     bool paused = false;
     bool fixedFrameRate = false;
     bool finished = false;
-    double speed = 1;
+    float speed = 1;
 
     UpdateSignal onBegin = nullptr;
     UpdateSignal onUpdate = nullptr;
@@ -71,11 +71,14 @@ struct Engine {
     void fixedUpdate(UpdateContext &ctx);
     void render(RenderContext &ctx);
     
-    void setTimeout(CustomSignal s, double delay = 0, void *userData = nullptr);
+    void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
     void addTree(Sprite *root, Camera *camera = nullptr);
     Sprite *getRoot(int index) { return trees[index].root.get(); }
     void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
+
+    void pushAssetCache() { assetCaches.emplace_back(new AssetCache()); }
+    void popAssetCache() { AssetCache *cache = assetCaches.back(); assetCaches.pop_back(); delete cache; }
 
     template <typename T> T *data() { return static_cast<T*>(this->userData); }
 

@@ -206,13 +206,6 @@ struct TextParser {
 
         // use harfbuzz to shape the text
         hb_buffer_add_utf8(hbBuf, rawText.c_str(), rawText.size(), 0, -1);
-        {
-            unsigned int glyphCount;
-            hb_glyph_info_t *glyphInfo = hb_buffer_get_glyph_infos(hbBuf, &glyphCount);
-            for (size_t i = 0; i < glyphCount; ++i) {
-                glyphInfo[i].cluster = i;
-            }
-        }
         
         txt.font->shape(hbBuf, txt.size * FONT_SCALE);
         unsigned int glyphCount;
@@ -235,7 +228,7 @@ struct TextParser {
         newLineIndex = 0;
 
         size_t tagPointer = 0;
-        Utf8Iterator it = s.begin();
+        Utf8Iterator it = rawText.begin();
         for (size_t i = 0; i < glyphCount; ++i) {
             hb_glyph_info_t &_glyphInfo = glyphInfo[i];
             hb_glyph_position_t &_glyphPos = glyphPos[i];
@@ -256,17 +249,17 @@ struct TextParser {
                     if (txt.opcodes.back().type == Whitespace) {
                         txt.opcodes.back().data.number += _glyphPos.x_advance;
                     } else {
-                        txt.opcodes.push_back(TextOpcode(Whitespace, TextOpcodeData((double)_glyphPos.x_advance)));
+                        txt.opcodes.push_back(TextOpcode(Whitespace, TextOpcodeData((float)_glyphPos.x_advance)));
                     }
                     break;
                 }
                 default: {
-                    auto &cur = word.empty() ? txt.opcodes : word;
-                    auto &back = cur.back();
-                    if (back.type == GlyphBlock && back.data.glyphBlock.startIndex + back.data.glyphBlock.glyphs == i) {
+                    auto &back = word.back();
+                    if (!word.empty() && back.type == GlyphBlock && back.data.glyphBlock.startIndex + back.data.glyphBlock.glyphs == i) {
                         // add this glyph to the existing opcode
                         ++back.data.glyphBlock.glyphs;
-                        cursor.x += _glyphPos.x_advance;
+                        wordLength += _glyphPos.x_advance;
+                        // cursor.x += _glyphPos.x_advance;
                     } else {
                         word.emplace_back(TextOpcode(GlyphBlock, TextOpcodeData(i, 1, 0)));
                         wordLength += _glyphPos.x_advance;
@@ -341,7 +334,7 @@ struct TextParser {
         if (txt.opcodes[this->newLineIndex].type == NewLine) {
             // std::pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
             // update the size of the preceding line
-            double add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
+            float add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
             this->cursor.y += txt.lineHeight + add;
             txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, txt.lineHeight + add);
             txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
@@ -406,7 +399,7 @@ struct TextParser {
             case RenderSprite: {
                 auto sprite = op.data.sprite;
                 auto size = sprite->getSize();
-                double imageWidth = size.width();
+                float imageWidth = size.width();
                 word.push_back(op);
                 wordLength += imageWidth;
                 break;
@@ -449,7 +442,7 @@ Text &Text::refresh() {
     return *this;
 }
 
-void Text::resize(double w, double h) {
+void Text::resize(float w, float h) {
     if (this->wordWrap) {
         if ((this->dimensions.width() != static_cast<int>(w)) || (this->dimensions.height() != static_cast<int>(h))) {
             this->dirty = true;
@@ -466,13 +459,13 @@ void Text::render(RenderContext &ctx) {
     Color color = this->color * this->baseColor;
     Point cursor;
     CustomTextRenderFunction *custom = nullptr;
-    double totalWidth = this->wordWrap ? this->dimensions.width() : this->textDimensions.width();
+    float totalWidth = this->wordWrap ? this->dimensions.width() : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
 
     float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
     float size = this->size * cameraScale;
-    float fontScale = std::ceil(size) / cameraScale / 64.0;
+    float fontScale = std::floor(size) / cameraScale / 64.0;
     bool pixelPerfect = fontScale < 20;
 
     for (TextOpcode &op: this->opcodes) {
@@ -488,7 +481,7 @@ void Text::render(RenderContext &ctx) {
             case NewLine: {
                 tabIndex = 0;
                 Dimensions &dims = op.data.newLine.first;
-                double align;
+                float align;
                 switch (op.data.newLine.second) {
                     case LeftAlign: align = 0; break;
                     case CenterAlign: align = 0.5; break;
@@ -523,7 +516,7 @@ void Text::render(RenderContext &ctx) {
                 for (size_t i = op.data.glyphBlock.startIndex; i < op.data.glyphBlock.startIndex + op.data.glyphBlock.glyphs; ++i) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
-                    GlyphData &glyph = font->getGlyph(_info.codepoint, std::ceil(size));
+                    GlyphData &glyph = font->getGlyph(_info.codepoint, std::floor(size));
 
                     GlyphRenderData renderData(
                         _info.codepoint,

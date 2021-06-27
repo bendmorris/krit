@@ -5,8 +5,8 @@
 
 namespace krit {
 
-struct ScaleFactor: public BasePoint<double, ScaleFactor> {
-    ScaleFactor(double x, double y): BasePoint<double, ScaleFactor>(x, y) {}
+struct ScaleFactor: public BasePoint<float, ScaleFactor> {
+    ScaleFactor(float x, float y): BasePoint<float, ScaleFactor>(x, y) {}
     ScaleFactor(): ScaleFactor(1, 1) {}
 };
 

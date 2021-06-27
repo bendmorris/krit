@@ -47,13 +47,13 @@ struct VisibleSprite: public Sprite, public SpriteStyle {
     VisibleSprite() {}
     virtual ~VisibleSprite() = default;
 
-    double &width() { return this->dimensions.width(); }
-    double &height() { return this->dimensions.height(); }
+    float &width() { return this->dimensions.width(); }
+    float &height() { return this->dimensions.height(); }
 
     virtual Point getPosition() { return this->position; }
     virtual Dimensions getSize() { return Dimensions(this->width() * this->scale.x, this->height() * this->scale.y); }
-    virtual void move(double x, double y) { this->position.setTo(x, y); }
-    virtual void resize(double w, double h) { this->scale.setTo(w / this->width(), h / this->height()); }
+    virtual void move(float x, float y) { this->position.setTo(x, y); }
+    virtual void resize(float w, float h) { this->scale.setTo(w / this->width(), h / this->height()); }
 
     void applyStyle(const SpriteStyle &style) {
         this->scale.setTo(style.scale.x, style.scale.y);

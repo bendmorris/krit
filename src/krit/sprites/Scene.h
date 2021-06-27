@@ -16,7 +16,7 @@ struct Scene: public Sprite {
     Scene() {}
     Scene(const std::string &layoutPath): layout(layoutPath) {}
 
-    void fadeOut(Color color, double fadeDuration = 0.5) {
+    void fadeOut(Color color, float fadeDuration = 0.5) {
         this->fadeColor = color;
         this->fadeDuration = fadeDuration / color.a;
         this->fadingOut = true;
@@ -24,7 +24,7 @@ struct Scene: public Sprite {
         this->fadeColor.a = 0;
     }
 
-    void fadeIn(Color color, double fadeDuration = 0.5) {
+    void fadeIn(Color color, float fadeDuration = 0.5) {
         this->fadeColor = color;
         this->fadeDuration = fadeDuration / color.a;
         this->fadingOut = false;
@@ -34,7 +34,7 @@ struct Scene: public Sprite {
     private:
         Color fadeColor = 0;
         float maxAlpha = 0;
-        double fadeDuration = 0;
+        float fadeDuration = 0;
         bool fadingOut = false;
 };
 

@@ -42,7 +42,7 @@ void Backdrop::render(RenderContext &ctx) {
     key.smooth = this->smooth;
     key.blend = this->blendMode;
     key.shader = this->shader;
-    Matrix m(static_cast<double>(scaledDimensions.width()) / this->width(), 0, 0, static_cast<double>(scaledDimensions.height()) / this->height(), 0, 0);
+    Matrix m(static_cast<float>(scaledDimensions.width()) / this->width(), 0, 0, static_cast<float>(scaledDimensions.height()) / this->height(), 0, 0);
     for (int y = 0; y < yi; ++y) {
         for (int x = 0; x < xi; ++x) {
             m.tx = scaledPosition.x + scaledDimensions.width() * x;

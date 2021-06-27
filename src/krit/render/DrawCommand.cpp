@@ -5,13 +5,13 @@ namespace krit {
 
 DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key) {
     // TODO: fallthrough logic
-    if (!this->commandTypes.empty() && this->commandTypes.back() == DrawTriangles) {
-        DrawCall &last = this->get<DrawTriangles>().back();
+    if (!this->buf.commandTypes.empty() && this->buf.commandTypes.back() == DrawTriangles) {
+        DrawCall &last = buf.get<DrawTriangles>().back();
         if (last.matches(key)) {
             return last;
         }
     }
-    auto &call = this->emplace_back<DrawTriangles>();
+    auto &call = buf.emplace_back<DrawTriangles>();
     call.key = key;
     return call;
 }
@@ -19,7 +19,7 @@ DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key) {
 void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t, const Triangle &uv, const Color &color) {
     if (color.a > 0) {
         DrawCall &call = this->getDrawCall(key);
-        call.addTriangle(t, uv, color);
+        call.addTriangle(this, t, uv, color);
     }
 }
 
@@ -53,6 +53,7 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key, const In
     float yd = rect.height * matrix.d + matrix.ty;
 
     call.addTriangle(
+        this,
         matrix.tx, matrix.ty,
         xa, yb,
         xc, yd,
@@ -62,6 +63,7 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key, const In
         color
     );
     call.addTriangle(
+        this,
         xc, yd,
         xa, yb,
         xa + rect.height * matrix.c, yb + rect.height * matrix.d,

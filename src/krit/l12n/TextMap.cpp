@@ -1,5 +1,6 @@
 #include "krit/l12n/TextMap.h"
 #include "krit/asset/AssetLoader.h"
+#include "krit/utils/Log.h"
 #include <cstring>
 #include <string_view>
 
@@ -23,6 +24,9 @@ void TextMap::setLocale(const std::string &key) {
         size_t lineLength = nextNewline - current;
         nextTab = (const char*)memchr(current, '\t', lineLength);
         if (!nextTab) {
+            Log::error("no tab in line: %.*s\n", (int)lineLength - 1, current);
+            current = nextNewline + 1;
+            remaining -= lineLength + 1;
             continue;
         }
         strings[std::string_view(current, nextTab - current)] = std::string_view(nextTab + 1, nextNewline - nextTab - 1);
@@ -32,9 +36,9 @@ void TextMap::setLocale(const std::string &key) {
     }
 }
 
-std::string TextMap::getString(const std::string &key) {
-    auto s = strings[std::string_view(key.data(), key.length())];
-    return std::string(s.data(), s.size());
+std::string_view TextMap::getString(const std::string &key) {
+    return strings[std::string_view(key.data(), key.length())];
+    // return std::string(s.data(), s.size());
 }
 
 

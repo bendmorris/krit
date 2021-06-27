@@ -8,6 +8,7 @@
 #include "krit/sprites/NineSlice.h"
 #include "krit/sprites/SpineSprite.h"
 #include "krit/sprites/Text.h"
+#include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Parse.h"
 #include "expat.h"
@@ -15,6 +16,17 @@
 #include <string>
 
 namespace krit {
+
+void LayoutNode::fixedUpdate(UpdateContext &ctx) {
+    if (this->sprite) {
+        this->sprite->fixedUpdate(ctx);
+    }
+    LayoutNode *child = this->firstChild.get();
+    while (child) {
+        child->fixedUpdate(ctx);
+        child = child->nextSibling.get();
+    }
+}
 
 void LayoutNode::update(UpdateContext &ctx) {
     if (this->sprite) {
@@ -35,6 +47,7 @@ void LayoutNode::render(RenderContext &ctx) {
         ctx.pushClip(Rectangle(this->position.x, this->position.y, this->dimensions.width(), this->dimensions.height()));
     }
     if (this->sprite) {
+        this->sprite->move(this->position.x + this->offset.x, this->position.y + this->offset.y);
         this->sprite->render(ctx);
     }
     LayoutNode *child = this->firstChild.get();
@@ -48,21 +61,21 @@ void LayoutNode::render(RenderContext &ctx) {
 }
 
 void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
-    double availableWidth, availableHeight;
+    float availableWidth, availableHeight;
     if (parent) {
         Dimensions dims = parent->dimensions;
-        double paddingTop = parent->paddingTop().measure(dims.height());
-        double paddingBottom = parent->paddingBottom().measure(dims.height());
-        double paddingLeft = parent->paddingLeft().measure(dims.width());
-        double paddingRight = parent->paddingRight().measure(dims.width());
+        float paddingTop = parent->paddingTop().measure(dims.height());
+        float paddingBottom = parent->paddingBottom().measure(dims.height());
+        float paddingLeft = parent->paddingLeft().measure(dims.width());
+        float paddingRight = parent->paddingRight().measure(dims.width());
         availableWidth = dims.width() - paddingLeft - paddingRight;
         availableHeight = dims.height() - paddingTop - paddingBottom;
     } else {
         availableWidth = ctx.window->width() / ctx.camera->scale.x;
         availableHeight = ctx.window->height() / ctx.camera->scale.y;
     }
-    double width = this->width.measure(availableWidth);
-    double height = this->height.measure(availableHeight);
+    float width = this->width.measure(availableWidth);
+    float height = this->height.measure(availableHeight);
 
     this->dimensions.setTo(width, height);
     if (this->sprite && this->stretch) {
@@ -78,28 +91,33 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
 }
 
 void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
-    double x, y, availableWidth, availableHeight;
+    float x, y, availableWidth, availableHeight;
     if (parent) {
         Point position = parent->position;
         Dimensions dims = parent->dimensions;
-        double paddingTop = parent->paddingTop().measure(dims.height());
-        double paddingBottom = parent->paddingBottom().measure(dims.height());
-        double paddingLeft = parent->paddingLeft().measure(dims.width());
-        double paddingRight = parent->paddingRight().measure(dims.width());
-        x = position.x + paddingLeft;
-        y = position.y + paddingTop;
+        float paddingTop = parent->paddingTop().measure(dims.height());
+        float paddingBottom = parent->paddingBottom().measure(dims.height());
+        float paddingLeft = parent->paddingLeft().measure(dims.width());
+        float paddingRight = parent->paddingRight().measure(dims.width());
+        x = position.x + paddingLeft + offset.x;
+        y = position.y + paddingTop + offset.y;
         availableWidth = dims.width() - paddingLeft - paddingRight;
         availableHeight = dims.height() - paddingTop - paddingBottom;
     } else {
-        x = -ctx.camera->offset.x;
-        y = -ctx.camera->offset.y;
+        x = -ctx.camera->offset.x + offset.x;
+        y = -ctx.camera->offset.y + offset.y;
         availableWidth = ctx.window->width() / ctx.camera->scale.x;
         availableHeight = ctx.window->height() / ctx.camera->scale.y;
     }
     Dimensions spriteSize = this->getSize();
 
-    double ex, ey;
+    float ex, ey;
     switch (this->positionMode) {
+        case PositionFloat: {
+            ex = this->x.measure(availableWidth, spriteSize.width());
+            ey = this->y.measure(availableHeight, spriteSize.height());
+            break;
+        }
         case PositionAbsolute: {
             // absolute layout
             ex = x + this->x.measure(availableWidth, spriteSize.width());
@@ -123,11 +141,11 @@ void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
                 Point siblingPos = prevSibling->getPosition();
                 Dimensions siblingSize = prevSibling->getSize();
                 if (horizontal) {
-                    double spacing = parent->spacing.measure(availableWidth);
+                    float spacing = parent->spacing.measure(availableWidth);
                     ex = siblingPos.x + siblingSize.width() + spacing;
                     ey = y + this->y.measure(availableHeight, spriteSize.height());
                 } else {
-                    double spacing = parent->spacing.measure(availableHeight);
+                    float spacing = parent->spacing.measure(availableHeight);
                     ex = x + this->x.measure(availableWidth, spriteSize.width());
                     ey = siblingPos.y + siblingSize.height() + spacing;
                 }
@@ -137,9 +155,9 @@ void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
     }
 
     this->position.setTo(ex, ey);
-    if (this->sprite) {
-        this->sprite->move(ex, ey);
-    }
+    // if (this->sprite) {
+    //     this->sprite->move(ex, ey);
+    // }
 
     LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
     while (child) {
@@ -221,6 +239,10 @@ void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, cons
     } else if (key == "paddingRight") {
         Measurement paddingVal = ParseUtil::parseMeasurement(value);
         layout->padding[3] = paddingVal;
+    } else if (key == "float") {
+        if (ParseUtil::parseBool(value)) {
+            layout->positionMode = PositionMode::PositionFloat;
+        }
     }
 }
 
@@ -288,6 +310,15 @@ void parseImg(LayoutParseData *data, std::unordered_map<std::string, std::string
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
     Image *img = new Image(src);
     LayoutRoot::parseAndApplyStyle(attrMap, img);
+    for (auto &it: attrMap) {
+        const std::string &key = it.first;
+        const std::string &value = it.second;
+        if (key == "originX") {
+            img->origin.x = ParseUtil::parseFloat(value);
+        } else if (key == "originY") {
+            img->origin.y = ParseUtil::parseFloat(value);
+        }
+    }
     node->attachSprite(img);
 }
 
@@ -530,16 +561,18 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
         LayoutRoot::parseLayoutAttr(data, node, key, value);
     }
     if (!data->layoutStack.empty()) {
-        auto top = data->layoutStack.top();
-        node->positionMode = top->childPositionMode;
-    }
-    if (!strcmp(name, "hbox") || !strcmp(name, "vbox")) {
-        bool horizontal = name[0] == 'h';
-        node->childPositionMode = horizontal ? PositionHbox : PositionVbox;
-    } else {
-        auto found = LayoutRoot::parsers.find(std::string(name));
-        if (found != LayoutRoot::parsers.end()) {
-            if (found->second) found->second(data, attrMap);
+            auto top = data->layoutStack.top();
+            node->positionMode = top->childPositionMode;
+        if (!strcmp(name, "hbox") || !strcmp(name, "vbox")) {
+            bool horizontal = name[0] == 'h';
+            node->childPositionMode = horizontal ? PositionHbox : PositionVbox;
+        } else {
+            auto found = LayoutRoot::parsers.find(std::string(name));
+            if (found != LayoutRoot::parsers.end()) {
+                if (found->second) found->second(data, attrMap);
+            } else {
+                Log::error("unknown parser: %s", name);
+            }
         }
     }
     data->layoutStack.push(node);

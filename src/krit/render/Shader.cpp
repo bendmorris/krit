@@ -1,4 +1,5 @@
 #include "krit/render/DrawCall.h"
+#include "krit/render/DrawCommand.h"
 #include "krit/render/Renderer.h"
 #include "krit/render/Shader.h"
 #include "krit/utils/Panic.h"
@@ -127,14 +128,14 @@ void SpriteShader::unbind() {
     Shader::unbind();
 }
 
-void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
+void SpriteShader::prepare(DrawCommandBuffer *buf, DrawCall *drawCall, RenderFloat *buffer) {
     int stride = this->bytesPerVertex;
     bool hasTexCoord = this->texCoordIndex > -1;
     int i = 0;
     RenderFloat *origin = nullptr;
     if (hasTexCoord) {
         for (size_t t = 0; t < drawCall->length(); ++t) {
-            TriangleData &tri = drawCall->data[t];
+            TriangleData &tri = buf->triangles[drawCall->indices[t]];
             uint32_t c = colorToInt(tri.color);
             buffer[i++] = tri.t.p1.x;
             buffer[i++] = tri.t.p1.y;
@@ -160,7 +161,7 @@ void SpriteShader::prepare(DrawCall *drawCall, RenderFloat *buffer) {
         checkForGlErrors("texture attrib pointers");
     } else {
         for (size_t t = 0; t < drawCall->length(); ++t) {
-            TriangleData &tri = drawCall->data[t];
+            TriangleData &tri = buf->triangles[drawCall->indices[t]];
             uint32_t c = colorToInt(tri.color);
             buffer[i++] = tri.t.p1.x;
             buffer[i++] = tri.t.p1.y;

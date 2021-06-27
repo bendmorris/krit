@@ -340,7 +340,7 @@ template <> void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall)
                 checkForGlErrors("buffer data");
                 this->bufferPtr = (RenderFloat *)this->renderData.data();
             }
-            shader->prepare(&drawCall, (RenderFloat *)this->renderData.data());
+            shader->prepare(&drawCommandBuffer, &drawCall, (RenderFloat *)this->renderData.data());
             checkForGlErrors("prepare");
 
             glDrawArrays(GL_TRIANGLES, 0, drawCall.length() * 3);
@@ -455,10 +455,10 @@ void Renderer::renderFrame(RenderContext &ctx) {
     checkForGlErrors("start batch");
 
     size_t indices[DrawCommandTypeCount] = {0};
-    for (auto commandType : this->drawCommandBuffer.commandTypes) {
+    for (auto commandType : this->drawCommandBuffer.buf.commandTypes) {
         size_t index = indices[commandType]++;
         switch (commandType) {
-            #define DISPATCH_COMMAND(cmd) case cmd: this->drawCall<cmd>(this->drawCommandBuffer.get<cmd>()[index]); break;
+            #define DISPATCH_COMMAND(cmd) case cmd: this->drawCall<cmd>(this->drawCommandBuffer.buf.get<cmd>()[index]); break;
 
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(PushClipRect)
