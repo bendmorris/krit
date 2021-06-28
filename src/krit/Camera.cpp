@@ -26,20 +26,16 @@ Camera &Camera::move(float x, float y) {
 
 Point &Camera::transformPoint(Point &p) {
     Point position = this->position;
-    return p
-        .add(-position.x + offset.x, -position.y + offset.y)
+    return p.add(-position.x + offset.x, -position.y + offset.y)
         .add(anchor.x * dimensions.width(), anchor.y * dimensions.height())
-        .multiply(scale.x, scale.y)
-    ;
+        .multiply(scale.x, scale.y);
 }
 
 Point &Camera::untransformPoint(Point &p) {
     Point position = this->position;
-    return p
-        .divide(scale.x, scale.y)
+    return p.divide(scale.x, scale.y)
         .subtract(anchor.x * dimensions.width(), anchor.y * dimensions.height())
-        .subtract(-position.x + offset.x, -position.y + offset.y)
-    ;
+        .subtract(-position.x + offset.x, -position.y + offset.y);
 }
 
 Dimensions &Camera::scaleDimensions(Dimensions &d) {
@@ -52,11 +48,10 @@ Dimensions &Camera::unscaleDimensions(Dimensions &d) {
 
 Matrix &Camera::transformMatrix(Matrix &m) {
     Point position = this->position;
-    return m
-        .translate(-position.x + offset.x, -position.y + offset.y)
-        .translate(anchor.x * dimensions.width(), anchor.y * dimensions.height())
-        .scale(scale.x, scale.y)
-    ;
+    return m.translate(-position.x + offset.x, -position.y + offset.y)
+        .translate(anchor.x * dimensions.width(),
+                   anchor.y * dimensions.height())
+        .scale(scale.x, scale.y);
 }
 
 void Camera::update(UpdateContext &context) {
@@ -67,42 +62,42 @@ void Camera::update(UpdateContext &context) {
         }
         case Stretch: {
             // stretch to show the camera's logical size
-            scale.setTo(
-                context.window->width() / dimensions.width(),
-                context.window->height() / dimensions.height()
-            );
+            scale.setTo(context.window->width() / dimensions.width(),
+                        context.window->height() / dimensions.height());
             break;
         }
         case KeepWidth: {
-            int min = scaleData.minMax.min,
-                max = scaleData.minMax.max;
-            int visibleHeight = context.window->height() * dimensions.width() / context.window->width();
+            int min = scaleData.minMax.min, max = scaleData.minMax.max;
+            int visibleHeight = context.window->height() * dimensions.width() /
+                                context.window->width();
             if (visibleHeight < min) {
                 visibleHeight = min;
             } else if (visibleHeight > max) {
                 visibleHeight = max;
             }
-            scale.setTo(
-                static_cast<float>(context.window->width()) / dimensions.width(),
-                static_cast<float>(context.window->height()) / visibleHeight
-            );
-            offset.y = (context.window->height() / scale.y - dimensions.height()) / 2;
+            scale.setTo(static_cast<float>(context.window->width()) /
+                            dimensions.width(),
+                        static_cast<float>(context.window->height()) /
+                            visibleHeight);
+            offset.y =
+                (context.window->height() / scale.y - dimensions.height()) / 2;
             break;
         }
         case KeepHeight: {
-            int min = scaleData.minMax.min,
-                max = scaleData.minMax.max;
-            int visibleWidth = context.window->width() * dimensions.height() / context.window->height();
+            int min = scaleData.minMax.min, max = scaleData.minMax.max;
+            int visibleWidth = context.window->width() * dimensions.height() /
+                               context.window->height();
             if (visibleWidth < min) {
                 visibleWidth = min;
             } else if (visibleWidth > max) {
                 visibleWidth = max;
             }
-            scale.setTo(
-                static_cast<float>(context.window->width()) / visibleWidth,
-                static_cast<float>(context.window->height()) / dimensions.height()
-            );
-            offset.x = (context.window->width() / scale.x - dimensions.width()) / 2;
+            scale.setTo(static_cast<float>(context.window->width()) /
+                            visibleWidth,
+                        static_cast<float>(context.window->height()) /
+                            dimensions.height());
+            offset.x =
+                (context.window->width() / scale.x - dimensions.width()) / 2;
             break;
         }
     }

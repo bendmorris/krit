@@ -1,13 +1,13 @@
 #ifndef KRIT_ASSET_BITMAP_FONT
 #define KRIT_ASSET_BITMAP_FONT
 
+#include "krit/math/Point.h"
+#include "krit/math/Rectangle.h"
 #include <cstdint>
 #include <memory>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include "krit/math/Point.h"
-#include "krit/math/Rectangle.h"
 
 namespace krit {
 
@@ -34,7 +34,7 @@ struct BitmapFontBase {
     virtual ~BitmapFontBase() {}
 };
 
-struct BitmapFont: public BitmapFontBase {
+struct BitmapFont : public BitmapFontBase {
     std::vector<std::shared_ptr<ImageData>> pages;
     BitmapGlyphData glyphData[0x100];
     std::unordered_map<int64_t, int> kerningTable;
@@ -42,9 +42,7 @@ struct BitmapFont: public BitmapFontBase {
     BitmapFont(const char *path);
     ~BitmapFont() override = default;
 
-    BitmapGlyphData getGlyph(int c) override {
-        return this->glyphData[c];
-    }
+    BitmapGlyphData getGlyph(int c) override { return this->glyphData[c]; }
 
     std::shared_ptr<ImageData> &getPage(int i) override {
         return this->pages[i];

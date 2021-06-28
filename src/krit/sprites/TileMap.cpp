@@ -19,21 +19,30 @@ void TileMap::render(RenderContext &ctx) {
         tileHeight = this->properties.tileSize.height();
     Dimensions scaledDimensions(tileWidth, tileHeight);
     ctx.transformDimensions(
-        scaledDimensions.multiply(this->scale.x, this->scale.y)
-    );
+        scaledDimensions.multiply(this->scale.x, this->scale.y));
     Point scaledPosition = this->position;
     ctx.transformPoint(scaledPosition);
-    int startX = std::max(0, static_cast<int>(floor(-scaledPosition.x / scaledDimensions.width()))),
-        startY = std::max(0, static_cast<int>(floor(-scaledPosition.y / scaledDimensions.height()))),
-        destX = std::min(static_cast<int>(startX + 1 + ceil(ctx.window->width() / scaledDimensions.width())), this->properties.sizeInTiles.width()),
-        destY = std::min(static_cast<int>(startY + 1 + ceil(ctx.window->height() / scaledDimensions.height())), this->properties.sizeInTiles.height());
+    int startX = std::max(0, static_cast<int>(floor(-scaledPosition.x /
+                                                    scaledDimensions.width()))),
+        startY =
+            std::max(0, static_cast<int>(floor(-scaledPosition.y /
+                                               scaledDimensions.height()))),
+        destX = std::min(static_cast<int>(startX + 1 +
+                                          ceil(ctx.window->width() /
+                                               scaledDimensions.width())),
+                         this->properties.sizeInTiles.width()),
+        destY = std::min(static_cast<int>(startY + 1 +
+                                          ceil(ctx.window->height() /
+                                               scaledDimensions.height())),
+                         this->properties.sizeInTiles.height());
 
     DrawKey key;
     key.shader = this->shader;
     key.image = this->region.img;
     key.smooth = this->smooth;
     key.blend = this->blendMode;
-    Matrix m(scaledDimensions.width() / tileWidth, 0, 0, scaledDimensions.height() / tileHeight, 0, 0);
+    Matrix m(scaledDimensions.width() / tileWidth, 0, 0,
+             scaledDimensions.height() / tileHeight, 0, 0);
     for (int y = startY; y < destY; ++y) {
         if (y < this->clip.y || y >= this->clip.bottom()) {
             continue;
@@ -48,11 +57,13 @@ void TileMap::render(RenderContext &ctx) {
                     ty = tile / this->tilemapSizeInTiles.width();
                 m.tx = scaledPosition.x + scaledDimensions.width() * x;
                 m.ty = scaledPosition.y + scaledDimensions.height() * y;
-                IntRectangle rect(
-                    this->region.rect.x + tx * (this->properties.fullTileWidth()) + this->properties.tilePadding.width(),
-                    this->region.rect.y + ty * (this->properties.fullTileHeight()) + this->properties.tilePadding.height(),
-                    tileWidth, tileHeight
-                );
+                IntRectangle rect(this->region.rect.x +
+                                      tx * (this->properties.fullTileWidth()) +
+                                      this->properties.tilePadding.width(),
+                                  this->region.rect.y +
+                                      ty * (this->properties.fullTileHeight()) +
+                                      this->properties.tilePadding.height(),
+                                  tileWidth, tileHeight);
                 ctx.addRectRaw(key, rect, m, this->color);
             }
         }

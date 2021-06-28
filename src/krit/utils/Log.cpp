@@ -1,12 +1,15 @@
 #include "krit/utils/Log.h"
 
-#include <unistd.h>
 #include <cstdio>
+#include <unistd.h>
 
 namespace krit {
 
-const char *Log::abbreviations[LogLevelCount] = {"DBG", "INF", "WRN", "ERR", "!!!", "+++"};
-const char *Log::logOpen[LogLevelCount] = {"\u001b[34m", "", "\u001b[33m", "\u001b[31m", "\u001b[35;1m", "\u001b[32;1m"};
+const char *Log::abbreviations[LogLevelCount] = {"DBG", "INF", "WRN",
+                                                 "ERR", "!!!", "+++"};
+const char *Log::logOpen[LogLevelCount] = {"\u001b[34m",   "",
+                                           "\u001b[33m",   "\u001b[31m",
+                                           "\u001b[35;1m", "\u001b[32;1m"};
 const char *Log::logClose = "\u001b[0m";
 
 LogLevel Log::level = LogLevel::Warn;

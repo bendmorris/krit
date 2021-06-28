@@ -1,15 +1,15 @@
 #include "krit/sprites/Emitter.h"
 
-#include <stddef.h>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <memory>
+#include <stddef.h>
 #include <unordered_map>
 
 #include "krit/App.h"
-#include "krit/asset/TextureAtlas.h"
 #include "krit/Engine.h"
 #include "krit/UpdateContext.h"
+#include "krit/asset/TextureAtlas.h"
 #include "krit/math/ScaleFactor.h"
 #include "krit/particles/ParticleEffect.h"
 #include "krit/particles/ParticleProperties.h"
@@ -20,11 +20,12 @@
 
 namespace krit {
 
-EmissionTrack::EmissionTrack(ParticleEmission *data, float elapsed):
-    data(data),
-    image(data->atlas.empty() ? App::ctx.engine->getImage(data->region) : App::ctx.engine->getAtlas(data->atlas)->getRegion(data->region)),
-    elapsed(elapsed)
-{
+EmissionTrack::EmissionTrack(ParticleEmission *data, float elapsed)
+    : data(data),
+      image(data->atlas.empty() ? App::ctx.engine->getImage(data->region)
+                                : App::ctx.engine->getAtlas(data->atlas)
+                                      ->getRegion(data->region)),
+      elapsed(elapsed) {
     image.blendMode = data->blend;
     image.centerOrigin();
 }
@@ -40,20 +41,21 @@ EffectTrack &Emitter::emit(const std::string &effectType) {
     return effects.back();
 }
 
-EffectTrack & Emitter::emit(ParticleEffect *effect) {
+EffectTrack &Emitter::emit(ParticleEffect *effect) {
     effects.emplace_back(effect);
     // FIXME
     return effects.back();
 }
 
-void Emitter::clear() {
-    effects.clear();
-}
+void Emitter::clear() { effects.clear(); }
 
 static int pcount(float start, float duration, int count, float t) {
-    if (t < start) return 0;
-    else if (t >= start + duration) return count;
-    else return count * (t - start) / duration;
+    if (t < start)
+        return 0;
+    else if (t >= start + duration)
+        return count;
+    else
+        return count * (t - start) / duration;
 }
 
 void Emitter::update(UpdateContext &ctx) {
@@ -79,11 +81,14 @@ void Emitter::update(UpdateContext &ctx) {
             elapsed -= emission.elapsed;
             emission.elapsed = 0;
         }
-        int last = pcount(emission.data->time, emission.data->duration, emission.data->count, emission.elapsed);
+        int last = pcount(emission.data->time, emission.data->duration,
+                          emission.data->count, emission.elapsed);
         emission.elapsed += elapsed;
-        int current = pcount(emission.data->time, emission.data->duration, emission.data->count, emission.elapsed);
+        int current = pcount(emission.data->time, emission.data->duration,
+                             emission.data->count, emission.elapsed);
         for (int i = 0; i < current - last; ++i) {
-            if (particles.size() < static_cast<size_t>(emission.data->layer + 1)) {
+            if (particles.size() <
+                static_cast<size_t>(emission.data->layer + 1)) {
                 particles.resize(emission.data->layer + 1);
             }
             auto &particles = this->particles[emission.data->layer];
@@ -108,10 +113,12 @@ void Emitter::update(UpdateContext &ctx) {
         // float elapsed = ctx.elapsed;
         float last = effect.elapsed;
         effect.elapsed += ctx.elapsed;
-        
+
         for (auto &emission : effect.data->timeline) {
-            if ((!last || emission.time < last) && emission.time < effect.elapsed) {
-                emissions.emplace_back(&emission, emission.time - effect.elapsed);
+            if ((!last || emission.time < last) &&
+                emission.time < effect.elapsed) {
+                emissions.emplace_back(&emission,
+                                       emission.time - effect.elapsed);
                 emissions.back().position.setTo(effect.position);
             }
         }
@@ -139,14 +146,18 @@ void Emitter::render(RenderContext &ctx) {
             auto &props = particle.props;
             auto &emission = *particle.emission;
             float t = particle.elapsed / particle.props.duration;
-            image.position.setTo(position.x + props.originX, position.y + props.originY);
+            image.position.setTo(position.x + props.originX,
+                                 position.y + props.originY);
             float distance = props.evaluate(props.distance, t),
-                orthoDistance = props.evaluate(props.orthoDistance, t);
+                  orthoDistance = props.evaluate(props.orthoDistance, t);
             float s = std::sin(props.direction), c = std::cos(props.direction);
             image.position.add(c * distance, -s * distance);
             image.position.add(s * orthoDistance, c * orthoDistance);
-            image.angle = (emission.aligned ? props.direction : 0) + props.evaluate(props.rotation, t);
-            image.color = Color(props.evaluate(props.red, t), props.evaluate(props.green, t), props.evaluate(props.blue, t), props.evaluate(props.alpha, t));
+            image.angle = (emission.aligned ? props.direction : 0) +
+                          props.evaluate(props.rotation, t);
+            image.color = Color(
+                props.evaluate(props.red, t), props.evaluate(props.green, t),
+                props.evaluate(props.blue, t), props.evaluate(props.alpha, t));
             float scale = props.evaluate(props.scale, t);
             image.scale.setTo(scale, scale);
             image.render(ctx);

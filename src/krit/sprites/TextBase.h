@@ -17,7 +17,7 @@ struct NewlineData {
     Dimensions first;
     AlignType second;
 
-    NewlineData(const Dimensions &d, AlignType a): first(d), second(a) {}
+    NewlineData(const Dimensions &d, AlignType a) : first(d), second(a) {}
 };
 
 struct GlyphRenderData {
@@ -27,9 +27,10 @@ struct GlyphRenderData {
     Point position;
 
     GlyphRenderData() {}
-    GlyphRenderData(const Point &position): position(position) {}
-    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale, const Point &position):
-        c(c), color(color), scale(scale), position(position) {}
+    GlyphRenderData(const Point &position) : position(position) {}
+    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale,
+                    const Point &position)
+        : c(c), color(color), scale(scale), position(position) {}
 };
 
 }

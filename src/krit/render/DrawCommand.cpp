@@ -11,7 +11,8 @@ struct Triangle;
 
 DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key) {
     // TODO: fallthrough logic
-    if (!this->buf.commandTypes.empty() && this->buf.commandTypes.back() == DrawTriangles) {
+    if (!this->buf.commandTypes.empty() &&
+        this->buf.commandTypes.back() == DrawTriangles) {
         DrawCall &last = buf.get<DrawTriangles>().back();
         if (last.matches(key)) {
             return last;
@@ -22,14 +23,18 @@ DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key) {
     return call;
 }
 
-void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t, const Triangle &uv, const Color &color) {
+void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
+                                    const Triangle &t, const Triangle &uv,
+                                    const Color &color) {
     if (color.a > 0) {
         DrawCall &call = this->getDrawCall(key);
         call.addTriangle(this, t, uv, color);
     }
 }
 
-void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key, const IntRectangle &rect, const Matrix &matrix, const Color &color) {
+void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
+                                const IntRectangle &rect, const Matrix &matrix,
+                                const Color &color) {
     if (color.a <= 0) {
         return;
     }
@@ -58,26 +63,11 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key, const In
     float xc = rect.height * matrix.c + matrix.tx;
     float yd = rect.height * matrix.d + matrix.ty;
 
-    call.addTriangle(
-        this,
-        matrix.tx, matrix.ty,
-        xa, yb,
-        xc, yd,
-        uvx1, uvy1,
-        uvx2, uvy1,
-        uvx1, uvy2,
-        color
-    );
-    call.addTriangle(
-        this,
-        xc, yd,
-        xa, yb,
-        xa + rect.height * matrix.c, yb + rect.height * matrix.d,
-        uvx1, uvy2,
-        uvx2, uvy1,
-        uvx2, uvy2,
-        color
-    );
+    call.addTriangle(this, matrix.tx, matrix.ty, xa, yb, xc, yd, uvx1, uvy1,
+                     uvx2, uvy1, uvx1, uvy2, color);
+    call.addTriangle(this, xc, yd, xa, yb, xa + rect.height * matrix.c,
+                     yb + rect.height * matrix.d, uvx1, uvy2, uvx2, uvy1, uvx2,
+                     uvy2, color);
 }
 
 }

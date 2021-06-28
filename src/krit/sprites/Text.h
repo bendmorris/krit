@@ -1,18 +1,18 @@
 #ifndef KRIT_SPRITES_TEXT
 #define KRIT_SPRITES_TEXT
 
-#include <stddef.h>
 #include <cassert>
+#include <stddef.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-#include "krit/asset/Font.h"
-#include "krit/sprites/TextBase.h"
-#include "krit/utils/Option.h"
 #include "krit/Sprite.h"
+#include "krit/asset/Font.h"
 #include "krit/math/Dimensions.h"
+#include "krit/sprites/TextBase.h"
 #include "krit/utils/Color.h"
+#include "krit/utils/Option.h"
 
 struct hb_buffer_t;
 struct hb_font_t;
@@ -22,7 +22,8 @@ namespace krit {
 struct Text;
 struct RenderContext;
 
-typedef void CustomTextRenderFunction(RenderContext*, Text*, GlyphRenderData*);
+typedef void CustomTextRenderFunction(RenderContext *, Text *,
+                                      GlyphRenderData *);
 
 struct TextOptions {
     Font *font = nullptr;
@@ -33,12 +34,31 @@ struct TextOptions {
 
     TextOptions() {}
 
-    TextOptions &setFont(Font *font) { this->font = font; return *this; }
-    TextOptions &setFont(const std::string &name) { this->font = Font::getFont(name); assert(this->font); return *this; }
-    TextOptions &setSize(int size) { this->size = size; return *this; }
-    TextOptions &setAlign(AlignType align) { this->align = align; return *this; }
-    TextOptions &setWordWrap(bool wrap) { this->wordWrap = wrap; return *this; }
-    TextOptions &setLineSpacing(float spacing) { this->lineSpacing = spacing; return *this; }
+    TextOptions &setFont(Font *font) {
+        this->font = font;
+        return *this;
+    }
+    TextOptions &setFont(const std::string &name) {
+        this->font = Font::getFont(name);
+        assert(this->font);
+        return *this;
+    }
+    TextOptions &setSize(int size) {
+        this->size = size;
+        return *this;
+    }
+    TextOptions &setAlign(AlignType align) {
+        this->align = align;
+        return *this;
+    }
+    TextOptions &setWordWrap(bool wrap) {
+        this->wordWrap = wrap;
+        return *this;
+    }
+    TextOptions &setLineSpacing(float spacing) {
+        this->lineSpacing = spacing;
+        return *this;
+    }
 };
 
 struct TextFormatTagOptions {
@@ -51,12 +71,30 @@ struct TextFormatTagOptions {
 
     TextFormatTagOptions() = default;
 
-    TextFormatTagOptions &setColor(Color c) { this->color = Option<Color>(c); return *this; }
-    TextFormatTagOptions &setAlign(AlignType a) { this->align = Option<AlignType>(a); return *this; }
-    TextFormatTagOptions &setNewline() { this->newline = true; return *this; }
-    TextFormatTagOptions &setTab() { this->tab = true; return *this; }
-    TextFormatTagOptions &setCustom(CustomTextRenderFunction *c) { this->custom = c; return *this; }
-    TextFormatTagOptions &setSprite(VisibleSprite *s) { this->sprite = s; return *this; }
+    TextFormatTagOptions &setColor(Color c) {
+        this->color = Option<Color>(c);
+        return *this;
+    }
+    TextFormatTagOptions &setAlign(AlignType a) {
+        this->align = Option<AlignType>(a);
+        return *this;
+    }
+    TextFormatTagOptions &setNewline() {
+        this->newline = true;
+        return *this;
+    }
+    TextFormatTagOptions &setTab() {
+        this->tab = true;
+        return *this;
+    }
+    TextFormatTagOptions &setCustom(CustomTextRenderFunction *c) {
+        this->custom = c;
+        return *this;
+    }
+    TextFormatTagOptions &setSprite(VisibleSprite *s) {
+        this->sprite = s;
+        return *this;
+    }
 };
 
 struct GlyphBlockData {
@@ -75,30 +113,34 @@ union TextOpcodeData {
     NewlineData newLine;
     VisibleSprite *sprite;
 
-    TextOpcodeData(): present(false) {}
-    TextOpcodeData(Color color): color(color) {}
-    TextOpcodeData(float number): number(number) {}
-    TextOpcodeData(AlignType align): align(align) {}
-    TextOpcodeData(CustomTextRenderFunction *custom): custom(custom) {}
-    TextOpcodeData(size_t startIndex, size_t glyphs, float trailingWhitespace): glyphBlock { .startIndex = startIndex, .glyphs = glyphs, .trailingWhitespace = trailingWhitespace } {}
-    TextOpcodeData(Dimensions d, AlignType a): newLine(d, a) {}
-    TextOpcodeData(VisibleSprite *sprite): sprite(sprite) {}
+    TextOpcodeData() : present(false) {}
+    TextOpcodeData(Color color) : color(color) {}
+    TextOpcodeData(float number) : number(number) {}
+    TextOpcodeData(AlignType align) : align(align) {}
+    TextOpcodeData(CustomTextRenderFunction *custom) : custom(custom) {}
+    TextOpcodeData(size_t startIndex, size_t glyphs, float trailingWhitespace)
+        : glyphBlock{.startIndex = startIndex,
+                     .glyphs = glyphs,
+                     .trailingWhitespace = trailingWhitespace} {}
+    TextOpcodeData(Dimensions d, AlignType a) : newLine(d, a) {}
+    TextOpcodeData(VisibleSprite *sprite) : sprite(sprite) {}
 };
 
-enum TextOpcodeType: int;
+enum TextOpcodeType : int;
 
 struct TextOpcode {
     TextOpcodeType type;
     TextOpcodeData data;
 
     TextOpcode() = default;
-    TextOpcode(TextOpcodeType type, TextOpcodeData data): type(type), data(data) {}
-    TextOpcode(TextOpcodeType type): type(type) {}
+    TextOpcode(TextOpcodeType type, TextOpcodeData data)
+        : type(type), data(data) {}
+    TextOpcode(TextOpcodeType type) : type(type) {}
 
     void debugPrint();
 };
 
-struct Text: public VisibleSprite, public TextOptions {
+struct Text : public VisibleSprite, public TextOptions {
     static std::unordered_map<std::string, TextFormatTagOptions> formatTags;
 
     static void addFormatTag(std::string, TextFormatTagOptions);
@@ -124,21 +166,33 @@ struct Text: public VisibleSprite, public TextOptions {
     Text &refresh();
 
     const std::string &getText() { return this->text; }
-    const Dimensions &getTextDimensions() { refresh(); return this->textDimensions; }
+    const Dimensions &getTextDimensions() {
+        refresh();
+        return this->textDimensions;
+    }
 
-    Dimensions getSize() override { this->refresh(); return textDimensions; }
-    float width() { refresh(); return textDimensions.width(); }
-    float height() { refresh(); return textDimensions.height(); }
+    Dimensions getSize() override {
+        this->refresh();
+        return textDimensions;
+    }
+    float width() {
+        refresh();
+        return textDimensions.width();
+    }
+    float height() {
+        refresh();
+        return textDimensions.height();
+    }
     void resize(float, float) override;
     void render(RenderContext &ctx) override;
 
-    private:
-        std::vector<TextOpcode> opcodes;
-        hb_buffer_t *hbBuf = nullptr;
-        bool rich = false;
-        bool dirty = false;
-        friend struct TextParser;
-        float lineHeight;
+private:
+    std::vector<TextOpcode> opcodes;
+    hb_buffer_t *hbBuf = nullptr;
+    bool rich = false;
+    bool dirty = false;
+    friend struct TextParser;
+    float lineHeight;
 };
 
 }

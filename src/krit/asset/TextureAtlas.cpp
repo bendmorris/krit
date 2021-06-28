@@ -1,15 +1,15 @@
 #include "krit/asset/TextureAtlas.h"
 
-#include <stddef.h>
-#include <sstream>
-#include <string>
 #include <memory>
+#include <sstream>
+#include <stddef.h>
+#include <string>
 
 #include "krit/App.h"
-#include "krit/io/Io.h"
 #include "krit/Engine.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
+#include "krit/io/Io.h"
 #include "krit/math/Rectangle.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/render/RenderContext.h"
@@ -44,10 +44,15 @@ TextureAtlas::TextureAtlas(const std::string &path) {
         // an atlas page
         std::string pageName = line;
         size_t lastSlash = path.rfind("/");
-        std::string s = (lastSlash == std::string::npos) ? pageName : (path.substr(0, lastSlash) + "/" + pageName);
-        std::shared_ptr<ImageData> image = App::ctx.engine->getImage(Assets::byPath(s));
+        std::string s = (lastSlash == std::string::npos)
+                            ? pageName
+                            : (path.substr(0, lastSlash) + "/" + pageName);
+        std::shared_ptr<ImageData> image =
+            App::ctx.engine->getImage(Assets::byPath(s));
 
-        while (std::getline(input, line) && line.find(':') != std::string::npos) {}
+        while (std::getline(input, line) &&
+               line.find(':') != std::string::npos) {
+        }
         while (!line.empty()) {
             // an atlas region
             std::string regionName = line;
@@ -76,12 +81,13 @@ TextureAtlas::TextureAtlas(const std::string &path) {
     }
 }
 
-template<> TextureAtlas *AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
+template <>
+TextureAtlas *AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
     TextureAtlas *atlas = new TextureAtlas(info.path);
     return atlas;
 }
 
-template<> void AssetLoader<TextureAtlas>::unloadAsset(TextureAtlas *atlas) {
+template <> void AssetLoader<TextureAtlas>::unloadAsset(TextureAtlas *atlas) {
     delete atlas;
 }
 

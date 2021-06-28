@@ -3,9 +3,9 @@
 
 #include <string>
 
-#include "krit/sprites/Layout.h"
 #include "krit/Sprite.h"
 #include "krit/script/ScriptEngine.h"
+#include "krit/sprites/Layout.h"
 #include "krit/utils/Color.h"
 #include "quickjs.h"
 
@@ -14,14 +14,14 @@ struct RenderContext;
 struct ScriptEngine;
 struct UpdateContext;
 
-struct Scene: public Sprite {
+struct Scene : public Sprite {
     LayoutRoot layout;
 
     virtual void render(RenderContext &ctx) override;
     virtual void update(UpdateContext &ctx) override;
 
     Scene() {}
-    Scene(const std::string &layoutPath): layout(layoutPath) {}
+    Scene(const std::string &layoutPath) : layout(layoutPath) {}
 
     void fadeOut(Color color, float fadeDuration = 0.5) {
         this->fadeColor = color;
@@ -38,14 +38,14 @@ struct Scene: public Sprite {
         this->maxAlpha = color.a;
     }
 
-    private:
-        Color fadeColor = 0;
-        float maxAlpha = 0;
-        float fadeDuration = 0;
-        bool fadingOut = false;
+private:
+    Color fadeColor = 0;
+    float maxAlpha = 0;
+    float fadeDuration = 0;
+    bool fadingOut = false;
 };
 
-struct ScriptScene: public Scene {
+struct ScriptScene : public Scene {
     ScriptEngine &engine;
     JSValue _update;
     JSValue _updateUi;

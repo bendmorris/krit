@@ -1,9 +1,9 @@
 #ifndef KRIT_UTILS_LOG
 #define KRIT_UTILS_LOG
 
-#include <unistd.h>
 #include <cstdarg>
 #include <cstdio>
+#include <unistd.h>
 
 namespace krit {
 
@@ -25,14 +25,20 @@ struct Log {
 
     static void log(LogLevel level, const char *fmt, va_list args);
 
-    #define DEFINE_LOG_METHOD(name, level) static void name(const char *fmt, ...) { va_list args; va_start(args, fmt); log(LogLevel::level, fmt, args); va_end(args); }
+#define DEFINE_LOG_METHOD(name, level)                                         \
+    static void name(const char *fmt, ...) {                                   \
+        va_list args;                                                          \
+        va_start(args, fmt);                                                   \
+        log(LogLevel::level, fmt, args);                                       \
+        va_end(args);                                                          \
+    }
     DEFINE_LOG_METHOD(debug, Debug)
     DEFINE_LOG_METHOD(info, Info)
     DEFINE_LOG_METHOD(warn, Warn)
     DEFINE_LOG_METHOD(error, Error)
     DEFINE_LOG_METHOD(fatal, Fatal)
     DEFINE_LOG_METHOD(success, Success)
-    #undef DEFINE_LOG_METHOD
+#undef DEFINE_LOG_METHOD
 };
 
 }

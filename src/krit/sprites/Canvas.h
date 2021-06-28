@@ -7,7 +7,7 @@
 
 namespace krit {
 
-struct Canvas: public Sprite {
+struct Canvas : public Sprite {
     Camera camera;
     std::unique_ptr<Sprite> child = nullptr;
 

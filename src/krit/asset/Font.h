@@ -1,16 +1,16 @@
 #ifndef KRIT_ASSET_FONT
 #define KRIT_ASSET_FONT
 
-#include <stdint.h>
-#include <memory>
-#include <unordered_map>
-#include <vector>
-#include <cstddef>
-#include <string>
+#include "krit/Assets.h"
 #include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Panic.h"
-#include "krit/Assets.h"
+#include <cstddef>
+#include <memory>
+#include <stdint.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 struct hb_face_t;
 struct hb_font_t;
@@ -26,13 +26,18 @@ struct GlyphSize {
     char32_t glyphIndex;
     unsigned int size;
 
-    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size): font(font), glyphIndex(glyphIndex), size(size) {}
-    bool operator==(const GlyphSize &other) const { return font == other.font && glyphIndex == other.glyphIndex && size == other.size; }
+    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size)
+        : font(font), glyphIndex(glyphIndex), size(size) {}
+    bool operator==(const GlyphSize &other) const {
+        return font == other.font && glyphIndex == other.glyphIndex &&
+               size == other.size;
+    }
 };
 
 struct GlyphSizeHash {
     std::size_t operator()(const GlyphSize &size) const {
-        return std::hash<char32_t>()(size.glyphIndex) ^ std::hash<unsigned int>()(size.size);
+        return std::hash<char32_t>()(size.glyphIndex) ^
+               std::hash<unsigned int>()(size.size);
     }
 };
 
@@ -41,14 +46,15 @@ struct GlyphData {
     Point offset;
 
     GlyphData() {}
-    GlyphData(ImageRegion region, float x, float y): region(region), offset(x, y) {}
+    GlyphData(ImageRegion region, float x, float y)
+        : region(region), offset(x, y) {}
 };
- 
+
 struct ColumnData {
     int width = 0;
     int height = 0;
 
-    ColumnData(int width, int height): width(width), height(height) {}
+    ColumnData(int width, int height) : width(width), height(height) {}
 };
 
 struct GlyphCache {
@@ -77,7 +83,7 @@ struct Font {
     static void commit();
     static void flush();
 
-    static std::unordered_map<std::string, Font*> fontRegistry;
+    static std::unordered_map<std::string, Font *> fontRegistry;
     static Font *getFont(const std::string &name) {
         Font *font = fontRegistry[name];
         if (!font) {
@@ -96,14 +102,14 @@ struct Font {
     void commitChanges();
     void flushCache();
 
-    private:
-        hb_face_t *face;
-        hb_font_t *font;
-        void *ftFace;
-        void *fontData;
-        friend struct GlyphCache;
-        friend struct Text;
-        friend struct TextParser;
+private:
+    hb_face_t *face;
+    hb_font_t *font;
+    void *ftFace;
+    void *fontData;
+    friend struct GlyphCache;
+    friend struct Text;
+    friend struct TextParser;
 };
 
 }

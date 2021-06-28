@@ -1,23 +1,23 @@
-#include <algorithm>
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstring>
-#include <utility>
-#include <string>
-#include "krit/App.h"
 #include "krit/asset/BitmapFont.h"
-#include "krit/utils/Panic.h"
 #include "expat.h"
+#include "krit/App.h"
 #include "krit/Engine.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/render/RenderContext.h"
+#include "krit/utils/Panic.h"
+#include <algorithm>
+#include <cstring>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+#include <utility>
 
 namespace krit {
 struct ImageData;
 
 void startElement(void *userData, const char *name, const char **attrs) {
-    BitmapFont *font = static_cast<BitmapFont*>(userData);
+    BitmapFont *font = static_cast<BitmapFont *>(userData);
     if (!strcmp(name, "kernings")) {
         const char **attr = attrs;
         while (*attr) {
@@ -80,7 +80,8 @@ void startElement(void *userData, const char *name, const char **attrs) {
                 const char *key = *attr;
                 const char *value = *(attr + 1);
                 if (!strcmp(key, "file")) {
-                    std::shared_ptr<ImageData> page = App::ctx.engine->getImage(value);
+                    std::shared_ptr<ImageData> page =
+                        App::ctx.engine->getImage(value);
                     font->pages.emplace_back(page);
                 }
             }
@@ -121,7 +122,7 @@ void startElement(void *userData, const char *name, const char **attrs) {
     }
 }
 
-BitmapFont::BitmapFont(const char *path): BitmapFontBase() {
+BitmapFont::BitmapFont(const char *path) : BitmapFontBase() {
     // font
     //   info: size
     //   common: lineheight
@@ -139,19 +140,21 @@ BitmapFont::BitmapFont(const char *path): BitmapFontBase() {
         if (!readLength) {
             break;
         }
-        if (XML_Parse(parser, buf, readLength, readLength < 1024 ? 1 : 0) == XML_STATUS_ERROR) {
+        if (XML_Parse(parser, buf, readLength, readLength < 1024 ? 1 : 0) ==
+            XML_STATUS_ERROR) {
             panic("%s: failed to parse bitmap font XML!", path);
         }
     } while (true);
     XML_ParserFree(parser);
 }
 
-template<> BitmapFont *AssetLoader<BitmapFont>::loadAsset(const AssetInfo &info) {
+template <>
+BitmapFont *AssetLoader<BitmapFont>::loadAsset(const AssetInfo &info) {
     BitmapFont *font = new BitmapFont(info.path.c_str());
     return font;
 }
 
-template<> void AssetLoader<BitmapFont>::unloadAsset(BitmapFont *font) {
+template <> void AssetLoader<BitmapFont>::unloadAsset(BitmapFont *font) {
     delete font;
 }
 

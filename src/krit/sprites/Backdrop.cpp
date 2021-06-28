@@ -13,7 +13,8 @@
 
 namespace krit {
 
-Backdrop::Backdrop(const std::string &id): region(App::ctx.engine->getImage(id)) {}
+Backdrop::Backdrop(const std::string &id)
+    : region(App::ctx.engine->getImage(id)) {}
 
 void Backdrop::render(RenderContext &ctx) {
     if (this->color.a <= 0) {
@@ -27,8 +28,7 @@ void Backdrop::render(RenderContext &ctx) {
 
     Dimensions scaledDimensions(this->width(), this->height());
     ctx.transformDimensions(
-        scaledDimensions.multiply(this->scale.x, this->scale.y)
-    );
+        scaledDimensions.multiply(this->scale.x, this->scale.y));
     Point scaledPosition = this->position;
     ctx.transformPoint(scaledPosition);
     int xi = 1, yi = 1;
@@ -37,21 +37,27 @@ void Backdrop::render(RenderContext &ctx) {
         if (scaledPosition.x > 0) {
             scaledPosition.x -= scaledDimensions.width();
         }
-        xi = static_cast<int>(ceil(ctx.window->width() - scaledPosition.x) / scaledDimensions.width() + 1);
+        xi = static_cast<int>(ceil(ctx.window->width() - scaledPosition.x) /
+                                  scaledDimensions.width() +
+                              1);
     }
     if (this->repeatY) {
         scaledPosition.y = fmod(scaledPosition.y, scaledDimensions.height());
         if (scaledPosition.y > 0) {
             scaledPosition.y -= scaledDimensions.height();
         }
-        yi = static_cast<int>(ceil(ctx.window->height() - scaledPosition.y) / scaledDimensions.height() + 1);
+        yi = static_cast<int>(ceil(ctx.window->height() - scaledPosition.y) /
+                                  scaledDimensions.height() +
+                              1);
     }
     DrawKey key;
     key.image = this->region.img;
     key.smooth = this->smooth;
     key.blend = this->blendMode;
     key.shader = this->shader;
-    Matrix m(static_cast<float>(scaledDimensions.width()) / this->width(), 0, 0, static_cast<float>(scaledDimensions.height()) / this->height(), 0, 0);
+    Matrix m(static_cast<float>(scaledDimensions.width()) / this->width(), 0, 0,
+             static_cast<float>(scaledDimensions.height()) / this->height(), 0,
+             0);
     for (int y = 0; y < yi; ++y) {
         for (int x = 0; x < xi; ++x) {
             m.tx = scaledPosition.x + scaledDimensions.width() * x;

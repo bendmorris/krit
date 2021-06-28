@@ -1,18 +1,11 @@
 #include "krit/App.h"
 
 #include <SDL.h>
-#include <stdlib.h>
 #include <chrono>
 #include <cmath>
 #include <csignal>
+#include <stdlib.h>
 
-#include "krit/asset/Font.h"
-#include "krit/input/InputContext.h"
-#include "krit/input/Mouse.h"
-#include "krit/TaskManager.h"
-#include "krit/utils/Panic.h"
-#include "krit/editor/Editor.h"
-#include "imgui_impl_sdl.h"
 #include "SDL_error.h"
 #include "SDL_events.h"
 #include "SDL_image.h"
@@ -20,10 +13,17 @@
 #include "SDL_mouse.h"
 #include "SDL_mutex.h"
 #include "imgui.h"
+#include "imgui_impl_sdl.h"
 #include "krit/Options.h"
+#include "krit/TaskManager.h"
+#include "krit/asset/Font.h"
+#include "krit/editor/Editor.h"
+#include "krit/input/InputContext.h"
 #include "krit/input/Key.h"
+#include "krit/input/Mouse.h"
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
+#include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
 
 namespace krit {
@@ -32,17 +32,13 @@ struct UpdateContext;
 static App *current;
 RenderContext App::ctx;
 
-void sigintHandler(int sig_num) { 
-    current->quit();
-} 
+void sigintHandler(int sig_num) { current->quit(); }
 
-App::App(KritOptions &options):
-    dimensions(options.width, options.height),
-    fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight),
-    framerate(options.framerate),
-    fixedFramerate(options.fixedFramerate),
-    startFullscreen(options.fullscreen)
-{}
+App::App(KritOptions &options)
+    : dimensions(options.width, options.height),
+      fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight),
+      framerate(options.framerate), fixedFramerate(options.fixedFramerate),
+      startFullscreen(options.fullscreen) {}
 
 void App::run() {
     if (ctx.app) {
@@ -62,12 +58,9 @@ void App::run() {
     IMG_Init(IMG_INIT_PNG);
 
     window = SDL_CreateWindow(
-        title.c_str(),
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
+        title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         dimensions.width(), dimensions.height(),
-        SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
-    );
+        SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!window) {
         panic(SDL_GetError());
     }
@@ -78,11 +71,12 @@ void App::run() {
 
     double frameDelta = 1.0 / fixedFramerate;
     double frameDelta2 = 1.0 / (fixedFramerate + 1);
-    
+
     // base context structs
     InputContext input;
 
-    // the RenderContext will be upcast to an UpdateContext during the update phase
+    // the RenderContext will be upcast to an UpdateContext during the update
+    // phase
     ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &dimensions;
@@ -113,7 +107,10 @@ void App::run() {
         TaskManager::work(taskManager.renderQueue, ctx);
         // do {
         frameFinish = clock.now();
-        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(frameFinish - frameStart).count() / 1000000.0 * engine.speed;
+        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                      frameFinish - frameStart)
+                      .count() /
+                  1000000.0 * engine.speed;
         // } while (lockFramerate && elapsed < frameDelta2);
         accumulator += elapsed;
         ctx.elapsed = ctx.frameCount = 0;
@@ -158,9 +155,12 @@ void App::run() {
 
 MouseButton sdlMouseButton(int b) {
     switch (b) {
-        case SDL_BUTTON_MIDDLE: return MouseMiddle;
-        case SDL_BUTTON_RIGHT: return MouseRight;
-        default: return MouseLeft;
+        case SDL_BUTTON_MIDDLE:
+            return MouseMiddle;
+        case SDL_BUTTON_RIGHT:
+            return MouseRight;
+        default:
+            return MouseLeft;
     }
 }
 
@@ -168,8 +168,7 @@ void App::handleEvents() {
     static bool seenMouseEvent = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        bool handleKey = true,
-            handleMouse = true;
+        bool handleKey = true, handleMouse = true;
         if (Editor::imguiInitialized) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             auto &io = ImGui::GetIO();
@@ -185,8 +184,7 @@ void App::handleEvents() {
                 switch (event.window.event) {
                     case SDL_WINDOWEVENT_SIZE_CHANGED: {
                         // resize
-                        int w = event.window.data1,
-                            h = event.window.data2;
+                        int w = event.window.data1, h = event.window.data2;
                         dimensions.setTo(w, h);
                         break;
                     }
@@ -204,14 +202,16 @@ void App::handleEvents() {
             case SDL_KEYDOWN: {
                 if (!event.key.repeat) {
                     if (handleKey) {
-                        engine.input.keyDown(static_cast<Key>(event.key.keysym.scancode));
+                        engine.input.keyDown(
+                            static_cast<Key>(event.key.keysym.scancode));
                     }
                 }
                 break;
             }
             case SDL_KEYUP: {
                 if (handleKey) {
-                    engine.input.keyUp(static_cast<Key>(event.key.keysym.scancode));
+                    engine.input.keyUp(
+                        static_cast<Key>(event.key.keysym.scancode));
                 }
                 break;
             }
@@ -249,7 +249,8 @@ void App::setFullScreen(bool full) {
     if ((this->full = full)) {
         SDL_DisplayMode mode;
         SDL_GetDesktopDisplayMode(0, &mode);
-        if (fullScreenDimensions.width() > 0 && fullScreenDimensions.height() > 0) {
+        if (fullScreenDimensions.width() > 0 &&
+            fullScreenDimensions.height() > 0) {
             mode.w = fullScreenDimensions.width();
             mode.h = fullScreenDimensions.height();
         }
@@ -258,7 +259,8 @@ void App::setFullScreen(bool full) {
     } else {
         SDL_SetWindowFullscreen(this->window, 0);
     }
-    SDL_WarpMouseInWindow(this->window, this->dimensions.width()/2, this->dimensions.height()/2);
+    SDL_WarpMouseInWindow(this->window, this->dimensions.width() / 2,
+                          this->dimensions.height() / 2);
 }
 
 }

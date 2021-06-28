@@ -22,12 +22,30 @@ struct ParticleEmission {
 
     ParticleEmission() {}
 
-    ParticleEmission &setStart(float v) { time = v; return *this; }
-    ParticleEmission &setCount(int v) { count = v; return *this; }
-    ParticleEmission &setDuration(float v) { duration = v; return *this; }
-    ParticleEmission &align() { aligned = true; return *this; }
-    ParticleEmission &setBlend(BlendMode v) { blend = v; return *this; }
-    ParticleEmission &setLayer(int v) { layer = v; return *this; }
+    ParticleEmission &setStart(float v) {
+        time = v;
+        return *this;
+    }
+    ParticleEmission &setCount(int v) {
+        count = v;
+        return *this;
+    }
+    ParticleEmission &setDuration(float v) {
+        duration = v;
+        return *this;
+    }
+    ParticleEmission &align() {
+        aligned = true;
+        return *this;
+    }
+    ParticleEmission &setBlend(BlendMode v) {
+        blend = v;
+        return *this;
+    }
+    ParticleEmission &setLayer(int v) {
+        layer = v;
+        return *this;
+    }
 };
 
 struct ParticleEffect {
@@ -36,7 +54,7 @@ struct ParticleEffect {
     bool continuous = false;
     std::vector<ParticleEmission> timeline;
 
-    ParticleEffect(const std::string &name): name(name) {}
+    ParticleEffect(const std::string &name) : name(name) {}
     ParticleEffect() {}
 
     float duration() {

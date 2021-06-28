@@ -1,6 +1,6 @@
+#include <cstdio>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <cstdio>
 
 #include "krit/render/Gl.h"
 
@@ -23,7 +23,7 @@ void printProgramInfoLog(GLuint program) {
         int len;
         glGetProgramiv(program, GL_INFO_LOG_LENGTH, &len);
         if (len > 0) {
-            GLchar *s = static_cast<char*>(malloc(len));
+            GLchar *s = static_cast<char *>(malloc(len));
             glGetProgramInfoLog(program, len, &len, s);
             puts(s);
             free(s);
@@ -40,7 +40,7 @@ void printShaderInfoLog(GLuint shader) {
         int len;
         glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
         if (len > 0) {
-            GLchar *s = static_cast<GLchar*>(malloc(len));
+            GLchar *s = static_cast<GLchar *>(malloc(len));
             glGetShaderInfoLog(shader, len, &len, s);
             puts(s);
             free(s);

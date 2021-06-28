@@ -1,16 +1,16 @@
 #include <memory>
 
 #include "krit/App.h"
-#include "krit/sprites/Image.h"
 #include "krit/Engine.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/RenderContext.h"
+#include "krit/sprites/Image.h"
 #include "krit/utils/Color.h"
 
 namespace krit {
 
-Image::Image(const std::string &id): region(App::ctx.engine->getImage(id)) {}
+Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {}
 
 void Image::render(RenderContext &ctx) {
     if (this->color.a <= 0) {
@@ -18,8 +18,7 @@ void Image::render(RenderContext &ctx) {
     }
     // ctx.transform = (struct RenderTransform) {scroll: this->scroll};
     Matrix matrix(1, 0, 0, 1, -this->origin.x, -this->origin.y);
-    matrix
-        .rotate(this->angle)
+    matrix.rotate(this->angle)
         .scale(this->scale.x, this->scale.y)
         .translate(this->position.x, this->position.y);
     DrawKey key;

@@ -13,7 +13,8 @@ struct ImageData {
     GLuint texture = 0;
     IntDimensions dimensions;
 
-    ImageData(GLuint texture, IntDimensions dimensions): texture(texture), dimensions(dimensions) {}
+    ImageData(GLuint texture, IntDimensions dimensions)
+        : texture(texture), dimensions(dimensions) {}
 
     int width() { return this->dimensions.width(); }
     int height() { return this->dimensions.height(); }

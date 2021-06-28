@@ -12,7 +12,8 @@ zip_t *ZipIo::archive = nullptr;
 void ZipIo::setArchive(const std::string &path) {
     int len = 0;
     char *buffer = FileIo::read(path.c_str(), &len);
-    zip_source_t *source = zip_source_buffer_create(static_cast<void*>(buffer), len, 1, nullptr);
+    zip_source_t *source =
+        zip_source_buffer_create(static_cast<void *>(buffer), len, 1, nullptr);
     archive = zip_open_from_source(source, ZIP_RDONLY, nullptr);
     // if (err) {
     //     panic("zip_open error setting archive %s: %i\n", path.c_str(), err);
@@ -38,7 +39,7 @@ char *ZipIo::read(const std::string &path, int *length) {
     if (index == -1) {
         return nullptr;
     }
-    char *buffer = static_cast<char*>(malloc(stat.size + 1));
+    char *buffer = static_cast<char *>(malloc(stat.size + 1));
     zip_file_t *f = zip_fopen_index(archive, index, 0);
     if (!f) {
         panic("error opening file from archive: %s\n", path.c_str());
@@ -61,8 +62,6 @@ char *ZipIo::read(const std::string &path, int *length) {
     return buffer;
 }
 
-void ZipIo::free(char *buf) {
-    free(buf);
-}
+void ZipIo::free(char *buf) { free(buf); }
 
 }

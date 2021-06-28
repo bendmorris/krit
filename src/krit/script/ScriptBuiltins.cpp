@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptBridge.h"
+#include "krit/script/ScriptEngine.h"
 #include "krit/utils/Log.h"
 #include "quickjs.h"
 
@@ -35,7 +35,13 @@ JS_FUNC(Log_setLogLevel) {
     return JS_UNDEFINED;
 }
 
-#define DEFINE_LOG_METHOD(level) JS_FUNC(Log_##level) { const char *s = JS_ToCString(ctx, argv[0]); Log::level(s); JS_FreeCString(ctx, s); return JS_UNDEFINED; }
+#define DEFINE_LOG_METHOD(level)                                               \
+    JS_FUNC(Log_##level) {                                                     \
+        const char *s = JS_ToCString(ctx, argv[0]);                            \
+        Log::level(s);                                                         \
+        JS_FreeCString(ctx, s);                                                \
+        return JS_UNDEFINED;                                                   \
+    }
 DEFINE_LOG_METHOD(debug)
 DEFINE_LOG_METHOD(info)
 DEFINE_LOG_METHOD(warn)

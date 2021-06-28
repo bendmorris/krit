@@ -9,16 +9,14 @@ struct Utf8Iterator
     : public std::iterator<std::bidirectional_iterator_tag, char32_t,
                            std::string::difference_type, const char32_t *,
                            const char32_t &> {
-    const unsigned char kFirstBitMask   = 0b10000000;
-    const unsigned char kSecondBitMask  = 0b01000000;
-    const unsigned char kThirdBitMask   = 0b00100000;
-    const unsigned char kFourthBitMask  = 0b00010000;
-    const unsigned char kFifthBitMask   = 0b00001000;
+    const unsigned char kFirstBitMask = 0b10000000;
+    const unsigned char kSecondBitMask = 0b01000000;
+    const unsigned char kThirdBitMask = 0b00100000;
+    const unsigned char kFourthBitMask = 0b00010000;
+    const unsigned char kFifthBitMask = 0b00001000;
 
-    Utf8Iterator(std::string::iterator it)
-        : begin(it), it(it) {}
-    Utf8Iterator(std::string::const_iterator it)
-        : begin(it), it(it) {}
+    Utf8Iterator(std::string::iterator it) : begin(it), it(it) {}
+    Utf8Iterator(std::string::const_iterator it) : begin(it), it(it) {}
     Utf8Iterator(const Utf8Iterator &source)
         : begin(source.begin), it(source.it) {}
 
@@ -103,29 +101,17 @@ struct Utf8Iterator
         return codePoint;
     }
 
-    bool operator==(const Utf8Iterator &rhs) const {
-        return it == rhs.it;
-    }
+    bool operator==(const Utf8Iterator &rhs) const { return it == rhs.it; }
 
-    bool operator!=(const Utf8Iterator &rhs) const {
-        return it != rhs.it;
-    }
+    bool operator!=(const Utf8Iterator &rhs) const { return it != rhs.it; }
 
-    bool operator==(std::string::iterator rhs) const {
-        return it == rhs;
-    }
+    bool operator==(std::string::iterator rhs) const { return it == rhs; }
 
-    bool operator==(std::string::const_iterator rhs) const {
-        return it == rhs;
-    }
+    bool operator==(std::string::const_iterator rhs) const { return it == rhs; }
 
-    bool operator!=(std::string::iterator rhs) const {
-        return it != rhs;
-    }
+    bool operator!=(std::string::iterator rhs) const { return it != rhs; }
 
-    bool operator!=(std::string::const_iterator rhs) const {
-        return it != rhs;
-    }
+    bool operator!=(std::string::const_iterator rhs) const { return it != rhs; }
 
     size_t index() { return it - begin; }
 

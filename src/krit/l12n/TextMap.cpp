@@ -20,17 +20,19 @@ void TextMap::setLocale(const std::string &key) {
     const char *current = loaded->data();
     size_t remaining = loaded->length();
     const char *nextNewline, *nextTab;
-    while ((nextNewline = (const char*)memchr(current, '\n', remaining))) {
+    while ((nextNewline = (const char *)memchr(current, '\n', remaining))) {
         size_t lineLength = nextNewline - current;
-        nextTab = (const char*)memchr(current, '\t', lineLength);
+        nextTab = (const char *)memchr(current, '\t', lineLength);
         if (!nextTab) {
             Log::error("no tab in line: %.*s\n", (int)lineLength - 1, current);
             current = nextNewline + 1;
             remaining -= lineLength + 1;
             continue;
         }
-        strings[std::string_view(current, nextTab - current)] = std::string_view(nextTab + 1, nextNewline - nextTab - 1);
-        // printf("%.*s: %.*s\n", (int)(nextTab - current), current, (int)(nextNewline - nextTab - 1), nextTab + 1);
+        strings[std::string_view(current, nextTab - current)] =
+            std::string_view(nextTab + 1, nextNewline - nextTab - 1);
+        // printf("%.*s: %.*s\n", (int)(nextTab - current), current,
+        // (int)(nextNewline - nextTab - 1), nextTab + 1);
         current = nextNewline + 1;
         remaining -= lineLength + 1;
     }
@@ -40,6 +42,5 @@ std::string_view TextMap::getString(const std::string &key) {
     return strings[std::string_view(key.data(), key.length())];
     // return std::string(s.data(), s.size());
 }
-
 
 }

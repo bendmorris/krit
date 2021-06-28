@@ -3,10 +3,11 @@
 
 namespace krit {
 
-template <typename T, typename U> struct UserSprite: public T {
+template <typename T, typename U> struct UserSprite : public T {
     U userData;
 
-    template <typename ...Args> UserSprite<T, U>(Args&&... args): T(args...) {}
+    template <typename... Args>
+    UserSprite<T, U>(Args &&... args) : T(args...) {}
 };
 
 }

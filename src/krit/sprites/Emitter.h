@@ -2,25 +2,25 @@
 #define KRIT_SPRITES_EMITTER
 
 #include <functional>
+#include <iosfwd>
 #include <list>
 #include <map>
 #include <string>
 #include <unordered_map>
-#include <iosfwd>
 #include <vector>
 
-#include "krit/render/BlendMode.h"
-#include "krit/render/ImageRegion.h"
-#include "krit/particles/Particle.h"
-#include "krit/particles/ParticleSystem.h"
-#include "krit/sprites/Image.h"
-#include "krit/sprites/UserSprite.h"
-#include "krit/utils/Color.h"
-#include "krit/Sprite.h"
 #include "krit/Math.h"
+#include "krit/Sprite.h"
 #include "krit/Utils.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
+#include "krit/particles/Particle.h"
+#include "krit/particles/ParticleSystem.h"
+#include "krit/render/BlendMode.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/sprites/Image.h"
+#include "krit/sprites/UserSprite.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
 struct ParticleEffect;
@@ -42,7 +42,8 @@ struct ParticleTrack {
     Image image;
     Particle particle;
 
-    ParticleTrack(EmissionTrack &emission): image(emission.image), particle(emission.data) {}
+    ParticleTrack(EmissionTrack &emission)
+        : image(emission.image), particle(emission.data) {}
 };
 
 struct EffectTrack {
@@ -51,21 +52,22 @@ struct EffectTrack {
     float elapsed = 0;
     bool continuous = false;
 
-    EffectTrack(ParticleEffect *data): data(data) {}
+    EffectTrack(ParticleEffect *data) : data(data) {}
 
     void stop();
 };
 
-struct Emitter: public VisibleSprite {
+struct Emitter : public VisibleSprite {
     ParticleSystem &system;
 
-    Emitter(ParticleSystem &system): system(system) {}
+    Emitter(ParticleSystem &system) : system(system) {}
 
     std::size_t particleCount() { return particles.size(); }
 
     EffectTrack &emit(const std::string &effectName);
     EffectTrack &emit(ParticleEffect *effect);
-    // TODO: add a way to pass in ParticleProperties to modify particles on spawn
+    // TODO: add a way to pass in ParticleProperties to modify particles on
+    // spawn
 
     Dimensions getSize() override { return Dimensions(0, 0); }
     void resize(float w, float h) override {}
@@ -74,10 +76,10 @@ struct Emitter: public VisibleSprite {
     void update(UpdateContext &ctx) override;
     void render(RenderContext &ctx) override;
 
-    private:
-        std::vector<EmissionTrack> emissions;
-        std::vector<EffectTrack> effects;
-        std::vector<std::vector<ParticleTrack>> particles;
+private:
+    std::vector<EmissionTrack> emissions;
+    std::vector<EffectTrack> effects;
+    std::vector<std::vector<ParticleTrack>> particles;
 };
 
 }

@@ -46,11 +46,9 @@
 //         var a        = P();
 //         var b        = P();
 //         var pos      = points[0];
-//         var prev     = P(pos.x - points[1].x, pos.y - points[1].y); // direction
-//         var next     = P(prev.x, prev.y);
-//         var inner    = P();
-//         var outer    = P();
-//         var nextPrev = P();
+//         var prev     = P(pos.x - points[1].x, pos.y - points[1].y); //
+//         direction var next     = P(prev.x, prev.y); var inner    = P(); var
+//         outer    = P(); var nextPrev = P();
 
 //         a.copyFrom(pos);
 //         b.copyFrom(pos);
@@ -75,13 +73,15 @@
 //             // vector v (difference between current and next)
 //             next.copyFrom(pos).subtract(points[index + 1]);
 //             next.normalize(1); // unit length
-//             nextPrev.copyFrom(next); // we clobber the "next" value so it needs to be saved
+//             nextPrev.copyFrom(next); // we clobber the "next" value so it
+//             needs to be saved
 
 //             over180 = prev.zcross(next) > 0;
 //             // calculate half angle from two vectors
-//             // normally this would require knowing the vector lengths but because
-//             // they both should be unit vectors we can ignore dividing by length
-//             angle = acos(prev.dot(next)) / 2;
+//             // normally this would require knowing the vector lengths but
+//             because
+//             // they both should be unit vectors we can ignore dividing by
+//             length angle = acos(prev.dot(next)) / 2;
 
 //             inner.copyFrom(prev);
 //             inner.add(next);
@@ -156,9 +156,10 @@
 //         var x2 = r.right;
 //         var y2 = r.bottom;
 //         this.line(struct Point {x: x, y}, struct Point {x: x2, y} ); // top
-//         this.line(struct Point {x: x, y: y2}, struct Point {x: x2, y: y2}); // bottom
-//         this.line(struct Point {x, y: y + t}, struct Point {x, y: y2 - t}); // left
-//         this.line(struct Point {x: x2, y: y + t}, struct Point {x: x2, y: y2 - t}); // right
+//         this.line(struct Point {x: x, y: y2}, struct Point {x: x2, y: y2});
+//         // bottom this.line(struct Point {x, y: y + t}, struct Point {x, y:
+//         y2 - t}); // left this.line(struct Point {x: x2, y: y + t}, struct
+//         Point {x: x2, y: y2 - t}); // right
 //     }
 
 //     public function rectFilled(r: Ptr[Rectangle[Float]]) {
@@ -170,7 +171,8 @@
 //         );
 //     }
 
-//     public function circle(center: Ptr[Point], radius: Float, segments: Int = 16) {
+//     public function circle(center: Ptr[Point], radius: Float, segments: Int =
+//     16) {
 //         const x = center.x;
 //         const y = center.y;
 //         const radians = 2 * PI / segments;
@@ -199,7 +201,8 @@
 //         }
 //     }
 
-//     public function circleFilled(center: Ptr[Point], radius: Float, segments: Int = 16) {
+//     public function circleFilled(center: Ptr[Point], radius: Float, segments:
+//     Int = 16) {
 //         var x = center.x;
 //         var y = center.y;
 //         const radians = (2 * PI) / segments;
@@ -209,20 +212,21 @@
 //             var theta = segment * radians;
 //             var x2 = x + sin(theta) * radius;
 //             var y2 = y + cos(theta) * radius;
-//             this.addTriangle(x, y, x1, y1, x2, y2, this.color.withAlpha(this.alpha));
-//             x1 = x2;
-//             y1 = y2;
+//             this.addTriangle(x, y, x1, y1, x2, y2,
+//             this.color.withAlpha(this.alpha)); x1 = x2; y1 = y2;
 //         }
 //     }
 
 //     var points: Vector[Point] = Vector.new(64);
-//     public function arc(center: Point, radius: Float, startRads: Float, angleRads: Float, segments: Int = 16) {
+//     public function arc(center: Point, radius: Float, startRads: Float,
+//     angleRads: Float, segments: Int = 16) {
 //         var radians = angleRads / segments;
 //         this.points.clear();
 //         this.points.ensureSize(segments + 1);
 //         for segment in 0 ... segments + 1 {
 //             var theta = segment * radians + startRads;
-//             this.points.push(P(center.x + cos(theta) * radius, center.y - sin(theta) * radius));
+//             this.points.push(P(center.x + cos(theta) * radius, center.y -
+//             sin(theta) * radius));
 //         }
 //         this.polyline(this.points.slice(), false);
 //     }
@@ -231,13 +235,17 @@
 //     //  * Draws a quadratic curve.
 //     //  * @param    x1            X start.
 //     //  * @param    y1            Y start.
-//     //  * @param    x2            X control point, used to determine the curve.
-//     //  * @param    y2            Y control point, used to determine the curve.
+//     //  * @param    x2            X control point, used to determine the
+//     curve.
+//     //  * @param    y2            Y control point, used to determine the
+//     curve.
 //     //  * @param    x3            X finish.
 //     //  * @param    y3            Y finish.
-//     //  * @param    segments    Increasing will smooth the curve but takes longer to render. Must be a value greater than zero.
+//     //  * @param    segments    Increasing will smooth the curve but takes
+//     longer to render. Must be a value greater than zero.
 //     //  */
-//     // public function curve(x1:Int, y1:Int, x2:Int, y2:Int, x3:Int, y3:Int, segments:Int = 25)
+//     // public function curve(x1:Int, y1:Int, x2:Int, y2:Int, x3:Int, y3:Int,
+//     segments:Int = 25)
 //     // {
 //     //     var points:Array<Float> = [];
 //     //     points.push(x1);
@@ -248,8 +256,10 @@
 //     //     for (segment in 1...segments)
 //     //     {
 //     //         var t: Float = segment * deltaT;
-//     //         var x: Float = (1 - t) * (1 - t) * x1 + 2 * t * (1 - t) * x2 + t * t * x3;
-//     //         var y: Float = (1 - t) * (1 - t) * y1 + 2 * t * (1 - t) * y2 + t * t * y3;
+//     //         var x: Float = (1 - t) * (1 - t) * x1 + 2 * t * (1 - t) * x2 +
+//     t * t * x3;
+//     //         var y: Float = (1 - t) * (1 - t) * y1 + 2 * t * (1 - t) * y2 +
+//     t * t * y3;
 //     //         points.push(x);
 //     //         points.push(y);
 //     //     }
@@ -261,10 +271,12 @@
 //     // }
 
 //     function drawTriangle(v1: Point, v2: Point, v3: Point): Void {
-//         this.addTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, this.color.withAlpha(this.alpha));
+//         this.addTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y,
+//         this.color.withAlpha(this.alpha));
 //     }
 
-//     function drawQuad(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float, y3: Float, x4: Float, y4: Float) {
+//     function drawQuad(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float,
+//     y3: Float, x4: Float, y4: Float) {
 //         var c = this.color.withAlpha(this.alpha);
 //         this.addTriangle(x1, y1, x2, y2, x3, y3, c);
 //         this.addTriangle(x1, y1, x3, y3, x4, y4, c);

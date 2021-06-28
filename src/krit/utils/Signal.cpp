@@ -3,7 +3,8 @@
 namespace krit {
 
 void invoke(Signal s) {
-    if (s) s();
+    if (s)
+        s();
 }
 
 }

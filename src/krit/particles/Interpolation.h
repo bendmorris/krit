@@ -38,8 +38,10 @@ struct InterpolationFunction {
         SplineData spline;
     };
 
-    InterpolationFunction(const std::string &name, InterpolationFunctionType type): name(name), type(type) {}
-    InterpolationFunction(InterpolationFunctionType type): type(type) {}
+    InterpolationFunction(const std::string &name,
+                          InterpolationFunctionType type)
+        : name(name), type(type) {}
+    InterpolationFunction(InterpolationFunctionType type) : type(type) {}
 
     float evaluate(float t);
 };

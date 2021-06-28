@@ -1,13 +1,13 @@
 #include "krit/script/ScriptEngine.h"
 
-#include <stdio.h>
 #include <cstring>
 #include <memory>
+#include <stdio.h>
 
-#include "krit/script/ScriptClass.h"
-#include "krit/script/ScriptBridge.h"
-#include "krit/script/ScriptFinalizer.h"
 #include "krit/UpdateContext.h"
+#include "krit/script/ScriptBridge.h"
+#include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptFinalizer.h"
 
 namespace krit {
 
@@ -20,17 +20,21 @@ static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
         JS_FreeCString(ctx, str);
         return result;
     } else {
-        return "(atom: " + std::string(JS_AtomToCString(ctx, JS_ValueToAtom(ctx, val))) + ")";
+        return "(atom: " +
+               std::string(JS_AtomToCString(ctx, JS_ValueToAtom(ctx, val))) +
+               ")";
     }
 }
 
-static std::string js_std_get_error(JSContext *ctx, JSValueConst exception_val) {
+static std::string js_std_get_error(JSContext *ctx,
+                                    JSValueConst exception_val) {
     JSValue val;
     if (JS_IsError(ctx, exception_val)) {
         // an "Error" is an object of the Error type
         val = JS_GetPropertyStr(ctx, exception_val, "stack");
         if (!JS_IsUndefined(val)) {
-            return js_serialize_obj(ctx, exception_val) + "\n" + js_serialize_obj(ctx, val);
+            return js_serialize_obj(ctx, exception_val) + "\n" +
+                   js_serialize_obj(ctx, val);
         }
         return "[Error]";
     } else if (JS_IsException(exception_val)) {
@@ -69,11 +73,13 @@ template <int N> static void registerScriptClasses(ScriptEngine *engine) {
     JS_SetPropertyFunctionList(ctx, proto, funcs.first, funcs.second);
     JS_SetClassProto(ctx, engine->classIds[N], proto);
     JSValue globalObj = JS_GetGlobalObject(ctx);
-    JS_SetPropertyStr(ctx, globalObj, classDef->class_name, JS_DupValue(ctx, proto));
+    JS_SetPropertyStr(ctx, globalObj, classDef->class_name,
+                      JS_DupValue(ctx, proto));
     registerScriptClasses<N + 1>(engine);
 }
 
-template <> void registerScriptClasses<ScriptClassCount>(ScriptEngine *engine) {}
+template <>
+void registerScriptClasses<ScriptClassCount>(ScriptEngine *engine) {}
 
 ScriptEngine::ScriptEngine() {
     static bool initialized = false;
@@ -97,7 +103,6 @@ ScriptEngine::ScriptEngine() {
     initScriptBridge(*this);
 }
 
-
 ScriptEngine::~ScriptEngine() {
     JS_FreeValue(ctx, exports);
     JS_FreeContext(ctx);
@@ -112,8 +117,10 @@ void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
     JS_FreeValue(ctx, result);
 }
 
-std::string ScriptEngine::evalToString(const std::string &scriptName, const char *src, size_t len) {
-    JSValue result = JS_Eval(ctx, src, len, scriptName.c_str(), JS_EVAL_TYPE_GLOBAL);
+std::string ScriptEngine::evalToString(const std::string &scriptName,
+                                       const char *src, size_t len) {
+    JSValue result =
+        JS_Eval(ctx, src, len, scriptName.c_str(), JS_EVAL_TYPE_GLOBAL);
     std::string s = js_std_get_error(ctx, result);
     JS_FreeValue(ctx, result);
     return s;
@@ -167,11 +174,17 @@ JSValue ScriptEngine::delay(float duration) {
 
     // insert into our tracked promises
     bool inserted = false;
-    for (auto it = this->delayPromises.begin(); it != this->delayPromises.end(); ++it) {
-        if (it->duration <= 0) continue;
+    for (auto it = this->delayPromises.begin(); it != this->delayPromises.end();
+         ++it) {
+        if (it->duration <= 0)
+            continue;
         if (duration < it->duration) {
             it->duration -= duration;
-            this->delayPromises.emplace(it, DelayRequest { .duration = duration, .resolve = JS_DupValue(ctx, resolvingFuncs[0]), .reject = JS_DupValue(ctx, resolvingFuncs[1]) });
+            this->delayPromises.emplace(
+                it,
+                DelayRequest{.duration = duration,
+                             .resolve = JS_DupValue(ctx, resolvingFuncs[0]),
+                             .reject = JS_DupValue(ctx, resolvingFuncs[1])});
             inserted = true;
             break;
         } else {
@@ -179,7 +192,10 @@ JSValue ScriptEngine::delay(float duration) {
         }
     }
     if (!inserted) {
-        this->delayPromises.emplace_back(DelayRequest { .duration = duration, .resolve = JS_DupValue(ctx, resolvingFuncs[0]), .reject = JS_DupValue(ctx, resolvingFuncs[1]) });
+        this->delayPromises.emplace_back(
+            DelayRequest{.duration = duration,
+                         .resolve = JS_DupValue(ctx, resolvingFuncs[0]),
+                         .reject = JS_DupValue(ctx, resolvingFuncs[1])});
     }
 
     return promise;
@@ -188,11 +204,13 @@ JSValue ScriptEngine::delay(float duration) {
 void ScriptEngine::update(UpdateContext &ctx) {
     if (!this->delayPromises.empty()) {
         this->delayPromises.front().duration -= ctx.elapsed;
-        while (!this->delayPromises.empty() && this->delayPromises.front().duration <= 0) {
+        while (!this->delayPromises.empty() &&
+               this->delayPromises.front().duration <= 0) {
             // complete this delay
             JSValue resolve = this->delayPromises.front().resolve;
             JSValue reject = this->delayPromises.front().reject;
-            JS_FreeValue(this->ctx, JS_Call(this->ctx, resolve, JS_UNDEFINED, 0, nullptr));
+            JS_FreeValue(this->ctx,
+                         JS_Call(this->ctx, resolve, JS_UNDEFINED, 0, nullptr));
             JS_FreeValue(this->ctx, resolve);
             JS_FreeValue(this->ctx, reject);
             this->delayPromises.pop_front();

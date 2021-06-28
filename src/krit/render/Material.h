@@ -5,8 +5,8 @@
 #include "krit/render/Shader.h"
 #include "krit/render/Uniform.h"
 #include <memory>
-#include <vector>
 #include <utility>
+#include <vector>
 
 namespace krit {
 
@@ -18,7 +18,7 @@ struct Material {
     std::unordered_map<std::string, int> uniformLocations;
 
     Material() {}
-    Material(Shader *shader): shader(shader) {}
+    Material(Shader *shader) : shader(shader) {}
 
     void setUniform(const std::string &name, UniformValue value) {
         uniforms.push_back(std::make_pair(name, value));
@@ -28,9 +28,7 @@ struct Material {
         return shader->getUniformLocation(name);
     }
 
-    void clear() {
-        uniforms.clear();
-    }
+    void clear() { uniforms.clear(); }
 };
 
 }

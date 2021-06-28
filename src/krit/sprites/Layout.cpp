@@ -1,15 +1,22 @@
 #include "krit/sprites/Layout.h"
 
+#include <algorithm>
+#include <sstream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sstream>
 #include <string>
-#include <algorithm>
 #include <vector>
 
+#include "expat.h"
+#include "krit/App.h"
+#include "krit/Camera.h"
 #include "krit/Engine.h"
+#include "krit/UpdateContext.h"
 #include "krit/asset/TextureAtlas.h"
+#include "krit/math/Rectangle.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/render/RenderContext.h"
 #include "krit/sprites/Backdrop.h"
 #include "krit/sprites/BitmapText.h"
 #include "krit/sprites/Button.h"
@@ -17,18 +24,11 @@
 #include "krit/sprites/NineSlice.h"
 #include "krit/sprites/SpineSprite.h"
 #include "krit/sprites/Text.h"
+#include "krit/sprites/TextBase.h"
+#include "krit/utils/Color.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Parse.h"
-#include "expat.h"
-#include "krit/App.h"
-#include "krit/Camera.h"
-#include "krit/UpdateContext.h"
-#include "krit/math/Rectangle.h"
-#include "krit/math/ScaleFactor.h"
-#include "krit/render/RenderContext.h"
-#include "krit/sprites/TextBase.h"
-#include "krit/utils/Color.h"
 
 namespace krit {
 struct BitmapFont;
@@ -60,10 +60,13 @@ void LayoutNode::render(RenderContext &ctx) {
         return;
     }
     if (this->clip) {
-        ctx.pushClip(Rectangle(this->position.x, this->position.y, this->dimensions.width(), this->dimensions.height()));
+        ctx.pushClip(Rectangle(this->position.x, this->position.y,
+                               this->dimensions.width(),
+                               this->dimensions.height()));
     }
     if (this->sprite) {
-        this->sprite->move(this->position.x + this->offset.x, this->position.y + this->offset.y);
+        this->sprite->move(this->position.x + this->offset.x,
+                           this->position.y + this->offset.y);
         this->sprite->render(ctx);
     }
     LayoutNode *child = this->firstChild.get();
@@ -76,7 +79,8 @@ void LayoutNode::render(RenderContext &ctx) {
     }
 }
 
-void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
+void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
+                         LayoutNode *prevSibling) {
     float availableWidth, availableHeight;
     if (parent) {
         Dimensions dims = parent->dimensions;
@@ -106,7 +110,8 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
     }
 }
 
-void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling) {
+void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent,
+                         LayoutNode *prevSibling) {
     float x, y, availableWidth, availableHeight;
     if (parent) {
         Point position = parent->position;
@@ -147,9 +152,11 @@ void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
                 // first child element; set to top left
                 if (horizontal) {
                     ex = x;
-                    ey = y + this->y.measure(availableHeight, spriteSize.height());
+                    ey = y +
+                         this->y.measure(availableHeight, spriteSize.height());
                 } else {
-                    ex = x + this->x.measure(availableWidth, spriteSize.width());
+                    ex =
+                        x + this->x.measure(availableWidth, spriteSize.width());
                     ey = y;
                 }
             } else {
@@ -159,10 +166,12 @@ void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *pre
                 if (horizontal) {
                     float spacing = parent->spacing.measure(availableWidth);
                     ex = siblingPos.x + siblingSize.width() + spacing;
-                    ey = y + this->y.measure(availableHeight, spriteSize.height());
+                    ey = y +
+                         this->y.measure(availableHeight, spriteSize.height());
                 } else {
                     float spacing = parent->spacing.measure(availableHeight);
-                    ex = x + this->x.measure(availableWidth, spriteSize.width());
+                    ex =
+                        x + this->x.measure(availableWidth, spriteSize.width());
                     ey = siblingPos.y + siblingSize.height() + spacing;
                 }
             }
@@ -191,14 +200,17 @@ std::unordered_map<std::string, std::string> &collectAttrs(const char **attrs) {
         if (*(attr + 1)) {
             const char *key = *attr;
             const char *value = *(attr + 1);
-            _attrMap.insert(std::make_pair(std::string(key), std::string(value)));
+            _attrMap.insert(
+                std::make_pair(std::string(key), std::string(value)));
         }
         attr = attr + 2;
     }
     return _attrMap;
 }
 
-void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value) {
+void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
+                                 const std::string &key,
+                                 const std::string &value) {
     if (key == "x" || key == "left") {
         Measurement val = ParseUtil::parseMeasurement(value);
         layout->setX(val, 0);
@@ -285,32 +297,36 @@ SpriteStyle LayoutRoot::parseStyle(std::string &s) {
     return style;
 }
 
-void LayoutRoot::parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e) {
+void LayoutRoot::parseAndApplyStyle(
+    std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e) {
     auto found = attrMap.find("style");
     if (found != attrMap.end()) {
         e->applyStyle(LayoutRoot::parseStyle(found->second));
     }
 }
 
-ImageRegion LayoutRoot::parseSrc(std::unordered_map<std::string, std::string> &attrMap) {
+ImageRegion
+LayoutRoot::parseSrc(std::unordered_map<std::string, std::string> &attrMap) {
     auto found = attrMap.find("src");
     if (found != attrMap.end()) {
         return ImageRegion(App::ctx.engine->getImage(found->second));
     }
     found = attrMap.find("atlas");
     if (found != attrMap.end()) {
-        std::shared_ptr<TextureAtlas> atlas = App::ctx.engine->getAtlas(found->second);
+        std::shared_ptr<TextureAtlas> atlas =
+            App::ctx.engine->getAtlas(found->second);
         return atlas->getRegion(attrMap["region"]);
     }
     panic("couldn't find src");
 }
 
-void parseBackdrop(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseBackdrop(LayoutParseData *data,
+                   std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
     Backdrop *backdrop = new Backdrop(src);
     node->attachSprite(backdrop);
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "color") {
@@ -321,12 +337,13 @@ void parseBackdrop(LayoutParseData *data, std::unordered_map<std::string, std::s
     }
 }
 
-void parseImg(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseImg(LayoutParseData *data,
+              std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
     Image *img = new Image(src);
     LayoutRoot::parseAndApplyStyle(attrMap, img);
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "originX") {
@@ -338,11 +355,13 @@ void parseImg(LayoutParseData *data, std::unordered_map<std::string, std::string
     node->attachSprite(img);
 }
 
-void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseLabel(LayoutParseData *data,
+                std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
 
     // parse text options first
-    std::shared_ptr<BitmapFont> font = App::ctx.engine->getBitmapFont(attrMap["font"]);
+    std::shared_ptr<BitmapFont> font =
+        App::ctx.engine->getBitmapFont(attrMap["font"]);
     BitmapTextOptions options(font);
     std::unordered_map<std::string, std::string>::const_iterator it;
     if ((it = attrMap.find("size")) != attrMap.end()) {
@@ -363,14 +382,18 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
     }
 
     // everything else
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "align") {
-            if (value == "left") txt->options.align = LeftAlign;
-            else if (value == "center") txt->options.align = CenterAlign;
-            else if (value == "right") txt->options.align = RightAlign;
-            else panic("unexpected value for text alignment: %s", value.c_str());
+            if (value == "left")
+                txt->options.align = LeftAlign;
+            else if (value == "center")
+                txt->options.align = CenterAlign;
+            else if (value == "right")
+                txt->options.align = RightAlign;
+            else
+                panic("unexpected value for text alignment: %s", value.c_str());
         } else if (key == "tabStops") {
             std::stringstream stream(value);
             std::string token;
@@ -384,23 +407,30 @@ void parseLabel(LayoutParseData *data, std::unordered_map<std::string, std::stri
     }
 }
 
-void parseText(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseText(LayoutParseData *data,
+               std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
 
     // parse text options first
     TextOptions options;
     options.setFont(attrMap["font"]);
     std::unordered_map<std::string, std::string>::const_iterator it;
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
-        if (key == "size") options.size = stoi(value);
-        else if (key == "wrap") options.wordWrap = ParseUtil::parseBool(value);
+        if (key == "size")
+            options.size = stoi(value);
+        else if (key == "wrap")
+            options.wordWrap = ParseUtil::parseBool(value);
         else if (key == "align") {
-            if (value == "left") options.align = LeftAlign;
-            else if (value == "center") options.align = CenterAlign;
-            else if (value == "right") options.align = RightAlign;
-            else panic("unexpected value for text alignment: %s", value.c_str());
+            if (value == "left")
+                options.align = LeftAlign;
+            else if (value == "center")
+                options.align = CenterAlign;
+            else if (value == "right")
+                options.align = RightAlign;
+            else
+                panic("unexpected value for text alignment: %s", value.c_str());
         }
     }
     Text *txt = new Text(options);
@@ -427,17 +457,18 @@ void parseText(LayoutParseData *data, std::unordered_map<std::string, std::strin
     }
 }
 
-void parseSpine(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseSpine(LayoutParseData *data,
+                std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
 
     // parse skeleton name
     SpineSprite *spine = new SpineSprite(attrMap["skeleton"]);
     LayoutRoot::parseAndApplyStyle(attrMap, spine);
-    spine->setDefaultMix(2.5/60);
+    spine->setDefaultMix(2.5 / 60);
     node->attachSprite(spine);
 
     // everything else
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "setupAnimation") {
@@ -454,7 +485,8 @@ void parseSpine(LayoutParseData *data, std::unordered_map<std::string, std::stri
     }
 }
 
-void parseNineSlice(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseNineSlice(LayoutParseData *data,
+                    std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
     int lw, rw, th, bh;
@@ -491,7 +523,8 @@ void parseNineSlice(LayoutParseData *data, std::unordered_map<std::string, std::
     node->attachSprite(img);
 }
 
-void parseButton(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseButton(LayoutParseData *data,
+                 std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
     int lw, rw, th, bh;
@@ -523,7 +556,8 @@ void parseButton(LayoutParseData *data, std::unordered_map<std::string, std::str
     if (found != attrMap.end()) {
         bh = ParseUtil::parseInt(found->second);
     }
-    std::shared_ptr<BitmapFont> font = App::ctx.engine->getBitmapFont(attrMap["font"]);
+    std::shared_ptr<BitmapFont> font =
+        App::ctx.engine->getBitmapFont(attrMap["font"]);
     BitmapTextOptions options(font);
     std::unordered_map<std::string, std::string>::const_iterator it;
     if ((it = attrMap.find("size")) != attrMap.end()) {
@@ -553,39 +587,43 @@ void parseButton(LayoutParseData *data, std::unordered_map<std::string, std::str
     node->attachSprite(btn);
 }
 
-void parseDiv(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseDiv(LayoutParseData *data,
+              std::unordered_map<std::string, std::string> &attrMap) {
     data->node->keepSize = true;
 }
 
-void parseClip(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parseClip(LayoutParseData *data,
+               std::unordered_map<std::string, std::string> &attrMap) {
     data->node->keepSize = true;
     data->node->clip = true;
 }
 
-void parsePlaceholder(LayoutParseData *data, std::unordered_map<std::string, std::string> &attrMap) {
+void parsePlaceholder(LayoutParseData *data,
+                      std::unordered_map<std::string, std::string> &attrMap) {
     data->node->keepSize = false;
 }
 
 void layoutStartElement(void *userData, const char *name, const char **attrs) {
-    LayoutParseData *data = static_cast<LayoutParseData*>(userData);
+    LayoutParseData *data = static_cast<LayoutParseData *>(userData);
     std::unordered_map<std::string, std::string> &attrMap = collectAttrs(attrs);
     LayoutNode *node = new LayoutNode();
     data->node = node;
-    for (auto &it: attrMap) {
+    for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
         LayoutRoot::parseLayoutAttr(data, node, key, value);
     }
     if (!data->layoutStack.empty()) {
-            auto top = data->layoutStack.top();
-            node->positionMode = top->childPositionMode;
+        auto top = data->layoutStack.top();
+        node->positionMode = top->childPositionMode;
         if (!strcmp(name, "hbox") || !strcmp(name, "vbox")) {
             bool horizontal = name[0] == 'h';
             node->childPositionMode = horizontal ? PositionHbox : PositionVbox;
         } else {
             auto found = LayoutRoot::parsers.find(std::string(name));
             if (found != LayoutRoot::parsers.end()) {
-                if (found->second) found->second(data, attrMap);
+                if (found->second)
+                    found->second(data, attrMap);
             } else {
                 Log::error("unknown parser: %s", name);
             }
@@ -599,7 +637,7 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
 }
 
 void layoutEndElement(void *userData, const char *name) {
-    LayoutParseData *data = static_cast<LayoutParseData*>(userData);
+    LayoutParseData *data = static_cast<LayoutParseData *>(userData);
     auto node = data->layoutStack.top();
     data->layoutStack.pop();
     if (data->layoutStack.empty()) {
@@ -612,7 +650,7 @@ void layoutEndElement(void *userData, const char *name) {
     }
 }
 
-std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
+std::unordered_map<std::string, LayoutParseFunction *> LayoutRoot::parsers = {
     {"div", &parseDiv},
     {"clip", &parseClip},
     {"placeholder", &parsePlaceholder},
@@ -628,7 +666,7 @@ std::unordered_map<std::string, LayoutParseFunction*> LayoutRoot::parsers = {
 LayoutRoot::LayoutRoot(const std::string &path) {
     XML_Parser parser = XML_ParserCreate(nullptr);
     LayoutParseData data;
-    data.path = (std::string*)&path;
+    data.path = (std::string *)&path;
     data.node = nullptr;
     data.root = this;
     XML_SetUserData(parser, &data);
@@ -641,7 +679,8 @@ LayoutRoot::LayoutRoot(const std::string &path) {
         if (!readLength) {
             break;
         }
-        if (XML_Parse(parser, buf, readLength, readLength < 1024 ? 1 : 0) == XML_STATUS_ERROR) {
+        if (XML_Parse(parser, buf, readLength, readLength < 1024 ? 1 : 0) ==
+            XML_STATUS_ERROR) {
             panic("%s: failed to parse layout XML!", path.c_str());
         }
     } while (true);

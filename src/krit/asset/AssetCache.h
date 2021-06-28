@@ -1,9 +1,9 @@
 #ifndef KRIT_ASSET_ASSETCACHE
 #define KRIT_ASSET_ASSETCACHE
 
-#include "krit/asset/AssetLoader.h"
-#include "krit/asset/AssetInfo.h"
 #include "krit/Assets.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetLoader.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -57,9 +57,10 @@ struct AssetCache {
             }
         }
         // we need to load this asset
-        std::shared_ptr<T> asset = std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
-            AssetLoader<T>::unloadAsset(ptr);
-        });
+        std::shared_ptr<T> asset =
+            std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
+                AssetLoader<T>::unloadAsset(ptr);
+            });
         globalCache[id] = std::weak_ptr<void>(asset);
         cache[id] = asset;
         return asset;

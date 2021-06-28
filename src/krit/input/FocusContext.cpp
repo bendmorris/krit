@@ -15,10 +15,12 @@ void FocusContext::setFocus(UpdateContext *ctx, VisibleSprite *sprite) {
     auto gotFocus = this->focus;
     if (lostFocus != gotFocus) {
         if (registeredObjects[lostFocus].first) {
-            invoke(registeredObjects[lostFocus].second.onLostFocus, ctx, static_cast<void*>(registeredObjects[lostFocus].first));
+            invoke(registeredObjects[lostFocus].second.onLostFocus, ctx,
+                   static_cast<void *>(registeredObjects[lostFocus].first));
         }
         if (registeredObjects[gotFocus].first) {
-            invoke(registeredObjects[gotFocus].second.onGotFocus, ctx, static_cast<void*>(registeredObjects[gotFocus].first));
+            invoke(registeredObjects[gotFocus].second.onGotFocus, ctx,
+                   static_cast<void *>(registeredObjects[gotFocus].first));
         }
     }
 }
@@ -35,10 +37,12 @@ void FocusContext::changeFocus(UpdateContext *ctx, bool forward) {
     auto gotFocus = this->focus;
     if (lostFocus != gotFocus) {
         if (registeredObjects[lostFocus].first) {
-            invoke(registeredObjects[lostFocus].second.onLostFocus, ctx, static_cast<void*>(registeredObjects[lostFocus].first));
+            invoke(registeredObjects[lostFocus].second.onLostFocus, ctx,
+                   static_cast<void *>(registeredObjects[lostFocus].first));
         }
         if (registeredObjects[gotFocus].first) {
-            invoke(registeredObjects[gotFocus].second.onGotFocus, ctx, static_cast<void*>(registeredObjects[gotFocus].first));
+            invoke(registeredObjects[gotFocus].second.onGotFocus, ctx,
+                   static_cast<void *>(registeredObjects[gotFocus].first));
         }
     }
 }

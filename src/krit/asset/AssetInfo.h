@@ -9,14 +9,14 @@
 
 namespace krit {
 
-enum AssetId: int;
+enum AssetId : int;
 
 union AssetProperties {
     IntDimensions dimensions;
     bool _ = false;
 
-    AssetProperties(int width, int height): dimensions(width, height) {}
-    AssetProperties(): _(false) {}
+    AssetProperties(int width, int height) : dimensions(width, height) {}
+    AssetProperties() : _(false) {}
 };
 
 struct AssetInfo {
@@ -27,9 +27,7 @@ struct AssetInfo {
 };
 
 struct Assets {
-    static const AssetInfo &byId(AssetId id) {
-        return _assets[id];
-    }
+    static const AssetInfo &byId(AssetId id) { return _assets[id]; }
 
     static const AssetInfo &byPath(const std::string &path) {
         auto found = _byPath.find(path);
@@ -39,9 +37,9 @@ struct Assets {
         return _assets[found->second];
     }
 
-    private:
-        static const AssetInfo _assets[];
-        static std::unordered_map<std::string, int> _byPath;
+private:
+    static const AssetInfo _assets[];
+    static std::unordered_map<std::string, int> _byPath;
 };
 
 }

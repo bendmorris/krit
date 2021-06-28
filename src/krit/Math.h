@@ -7,5 +7,5 @@
 #include "krit/math/ScaleFactor.h"
 #include "krit/math/Triangle.h"
 
-# define M_PI 3.14159265358979323846
-# define SMALL_AMOUNT 0.00000001
+#define M_PI 3.14159265358979323846
+#define SMALL_AMOUNT 0.00000001

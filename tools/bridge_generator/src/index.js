@@ -318,7 +318,7 @@ replaceIfDifferent(path.join(scriptDir, 'ScriptClass.h'), env.render('templates/
 // generate script classes
 
 for (const wrapper of wrappers) {
-    replaceIfDifferent(path.join(scriptDir, `ScriptClass.${wrapper.name}.cpp`), env.render('templates/ScriptClass.cpp.nj', {
+    replaceIfDifferent(path.join(scriptDir, `ScriptClass.${wrapper.namespace.replace('::', '.')}.${wrapper.name}.cpp`), env.render('templates/ScriptClass.cpp.nj', {
         wrapper,
     }));
 }

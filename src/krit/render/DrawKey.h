@@ -24,10 +24,8 @@ struct DrawKey {
     DrawKey() {}
 
     bool operator==(const DrawKey &other) {
-        return this->shader == other.shader &&
-            this->image == other.image &&
-            this->smooth == other.smooth &&
-            this->blend == other.blend;
+        return this->shader == other.shader && this->image == other.image &&
+               this->smooth == other.smooth && this->blend == other.blend;
     }
 };
 

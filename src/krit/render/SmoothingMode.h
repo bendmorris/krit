@@ -3,11 +3,7 @@
 
 namespace krit {
 
-enum SmoothingMode: int {
-    SmoothNearest,
-    SmoothLinear,
-    SmoothMipmap
-};
+enum SmoothingMode : int { SmoothNearest, SmoothLinear, SmoothMipmap };
 
 }
 

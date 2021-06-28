@@ -17,7 +17,7 @@
 namespace krit {
 
 struct UpdateContext;
-enum ScriptClass: int;
+enum ScriptClass : int;
 
 template <class T, std::size_t = sizeof(T)>
 std::true_type is_complete_impl(T *);

@@ -1,8 +1,8 @@
 #include "krit/sprites/BitmapText.h"
 
-#include <stddef.h>
 #include <algorithm>
 #include <stack>
+#include <stddef.h>
 #include <string_view>
 #include <utility>
 
@@ -21,21 +21,23 @@ std::unordered_map<std::string, FormatTagOptions> BitmapText::formatTags = {
     {"tab", FormatTagOptions().setTab()},
 };
 
-void BitmapText::addFormatTag(std::string tagName, FormatTagOptions tagOptions) {
+void BitmapText::addFormatTag(std::string tagName,
+                              FormatTagOptions tagOptions) {
     BitmapText::formatTags.insert(std::make_pair(tagName, tagOptions));
 }
 
 template <typename T> void clearStack(std::stack<T> &stack) {
-    while (!stack.empty()) stack.pop();
+    while (!stack.empty())
+        stack.pop();
 }
 
 struct GlyphRenderStack {
-    std::stack<BitmapFont*> font;
+    std::stack<BitmapFont *> font;
     // std::stack<int> size;
     std::stack<float> scale;
     std::stack<Color> color;
     std::stack<AlignType> align;
-    std::stack<CustomRenderFunction*> custom;
+    std::stack<CustomRenderFunction *> custom;
 
     GlyphRenderStack() {}
 
@@ -88,7 +90,8 @@ struct BitmapTextParser {
 
         this->wordSegment = std::string_view(&s[0], 0);
 
-        txt.opcodes.push_back(BitmapTextOpcode(NewLine, BitmapTextOpcodeData(Dimensions(), txt.options.align)));
+        txt.opcodes.push_back(BitmapTextOpcode(
+            NewLine, BitmapTextOpcodeData(Dimensions(), txt.options.align)));
 
         while (true) {
             std::string_view tag;
@@ -97,7 +100,8 @@ struct BitmapTextParser {
                 if (this->wordSegment[this->wordSegment.length()] == '<') {
                     this->flushWord(txt);
                     tagEnd = 1;
-                    while (this->wordSegment[tagEnd] != 0 && this->wordSegment[tagEnd] != '>') {
+                    while (this->wordSegment[tagEnd] != 0 &&
+                           this->wordSegment[tagEnd] != '>') {
                         ++tagEnd;
                     }
                     int tagLength = tagEnd - 1;
@@ -105,8 +109,11 @@ struct BitmapTextParser {
                     if (this->wordSegment[tagEnd - 1] == '/') {
                         --tagLength;
                     }
-                    tag = std::string_view(&this->wordSegment[this->wordSegment.length() + 1], tagLength);
-                    this->wordSegment = std::string_view(&this->wordSegment.data()[tagEnd + 1], 0);
+                    tag = std::string_view(
+                        &this->wordSegment[this->wordSegment.length() + 1],
+                        tagLength);
+                    this->wordSegment = std::string_view(
+                        &this->wordSegment.data()[tagEnd + 1], 0);
                 }
             }
             if (tag.length() > 0) {
@@ -115,23 +122,32 @@ struct BitmapTextParser {
                 if (this->wordSegment[this->wordSegment.length()] == 0) {
                     break;
                 } else {
-                    this->wordHeight = std::max(this->wordHeight, this->currentFont->lineHeight * this->currentScale);
+                    this->wordHeight = std::max(this->wordHeight,
+                                                this->currentFont->lineHeight *
+                                                    this->currentScale);
                     char c = this->wordSegment[this->wordSegment.length()];
                     switch (c) {
                         case '\n': {
                             this->flushWord(txt);
                             this->newLine(txt, true);
-                            this->wordSegment = std::string_view(&this->wordSegment.data()[1], this->wordSegment.length());
+                            this->wordSegment =
+                                std::string_view(&this->wordSegment.data()[1],
+                                                 this->wordSegment.length());
                             break;
                         }
                         default: {
-                            this->wordSegment = std::string_view(this->wordSegment.data(), this->wordSegment.length() + 1);
-                            BitmapGlyphData glyph = this->currentFont->getGlyph(c);
+                            this->wordSegment = std::string_view(
+                                this->wordSegment.data(),
+                                this->wordSegment.length() + 1);
+                            BitmapGlyphData glyph =
+                                this->currentFont->getGlyph(c);
                             if (glyph.id) {
                                 int xAdvance = glyph.xAdvance;
-                                this->wordSegmentLength += xAdvance * this->currentScale;
+                                this->wordSegmentLength +=
+                                    xAdvance * this->currentScale;
                                 if (c == ' ') {
-                                    this->wordSegmentTrailingWhitespace += xAdvance * this->currentScale;
+                                    this->wordSegmentTrailingWhitespace +=
+                                        xAdvance * this->currentScale;
                                 } else {
                                     this->wordSegmentTrailingWhitespace = 0;
                                 }
@@ -152,7 +168,8 @@ struct BitmapTextParser {
             switch (op.type) {
                 case NewLine: {
                     Dimensions &dims = op.data.newLine.first;
-                    txt.textDimensions.x = std::max(txt.textDimensions.x, dims.x);
+                    txt.textDimensions.x =
+                        std::max(txt.textDimensions.x, dims.x);
                     txt.textDimensions.y += dims.y;
                     // fallthrough
                 }
@@ -163,7 +180,8 @@ struct BitmapTextParser {
                 case RenderSprite:
                     ++txt.maxChars;
                     break;
-                default: {}
+                default: {
+                }
             }
         }
     }
@@ -173,59 +191,88 @@ struct BitmapTextParser {
         bool close = false;
         if (tagName[0] == '/') {
             close = true;
-            tagName = std::string_view(tagName.data() + 1, tagName.length() - 1);
+            tagName =
+                std::string_view(tagName.data() + 1, tagName.length() - 1);
         }
         tagStr.assign(tagName.data(), tagName.length());
         auto found = BitmapText::formatTags.find(tagStr);
         if (found != BitmapText::formatTags.end()) {
             FormatTagOptions &tag = found->second;
             if (tag.color.present) {
-                if (close) this->addOp(txt, BitmapTextOpcode(PopColor));
-                else this->addOp(txt, BitmapTextOpcode(SetColor, BitmapTextOpcodeData(tag.color.value)));
+                if (close)
+                    this->addOp(txt, BitmapTextOpcode(PopColor));
+                else
+                    this->addOp(
+                        txt, BitmapTextOpcode(SetColor, BitmapTextOpcodeData(
+                                                            tag.color.value)));
             }
             if (tag.scale.present) {
-                if (close) this->addOp(txt, BitmapTextOpcode(PopScale));
-                else this->addOp(txt, BitmapTextOpcode(SetScale, BitmapTextOpcodeData(tag.scale.value)));
+                if (close)
+                    this->addOp(txt, BitmapTextOpcode(PopScale));
+                else
+                    this->addOp(
+                        txt, BitmapTextOpcode(SetScale, BitmapTextOpcodeData(
+                                                            tag.scale.value)));
             }
             if (tag.align.present) {
-                if (close) this->addOp(txt, BitmapTextOpcode(PopAlign));
-                else this->addOp(txt, BitmapTextOpcode(SetAlign, BitmapTextOpcodeData(tag.align.value)));
+                if (close)
+                    this->addOp(txt, BitmapTextOpcode(PopAlign));
+                else
+                    this->addOp(
+                        txt, BitmapTextOpcode(SetAlign, BitmapTextOpcodeData(
+                                                            tag.align.value)));
             }
             if (tag.custom != nullptr) {
-                if (close) this->addOp(txt, BitmapTextOpcode(PopCustom));
-                else this->addOp(txt, BitmapTextOpcode(SetCustom, BitmapTextOpcodeData(tag.custom)));
+                if (close)
+                    this->addOp(txt, BitmapTextOpcode(PopCustom));
+                else
+                    this->addOp(
+                        txt, BitmapTextOpcode(
+                                 SetCustom, BitmapTextOpcodeData(tag.custom)));
             }
             if (tag.sprite) {
-                this->addOp(txt, BitmapTextOpcode(RenderSprite, BitmapTextOpcodeData(tag.sprite)));
+                this->addOp(txt,
+                            BitmapTextOpcode(RenderSprite,
+                                             BitmapTextOpcodeData(tag.sprite)));
             }
             if (tag.newline && !close) {
-                this->addOp(txt, BitmapTextOpcode(NewLine, BitmapTextOpcodeData(Dimensions(), LeftAlign)));
+                this->addOp(txt, BitmapTextOpcode(
+                                     NewLine, BitmapTextOpcodeData(Dimensions(),
+                                                                   LeftAlign)));
             }
             if (tag.tab && !close) {
                 this->addOp(txt, BitmapTextOpcode(Tab, BitmapTextOpcodeData()));
             }
             if (tag.font) {
-                if (close) this->addOp(txt, BitmapTextOpcode(PopFont));
-                else this->addOp(txt, BitmapTextOpcode(SetFont, BitmapTextOpcodeData(tag.font)));
+                if (close)
+                    this->addOp(txt, BitmapTextOpcode(PopFont));
+                else
+                    this->addOp(
+                        txt, BitmapTextOpcode(SetFont,
+                                              BitmapTextOpcodeData(tag.font)));
             }
         }
     }
 
     void newLine(BitmapText &txt, bool append) {
         if (txt.opcodes[this->newLineIndex].type == NewLine) {
-            // std::pair<Dimensions, AlignType> &align = txt.opcodes[this->newLineIndex].data.newLine;
-            // update the size of the preceding line
-            float add = this->thisLineHeight + (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
+            // std::pair<Dimensions, AlignType> &align =
+            // txt.opcodes[this->newLineIndex].data.newLine; update the size of
+            // the preceding line
+            float add = this->thisLineHeight +
+                        (this->newLineIndex == 0 ? 0 : txt.options.lineSpacing);
             this->cursor.y += this->thisLineHeight + add;
-            txt.opcodes[this->newLineIndex].data.newLine.first.setTo(this->cursor.x, add);
-            txt.opcodes[this->newLineIndex].data.newLine.second = this->currentAlign;
+            txt.opcodes[this->newLineIndex].data.newLine.first.setTo(
+                this->cursor.x, add);
+            txt.opcodes[this->newLineIndex].data.newLine.second =
+                this->currentAlign;
         }
         if (append) {
-            this->thisLineHeight = this->currentFont->lineHeight * this->currentScale;
+            this->thisLineHeight =
+                this->currentFont->lineHeight * this->currentScale;
             txt.opcodes.push_back(BitmapTextOpcode(
                 NewLine,
-                BitmapTextOpcodeData(Dimensions(), this->currentAlign)
-            ));
+                BitmapTextOpcodeData(Dimensions(), this->currentAlign)));
             this->cursor.x = this->trailingWhitespace = 0;
             this->newLineIndex = txt.opcodes.size() - 1;
         }
@@ -234,8 +281,10 @@ struct BitmapTextParser {
 
     void flushWordSegment(BitmapText &txt) {
         if (this->wordSegment.length() > 0) {
-            BitmapTextParser::word.push_back(BitmapTextOpcode(TextBlock, BitmapTextOpcodeData(this->wordSegment)));
-            this->wordSegment = std::string_view(&this->wordSegment.data()[this->wordSegment.length()], 0);
+            BitmapTextParser::word.push_back(BitmapTextOpcode(
+                TextBlock, BitmapTextOpcodeData(this->wordSegment)));
+            this->wordSegment = std::string_view(
+                &this->wordSegment.data()[this->wordSegment.length()], 0);
             this->wordLength += this->wordSegmentLength;
             this->wordTrailingWhitespace = this->wordSegmentTrailingWhitespace;
             this->wordSegmentLength = 0;
@@ -247,18 +296,22 @@ struct BitmapTextParser {
         this->flushWordSegment(txt);
         if (!BitmapTextParser::word.empty()) {
             this->trailingWhitespace = this->wordTrailingWhitespace;
-            float baseScale = static_cast<float>(txt.options.size) / this->currentFont->size;
-            if (txt.options.wordWrap && this->cursor.x > 0 && this->cursor.x - this->trailingWhitespace + this->wordLength > txt.dimensions.width() / baseScale) {
+            float baseScale =
+                static_cast<float>(txt.options.size) / this->currentFont->size;
+            if (txt.options.wordWrap && this->cursor.x > 0 &&
+                this->cursor.x - this->trailingWhitespace + this->wordLength >
+                    txt.dimensions.width() / baseScale) {
                 this->newLine(txt, true);
                 this->cursor.x = this->wordLength;
             } else {
                 this->cursor.x += this->wordLength;
             }
-            for (BitmapTextOpcode &op: BitmapTextParser::word) {
+            for (BitmapTextOpcode &op : BitmapTextParser::word) {
                 txt.opcodes.push_back(op);
             }
             BitmapTextParser::word.clear();
-            this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
+            this->thisLineHeight =
+                std::max(this->wordHeight, this->thisLineHeight);
             this->wordLength = 0;
             this->wordHeight = 0;
             this->wordTrailingWhitespace = 0;
@@ -276,7 +329,8 @@ struct BitmapTextParser {
             case PopScale: {
                 BitmapTextParser::stack.scale.pop();
                 this->currentScale = BitmapTextParser::stack.scale.top();
-                BitmapTextParser::word.push_back(BitmapTextOpcode(SetScale, BitmapTextOpcodeData(this->currentScale)));
+                BitmapTextParser::word.push_back(BitmapTextOpcode(
+                    SetScale, BitmapTextOpcodeData(this->currentScale)));
                 break;
             }
             case SetColor: {
@@ -287,7 +341,9 @@ struct BitmapTextParser {
             }
             case PopColor: {
                 BitmapTextParser::stack.color.pop();
-                BitmapTextParser::word.push_back(BitmapTextOpcode(SetColor, BitmapTextOpcodeData(BitmapTextParser::stack.color.top())));
+                BitmapTextParser::word.push_back(BitmapTextOpcode(
+                    SetColor,
+                    BitmapTextOpcodeData(BitmapTextParser::stack.color.top())));
                 break;
             }
             case SetCustom: {
@@ -298,7 +354,9 @@ struct BitmapTextParser {
             }
             case PopCustom: {
                 BitmapTextParser::stack.custom.pop();
-                BitmapTextParser::word.push_back(BitmapTextOpcode(SetCustom, BitmapTextOpcodeData(BitmapTextParser::stack.custom.top())));
+                BitmapTextParser::word.push_back(BitmapTextOpcode(
+                    SetCustom, BitmapTextOpcodeData(
+                                   BitmapTextParser::stack.custom.top())));
                 break;
             }
             case NewLine: {
@@ -335,7 +393,8 @@ struct BitmapTextParser {
                 this->flushWord(txt);
                 BitmapTextParser::stack.font.pop();
                 this->currentFont = BitmapTextParser::stack.font.top();
-                BitmapTextParser::word.push_back(BitmapTextOpcode(SetFont, BitmapTextOpcodeData(this->currentFont)));
+                BitmapTextParser::word.push_back(BitmapTextOpcode(
+                    SetFont, BitmapTextOpcodeData(this->currentFont)));
                 break;
             }
             case RenderSprite: {
@@ -346,7 +405,8 @@ struct BitmapTextParser {
                 this->wordTrailingWhitespace = 0;
                 this->wordLength += imageWidth;
                 this->wordHeight = std::max(wordHeight, size.height());
-                this->thisLineHeight = std::max(this->wordHeight, this->thisLineHeight);
+                this->thisLineHeight =
+                    std::max(this->wordHeight, this->thisLineHeight);
                 if (cursor.x > txt.dimensions.width()) {
                     txt.dimensions.width() = cursor.x;
                 }
@@ -370,9 +430,7 @@ struct BitmapTextParser {
 GlyphRenderStack BitmapTextParser::stack;
 std::vector<BitmapTextOpcode> BitmapTextParser::word;
 
-BitmapText::BitmapText(const BitmapTextOptions &options):
-    options(options)
-{}
+BitmapText::BitmapText(const BitmapTextOptions &options) : options(options) {}
 
 BitmapText &BitmapText::setFont(std::shared_ptr<BitmapFont> font) {
     this->options.font = font;
@@ -408,7 +466,8 @@ BitmapText &BitmapText::refresh() {
 
 void BitmapText::resize(float w, float h) {
     if (this->options.wordWrap) {
-        if ((this->dimensions.width() != static_cast<int>(w)) || (this->dimensions.height() != static_cast<int>(h))) {
+        if ((this->dimensions.width() != static_cast<int>(w)) ||
+            (this->dimensions.height() != static_cast<int>(h))) {
             this->dirty = true;
             this->dimensions.setTo(w, h);
         }
@@ -427,10 +486,11 @@ void BitmapText::render(RenderContext &ctx) {
     int lastId = -1;
     Point cursor;
     CustomRenderFunction *custom = nullptr;
-    float totalWidth = this->options.wordWrap ? this->dimensions.width() : this->textDimensions.width();
+    float totalWidth = this->options.wordWrap ? this->dimensions.width()
+                                              : this->textDimensions.width();
     int charCount = this->charCount;
     size_t tabIndex = 0;
-    for (BitmapTextOpcode &op: this->opcodes) {
+    for (BitmapTextOpcode &op : this->opcodes) {
         switch (op.type) {
             case SetColor: {
                 color = this->color * op.data.color;
@@ -449,14 +509,20 @@ void BitmapText::render(RenderContext &ctx) {
                 Dimensions &dims = op.data.newLine.first;
                 float align;
                 switch (op.data.newLine.second) {
-                    case LeftAlign: align = 0; break;
-                    case CenterAlign: align = 0.5; break;
-                    case RightAlign: align = 1; break;
+                    case LeftAlign:
+                        align = 0;
+                        break;
+                    case CenterAlign:
+                        align = 0.5;
+                        break;
+                    case RightAlign:
+                        align = 1;
+                        break;
                 }
-                cursor.setTo(
-                    (totalWidth - dims.width()) * this->scale.x * baseScale * align,
-                    cursor.y + thisLineHeight * this->scale.y * baseScale
-                );
+                cursor.setTo((totalWidth - dims.width()) * this->scale.x *
+                                 baseScale * align,
+                             cursor.y +
+                                 thisLineHeight * this->scale.y * baseScale);
                 thisLineHeight = dims.height();
                 break;
             }
@@ -471,7 +537,10 @@ void BitmapText::render(RenderContext &ctx) {
                 }
                 auto size = sprite->getSize();
                 sprite->scale.setTo(baseScale * scale.x, baseScale * scale.y);
-                sprite->position.setTo(this->position.x + renderData.position.x, this->position.y + renderData.position.y + (thisLineHeight * scale.y * baseScale - size.height()));
+                sprite->position.setTo(
+                    this->position.x + renderData.position.x,
+                    this->position.y + renderData.position.y +
+                        (thisLineHeight * scale.y * baseScale - size.height()));
                 Color originalColor(sprite->color);
                 sprite->color = sprite->color * this->color;
                 sprite->render(ctx);
@@ -493,14 +562,11 @@ void BitmapText::render(RenderContext &ctx) {
                     BitmapGlyphData glyph = font->getGlyph(c);
                     if (glyph.id && glyph.id == c) {
                         int xAdvance = glyph.xAdvance;
-                        GlyphRenderData renderData(
-                            c,
-                            color,
-                            scale,
-                            cursor
-                        );
+                        GlyphRenderData renderData(c, color, scale, cursor);
                         if (lastId != -1) {
-                            float kern = font->kern(lastId, glyph.id) * renderData.scale.x * this->scale.x * baseScale;
+                            float kern = font->kern(lastId, glyph.id) *
+                                         renderData.scale.x * this->scale.x *
+                                         baseScale;
                             if (kern < 0) {
                                 cursor.x += kern;
                                 renderData.position.x += kern;
@@ -509,23 +575,29 @@ void BitmapText::render(RenderContext &ctx) {
                         if (c == ' ' || c == '\t') {
                             // it's a space; just advance the cursor and move on
                             lastId = -1;
-                        // TODO: escape characters
+                            // TODO: escape characters
                         } else {
                             if (this->options.dynamic && custom) {
                                 custom(&ctx, this, &renderData);
                             }
                             Matrix matrix;
-                            matrix
-                                .translate(glyph.offset.x, glyph.offset.y)
-                                .scale(renderData.scale.x * this->scale.x * baseScale, renderData.scale.y * this->scale.y * baseScale)
-                                .translate(this->position.x + renderData.position.x, this->position.y + renderData.position.y);
+                            matrix.translate(glyph.offset.x, glyph.offset.y)
+                                .scale(renderData.scale.x * this->scale.x *
+                                           baseScale,
+                                       renderData.scale.y * this->scale.y *
+                                           baseScale)
+                                .translate(
+                                    this->position.x + renderData.position.x,
+                                    this->position.y + renderData.position.y);
                             DrawKey key;
                             key.image = font->getPage(glyph.page);
                             key.smooth = this->smooth;
                             key.blend = this->blendMode;
-                            ctx.addRect(key, glyph.rect, matrix, renderData.color);
+                            ctx.addRect(key, glyph.rect, matrix,
+                                        renderData.color);
                         }
-                        cursor.x += xAdvance * renderData.scale.x * this->scale.x * baseScale;
+                        cursor.x += xAdvance * renderData.scale.x *
+                                    this->scale.x * baseScale;
                         lastId = glyph.id;
                     } else {
                         lastId = -1;
@@ -538,7 +610,8 @@ void BitmapText::render(RenderContext &ctx) {
                 break;
             }
             // other opcodes (e.g. the Pop variants) are removed during parsing
-            default: {}
+            default: {
+            }
         }
     }
 }

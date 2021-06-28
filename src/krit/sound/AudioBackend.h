@@ -1,8 +1,8 @@
 #ifndef KRIT_BACKEND
 #define KRIT_BACKEND
 
-#include "krit/utils/Panic.h"
 #include "krit/render/Gl.h"
+#include "krit/utils/Panic.h"
 
 #include <AL/al.h>
 #include <AL/alc.h>

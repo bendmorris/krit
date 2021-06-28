@@ -23,7 +23,7 @@ struct UpdateContext {
     UpdateContext() {}
     UpdateContext(const UpdateContext &) {}
 
-    template <typename T> T *data() { return static_cast<T*>(this->userData); }
+    template <typename T> T *data() { return static_cast<T *>(this->userData); }
 };
 
 }

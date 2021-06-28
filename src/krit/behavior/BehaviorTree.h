@@ -13,7 +13,8 @@ enum BehaviorResult {
     Success = 1,
 };
 
-template <typename Context> using EvalFunction = std::function<BehaviorResult(Context&)>;
+template <typename Context>
+using EvalFunction = std::function<BehaviorResult(Context &)>;
 
 template <typename Context> struct BehaviorTree;
 
@@ -24,7 +25,7 @@ template <typename Context> struct BehaviorTreeNode {
     BehaviorTreeNode *onFailure = nullptr;
 
     BehaviorTreeNode() {}
-    BehaviorTreeNode(EvalFunction<Context> f): f(f) {}
+    BehaviorTreeNode(EvalFunction<Context> f) : f(f) {}
 
     BehaviorResult operator()(Context &ctx) { return this->f(ctx); }
 };
@@ -33,7 +34,7 @@ template <typename Context> struct BehaviorTree {
     BehaviorTreeNode<Context> *root;
     BehaviorTreeNode<Context> *last = nullptr;
 
-    template <typename... Args> BehaviorTree(Args&&... args) {
+    template <typename... Args> BehaviorTree(Args &&... args) {
         this->root = new BehaviorTreeNode<Context>(args...);
     }
 
@@ -60,9 +61,7 @@ template <typename Context> struct BehaviorTree {
         }
     }
 
-    void reset() {
-        this->last = nullptr;
-    }
+    void reset() { this->last = nullptr; }
 };
 
 }

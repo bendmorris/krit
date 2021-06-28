@@ -8,12 +8,16 @@ namespace krit {
 struct AssetInfo;
 
 template <typename T> struct AssetLoader {
-    static T *loadAsset(const AssetInfo&);
+    static T *loadAsset(const AssetInfo &);
     static void unloadAsset(T *asset);
 };
 
-#define DECLARE_ASSET_LOADER(T) template<> T *AssetLoader<T>::loadAsset(const AssetInfo&); template<> void AssetLoader<T>::unloadAsset(T *asset);
-#define DECLARE_ASSET_LOADER2(T) struct T; DECLARE_ASSET_LOADER(T);
+#define DECLARE_ASSET_LOADER(T)                                                \
+    template <> T *AssetLoader<T>::loadAsset(const AssetInfo &);               \
+    template <> void AssetLoader<T>::unloadAsset(T *asset);
+#define DECLARE_ASSET_LOADER2(T)                                               \
+    struct T;                                                                  \
+    DECLARE_ASSET_LOADER(T);
 
 DECLARE_ASSET_LOADER2(ImageData)
 DECLARE_ASSET_LOADER2(TextureAtlas)

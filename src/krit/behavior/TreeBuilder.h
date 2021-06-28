@@ -26,8 +26,9 @@ template <typename Context> struct TreeBuilderOp {
     CompositeType compositeType;
     EvalFunction<Context> function;
 
-    TreeBuilderOp(EvalFunction<Context> f): type(Node), function(f) {}
-    TreeBuilderOp(CompositeType t, bool open = true): type(open ? OpenComposite : CloseComposite), compositeType(t) {}
+    TreeBuilderOp(EvalFunction<Context> f) : type(Node), function(f) {}
+    TreeBuilderOp(CompositeType t, bool open = true)
+        : type(open ? OpenComposite : CloseComposite), compositeType(t) {}
 };
 
 template <typename Context> struct CompositeState {
@@ -35,7 +36,7 @@ template <typename Context> struct CompositeState {
     BehaviorTreeNode<Context> *onSuccess = nullptr;
     BehaviorTreeNode<Context> *onFailure = nullptr;
 
-    CompositeState(CompositeType type): type(type) {}
+    CompositeState(CompositeType type) : type(type) {}
 };
 
 template <typename Context> struct TreeBuilder {
@@ -44,7 +45,7 @@ template <typename Context> struct TreeBuilder {
     BehaviorTree<Context> &tree;
     std::vector<TreeBuilderOp<Context>> ops;
 
-    TreeBuilder(BehaviorTree<Context> &tree): tree(tree) {}
+    TreeBuilder(BehaviorTree<Context> &tree) : tree(tree) {}
 
     Self &node(EvalFunction<Context> f) {
         ops.emplace_back(f);
@@ -114,7 +115,8 @@ template <typename Context> struct TreeBuilder {
                             break;
                         }
                         case Succeeder: {
-                            last->onSuccess = last->onFailure = composite.onSuccess;
+                            last->onSuccess = last->onFailure =
+                                composite.onSuccess;
                             break;
                         }
                     }
@@ -141,11 +143,13 @@ template <typename Context> struct TreeBuilder {
                             newComposite.onSuccess = last;
                             break;
                         }
-                        default: {}
+                        default: {
+                        }
                     }
                     break;
                 }
-                default: {}
+                default: {
+                }
             }
         }
 

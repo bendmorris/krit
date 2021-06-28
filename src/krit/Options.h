@@ -21,10 +21,24 @@ struct KritOptions {
 
     KritOptions() {}
 
-    KritOptions &setSize(int x, int y) { this->width = x; this->height = y; return *this; }
-    KritOptions &setTitle(const std::string &t) { this->title = t; return *this; }
-    KritOptions &setFrameRate(int free, int fixed) { this->framerate = free; this->fixedFramerate = fixed; return *this; }
-    KritOptions &setFullscreen(bool val) { this->fullscreen = val; return *this; }
+    KritOptions &setSize(int x, int y) {
+        this->width = x;
+        this->height = y;
+        return *this;
+    }
+    KritOptions &setTitle(const std::string &t) {
+        this->title = t;
+        return *this;
+    }
+    KritOptions &setFrameRate(int free, int fixed) {
+        this->framerate = free;
+        this->fixedFramerate = fixed;
+        return *this;
+    }
+    KritOptions &setFullscreen(bool val) {
+        this->fullscreen = val;
+        return *this;
+    }
 };
 
 }

@@ -14,7 +14,8 @@ template <typename... CommandTypes> struct CommandBuffer {
         return std::get<e>(this->commands);
     }
 
-    template <size_t e, typename... Args> auto emplace_back(Args&&... args) -> decltype(std::get<e>(commands)[0]) {
+    template <size_t e, typename... Args>
+    auto emplace_back(Args &&... args) -> decltype(std::get<e>(commands)[0]) {
         this->commandTypes.push_back(e);
         auto &c = std::get<e>(this->commands);
         c.emplace_back(args...);
@@ -26,15 +27,16 @@ template <typename... CommandTypes> struct CommandBuffer {
         this->_clearAll<0, CommandTypes...>(CommandTypes()...);
     }
 
-    private:
-        template <int i, typename Head, typename... Tail> void _clearAll(Head head, Tail... tail) {
-            this->_clearAll<i, Head>(head);
-            this->_clearAll<i + 1, Tail...>(tail...);
-        }
-        template <int i, typename Head> void _clearAll(Head head) {
-            auto &commands = std::get<i>(this->commands);
-            commands.clear();
-        }
+private:
+    template <int i, typename Head, typename... Tail>
+    void _clearAll(Head head, Tail... tail) {
+        this->_clearAll<i, Head>(head);
+        this->_clearAll<i + 1, Tail...>(tail...);
+    }
+    template <int i, typename Head> void _clearAll(Head head) {
+        auto &commands = std::get<i>(this->commands);
+        commands.clear();
+    }
 };
 
 }

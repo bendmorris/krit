@@ -13,7 +13,7 @@ template <typename K, typename V> struct LruNode {
     LruNode<K, V> *next = nullptr;
 
     LruNode<K, V>() {}
-    LruNode<K, V>(K &key, V &value): key(key), value(value) {}
+    LruNode<K, V>(K &key, V &value) : key(key), value(value) {}
 };
 
 template <typename K, typename V, int N> struct Lru {

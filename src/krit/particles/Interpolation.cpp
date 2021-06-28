@@ -2,7 +2,8 @@
 
 namespace krit {
 
-InterpolationFunction InterpolationFunction::linearInterpolation("linear", InterpolationLinear);
+InterpolationFunction
+    InterpolationFunction::linearInterpolation("linear", InterpolationLinear);
 
 float InterpolationFunction::evaluate(float t) {
     switch (type) {
@@ -30,7 +31,8 @@ float SplineData::evaluate(float t) {
 float SplineSegment::evaluate(float untransformedT, float end) {
     float t = (untransformedT - start) / (end - start);
     float it = 1 - t;
-    return it*it*it*p[0] + 3*it*it*t*p[1] + 3*it*t*t*p[2] + t*t*t*p[3];
+    return it * it * it * p[0] + 3 * it * it * t * p[1] +
+           3 * it * t * t * p[2] + t * t * t * p[3];
 }
 
 }

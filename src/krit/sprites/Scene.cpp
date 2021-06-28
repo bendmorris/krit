@@ -3,13 +3,13 @@
 #include <math.h>
 
 #include "krit/Engine.h"
-#include "krit/render/DrawCommand.h"
-#include "krit/render/RenderContext.h"
 #include "krit/UpdateContext.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Rectangle.h"
+#include "krit/render/DrawCommand.h"
 #include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
 #include "krit/script/ScriptEngine.h"
 
 namespace krit {
@@ -36,29 +36,24 @@ void Scene::render(RenderContext &ctx) {
     this->layout.render(ctx);
     if (this->fadeColor.a > 0) {
         DrawKey key;
-        IntRectangle windowRect(0, 0, ctx.window->width(), ctx.window->height());
+        IntRectangle windowRect(0, 0, ctx.window->width(),
+                                ctx.window->height());
         Matrix m;
         ctx.drawCommandBuffer->addRect(
-            ctx,
-            key,
-            windowRect,
-            m,
-            this->fadeColor.withAlpha(1 - pow(1 - this->fadeColor.a, 2))
-        );
+            ctx, key, windowRect, m,
+            this->fadeColor.withAlpha(1 - pow(1 - this->fadeColor.a, 2)));
     }
     ctx.camera = oldCamera;
 }
 
-ScriptScene::ScriptScene(ScriptEngine &engine):
-    Scene(),
-    engine(engine),
-    _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
-    _updateUi(JS_GetPropertyStr(engine.ctx, engine.exports, "updateUi")),
-    _fixedUpdate(JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
-    _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render")),
-    _renderUi(JS_GetPropertyStr(engine.ctx, engine.exports, "renderUi"))
-{
-}
+ScriptScene::ScriptScene(ScriptEngine &engine)
+    : Scene(), engine(engine),
+      _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
+      _updateUi(JS_GetPropertyStr(engine.ctx, engine.exports, "updateUi")),
+      _fixedUpdate(
+          JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
+      _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render")),
+      _renderUi(JS_GetPropertyStr(engine.ctx, engine.exports, "renderUi")) {}
 
 void ScriptScene::fixedUpdate(UpdateContext &ctx) {
     engine.callVoid(_fixedUpdate, ctx);

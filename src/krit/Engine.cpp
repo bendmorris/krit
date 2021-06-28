@@ -1,10 +1,10 @@
 #include "krit/Engine.h"
 
-#include "krit/render/DrawCommand.h"
 #include "krit/UpdateContext.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Rectangle.h"
+#include "krit/render/DrawCommand.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/RenderContext.h"
 
@@ -37,7 +37,8 @@ void Engine::update(UpdateContext &ctx) {
         while (!this->events.empty() && this->events.front().delay < 0) {
             TimedEvent &event = this->events.front();
             if (invoke(event.signal, false, &ctx, event.userData)) {
-                requeue.emplace_back(event.interval, event.interval, event.signal, event.userData);
+                requeue.emplace_back(event.interval, event.interval,
+                                     event.signal, event.userData);
             }
             this->events.pop_front();
             if (!this->events.empty() && elapsed > 0) {
@@ -74,17 +75,12 @@ void Engine::render(RenderContext &ctx) {
 
     if (this->bgColor.a > 0) {
         DrawKey key;
-        IntRectangle windowRect(0, 0, ctx.window->width(), ctx.window->height());
+        IntRectangle windowRect(0, 0, ctx.window->width(),
+                                ctx.window->height());
         Matrix m;
-        ctx.drawCommandBuffer->addRect(
-            ctx,
-            key,
-            windowRect,
-            m,
-            this->bgColor
-        );
+        ctx.drawCommandBuffer->addRect(ctx, key, windowRect, m, this->bgColor);
     }
-    
+
     for (auto &tree : trees) {
         if (tree.root) {
             ctx.camera = tree.camera;
@@ -99,7 +95,8 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
     bool inserted = false;
     float interval = delay;
     for (auto it = this->events.begin(); it != this->events.end(); ++it) {
-        if (it->delay <= 0) continue;
+        if (it->delay <= 0)
+            continue;
         if (delay < it->delay) {
             it->delay -= delay;
             this->events.emplace(it, delay, interval, s, userData);

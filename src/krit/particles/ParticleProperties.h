@@ -1,10 +1,10 @@
-    
+
 #ifndef KRIT_PARTICLES_PARTICLEPROPERTIES
 #define KRIT_PARTICLES_PARTICLEPROPERTIES
 
+#include "krit/Utils.h"
 #include "krit/particles/Interpolation.h"
 #include "krit/utils/Color.h"
-#include "krit/Utils.h"
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -25,8 +25,9 @@ struct DynamicProperty {
     StaticProperty start;
     StaticProperty end;
 
-    DynamicProperty(float a, float b): start(a, a), end(b, b) {}
-    DynamicProperty(float a, float b, float c, float d): start(a, b), end(c, d) {}
+    DynamicProperty(float a, float b) : start(a, a), end(b, b) {}
+    DynamicProperty(float a, float b, float c, float d)
+        : start(a, b), end(c, d) {}
 };
 
 struct ResolvedDynamicProperty {
@@ -35,7 +36,7 @@ struct ResolvedDynamicProperty {
     float end = 0;
 
     ResolvedDynamicProperty() {}
-    ResolvedDynamicProperty(float a, float b): start(a), end(b) {}
+    ResolvedDynamicProperty(float a, float b) : start(a), end(b) {}
 };
 
 struct ResolvedProperties {
@@ -72,20 +73,10 @@ struct UnresolvedProperties {
     DynamicProperty distance;
     DynamicProperty orthoDistance;
 
-    UnresolvedProperties():
-        originX(0, 0),
-        originY(0, 0),
-        direction(0, 0),
-        duration(0, 0),
-        red(1, 1),
-        green(1, 1),
-        blue(1, 1),
-        alpha(1, 1),
-        scale(1, 1),
-        rotation(0, 0),
-        distance(0, 0),
-        orthoDistance(0, 0)
-    {}
+    UnresolvedProperties()
+        : originX(0, 0), originY(0, 0), direction(0, 0), duration(0, 0),
+          red(1, 1), green(1, 1), blue(1, 1), alpha(1, 1), scale(1, 1),
+          rotation(0, 0), distance(0, 0), orthoDistance(0, 0) {}
 
     static void add(StaticProperty &lhs, const StaticProperty &rhs) {
         lhs.first += rhs.first;
@@ -103,7 +94,8 @@ struct UnresolvedProperties {
         to = from.first * (1 - t) + from.second * t;
     }
 
-    static void resolve(const DynamicProperty &from, ResolvedDynamicProperty &to) {
+    static void resolve(const DynamicProperty &from,
+                        ResolvedDynamicProperty &to) {
         std::uniform_real_distribution<float> r(0, 1);
         float t = r(rng), t2 = r(rng);
         to.f = from.f;
@@ -112,17 +104,20 @@ struct UnresolvedProperties {
     }
 
     UnresolvedProperties &set(DynamicProperty &prop, float val) {
-        prop.start.first = prop.start.second = prop.end.first = prop.end.second = val;
+        prop.start.first = prop.start.second = prop.end.first =
+            prop.end.second = val;
         return *this;
     }
 
-    UnresolvedProperties &set(DynamicProperty &prop, float startVal, float endVal) {
+    UnresolvedProperties &set(DynamicProperty &prop, float startVal,
+                              float endVal) {
         prop.start.first = prop.start.second = startVal;
         prop.end.first = prop.end.second = endVal;
         return *this;
     }
 
-    UnresolvedProperties &set(DynamicProperty &prop, float startVal1, float startVal2, float endVal1, float endVal2) {
+    UnresolvedProperties &set(DynamicProperty &prop, float startVal1,
+                              float startVal2, float endVal1, float endVal2) {
         prop.start.first = startVal1;
         prop.start.second = startVal2;
         prop.end.first = endVal1;
@@ -141,18 +136,20 @@ struct UnresolvedProperties {
         return *this;
     }
 
-    #define SETTER(x, y) \
-        UnresolvedProperties &set##x(float a) { return set(y, a); } \
-        UnresolvedProperties &set##x(float a, float b) { return set(y, a, b); }
+#define SETTER(x, y)                                                           \
+    UnresolvedProperties &set##x(float a) { return set(y, a); }                \
+    UnresolvedProperties &set##x(float a, float b) { return set(y, a, b); }
     SETTER(OriginX, originX)
     SETTER(OriginY, originY)
     SETTER(Direction, direction)
     SETTER(Duration, duration)
-    #undef SETTER
-    #define SETTER(x, y) \
-        UnresolvedProperties &set##x(float a) { return set(y, a); } \
-        UnresolvedProperties &set##x(float a, float b) { return set(y, a, b); } \
-        UnresolvedProperties &set##x(float a, float b, float c, float d) { return set(y, a, b, c, d); }
+#undef SETTER
+#define SETTER(x, y)                                                           \
+    UnresolvedProperties &set##x(float a) { return set(y, a); }                \
+    UnresolvedProperties &set##x(float a, float b) { return set(y, a, b); }    \
+    UnresolvedProperties &set##x(float a, float b, float c, float d) {         \
+        return set(y, a, b, c, d);                                             \
+    }
     SETTER(Red, red)
     SETTER(Green, green)
     SETTER(Blue, blue)
@@ -161,19 +158,25 @@ struct UnresolvedProperties {
     SETTER(Rotation, rotation)
     SETTER(Distance, distance)
     SETTER(OrthoDistance, orthoDistance)
-    #undef SETTER
-    
-    UnresolvedProperties &setColor(Color v) { setRed(v.r); setBlue(v.b); setGreen(v.g); setAlpha(v.a); return *this; }
+#undef SETTER
+
+    UnresolvedProperties &setColor(Color v) {
+        setRed(v.r);
+        setBlue(v.b);
+        setGreen(v.g);
+        setAlpha(v.a);
+        return *this;
+    }
     UnresolvedProperties &setColor(Color v1, Color v2) {
-        setRed(v1.r, v2.r); 
-        setBlue(v1.b, v2.b); 
-        setGreen(v1.g, v2.g); 
+        setRed(v1.r, v2.r);
+        setBlue(v1.b, v2.b);
+        setGreen(v1.g, v2.g);
         setAlpha(v1.a, v2.a);
         return *this;
     }
     UnresolvedProperties &setColor(Color v1, Color v2, Color v3, Color v4) {
-        setRed(v1.r, v2.r, v3.r, v4.r); 
-        setBlue(v1.b, v2.b, v3.b, v4.b); 
+        setRed(v1.r, v2.r, v3.r, v4.r);
+        setBlue(v1.b, v2.b, v3.b, v4.b);
         setGreen(v1.g, v2.g, v3.g, v4.g);
         setAlpha(v1.a, v2.a, v3.a, v4.a);
         return *this;

@@ -1,20 +1,20 @@
 #ifndef KRIT_TASKMANAGER
 #define KRIT_TASKMANAGER
 
-#include <stddef.h>
-#include <functional>
-#include <queue>
-#include <string>
-#include <algorithm>
 #include "SDL_mutex.h"
 #include "SDL_thread.h"
+#include <algorithm>
+#include <functional>
+#include <queue>
+#include <stddef.h>
+#include <string>
 
 namespace krit {
 
 struct RenderContext;
 struct UpdateContext;
 
-template <typename T> using AsyncTask = std::function<void(T&)>;
+template <typename T> using AsyncTask = std::function<void(T &)>;
 using UpdateTask = AsyncTask<UpdateContext>;
 using RenderTask = AsyncTask<RenderContext>;
 
@@ -48,8 +48,8 @@ template <typename T> struct AsyncQueue {
 
     bool pop(T *to);
 
-    private:
-        std::queue<T> queue;
+private:
+    std::queue<T> queue;
 };
 
 struct TaskManager {
@@ -59,7 +59,8 @@ struct TaskManager {
      * Used only by the main/render threads who are the only owners of their
      * work queues. Not safe when multiple threads may perform work.
      */
-    template <typename T> static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
+    template <typename T>
+    static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
         size_t len = queue.size();
         AsyncTask<T> job;
         for (size_t i = 0; i < len; ++i) {
@@ -79,12 +80,9 @@ struct TaskManager {
 
     bool killed = false;
 
-    TaskManager(UpdateContext &ctx, size_t size):
-        size(size),
-        ctx(ctx)
-    {
+    TaskManager(UpdateContext &ctx, size_t size) : size(size), ctx(ctx) {
         instance = this;
-        threads = new SDL_Thread*[size];
+        threads = new SDL_Thread *[size];
         for (size_t i = 0; i < size; ++i) {
             std::string threadName = "worker" + std::to_string(i + 1);
             SDL_CreateThread(workerFunc, threadName.c_str(), this);
@@ -95,14 +93,14 @@ struct TaskManager {
     void pushMain(UpdateTask task) { mainQueue.push(task); }
     void pushRender(RenderTask task) { renderQueue.push(task); }
 
-    private:
-        static int workerFunc(void *raw) {
-            TaskManager *taskManager = static_cast<TaskManager*>(raw);
-            taskManager->workerLoop();
-            return 0;
-        }
+private:
+    static int workerFunc(void *raw) {
+        TaskManager *taskManager = static_cast<TaskManager *>(raw);
+        taskManager->workerLoop();
+        return 0;
+    }
 
-        void workerLoop();
+    void workerLoop();
 };
 
 }

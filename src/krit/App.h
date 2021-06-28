@@ -1,12 +1,12 @@
 #ifndef KRIT_APP
 #define KRIT_APP
 
-#include <string>
-#include "krit/render/Renderer.h"
-#include "krit/Engine.h"
 #include "SDL_surface.h"
 #include "SDL_video.h"
+#include "krit/Engine.h"
 #include "krit/math/Dimensions.h"
+#include "krit/render/Renderer.h"
+#include <string>
 
 namespace krit {
 struct KritOptions;
@@ -38,14 +38,12 @@ struct App {
     /**
      * Run the app; will continue until
      */
-    [[ noreturn ]] void run();
+    [[noreturn]] void run();
 
     /**
      * Ends the run() loop.
      */
-    void quit() {
-        running = false;
-    }
+    void quit() { running = false; }
 
     void setFullScreen(bool full);
     bool isFullScreen() { return full; }
@@ -54,14 +52,14 @@ struct App {
         SDL_GetWindowSize(this->window, w, h);
     }
 
-    private:
-        SDL_Window *window;
-        SDL_Surface *surface;
-        bool running = false;
-        bool full = false;
-        bool startFullscreen = false;
+private:
+    SDL_Window *window;
+    SDL_Surface *surface;
+    bool running = false;
+    bool full = false;
+    bool startFullscreen = false;
 
-        void handleEvents();
+    void handleEvents();
 
     friend struct Editor;
     friend struct Renderer;
