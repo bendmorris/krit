@@ -1,4 +1,13 @@
 #include "krit/sprites/Layout.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
+#include <string>
+#include <algorithm>
+#include <vector>
+
 #include "krit/Engine.h"
 #include "krit/asset/TextureAtlas.h"
 #include "krit/sprites/Backdrop.h"
@@ -12,10 +21,17 @@
 #include "krit/utils/Panic.h"
 #include "krit/utils/Parse.h"
 #include "expat.h"
-#include <sstream>
-#include <string>
+#include "krit/App.h"
+#include "krit/Camera.h"
+#include "krit/UpdateContext.h"
+#include "krit/math/Rectangle.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/render/RenderContext.h"
+#include "krit/sprites/TextBase.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
+struct BitmapFont;
 
 void LayoutNode::fixedUpdate(UpdateContext &ctx) {
     if (this->sprite) {

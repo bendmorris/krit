@@ -1,9 +1,9 @@
 #ifndef KRIT_UTILS_LOG
 #define KRIT_UTILS_LOG
 
+#include <unistd.h>
 #include <cstdarg>
 #include <cstdio>
-#include <unistd.h>
 
 namespace krit {
 

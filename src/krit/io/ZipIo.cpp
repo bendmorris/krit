@@ -1,5 +1,10 @@
 #include "krit/io/ZipIo.h"
 
+#include <stdlib.h>
+
+#include "krit/io/FileIo.h"
+#include "krit/utils/Panic.h"
+
 namespace krit {
 
 zip_t *ZipIo::archive = nullptr;

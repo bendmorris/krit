@@ -1,5 +1,4 @@
 #include "krit/particles/Interpolation.h"
-#include <cmath>
 
 namespace krit {
 

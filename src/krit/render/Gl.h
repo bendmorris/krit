@@ -2,9 +2,6 @@
 #define KRIT_RENDER
 
 #include <GL/glew.h>
-#include <SDL.h>
-#include "SDL2/SDL_opengl.h"
-#include <string>
 
 namespace krit {
 

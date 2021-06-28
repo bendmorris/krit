@@ -1,4 +1,5 @@
-#include "krit/Math.h"
+#include <algorithm>
+
 #include "krit/render/DrawCall.h"
 #include "krit/render/DrawCommand.h"
 

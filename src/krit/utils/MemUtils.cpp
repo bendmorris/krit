@@ -5,6 +5,8 @@
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
 
+#include <bits/types/struct_rusage.h>
+
 #include "krit/Utils.h"
 
 #if defined(_WIN32)

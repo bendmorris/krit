@@ -1,11 +1,28 @@
 #include "krit/sprites/Text.h"
-#include "krit/utils/Utf8.h"
-#include "krit/App.h"
-#include "harfbuzz/hb.h"
+
+#include <math.h>
+#include <stdio.h>
 #include <cassert>
 #include <stack>
 #include <string>
 #include <string_view>
+#include <algorithm>
+#include <iterator>
+#include <memory>
+#include <utility>
+
+#include "krit/utils/Utf8.h"
+#include "krit/App.h"
+#include "harfbuzz/hb.h"
+#include "krit/Camera.h"
+#include "krit/math/Matrix.h"
+#include "krit/math/Point.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/render/RenderContext.h"
+#include "krit/render/Renderer.h"
+#include "krit/render/SmoothingMode.h"
 
 
 namespace krit {

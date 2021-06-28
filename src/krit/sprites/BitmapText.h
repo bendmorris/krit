@@ -1,6 +1,13 @@
 #ifndef KRIT_SPRITES_BITMAPTEXT
 #define KRIT_SPRITES_BITMAPTEXT
 
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <utility>
+#include <vector>
+#include <memory>
+
 #include "krit/asset/BitmapFont.h"
 #include "krit/render/BlendMode.h"
 #include "krit/sprites/TextBase.h"
@@ -8,13 +15,11 @@
 #include "krit/utils/Option.h"
 #include "krit/Sprite.h"
 #include "krit/Math.h"
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include "krit/math/Dimensions.h"
+#include "krit/math/ScaleFactor.h"
 
 namespace krit {
+struct RenderContext;
 
 struct BitmapTextOptions {
     std::shared_ptr<BitmapFont> font;
@@ -33,7 +38,8 @@ struct BitmapTextOptions {
     BitmapTextOptions &setLineSpacing(float spacing) { this->lineSpacing = spacing; return *this; }
 };
 
-class BitmapText;
+struct BitmapText;
+
 typedef void CustomRenderFunction(RenderContext*, BitmapText*, GlyphRenderData*);
 
 enum BitmapTextOpcodeType {

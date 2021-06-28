@@ -1,15 +1,24 @@
 #include "krit/asset/Font.h"
+
+#include <GL/glew.h>
+#include <stdlib.h>
+#include <cstring>
+#include <tuple>
+#include <utility>
+
 #include "krit/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/render/ImageData.h"
-#include "krit/render/RenderContext.h"
-#include "krit/render/Renderer.h"
 #include "krit/utils/Panic.h"
 #include "harfbuzz/hb.h"
-#include <cassert>
-#include <cstring>
-#include "freetype2/ft2build.h"
+#include "freetype/config/ftheader.h"
+#include "freetype/ftimage.h"
+#include "freetype/fttypes.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Rectangle.h"
+
 #include FT_FREETYPE_H
 
 namespace krit {

@@ -1,13 +1,19 @@
 #ifndef KRIT_SPRITES_BACKDROP
 #define KRIT_SPRITES_BACKDROP
 
+#include <string>
+
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
+#include "krit/math/Point.h"
+#include "krit/math/Rectangle.h"
+#include "krit/math/ScaleFactor.h"
 
 namespace krit {
+struct RenderContext;
 
 struct Backdrop: public VisibleSprite {
     float angle = 0;

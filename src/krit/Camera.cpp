@@ -1,5 +1,8 @@
 #include "krit/Camera.h"
 
+#include "krit/UpdateContext.h"
+#include "krit/math/Matrix.h"
+
 namespace krit {
 
 Camera &Camera::keepWidth(int minHeight, int maxHeight) {

@@ -1,17 +1,16 @@
 #ifndef KRIT_ASSET_FONT
 #define KRIT_ASSET_FONT
 
-#include "krit/asset/AssetInfo.h"
-#include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
-#include "krit/math/Rectangle.h"
-#include "krit/render/ImageRegion.h"
-#include "krit/utils/Color.h"
-#include "krit/utils/Panic.h"
+#include <stdint.h>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <cassert>
+#include <cstddef>
+#include <string>
+#include "krit/math/Point.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/utils/Panic.h"
+#include "krit/Assets.h"
 
 struct hb_face_t;
 struct hb_font_t;
@@ -20,8 +19,7 @@ struct hb_buffer_t;
 namespace krit {
 
 struct Font;
-struct Text;
-struct TextParser;
+struct ImageData;
 
 struct GlyphSize {
     Font *font;
@@ -52,8 +50,6 @@ struct ColumnData {
 
     ColumnData(int width, int height): width(width), height(height) {}
 };
-
-struct Font;
 
 struct GlyphCache {
     static const int SIZE_PRECISION = 8;

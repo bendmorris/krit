@@ -1,15 +1,15 @@
 #ifndef KRIT_ENGINE
 #define KRIT_ENGINE
 
+#include <list>
+#include <memory>
+#include <vector>
 #include "krit/asset/AssetCache.h"
 #include "krit/input/InputContext.h"
-#include "krit/render/RenderContext.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
 #include "krit/Camera.h"
 #include "krit/Sprite.h"
-#include <list>
-#include <string_view>
 
 namespace krit {
 
@@ -23,9 +23,8 @@ struct TimedEvent {
         : delay(delay), interval(interval), signal(signal), userData(userData) {}
 };
 
-struct InputContext;
-struct Sprite;
-struct Editor;
+struct RenderContext;
+struct UpdateContext;
 struct ImageData;
 struct TextureAtlas;
 struct Font;

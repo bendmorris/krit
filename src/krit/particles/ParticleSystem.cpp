@@ -1,7 +1,15 @@
 #include "krit/particles/ParticleSystem.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <cassert>
+
 #include "krit/io/Io.h"
 #include "yaml.h"
-#include <cassert>
+#include "krit/particles/Interpolation.h"
+#include "krit/particles/ParticleProperties.h"
+#include "krit/render/BlendMode.h"
+#include "krit/utils/Panic.h"
 
 namespace krit {
 

@@ -1,7 +1,11 @@
 #include "krit/render/RenderContext.h"
+
 #include "krit/render/DrawCommand.h"
 
 namespace krit {
+
+struct Matrix;
+struct DrawKey;
 
 void RenderContext::pushClip(Rectangle rect) {
     this->transformRect(rect);

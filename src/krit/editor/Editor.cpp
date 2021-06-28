@@ -1,10 +1,16 @@
 #include "krit/editor/Editor.h"
-#include "krit/App.h"
-#include "krit/Engine.h"
-#include "krit/Utils.h"
+
 #include "imgui.h"
-#include "imgui_impl_sdl.h"
-#include "imgui_impl_opengl3.h"
+#include "krit/App.h"
+#include "krit/Camera.h"
+#include "krit/Engine.h"
+#include "krit/UpdateContext.h"
+#include "krit/Utils.h"
+#include "krit/math/Dimensions.h"
+#include "krit/render/CommandBuffer.h"
+#include "krit/render/DrawCommand.h"
+#include "krit/render/RenderContext.h"
+#include <algorithm>
 
 namespace krit {
 
@@ -18,7 +24,9 @@ void Overlay::draw(krit::RenderContext &ctx) {
     if (!ctx.engine->paused) {
         elapsed += ctx.elapsed;
     }
-    if (ImGui::Begin("FPS", &pOpen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::Begin("FPS", &pOpen,
+                     ImGuiWindowFlags_NoDecoration |
+                         ImGuiWindowFlags_AlwaysAutoResize)) {
         int next = (index++) % 4;
         fpsBuffer[next] = 1.0 / ctx.elapsed;
         float total = 0;
@@ -36,7 +44,7 @@ void Overlay::draw(krit::RenderContext &ctx) {
         ImGui::Checkbox("Pause", &ctx.engine->paused);
         if (ImGui::Button("Advance Frame")) {
             ctx.engine->paused = false;
-            ctx.engine->setTimeout([](UpdateContext *ctx, void*) {
+            ctx.engine->setTimeout([](UpdateContext *ctx, void *) {
                 ctx->engine->paused = true;
                 return false;
             });
@@ -57,7 +65,8 @@ void Editor::render(krit::RenderContext &ctx) {
     if (imguiInitialized) {
         auto &io = ImGui::GetIO();
         io.DeltaTime = ctx.elapsed;
-        io.FontGlobalScale = std::max(1.0, ctx.window->height() * 2.5 / ctx.camera->height());
+        io.FontGlobalScale =
+            std::max(1.0, ctx.window->height() * 2.5 / ctx.camera->height());
         io.DisplaySize.x = ctx.window->width();
         io.DisplaySize.y = ctx.window->height();
 
@@ -71,7 +80,8 @@ void Editor::render(krit::RenderContext &ctx) {
 
         // frame will be finished in the render thread
         window = ctx.app->window;
-        ctx.drawCommandBuffer->buf.emplace_back<RenderImGui>(ImGui::GetDrawData());
+        ctx.drawCommandBuffer->buf.emplace_back<RenderImGui>(
+            ImGui::GetDrawData());
     }
 }
 

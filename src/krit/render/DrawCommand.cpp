@@ -1,7 +1,13 @@
 #include "krit/render/DrawCommand.h"
-#include "krit/render/RenderContext.h"
+
+#include <memory>
+
+#include "krit/math/Matrix.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/ImageData.h"
 
 namespace krit {
+struct Triangle;
 
 DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key) {
     // TODO: fallthrough logic

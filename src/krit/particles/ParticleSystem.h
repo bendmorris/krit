@@ -1,12 +1,14 @@
 #ifndef KRIT_PARTICLES_PARTICLESYSTEM
 #define KRIT_PARTICLES_PARTICLESYSTEM
 
-#include "krit/particles/Interpolation.h"
-#include "krit/particles/ParticleEffect.h"
 #include <string>
 #include <unordered_map>
 
+#include "krit/particles/ParticleEffect.h"
+
 namespace krit {
+
+struct InterpolationFunction;
 
 struct ParticleSystem {
     ParticleSystem();
@@ -18,8 +20,8 @@ struct ParticleSystem {
         return *effect;
     }
 
-    std::unordered_map<std::string, ParticleEffect*> effects;
-    std::unordered_map<std::string, InterpolationFunction*> functions;
+    std::unordered_map<std::string, ParticleEffect *> effects;
+    std::unordered_map<std::string, InterpolationFunction *> functions;
 };
 
 }

@@ -1,9 +1,15 @@
 #include "krit/sprites/BitmapText.h"
-#include "krit/render/ImageRegion.h"
+
+#include <stddef.h>
 #include <algorithm>
 #include <stack>
 #include <string_view>
 #include <utility>
+
+#include "krit/math/Matrix.h"
+#include "krit/math/Point.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
 

@@ -1,6 +1,14 @@
 #ifndef KRIT_SPRITES_EMITTER
 #define KRIT_SPRITES_EMITTER
 
+#include <functional>
+#include <list>
+#include <map>
+#include <string>
+#include <unordered_map>
+#include <iosfwd>
+#include <vector>
+
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/particles/Particle.h"
@@ -11,13 +19,15 @@
 #include "krit/Sprite.h"
 #include "krit/Math.h"
 #include "krit/Utils.h"
-#include <functional>
-#include <list>
-#include <map>
-#include <string>
-#include <unordered_map>
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
 
 namespace krit {
+struct ParticleEffect;
+struct ParticleEmission;
+struct ParticleSystem;
+struct RenderContext;
+struct UpdateContext;
 
 struct EmissionTrack {
     ParticleEmission *data;

@@ -1,19 +1,22 @@
+#include <SDL_image.h>
+#include <GL/glew.h>
+#include <cstdint>
+#include <string>
+
 #include "krit/asset/AssetLoader.h"
-#include "krit/App.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
-#include "krit/render/RenderContext.h"
-#include "krit/render/Renderer.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "krit/TaskManager.h"
-#include <SDL.h>
-#include <SDL_image.h>
-#include <cstdint>
-#include <memory>
-#include <string>
+#include "SDL_pixels.h"
+#include "SDL_surface.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/math/Dimensions.h"
 
 namespace krit {
+struct RenderContext;
+struct UpdateContext;
 
 template<> ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
     ImageData *img = new ImageData();

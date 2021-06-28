@@ -6,8 +6,8 @@
 
 namespace krit {
 
-class InputContext;
-class UpdateContext;
+struct InputContext;
+struct UpdateContext;
 
 enum MouseButton {
     MouseLeft = 1,

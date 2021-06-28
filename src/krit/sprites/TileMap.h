@@ -1,13 +1,21 @@
 #ifndef KRIT_SPRITES_TILEMAP
 #define KRIT_SPRITES_TILEMAP
 
+#include <memory>
+#include <algorithm>
+#include <cstdint>
+#include <vector>
+
 #include "krit/Sprite.h"
 #include "krit/sprites/BitmapText.h"
 #include "krit/sprites/NineSlice.h"
 #include "krit/render/ImageRegion.h"
-#include <memory>
+#include "krit/math/Dimensions.h"
+#include "krit/math/Rectangle.h"
 
 namespace krit {
+struct ImageData;
+struct RenderContext;
 
 struct TileMapProperties {
     IntDimensions tileSize;

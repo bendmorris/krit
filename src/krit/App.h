@@ -1,20 +1,19 @@
 #ifndef KRIT_APP
 #define KRIT_APP
 
-#include "krit/render/RenderContext.h"
+#include <string>
 #include "krit/render/Renderer.h"
 #include "krit/Engine.h"
-#include "krit/Options.h"
-#include "krit/UpdateContext.h"
-#include <SDL.h>
-#include <SDL_image.h>
+#include "SDL_surface.h"
+#include "SDL_video.h"
+#include "krit/math/Dimensions.h"
 
 namespace krit {
+struct KritOptions;
+struct RenderContext;
 
 const int MAX_FRAMES = 5;
 const int FPS = 60;
-
-struct Editor;
 
 struct App {
     static RenderContext ctx;

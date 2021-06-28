@@ -1,7 +1,11 @@
 #include "krit/asset/AssetLoader.h"
-#include "krit/io/Io.h"
+
 #include <cassert>
 #include <string_view>
+
+#include "krit/io/Io.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetType.h"
 
 namespace krit {
 

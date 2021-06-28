@@ -1,6 +1,10 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/utils/Log.h"
+#include "quickjs.h"
 
 namespace krit {
 

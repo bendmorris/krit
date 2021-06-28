@@ -1,5 +1,8 @@
 #include "krit/utils/Log.h"
 
+#include <unistd.h>
+#include <cstdio>
+
 namespace krit {
 
 const char *Log::abbreviations[LogLevelCount] = {"DBG", "INF", "WRN", "ERR", "!!!", "+++"};

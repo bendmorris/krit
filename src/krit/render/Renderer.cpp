@@ -1,3 +1,9 @@
+#include <stdint.h>
+#include <cassert>
+#include <algorithm>
+#include <memory>
+#include <utility>
+
 #include "krit/editor/Editor.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawCall.h"
@@ -8,12 +14,17 @@
 #include "krit/render/Shader.h"
 #include "krit/utils/Panic.h"
 #include "krit/App.h"
-#include "krit/Math.h"
-#include <SDL.h>
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
-#include <cassert>
+#include "SDL_error.h"
+#include "krit/render/CommandBuffer.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/FrameBuffer.h"
+#include "krit/render/Material.h"
+#include "krit/render/SmoothingMode.h"
+#include "krit/render/Uniform.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
 

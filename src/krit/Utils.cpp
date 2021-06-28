@@ -1,5 +1,7 @@
 #include "krit/Utils.h"
 
+#include <cmath>
+
 namespace krit {
 
 std::random_device rd;

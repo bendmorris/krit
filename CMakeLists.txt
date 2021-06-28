@@ -1,4 +1,5 @@
 project(krit)
+cmake_policy (SET CMP0072 OLD)
 
 find_package(SDL2 REQUIRED)
 #find_package(SDL2_image REQUIRED)
@@ -31,13 +32,13 @@ string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_BINARY_DIR}/script/*.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.*.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.cpp
+    ${KRIT_GENERATED_SCRIPT_FILES}
     ${KRIT_SRC_FILES}
 )
 target_link_libraries(${PROJECT_NAME}

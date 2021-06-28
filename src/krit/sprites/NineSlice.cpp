@@ -1,5 +1,14 @@
 #include "krit/sprites/NineSlice.h"
 
+#include <memory>
+
+#include "krit/Camera.h"
+#include "krit/math/Matrix.h"
+#include "krit/math/Rectangle.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
+#include "krit/render/SmoothingMode.h"
+
 namespace krit {
 
 NineSlice::NineSlice(ImageRegion &base, int leftWidth, int rightWidth,

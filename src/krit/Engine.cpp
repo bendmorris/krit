@@ -1,6 +1,12 @@
 #include "krit/Engine.h"
-#include "krit/editor/Editor.h"
+
 #include "krit/render/DrawCommand.h"
+#include "krit/UpdateContext.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Matrix.h"
+#include "krit/math/Rectangle.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
 

@@ -1,18 +1,21 @@
 #ifndef KRIT_RENDER_RENDER_CONTEXT
 #define KRIT_RENDER_RENDER_CONTEXT
 
-#include "krit/math/Point.h"
 #include "krit/Camera.h"
-#include "krit/render/DrawKey.h"
 #include "krit/UpdateContext.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
+#include "krit/math/Rectangle.h"
+#include "krit/math/Triangle.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
 
-struct App;
-struct Engine;
 struct DrawCommandBuffer;
+struct Matrix;
+struct DrawKey;
 
-struct RenderContext: public UpdateContext {
+struct RenderContext : public UpdateContext {
     DrawCommandBuffer *drawCommandBuffer = nullptr;
     bool debugDraw = false;
 
@@ -21,7 +24,8 @@ struct RenderContext: public UpdateContext {
     void pushClip(Rectangle rect);
     void popClip();
     void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
-    void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color);
+    void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix,
+                    Color color);
     void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color);
     void addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv, Color color);
 

@@ -291,7 +291,7 @@ env.addFilter('escapeName', function(str) {
 function replaceIfDifferent(path, content) {
     if (fs.existsSync(path)) {
         if (fs.readFileSync(path).toString() === content) {
-            console.log(`skipping ${path} which hasn't changed`);
+            // console.log(`skipping ${path} which hasn't changed`);
             return;
         }
     }
@@ -316,6 +316,9 @@ replaceIfDifferent(path.join(scriptDir, 'ScriptClass.h'), env.render('templates/
 }));
 
 // generate script classes
-replaceIfDifferent(path.join(scriptDir, `ScriptClass.cpp`), env.render('templates/ScriptClass.cpp.nj', {
-    wrappers,
-}));
+
+for (const wrapper of wrappers) {
+    replaceIfDifferent(path.join(scriptDir, `ScriptClass.${wrapper.name}.cpp`), env.render('templates/ScriptClass.cpp.nj', {
+        wrapper,
+    }));
+}

@@ -1,11 +1,18 @@
+#include <stdint.h>
+#include <utility>
+#include <vector>
+
 #include "krit/render/DrawCall.h"
 #include "krit/render/DrawCommand.h"
-#include "krit/render/Renderer.h"
 #include "krit/render/Shader.h"
 #include "krit/utils/Panic.h"
 #include "krit/TaskManager.h"
+#include "krit/math/Point.h"
+#include "krit/math/Triangle.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
+struct RenderContext;
 
 static uint32_t colorToInt(Color &c) {
     return (static_cast<uint32_t>(c.a * 0xff) << 24) |

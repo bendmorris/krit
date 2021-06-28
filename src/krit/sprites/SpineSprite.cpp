@@ -1,9 +1,28 @@
 #include "krit/sprites/SpineSprite.h"
+
+#include <spine/Extension.h>
+
 #include "krit/App.h"
 #include "krit/render/ImageRegion.h"
-#include "krit/Assets.h"
 #include "krit/io/Io.h"
-#include <spine/Extension.h>
+#include "krit/UpdateContext.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetLoader.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/math/Triangle.h"
+#include "krit/render/BlendMode.h"
+#include "krit/render/DrawKey.h"
+#include "krit/utils/Color.h"
+#include "krit/utils/Panic.h"
+#include "spine/AnimationState.h"
+#include "spine/Attachment.h"
+#include "spine/Bone.h"
+#include "spine/Color.h"
+#include "spine/MeshAttachment.h"
+#include "spine/RTTI.h"
+#include "spine/RegionAttachment.h"
+#include "spine/Slot.h"
+#include "spine/Vector.h"
 
 struct KritSpineExtension: public spine::DefaultSpineExtension {
     char *_readFile(const spine::String &path, int *length) override {

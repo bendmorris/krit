@@ -1,12 +1,11 @@
 #ifndef KRIT_UTILS
 #define KRIT_UTILS
 
+#include <stddef.h>
 #include <cassert>
-#include <cmath>
-#include <functional>
 #include <random>
-#include <utility>
 #include <vector>
+#include <iterator>
 
 namespace krit {
 

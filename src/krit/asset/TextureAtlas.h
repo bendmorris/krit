@@ -1,20 +1,15 @@
 #ifndef KRIT_ASSET_TEXTUREATLAS
 #define KRIT_ASSET_TEXTUREATLAS
 
-#include "krit/asset/AssetLoader.h"
-#include "krit/render/ImageData.h"
-#include "krit/render/ImageRegion.h"
-#include "krit/utils/Log.h"
-#include "krit/Math.h"
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
+#include "krit/render/ImageRegion.h"
+#include "krit/utils/Log.h"
 
 namespace krit {
 
-struct AssetCache;
+struct ImageRegion;
 
 struct TextureAtlas {
     std::unordered_map<std::string, ImageRegion> regions;

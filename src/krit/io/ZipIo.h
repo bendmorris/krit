@@ -1,14 +1,15 @@
 #ifndef KRIT_IO_ZIPIO
 #define KRIT_IO_ZIPIO
 
-#include "krit/utils/Panic.h"
-#include "krit/io/FileIo.h"
+#include <zip.h>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <zip.h>
+
+#include "krit/utils/Panic.h"
+#include "krit/io/FileIo.h"
 
 namespace krit {
 

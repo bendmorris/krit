@@ -1,7 +1,13 @@
+#include <vector>
+
 #include "krit/script/ScriptEngine.h"
 #include "krit/utils/Panic.h"
+#include "krit/script/ScriptFinalizer.h"
+#include "quickjs.h"
 
 namespace krit {
+
+enum ScriptClass: int;
 
 void ScriptFinalizer::init(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;

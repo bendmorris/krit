@@ -1,12 +1,19 @@
 #include "krit/sprites/Scene.h"
+
+#include <math.h>
+
 #include "krit/Engine.h"
-#include "krit/input/InputContext.h"
 #include "krit/render/DrawCommand.h"
-#include "krit/script/ScriptClass.h"
-#include "krit/script/ScriptValue.h"
 #include "krit/render/RenderContext.h"
+#include "krit/UpdateContext.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Matrix.h"
+#include "krit/math/Rectangle.h"
+#include "krit/render/DrawKey.h"
+#include "krit/script/ScriptEngine.h"
 
 namespace krit {
+struct Camera;
 
 void Scene::update(UpdateContext &ctx) {
     if (this->fadingOut && this->fadeColor.a < this->maxAlpha) {

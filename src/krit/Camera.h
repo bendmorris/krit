@@ -1,10 +1,14 @@
 #ifndef KRIT_CAMERA
 #define KRIT_CAMERA
 
-#include "krit/Math.h"
-#include "krit/UpdateContext.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
+#include "krit/math/ScaleFactor.h"
 
 namespace krit {
+
+struct Matrix;
+struct UpdateContext;
 
 struct CameraTransform {
     Point scroll;

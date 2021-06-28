@@ -1,11 +1,11 @@
 #ifndef KRIT_PARTICLES_PARTICLE
 #define KRIT_PARTICLES_PARTICLE
 
-#include "krit/particles/ParticleEffect.h"
-#include <string>
-#include <unordered_map>
+#include "krit/particles/ParticleProperties.h"
 
 namespace krit {
+
+struct ParticleEmission;
 
 struct Particle {
     ParticleEmission *emission;

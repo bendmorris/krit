@@ -1,15 +1,18 @@
 #ifndef KRIT_RENDER_SHADER
 #define KRIT_RENDER_SHADER
 
-#include "krit/render/Gl.h"
+#include <GL/glew.h>
 #include <cstdlib>
 #include <cstdio>
 #include <unordered_map>
+#include <string>
+
+#include "krit/render/Gl.h"
 
 namespace krit {
 
-class DrawCommandBuffer;
-class DrawCall;
+struct DrawCommandBuffer;
+struct DrawCall;
 
 struct Shader {
     GLuint program = 0;

@@ -1,17 +1,33 @@
 #include "krit/App.h"
+
+#include <SDL.h>
+#include <stdlib.h>
+#include <chrono>
+#include <cmath>
+#include <csignal>
+
 #include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/input/Mouse.h"
 #include "krit/TaskManager.h"
 #include "krit/utils/Panic.h"
 #include "krit/editor/Editor.h"
-#include <SDL.h>
-#include <chrono>
-#include <cmath>
-#include <csignal>
 #include "imgui_impl_sdl.h"
+#include "SDL_error.h"
+#include "SDL_events.h"
+#include "SDL_image.h"
+#include "SDL_keyboard.h"
+#include "SDL_mouse.h"
+#include "SDL_mutex.h"
+#include "imgui.h"
+#include "krit/Options.h"
+#include "krit/input/Key.h"
+#include "krit/render/Gl.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Signal.h"
 
 namespace krit {
+struct UpdateContext;
 
 static App *current;
 RenderContext App::ctx;

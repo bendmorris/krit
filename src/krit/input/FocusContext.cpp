@@ -1,6 +1,8 @@
 #include "krit/input/FocusContext.h"
 
 namespace krit {
+struct UpdateContext;
+struct VisibleSprite;
 
 void FocusContext::setFocus(UpdateContext *ctx, VisibleSprite *sprite) {
     auto lostFocus = this->focus;

@@ -1,11 +1,18 @@
 #ifndef KRIT_SPRITES_TEXT
 #define KRIT_SPRITES_TEXT
 
+#include <stddef.h>
+#include <cassert>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
 #include "krit/asset/Font.h"
 #include "krit/sprites/TextBase.h"
 #include "krit/utils/Option.h"
 #include "krit/Sprite.h"
-#include <cassert>
+#include "krit/math/Dimensions.h"
+#include "krit/utils/Color.h"
 
 struct hb_buffer_t;
 struct hb_font_t;
@@ -13,6 +20,7 @@ struct hb_font_t;
 namespace krit {
 
 struct Text;
+struct RenderContext;
 
 typedef void CustomTextRenderFunction(RenderContext*, Text*, GlyphRenderData*);
 

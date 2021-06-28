@@ -1,6 +1,12 @@
+#include <memory>
+
 #include "krit/App.h"
-#include "krit/Camera.h"
 #include "krit/sprites/Image.h"
+#include "krit/Engine.h"
+#include "krit/math/Matrix.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
 

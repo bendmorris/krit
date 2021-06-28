@@ -1,7 +1,22 @@
 #include "krit/sprites/Emitter.h"
+
+#include <stddef.h>
+#include <cmath>
+#include <algorithm>
+#include <memory>
+#include <unordered_map>
+
 #include "krit/App.h"
 #include "krit/asset/TextureAtlas.h"
-#include <cmath>
+#include "krit/Engine.h"
+#include "krit/UpdateContext.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/particles/ParticleEffect.h"
+#include "krit/particles/ParticleProperties.h"
+#include "krit/particles/ParticleSystem.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Color.h"
 
 namespace krit {
 

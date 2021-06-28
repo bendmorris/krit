@@ -1,13 +1,20 @@
-#include "krit/asset/AssetCache.h"
+#include <algorithm>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <utility>
+#include <string>
 #include "krit/App.h"
 #include "krit/asset/BitmapFont.h"
 #include "krit/utils/Panic.h"
-#include "krit/Assets.h"
 #include "expat.h"
-#include <cstring>
-#include <utility>
+#include "krit/Engine.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetLoader.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
+struct ImageData;
 
 void startElement(void *userData, const char *name, const char **attrs) {
     BitmapFont *font = static_cast<BitmapFont*>(userData);

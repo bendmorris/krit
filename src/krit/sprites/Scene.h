@@ -1,11 +1,18 @@
 #ifndef KRIT_SPRITES_SCENE
 #define KRIT_SPRITES_SCENE
 
+#include <string>
+
 #include "krit/sprites/Layout.h"
 #include "krit/Sprite.h"
 #include "krit/script/ScriptEngine.h"
+#include "krit/utils/Color.h"
+#include "quickjs.h"
 
 namespace krit {
+struct RenderContext;
+struct ScriptEngine;
+struct UpdateContext;
 
 struct Scene: public Sprite {
     LayoutRoot layout;

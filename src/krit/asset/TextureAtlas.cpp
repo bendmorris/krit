@@ -1,12 +1,21 @@
 #include "krit/asset/TextureAtlas.h"
-#include "krit/App.h"
-#include "krit/asset/AssetCache.h"
-#include "krit/Assets.h"
-#include "krit/io/Io.h"
+
+#include <stddef.h>
 #include <sstream>
 #include <string>
+#include <memory>
+
+#include "krit/App.h"
+#include "krit/io/Io.h"
+#include "krit/Engine.h"
+#include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetLoader.h"
+#include "krit/math/Rectangle.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
+struct ImageData;
 
 std::pair<int, int> parseTuple(std::string &x) {
     int a = 0, b = 0;

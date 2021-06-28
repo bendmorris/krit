@@ -1,9 +1,11 @@
 #ifndef KRIT_SCRIPT_SCRIPTVALUE
 #define KRIT_SCRIPT_SCRIPTVALUE
 
-#include "quickjs.h"
+#include <stddef.h>
 #include <string>
 #include <vector>
+
+#include "quickjs.h"
 
 namespace krit {
 

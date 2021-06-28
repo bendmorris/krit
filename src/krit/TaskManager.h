@@ -1,14 +1,18 @@
 #ifndef KRIT_TASKMANAGER
 #define KRIT_TASKMANAGER
 
-#include "krit/UpdateContext.h"
-#include "krit/render/RenderContext.h"
-#include <SDL.h>
+#include <stddef.h>
 #include <functional>
 #include <queue>
 #include <string>
+#include <algorithm>
+#include "SDL_mutex.h"
+#include "SDL_thread.h"
 
 namespace krit {
+
+struct RenderContext;
+struct UpdateContext;
 
 template <typename T> using AsyncTask = std::function<void(T&)>;
 using UpdateTask = AsyncTask<UpdateContext>;

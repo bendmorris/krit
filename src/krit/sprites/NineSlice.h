@@ -1,11 +1,16 @@
 #ifndef KRIT_SPRITES_NINESLICE
 #define KRIT_SPRITES_NINESLICE
 
-#include "krit/Sprite.h"
-#include "krit/render/ImageRegion.h"
 #include <memory>
 
+#include "krit/Sprite.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
+#include "krit/math/ScaleFactor.h"
+
 namespace krit {
+struct RenderContext;
 
 struct NineSlice : public VisibleSprite {
     Point origin;

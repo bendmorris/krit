@@ -1,7 +1,8 @@
-#include <SDL.h>
+#include <stdarg.h>
+#include <stdlib.h>
 #include <cstdio>
+
 #include "krit/render/Gl.h"
-#include "krit/utils/Panic.h"
 
 namespace krit {
 

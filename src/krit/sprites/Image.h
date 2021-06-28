@@ -1,13 +1,20 @@
 #ifndef KRIT_SPRITES_IMAGE
 #define KRIT_SPRITES_IMAGE
 
+#include <string>
+
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
 #include "krit/Sprite.h"
 #include "krit/Math.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
+#include "krit/math/Rectangle.h"
+#include "krit/math/ScaleFactor.h"
 
 namespace krit {
+struct RenderContext;
 
 struct Image: public VisibleSprite {
     Point origin;

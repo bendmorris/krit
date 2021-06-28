@@ -1,8 +1,13 @@
 #include "krit/script/ScriptEngine.h"
+
+#include <stdio.h>
+#include <cstring>
+#include <memory>
+
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptFinalizer.h"
-#include <cstring>
+#include "krit/UpdateContext.h"
 
 namespace krit {
 

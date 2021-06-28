@@ -1,34 +1,58 @@
 #ifndef KRIT_SPRITES_SPINESPRITE
 #define KRIT_SPRITES_SPINESPRITE
 
-#include "krit/App.h"
-#include "krit/asset/AssetCache.h"
-#include "krit/asset/AssetLoader.h"
-#include "krit/render/ImageRegion.h"
-#include "krit/utils/Color.h"
-#include "krit/utils/Panic.h"
-#include "krit/Sprite.h"
-#include "spine/spine.h"
 #include <memory>
+#include <stddef.h>
 #include <string>
 #include <utility>
 
+#include "krit/App.h"
+#include "krit/Engine.h"
+#include "krit/Sprite.h"
+#include "krit/asset/AssetCache.h"
+#include "krit/asset/AssetLoader.h"
+#include "krit/math/Dimensions.h"
+#include "krit/render/ImageData.h"
+#include "krit/render/ImageRegion.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Color.h"
+#include "krit/utils/Panic.h"
+#include "spine/AnimationStateData.h"
+#include "spine/Atlas.h"
+#include "spine/Skeleton.h"
+#include "spine/SkeletonBinary.h"
+#include "spine/SkeletonData.h"
+#include "spine/Skin.h"
+#include "spine/SpineString.h"
+#include "spine/TextureLoader.h"
+#include "spine/spine.h"
+
+namespace spine {
+
+class AnimationState;
+
+}
+
 namespace krit {
 
-struct SpineTextureLoader: public spine::TextureLoader {
+struct AssetInfo;
+struct UpdateContext;
+
+struct SpineTextureLoader : public spine::TextureLoader {
     static SpineTextureLoader instance;
 
     void load(spine::AtlasPage &page, const spine::String &path) override {
         std::string assetName(path.buffer());
-        std::shared_ptr<ImageData> texture = App::ctx.engine->getImage(assetName);
+        std::shared_ptr<ImageData> texture =
+            App::ctx.engine->getImage(assetName);
         ImageRegion *region = new ImageRegion(texture);
         page.setRendererObject(region);
         page.width = texture->width();
         page.height = texture->height();
     }
 
-    void unload(void* texture) override {
-        ImageRegion *region = static_cast<ImageRegion*>(texture);
+    void unload(void *texture) override {
+        ImageRegion *region = static_cast<ImageRegion *>(texture);
         delete region;
     }
 };
@@ -39,7 +63,8 @@ struct SkeletonBinaryData {
     spine::SkeletonData *skeletonData;
     spine::AnimationStateData *animationStateData;
 
-    SkeletonBinaryData(spine::Atlas* a, spine::SkeletonBinary* b, spine::SkeletonData* sd, spine::AnimationStateData* asd)
+    SkeletonBinaryData(spine::Atlas *a, spine::SkeletonBinary *b,
+                       spine::SkeletonData *sd, spine::AnimationStateData *asd)
         : atlas(a), binary(b), skeletonData(sd), animationStateData(asd) {}
     ~SkeletonBinaryData() {
         delete this->animationStateData;
@@ -49,7 +74,7 @@ struct SkeletonBinaryData {
     }
 };
 
-struct SpineSprite: public VisibleSprite {
+struct SpineSprite : public VisibleSprite {
     static float worldVertices[1024];
     static spine::String _customSkin;
 
@@ -62,17 +87,22 @@ struct SpineSprite: public VisibleSprite {
     spine::Skin *skin;
 
     spine::SkeletonData &skeletonData() { return *this->bin->skeletonData; }
-    spine::AnimationStateData &animationStateData() { return *this->bin->animationStateData; }
+    spine::AnimationStateData &animationStateData() {
+        return *this->bin->animationStateData;
+    }
 
     SpineSprite(const std::string &id);
     SpineSprite(const AssetInfo &info);
     ~SpineSprite();
 
-    float setAnimation(size_t track, const std::string &name, bool loop = true, float speed = 1, float mix = -1);
-    float addAnimation(size_t track, const std::string &name, bool loop = true, float delay = 0, float mix = -1);
+    float setAnimation(size_t track, const std::string &name, bool loop = true,
+                       float speed = 1, float mix = -1);
+    float addAnimation(size_t track, const std::string &name, bool loop = true,
+                       float delay = 0, float mix = -1);
 
     void setAttachment(const std::string &slot, const std::string &attachment) {
-        this->skeleton->setAttachment(spine::String(slot.c_str()), spine::String(attachment.c_str()));
+        this->skeleton->setAttachment(spine::String(slot.c_str()),
+                                      spine::String(attachment.c_str()));
     }
 
     void reset() {
@@ -93,9 +123,7 @@ struct SpineSprite: public VisibleSprite {
      * This will be shared across all instances of this skeleton as long as the
      * skeleton is live in the asset cache.
      */
-    void setDefaultMix(float t) {
-        this->animationStateData().setDefaultMix(t);
-    }
+    void setDefaultMix(float t) { this->animationStateData().setDefaultMix(t); }
 
     void update(UpdateContext &ctx) override;
     virtual void render(RenderContext &ctx) override;

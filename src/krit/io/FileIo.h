@@ -4,7 +4,6 @@
 #include "krit/utils/Panic.h"
 #include <fstream>
 #include <sstream>
-#include <string>
 #include <vector>
 
 namespace krit {
@@ -26,7 +25,7 @@ struct FileIo {
         return buffer;
     }
 
-    static void free(char *buf) { free(buf); }
+    static void free(char *buf) { std::free(buf); }
 
     static bool exists(const std::string &path) {
         std::ifstream infile(path);

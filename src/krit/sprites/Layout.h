@@ -2,23 +2,33 @@
 #define KRIT_SPRITES_LAYOUT
 
 #include "krit/Sprite.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Measurement.h"
+#include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Log.h"
 #include <memory>
 #include <stack>
+#include <stddef.h>
 #include <string>
+#include <unordered_map>
 #include <utility>
 
-#define UI_GET_FROM(from, x, T) static_cast<T*>(from.layout.getById(#x))
+#define UI_GET_FROM(from, x, T) static_cast<T *>(from.layout.getById(#x))
 #define UI_GET(x, T) UI_GET_FROM((*this), x, T)
 #define UI_GET_NODE_FROM(from, x) from.layout.getNodeById(#x)
 #define UI_GET_NODE(x) UI_GET_NODE_FROM((*this), x)
-#define UI_DECL_FROM(from, x, T) T *x = static_cast<T*>(from.layout.getById(#x))
+#define UI_DECL_FROM(from, x, T)                                               \
+    T *x = static_cast<T *>(from.layout.getById(#x))
 #define UI_DECL(x, T) UI_DECL_FROM((*this), x, T)
-#define UI_DECL_NODE_FROM(from, x) LayoutNode *x##Node = from.layout.getNodeById(#x)
+#define UI_DECL_NODE_FROM(from, x)                                             \
+    LayoutNode *x##Node = from.layout.getNodeById(#x)
 #define UI_DECL_NODE(x) UI_DECL_NODE_FROM((*this), x)
 
 namespace krit {
+
+struct RenderContext;
+struct UpdateContext;
 
 enum PositionMode {
     PositionAbsolute,
@@ -29,9 +39,10 @@ enum PositionMode {
 
 // TODO: opportunity for pooling everything here
 
-struct LayoutNode: public VisibleSprite {
+struct LayoutNode : public VisibleSprite {
     std::unique_ptr<VisibleSprite> sprite = nullptr;
-    Measurement padding[4] = {Measurement(0), Measurement(0), Measurement(0), Measurement(0)};
+    Measurement padding[4] = {Measurement(0), Measurement(0), Measurement(0),
+                              Measurement(0)};
     AnchoredMeasurement x = AnchoredMeasurement(Measurement(0), 0);
     AnchoredMeasurement y = AnchoredMeasurement(Measurement(0), 0);
     Measurement width = Measurement(Percent, 100);
@@ -78,7 +89,8 @@ struct LayoutNode: public VisibleSprite {
         return *this;
     }
 
-    LayoutNode &setPadding(Measurement top, Measurement bottom, Measurement left, Measurement right) {
+    LayoutNode &setPadding(Measurement top, Measurement bottom,
+                           Measurement left, Measurement right) {
         this->paddingTop() = top;
         this->paddingBottom() = bottom;
         this->paddingLeft() = left;
@@ -108,21 +120,27 @@ struct LayoutNode: public VisibleSprite {
         }
     }
 
-    void clearChildren() {
-        this->firstChild = nullptr;
-    }
+    void clearChildren() { this->firstChild = nullptr; }
 
     VisibleSprite *getSprite() { return this->sprite.get(); }
 
-    void reflow(UpdateContext &ctx) { 
+    void reflow(UpdateContext &ctx) {
         measure(ctx, nullptr, nullptr);
         arrange(ctx, nullptr, nullptr);
     }
-    void measure(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
-    void arrange(UpdateContext &ctx, LayoutNode *parent, LayoutNode *prevSibling);
+    void measure(UpdateContext &ctx, LayoutNode *parent,
+                 LayoutNode *prevSibling);
+    void arrange(UpdateContext &ctx, LayoutNode *parent,
+                 LayoutNode *prevSibling);
 
     Point getPosition() override { return this->position; }
-    Dimensions getSize() override { return this->keepSize ? this->dimensions : (this->sprite ? this->sprite->getSize() : Dimensions(this->width.measure(0), this->height.measure(0))); }
+    Dimensions getSize() override {
+        return this->keepSize
+                   ? this->dimensions
+                   : (this->sprite ? this->sprite->getSize()
+                                   : Dimensions(this->width.measure(0),
+                                                this->height.measure(0)));
+    }
 
     void fixedUpdate(UpdateContext &ctx) override;
     void update(UpdateContext &ctx) override;
@@ -135,30 +153,37 @@ struct LayoutParseData {
     std::string *path;
     LayoutRoot *root;
     LayoutNode *node;
-    std::stack<LayoutNode*> layoutStack;
+    std::stack<LayoutNode *> layoutStack;
 };
 
-typedef void LayoutParseFunction(LayoutParseData *, std::unordered_map<std::string, std::string>&);
+typedef void
+LayoutParseFunction(LayoutParseData *,
+                    std::unordered_map<std::string, std::string> &);
 
-struct LayoutRoot: public Sprite {
+struct LayoutRoot : public Sprite {
     static LayoutRoot *fromMarkup(const std::string &markup) {
         LayoutRoot *root = new LayoutRoot();
         root->parse(markup);
         return root;
     }
 
-    static std::unordered_map<std::string, LayoutParseFunction*> parsers;
-    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout, const std::string &key, const std::string &value);
+    static std::unordered_map<std::string, LayoutParseFunction *> parsers;
+    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
+                                const std::string &key,
+                                const std::string &value);
     static SpriteStyle parseStyle(std::string &s);
-    static void parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e);
-    static ImageRegion parseSrc(std::unordered_map<std::string, std::string> &attrMap);
+    static void
+    parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap,
+                       VisibleSprite *e);
+    static ImageRegion
+    parseSrc(std::unordered_map<std::string, std::string> &attrMap);
 
     static void addParser(const std::string &tag, LayoutParseFunction *f) {
         parsers.insert(std::make_pair(tag, f));
     }
 
     std::unique_ptr<LayoutNode> rootNode;
-    std::unordered_map<std::string, LayoutNode*> nodeMap;
+    std::unordered_map<std::string, LayoutNode *> nodeMap;
 
     LayoutRoot() {}
     LayoutRoot(const std::string &path);

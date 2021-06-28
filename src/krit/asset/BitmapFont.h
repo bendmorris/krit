@@ -1,20 +1,17 @@
 #ifndef KRIT_ASSET_BITMAP_FONT
 #define KRIT_ASSET_BITMAP_FONT
 
-#include "krit/asset/AssetLoader.h"
-#include "krit/asset/Font.h"
-#include "krit/render/ImageData.h"
-#include "krit/Math.h"
 #include <cstdint>
 #include <memory>
-#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "krit/math/Point.h"
+#include "krit/math/Rectangle.h"
 
 namespace krit {
 
-struct AssetCache;
+struct ImageData;
 
 struct BitmapGlyphData {
     int page = 0;
@@ -53,7 +50,7 @@ struct BitmapFont: public BitmapFontBase {
         return this->pages[i];
     }
 
-    int kern(int32_t lastChar, int32_t thisChar) {
+    int kern(int32_t lastChar, int32_t thisChar) override {
         int64_t key = (static_cast<int64_t>(lastChar) << 32) | thisChar;
         auto found = kerningTable.find(key);
         if (found != kerningTable.end()) {

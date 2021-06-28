@@ -1,5 +1,14 @@
 #include "krit/sprites/TileMap.h"
 
+#include <math.h>
+
+#include "krit/math/Matrix.h"
+#include "krit/math/Point.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Color.h"
+
 namespace krit {
 
 void TileMap::render(RenderContext &ctx) {
