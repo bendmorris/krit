@@ -4,12 +4,20 @@
 #include "krit/Assets.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
+#include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
 namespace krit {
+
+struct AssetRequest {
+    int id;
+    bool (*ready)(void *id);
+    std::function<void()> callback;
+};
 
 /**
  * An AssetCache is a collection of assets with the same lifetime; it holds
@@ -23,6 +31,30 @@ namespace krit {
  */
 struct AssetCache {
     static std::unordered_map<int, std::weak_ptr<void>> globalCache;
+    static std::vector<AssetRequest> assetRequests;
+
+    template <typename T>
+    static void requestAsset(const AssetId id, std::function<void()> callback) {
+        assetRequests.emplace_back(
+            (AssetRequest){.id = id,
+                           .ready = AssetLoader<T>::assetIsReadyGeneric,
+                           .callback = callback});
+    }
+
+    static void update() {
+        for (size_t i = 0; i < assetRequests.size(); ++i) {
+            auto &request = assetRequests[i];
+            auto found = globalCache.find(request.id);
+            if (found != globalCache.end()) {
+                std::shared_ptr<void> asset = found->second.lock();
+                if (asset && request.ready(asset.get())) {
+                    request.callback();
+                    assetRequests.erase(assetRequests.begin()+i);
+                    --i;
+                }
+            }
+        }
+    }
 
     std::unordered_map<int, std::shared_ptr<void>> cache;
 

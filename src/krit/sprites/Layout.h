@@ -6,7 +6,7 @@
 #include "krit/math/Measurement.h"
 #include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"
-#include "krit/utils/Log.h"
+#include "krit/utils/Panic.h"
 #include <memory>
 #include <stack>
 #include <stddef.h>
@@ -194,8 +194,7 @@ struct LayoutRoot : public Sprite {
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);
         if (found == this->nodeMap.end()) {
-            Log::error("missing layout node: %s", id.c_str());
-            return nullptr;
+            panic("missing layout node: %s", id.c_str());
         } else {
             return found->second;
         }
@@ -206,12 +205,11 @@ struct LayoutRoot : public Sprite {
         if (node) {
             VisibleSprite *sprite = node->sprite.get();
             if (!sprite) {
-                Log::error("empty layout element: %s", id.c_str());
+                panic("empty layout element: %s", id.c_str());
             }
             return sprite;
         } else {
-            Log::error("missing layout element: %s", id.c_str());
-            return nullptr;
+            panic("missing layout element: %s", id.c_str());
         }
     }
 

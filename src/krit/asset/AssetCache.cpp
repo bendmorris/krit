@@ -3,5 +3,6 @@
 namespace krit {
 
 std::unordered_map<int, std::weak_ptr<void>> AssetCache::globalCache;
+std::vector<AssetRequest> AssetCache::assetRequests;
 
 }

@@ -55,6 +55,9 @@ void Engine::update(UpdateContext &ctx) {
         }
     }
 
+    // asset requests
+    AssetCache::update();
+
     // actual update cycle
     invoke(onUpdate, &ctx);
     camera.update(ctx);

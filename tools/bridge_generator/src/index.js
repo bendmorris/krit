@@ -55,6 +55,7 @@ let checker = program.getTypeChecker();
 
 function cppType(t) {
     if (t.intrinsicName === 'error') {
+        console.log(t);
         throw new Error('unrecognized type');
     }
     // const enums are integers
@@ -198,6 +199,13 @@ for (const sourceFile of program.getSourceFiles()) {
             }
             for (const prop of checker.getPropertiesOfType(type)) {
                 const propType = checker.getTypeOfSymbolAtLocation(prop, node);
+                const tags = {};
+                for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
+                    tags[tag.tagName.text] = tagify(tag.comment);
+                }
+                if (tags.skip) {
+                    continue;
+                }
                 if (checker.typeToString(propType).indexOf('=>') !== -1) {
                     // this is a method
                     const functionType = propType.getCallSignatures()[0];
@@ -205,7 +213,7 @@ for (const sourceFile of program.getSourceFiles()) {
                         name: prop.name,
                         returnCppType: cppType(functionType.getReturnType()),
                         params: [],
-                        tags: [],
+                        tags,
                     };
                     for (const param of functionType.getParameters()) {
                         const spec = {
@@ -218,25 +226,12 @@ for (const sourceFile of program.getSourceFiles()) {
                         }
                         method.params.push(spec);
                     }
-                    for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
-                        method.tags[tag.tagName.text] = tagify(tag.comment);
-                    }
-                    if (method.tags.skip) {
-                        continue;
-                    }
                     options.methods.push(method);
                 } else {
                     // this is a property
-                    const tags = {};
-                    for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
-                        tags[tag.tagName.text] = tagify(tag.comment);
-                    }
                     let type = cppType(propType);
                     if (tags.cppType) {
                         type = { type: tags.cppType };
-                    }
-                    if (tags.skip) {
-                        continue;
                     }
                     options.props.push({
                         name: prop.name,

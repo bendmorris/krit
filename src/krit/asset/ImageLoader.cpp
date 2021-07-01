@@ -51,17 +51,19 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         TaskManager::instance->pushRender([info, img, surface,
                                            mode](RenderContext &render) {
             // upload texture
+            GLuint texture;
             glActiveTexture(GL_TEXTURE0);
             checkForGlErrors("active texture");
-            glGenTextures(1, &img->texture);
+            glGenTextures(1, &texture);
             checkForGlErrors("gen textures");
-            glBindTexture(GL_TEXTURE_2D, img->texture);
+            glBindTexture(GL_TEXTURE_2D, texture);
             checkForGlErrors("bind texture");
             glTexImage2D(GL_TEXTURE_2D, 0, mode, img->width(), img->height(), 0,
                          mode, GL_UNSIGNED_BYTE, surface->pixels);
             checkForGlErrors("texImage2D");
             glGenerateMipmap(GL_TEXTURE_2D);
             checkForGlErrors("asset load");
+            img->texture = texture;
 
             SDL_FreeSurface(surface);
         });
@@ -77,6 +79,10 @@ template <> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
         glDeleteTextures(1, &texture);
     });
     delete img;
+}
+
+template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
+    return img->texture > 0;
 }
 
 }

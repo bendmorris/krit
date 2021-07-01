@@ -208,4 +208,8 @@ void GlyphCache::commitChanges() {
     }
 }
 
+template <> bool AssetLoader<Font>::assetIsReady(Font *img) {
+    return true;
+}
+
 }

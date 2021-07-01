@@ -158,4 +158,8 @@ template <> void AssetLoader<BitmapFont>::unloadAsset(BitmapFont *font) {
     delete font;
 }
 
+template <> bool AssetLoader<BitmapFont>::assetIsReady(BitmapFont *img) {
+    return true;
+}
+
 }

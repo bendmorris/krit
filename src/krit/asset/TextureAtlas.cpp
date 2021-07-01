@@ -91,4 +91,13 @@ template <> void AssetLoader<TextureAtlas>::unloadAsset(TextureAtlas *atlas) {
     delete atlas;
 }
 
+template <> bool AssetLoader<TextureAtlas>::assetIsReady(TextureAtlas *img) {
+    for (auto &it : img->regions) {
+        if (!it.second.img->texture) {
+            return false;
+        }
+    }
+    return true;
+}
+
 }

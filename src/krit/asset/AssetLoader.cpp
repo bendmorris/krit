@@ -26,4 +26,9 @@ void AssetLoader<std::string_view>::unloadAsset(std::string_view *slice) {
     delete slice;
 }
 
+template <>
+bool AssetLoader<std::string_view>::assetIsReady(std::string_view *img) {
+    return true;
+}
+
 }
