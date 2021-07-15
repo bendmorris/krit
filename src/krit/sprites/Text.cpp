@@ -515,7 +515,7 @@ void Text::render(RenderContext &ctx) {
     float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
     float size = this->size * cameraScale;
     float fontScale = std::floor(size) / cameraScale / 64.0;
-    bool pixelPerfect = fontScale < 20;
+    bool pixelPerfect = allowPixelPerfect && fontScale < 20;
 
     for (TextOpcode &op : this->opcodes) {
         switch (op.type) {

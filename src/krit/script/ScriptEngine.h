@@ -76,9 +76,9 @@ struct ScriptEngine {
     static JSRuntime *rt;
 
     JSContext *ctx = nullptr;
-    JSValue exports;
+    JSValue exports = JS_UNDEFINED;
     void *userData;
-    JSValue finalizerSymbol;
+    JSValue finalizerSymbol = JS_UNDEFINED;
 
     ScriptEngine();
     ~ScriptEngine();

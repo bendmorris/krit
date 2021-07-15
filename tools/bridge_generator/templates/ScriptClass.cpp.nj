@@ -5,6 +5,8 @@
 #include <string>
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptEngine.h"
+#include "krit/script/ScriptValue.h"
+#include "krit/utils/Log.h"
 #include "quickjs.h"
 
 {% for import in wrapper.import %}
@@ -79,6 +81,7 @@ JS_FUNC({{wrapper.name}}___from__) {
     bool owned = false;
     if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
         // if this was owned, we'll transfer ownership to the return value
+        Log::debug("transfer finalizer: {{wrapper.name}}");
         owned = true;
         JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
         JS_SetOpaque(finalizer, nullptr);
@@ -150,8 +153,6 @@ static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
         delete p;
     }
 }
-
-static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}Finalizer[] = {};
 
 static JSClassDef classDef{{wrapper.name}}Finalizer = {
     "{{ wrapper.name }}Finalizer",

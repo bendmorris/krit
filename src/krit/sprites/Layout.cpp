@@ -287,6 +287,8 @@ SpriteStyle LayoutRoot::parseStyle(std::string &s) {
                 style.color = ParseUtil::parseColor(value);
             } else if (key == "alpha") {
                 style.color.a = ParseUtil::parseFloat(value);
+            } else if (key == "scale") {
+                style.scale.x = style.scale.y = ParseUtil::parseFloat(value);
             } else if (key == "scaleX") {
                 style.scale.x = ParseUtil::parseFloat(value);
             } else if (key == "scaleY") {

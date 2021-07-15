@@ -21,6 +21,8 @@ void ScriptFinalizer::init(ScriptEngine *engine) {
     JS_FreeValue(ctx, finalizerName);
     JS_FreeValue(ctx, symbol);
     JS_FreeValue(ctx, globalObj);
+
+    engine->finalizerSymbol = finalizerSymbol;
 }
 
 void ScriptEngine::addFinalizer(JSValue obj, ScriptClass classId) {

@@ -1,3 +1,11 @@
+declare const enum BlendMode {
+    Alpha,
+    Add,
+    Subtract,
+    Multiply,
+    BlendScreen,
+}
+
 /**
  * @namespace krit
  * @import krit/Sprite.h
@@ -19,6 +27,7 @@ declare class VisibleSprite extends Sprite {
     /** @readonly */ dimensions: Dimensions;
     /** @readonly */ scale: ScaleFactor;
     color: Color;
+    /** @cast BlendMode */ blendMode: BlendMode;
 }
 
 /**
@@ -55,6 +64,7 @@ declare class BitmapText extends VisibleSprite {
     /** @readonly */ text: string;
     baseColor: Color;
     /** @readonly */ textDimensions: Dimensions;
+    allowPixelPerfect: boolean;
 
     refresh(): void;
     setText(s: string): void;

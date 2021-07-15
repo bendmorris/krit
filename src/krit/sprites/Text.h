@@ -151,6 +151,7 @@ struct Text : public VisibleSprite, public TextOptions {
     Color baseColor = Color::white();
     std::string text;
     Dimensions textDimensions;
+    bool allowPixelPerfect = true;
 
     Text() = default;
     Text(const TextOptions &options);

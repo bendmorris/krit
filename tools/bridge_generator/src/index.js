@@ -3,23 +3,25 @@ const fs = require('fs');
 const path = require('path');
 const nunjucks = require('nunjucks');
 
-const typeMap = new Map(Object.entries({
-    'void': undefined,
-    'boolean': { type: 'bool', pointer: 0 },
-    'number': { type: 'double', pointer: 0 },
-    'integer': { type: 'int', pointer: 0 },
-    'float': { type: 'float', pointer: 0 },
-    'size_t': { type: 'size_t', pointer: 0 },
-    // 'cstring': { type: 'const char', pointer: 1 },
-    'string_view': { type: 'std::string_view', pointer: 0 },
-    'string': { type: 'std::string', pointer: 0 },
-    'any': { type: 'JSValue', pointer: 0 },
-}));
+const typeMap = new Map(
+    Object.entries({
+        void: undefined,
+        boolean: { type: 'bool', pointer: 0 },
+        number: { type: 'double', pointer: 0 },
+        integer: { type: 'int', pointer: 0 },
+        float: { type: 'float', pointer: 0 },
+        size_t: { type: 'size_t', pointer: 0 },
+        // 'cstring': { type: 'const char', pointer: 1 },
+        string_view: { type: 'std::string_view', pointer: 0 },
+        string: { type: 'std::string', pointer: 0 },
+        any: { type: 'JSValue', pointer: 0 },
+    }),
+);
 
 const [_, __, bridgePath, outputDir] = process.argv;
 
 if (!outputDir) {
-    console.log("usage: node bridge_generator.js <path> <outputDir>");
+    console.log('usage: node bridge_generator.js <path> <outputDir>');
     process.exit(1);
 }
 
@@ -28,34 +30,40 @@ if (bridgePath) {
     basePaths.push(bridgePath);
 }
 
-const filePaths = [].concat(...basePaths.map(function walk(dir) {
-    var results = [];
-    var list = fs.readdirSync(dir);
-    list.forEach(function(file) {
-        if (file === 'node_modules') {
-            return;
-        }
-        file = path.join(dir, file);
-        var stat = fs.statSync(file);
-        if (stat && stat.isDirectory()) { 
-            /* Recurse into a subdirectory */
-            results = results.concat(walk(file));
-        } else { 
-            /* Is a file */
-            if (file.endsWith('.d.ts')) {
-                results.push(file);
+const filePaths = [].concat(
+    ...basePaths.map(function walk(dir) {
+        var results = [];
+        var list = fs.readdirSync(dir);
+        list.forEach(function (file) {
+            if (file === 'node_modules') {
+                return;
             }
-        }
-    });
-    return results;
-}));
+            file = path.join(dir, file);
+            var stat = fs.statSync(file);
+            if (stat && stat.isDirectory()) {
+                /* Recurse into a subdirectory */
+                results = results.concat(walk(file));
+            } else {
+                /* Is a file */
+                if (file.endsWith('.d.ts')) {
+                    results.push(file);
+                }
+            }
+        });
+        return results;
+    }),
+);
 
-const program = ts.createProgram(filePaths, { typeRoots: basePaths });
+const program = ts.createProgram(filePaths, {
+    target: 'es2020',
+    typeRoots: basePaths,
+    lib: ['lib.es2020.d.ts'],
+    moduleResolution: 'node',
+});
 let checker = program.getTypeChecker();
 
 function cppType(t) {
     if (t.intrinsicName === 'error') {
-        console.log(t);
         throw new Error('unrecognized type');
     }
     // const enums are integers
@@ -104,7 +112,7 @@ function tagify(v) {
 const functions = [];
 const wrappers = [];
 
-function defineFunction(node, functionType, namespace=[]) {
+function defineFunction(node, functionType, namespace = []) {
     const name = node.name.text;
     const returnType = functionType.getReturnType();
     const type = cppType(returnType);
@@ -259,11 +267,13 @@ for (const f of functions) {
             }
         }
         if (!existing) {
-            bridge.namespaces.push(existing = {
-                bridgeNamespace: name,
-                functions: [],
-                namespaces: [],
-            });
+            bridge.namespaces.push(
+                (existing = {
+                    bridgeNamespace: name,
+                    functions: [],
+                    namespaces: [],
+                }),
+            );
         }
         bridge = existing;
     }
@@ -276,10 +286,10 @@ if (!fs.existsSync(scriptDir)) {
 }
 
 var env = nunjucks.configure({ autoescape: false });
-env.addFilter('repeat', function(str, count) {
+env.addFilter('repeat', function (str, count) {
     return str.repeat(count || 0);
 });
-env.addFilter('escapeName', function(str) {
+env.addFilter('escapeName', function (str) {
     return str.replace('$', '__dollar__');
 });
 
@@ -295,25 +305,37 @@ function replaceIfDifferent(path, content) {
 }
 
 // generate native function declarations
-replaceIfDifferent(path.join(scriptDir, 'ScriptBridge.h'), env.render('templates/ScriptBridge.h.nj', {
-    bridgeFuncs: functions,
-}));
+replaceIfDifferent(
+    path.join(scriptDir, 'ScriptBridge.h'),
+    env.render('templates/ScriptBridge.h.nj', {
+        bridgeFuncs: functions,
+    }),
+);
 
 // generate script engine init function implementation to define all bridges
-replaceIfDifferent(path.join(scriptDir, 'ScriptBridge.cpp'), env.render('templates/ScriptBridge.cpp.nj', {
-    bridgeFuncs: functions,
-    bridges,
-}));
+replaceIfDifferent(
+    path.join(scriptDir, 'ScriptBridge.cpp'),
+    env.render('templates/ScriptBridge.cpp.nj', {
+        bridgeFuncs: functions,
+        bridges,
+    }),
+);
 
 // generate ScriptClass declaration
-replaceIfDifferent(path.join(scriptDir, 'ScriptClass.h'), env.render('templates/ScriptClass.h.nj', {
-    wrappers,
-}));
+replaceIfDifferent(
+    path.join(scriptDir, 'ScriptClass.h'),
+    env.render('templates/ScriptClass.h.nj', {
+        wrappers,
+    }),
+);
 
 // generate script classes
 
 for (const wrapper of wrappers) {
-    replaceIfDifferent(path.join(scriptDir, `ScriptClass.${wrapper.namespace.replace('::', '.')}.${wrapper.name}.cpp`), env.render('templates/ScriptClass.cpp.nj', {
-        wrapper,
-    }));
+    replaceIfDifferent(
+        path.join(scriptDir, `ScriptClass.${wrapper.namespace.replace('::', '.')}.${wrapper.name}.cpp`),
+        env.render('templates/ScriptClass.cpp.nj', {
+            wrapper,
+        }),
+    );
 }

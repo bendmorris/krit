@@ -17,6 +17,9 @@ add_definitions(
 file(GLOB_RECURSE KRIT_SRC_FILES
     CONFIGURE_DEPENDS
     src/krit/*.cpp
+)
+file(GLOB_RECURSE KRIT_THIRDPARTY_FILES
+    CONFIGURE_DEPENDS
     spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp
     imgui/*.cpp
 )
@@ -40,6 +43,7 @@ add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
     ${KRIT_GENERATED_SCRIPT_FILES}
     ${KRIT_SRC_FILES}
+    ${KRIT_THIRDPARTY_FILES}
 )
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
