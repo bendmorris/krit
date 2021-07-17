@@ -1,18 +1,18 @@
 #ifndef KRIT_SPRITES_TEXT
 #define KRIT_SPRITES_TEXT
 
+#include "krit/Sprite.h"
+#include "krit/asset/Font.h"
+#include "krit/math/Dimensions.h"
+#include "krit/math/Point.h"
+#include "krit/math/ScaleFactor.h"
+#include "krit/utils/Color.h"
+#include "krit/utils/Option.h"
 #include <cassert>
 #include <stddef.h>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-#include "krit/Sprite.h"
-#include "krit/asset/Font.h"
-#include "krit/math/Dimensions.h"
-#include "krit/sprites/TextBase.h"
-#include "krit/utils/Color.h"
-#include "krit/utils/Option.h"
 
 struct hb_buffer_t;
 struct hb_font_t;
@@ -21,6 +21,32 @@ namespace krit {
 
 struct Text;
 struct RenderContext;
+
+enum AlignType {
+    LeftAlign,
+    CenterAlign,
+    RightAlign,
+};
+
+struct NewlineData {
+    Dimensions first;
+    AlignType second;
+
+    NewlineData(const Dimensions &d, AlignType a) : first(d), second(a) {}
+};
+
+struct GlyphRenderData {
+    int32_t c = 0;
+    Color color;
+    ScaleFactor scale;
+    Point position;
+
+    GlyphRenderData() {}
+    GlyphRenderData(const Point &position) : position(position) {}
+    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale,
+                    const Point &position)
+        : c(c), color(color), scale(scale), position(position) {}
+};
 
 typedef void CustomTextRenderFunction(RenderContext *, Text *,
                                       GlyphRenderData *);

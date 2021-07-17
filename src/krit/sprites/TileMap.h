@@ -10,7 +10,6 @@
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
 #include "krit/render/ImageRegion.h"
-#include "krit/sprites/BitmapText.h"
 #include "krit/sprites/NineSlice.h"
 
 namespace krit {

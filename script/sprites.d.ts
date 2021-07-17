@@ -32,26 +32,6 @@ declare class VisibleSprite extends Sprite {
 
 /**
  * @namespace krit
- * @import krit/sprites/BitmapText.h
- */
-declare class BitmapText extends VisibleSprite {
-    static from(value: Sprite): BitmapText;
-
-    /** @readonly @getter width */ width: number;
-    /** @readonly @getter height */ height: number;
-    charCount: integer;
-    /** @readonly */ maxChars: integer;
-    /** @readonly */ text: string;
-    baseColor: Color;
-
-    refresh(): void;
-    setText(s: string): void;
-    setRichText(s: string): void;
-    baseScale(): number;
-}
-
-/**
- * @namespace krit
  * @import krit/sprites/Text.h
  */
  declare class Text extends VisibleSprite {

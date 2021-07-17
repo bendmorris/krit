@@ -1,5 +1,5 @@
-#ifndef KRIT_ASSETTYPE
-#define KRIT_ASSETTYPE
+#ifndef KRIT_ASSET_ASSETTYPE
+#define KRIT_ASSET_ASSETTYPE
 
 namespace krit {
 
@@ -7,7 +7,6 @@ enum AssetType {
     ImageAsset,
     AtlasAsset,
     FontAsset,
-    BitmapFontAsset,
     TextAsset,
     SpineSkeletonAsset,
 };

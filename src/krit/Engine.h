@@ -29,7 +29,6 @@ struct UpdateContext;
 struct ImageData;
 struct TextureAtlas;
 struct Font;
-struct BitmapFont;
 struct SkeletonBinaryData;
 
 struct SpriteTree {
@@ -91,7 +90,6 @@ struct Engine {
     DECLARE_ASSET_GETTER(Image, ImageData)
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)
-    DECLARE_ASSET_GETTER(BitmapFont, BitmapFont)
     DECLARE_ASSET_GETTER(Spine, SkeletonBinaryData)
 };
 

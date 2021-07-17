@@ -18,20 +18,16 @@
 #include "krit/math/ScaleFactor.h"
 #include "krit/render/RenderContext.h"
 #include "krit/sprites/Backdrop.h"
-#include "krit/sprites/BitmapText.h"
-#include "krit/sprites/Button.h"
 #include "krit/sprites/Image.h"
 #include "krit/sprites/NineSlice.h"
 #include "krit/sprites/SpineSprite.h"
 #include "krit/sprites/Text.h"
-#include "krit/sprites/TextBase.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Parse.h"
 
 namespace krit {
-struct BitmapFont;
 
 void LayoutNode::fixedUpdate(UpdateContext &ctx) {
     if (this->sprite) {
@@ -357,58 +353,6 @@ void parseImg(LayoutParseData *data,
     node->attachSprite(img);
 }
 
-void parseLabel(LayoutParseData *data,
-                std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutNode *node = data->node;
-
-    // parse text options first
-    std::shared_ptr<BitmapFont> font =
-        App::ctx.engine->getBitmapFont(attrMap["font"]);
-    BitmapTextOptions options(font);
-    std::unordered_map<std::string, std::string>::const_iterator it;
-    if ((it = attrMap.find("size")) != attrMap.end()) {
-        options.size = stoi(it->second);
-    }
-    if ((it = attrMap.find("wrap")) != attrMap.end()) {
-        options.wordWrap = ParseUtil::parseBool(it->second);
-    }
-    BitmapText *txt = new BitmapText(options);
-    LayoutRoot::parseAndApplyStyle(attrMap, txt);
-    node->attachSprite(txt);
-
-    // parse text or rich text
-    if ((it = attrMap.find("rich")) != attrMap.end()) {
-        txt->setRichText(it->second);
-    } else if ((it = attrMap.find("text")) != attrMap.end()) {
-        txt->setText(it->second);
-    }
-
-    // everything else
-    for (auto &it : attrMap) {
-        const std::string &key = it.first;
-        const std::string &value = it.second;
-        if (key == "align") {
-            if (value == "left")
-                txt->options.align = LeftAlign;
-            else if (value == "center")
-                txt->options.align = CenterAlign;
-            else if (value == "right")
-                txt->options.align = RightAlign;
-            else
-                panic("unexpected value for text alignment: %s", value.c_str());
-        } else if (key == "tabStops") {
-            std::stringstream stream(value);
-            std::string token;
-            while (getline(stream, token, ',')) {
-                int stop = atoi(token.c_str());
-                txt->tabStops.push_back(stop);
-            }
-        } else if (key == "baseColor") {
-            txt->baseColor = ParseUtil::parseColor(value);
-        }
-    }
-}
-
 void parseText(LayoutParseData *data,
                std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
@@ -525,70 +469,6 @@ void parseNineSlice(LayoutParseData *data,
     node->attachSprite(img);
 }
 
-void parseButton(LayoutParseData *data,
-                 std::unordered_map<std::string, std::string> &attrMap) {
-    LayoutNode *node = data->node;
-    ImageRegion src = LayoutRoot::parseSrc(attrMap);
-    int lw, rw, th, bh;
-    auto found = attrMap.find("border");
-    if (found != attrMap.end()) {
-        lw = rw = th = bh = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("borderWidth");
-    if (found != attrMap.end()) {
-        lw = rw = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("borderHeight");
-    if (found != attrMap.end()) {
-        th = bh = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("lw");
-    if (found != attrMap.end()) {
-        lw = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("rw");
-    if (found != attrMap.end()) {
-        rw = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("th");
-    if (found != attrMap.end()) {
-        th = ParseUtil::parseInt(found->second);
-    }
-    found = attrMap.find("bh");
-    if (found != attrMap.end()) {
-        bh = ParseUtil::parseInt(found->second);
-    }
-    std::shared_ptr<BitmapFont> font =
-        App::ctx.engine->getBitmapFont(attrMap["font"]);
-    BitmapTextOptions options(font);
-    std::unordered_map<std::string, std::string>::const_iterator it;
-    if ((it = attrMap.find("size")) != attrMap.end()) {
-        options.size = stoi(it->second);
-    }
-    std::string &label = attrMap["label"];
-    Button *btn = new Button(src, lw, rw, th, bh, options, label);
-
-    found = attrMap.find("style");
-    if (found != attrMap.end()) {
-        btn->defaultStyle = LayoutRoot::parseStyle(found->second);
-        btn->applyStyle(btn->defaultStyle);
-    }
-    found = attrMap.find("focused");
-    if (found != attrMap.end()) {
-        btn->focusedStyle = LayoutRoot::parseStyle(found->second);
-    }
-    found = attrMap.find("pressed");
-    if (found != attrMap.end()) {
-        btn->pressedStyle = LayoutRoot::parseStyle(found->second);
-    }
-    found = attrMap.find("labelStyle");
-    if (found != attrMap.end()) {
-        btn->label.applyStyle(LayoutRoot::parseStyle(found->second));
-    }
-
-    node->attachSprite(btn);
-}
-
 void parseDiv(LayoutParseData *data,
               std::unordered_map<std::string, std::string> &attrMap) {
     data->node->keepSize = true;
@@ -658,11 +538,9 @@ std::unordered_map<std::string, LayoutParseFunction *> LayoutRoot::parsers = {
     {"placeholder", &parsePlaceholder},
     {"img", &parseImg},
     {"backdrop", &parseBackdrop},
-    {"label", &parseLabel},
     {"text", &parseText},
     {"spine", &parseSpine},
     {"nineslice", &parseNineSlice},
-    {"button", &parseButton},
 };
 
 LayoutRoot::LayoutRoot(const std::string &path) {
