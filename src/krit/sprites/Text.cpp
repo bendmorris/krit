@@ -40,6 +40,7 @@ enum TextOpcodeType : int {
     RenderSprite,
     Tab,
     Whitespace,
+    CharDelay,
 };
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
@@ -119,6 +120,10 @@ void TextOpcode::debugPrint() {
         }
         case Whitespace: {
             printf("Whitespace");
+            break;
+        }
+        case CharDelay: {
+            printf("CharDelay");
             break;
         }
     }
@@ -311,6 +316,11 @@ struct TextParser {
         // puts("");
 
         txt.maxChars = glyphCount;
+        for (auto it : txt.opcodes) {
+            if (it.type == CharDelay) {
+                txt.maxChars += it.data.charDelay;
+            }
+        }
     }
 
     void flushWord(Text &txt) {
@@ -371,6 +381,10 @@ struct TextParser {
             }
             if (tag.tab && !close) {
                 this->addOp(txt, TextOpcode(Tab, TextOpcodeData()));
+            }
+            if (tag.charDelay && !close) {
+                this->addOp(
+                    txt, TextOpcode(CharDelay, TextOpcodeData(tag.charDelay)));
             }
         }
     }
@@ -563,6 +577,15 @@ void Text::render(RenderContext &ctx) {
                 sprite->render(ctx);
                 sprite->color = originalColor;
                 cursor.x += size.width();
+                break;
+            }
+            case CharDelay: {
+                if (charCount > -1) {
+                    charCount -= op.data.charDelay;
+                    if (charCount <= 0) {
+                        return;
+                    }
+                }
                 break;
             }
             case GlyphBlock: {

@@ -92,6 +92,7 @@ struct TextFormatTagOptions {
     Option<AlignType> align;
     bool newline = false;
     bool tab = false;
+    int charDelay = 0;
     CustomTextRenderFunction *custom = nullptr;
     VisibleSprite *sprite = nullptr;
 
@@ -121,6 +122,10 @@ struct TextFormatTagOptions {
         this->sprite = s;
         return *this;
     }
+    TextFormatTagOptions &setDelay(int delay) {
+        this->charDelay = delay;
+        return *this;
+    }
 };
 
 struct GlyphBlockData {
@@ -133,6 +138,7 @@ union TextOpcodeData {
     bool present;
     Color color;
     float number;
+    int charDelay;
     AlignType align;
     CustomTextRenderFunction *custom = nullptr;
     GlyphBlockData glyphBlock;
@@ -150,6 +156,7 @@ union TextOpcodeData {
                      .trailingWhitespace = trailingWhitespace} {}
     TextOpcodeData(Dimensions d, AlignType a) : newLine(d, a) {}
     TextOpcodeData(VisibleSprite *sprite) : sprite(sprite) {}
+    TextOpcodeData(int delay) : charDelay(delay) {}
 };
 
 enum TextOpcodeType : int;
