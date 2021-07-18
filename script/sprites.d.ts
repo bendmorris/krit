@@ -45,6 +45,9 @@ declare class VisibleSprite extends Sprite {
     baseColor: Color;
     /** @readonly */ textDimensions: Dimensions;
     allowPixelPerfect: boolean;
+    border: boolean;
+    borderThickness: integer;
+    borderColor: Color;
 
     refresh(): void;
     setText(s: string): void;

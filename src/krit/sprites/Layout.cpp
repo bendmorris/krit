@@ -207,99 +207,91 @@ std::unordered_map<std::string, std::string> &collectAttrs(const char **attrs) {
 void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
                                  const std::string &key,
                                  const std::string &value) {
+    // Log::debug("%s = %s\n", key.c_str(), value.c_str());
     if (key == "x" || key == "left") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setX(val, 0);
     } else if (key == "right") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setX(val, 1);
     } else if (key == "centerX") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setX(val, 0.5);
     } else if (key == "y" || key == "top") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setY(val, 0);
     } else if (key == "bottom") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setY(val, 1);
     } else if (key == "centerY") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setY(val, 0.5);
     } else if (key == "width") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setWidth(val);
     } else if (key == "height") {
-        Measurement val = ParseUtil::parseMeasurement(value);
+        Measurement val = Parse::parse<Measurement>(value);
         layout->setHeight(val);
     } else if (key == "visible") {
-        layout->visible = ParseUtil::parseBool(value);
+        layout->visible = Parse::parse<bool>(value);
     } else if (key == "spacing") {
-        layout->spacing = ParseUtil::parseMeasurement(value);
+        layout->spacing = Parse::parse<Measurement>(value);
     } else if (key == "stretch") {
-        layout->stretch = ParseUtil::parseBool(value);
+        layout->stretch = Parse::parse<bool>(value);
     } else if (key == "padding") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[0] = paddingVal;
         layout->padding[1] = paddingVal;
         layout->padding[2] = paddingVal;
         layout->padding[3] = paddingVal;
     } else if (key == "paddingY") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[0] = paddingVal;
         layout->padding[1] = paddingVal;
     } else if (key == "paddingX") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[2] = paddingVal;
         layout->padding[3] = paddingVal;
     } else if (key == "paddingTop") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[0] = paddingVal;
     } else if (key == "paddingBottom") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[1] = paddingVal;
     } else if (key == "paddingLeft") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[2] = paddingVal;
     } else if (key == "paddingRight") {
-        Measurement paddingVal = ParseUtil::parseMeasurement(value);
+        Measurement paddingVal = Parse::parse<Measurement>(value);
         layout->padding[3] = paddingVal;
     } else if (key == "float") {
-        if (ParseUtil::parseBool(value)) {
+        if (Parse::parse<bool>(value)) {
             layout->positionMode = PositionMode::PositionFloat;
         }
     }
 }
 
-SpriteStyle LayoutRoot::parseStyle(std::string &s) {
-    SpriteStyle style;
-    std::stringstream stream(s);
-    std::string token, key, value;
-    while (getline(stream, token, ';')) {
-        size_t index = token.find(":");
-        if (index != std::string::npos) {
-            key = token.substr(0, index);
-            value = token.substr(index + 1);
-            if (key == "color") {
-                style.color = ParseUtil::parseColor(value);
-            } else if (key == "alpha") {
-                style.color.a = ParseUtil::parseFloat(value);
-            } else if (key == "scale") {
-                style.scale.x = style.scale.y = ParseUtil::parseFloat(value);
-            } else if (key == "scaleX") {
-                style.scale.x = ParseUtil::parseFloat(value);
-            } else if (key == "scaleY") {
-                style.scale.y = ParseUtil::parseFloat(value);
-            }
-        }
+void LayoutRoot::parseStyle(VisibleSprite *e, const std::string &key,
+                            const std::string &value) {
+    if (key == "color") {
+        e->color = Parse::parse<Color>(value);
+    } else if (key == "alpha") {
+        e->color.a = Parse::parse<float>(value);
+    } else if (key == "scale") {
+        e->scale.x = e->scale.y = Parse::parse<float>(value);
+    } else if (key == "scaleX") {
+        e->scale.x = Parse::parse<float>(value);
+    } else if (key == "scaleY") {
+        e->scale.y = Parse::parse<float>(value);
     }
-    return style;
 }
 
 void LayoutRoot::parseAndApplyStyle(
     std::unordered_map<std::string, std::string> &attrMap, VisibleSprite *e) {
-    auto found = attrMap.find("style");
-    if (found != attrMap.end()) {
-        e->applyStyle(LayoutRoot::parseStyle(found->second));
+    for (auto &it : attrMap) {
+        const std::string &key = it.first;
+        const std::string &value = it.second;
+        LayoutRoot::parseStyle(e, key, value);
     }
 }
 
@@ -328,9 +320,9 @@ void parseBackdrop(LayoutParseData *data,
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "color") {
-            backdrop->color = ParseUtil::parseColor(value);
+            backdrop->color = Parse::parse<Color>(value);
         } else if (key == "alpha") {
-            backdrop->color.a = ParseUtil::parseFloat(value);
+            backdrop->color.a = Parse::parse<float>(value);
         }
     }
 }
@@ -345,9 +337,9 @@ void parseImg(LayoutParseData *data,
         const std::string &key = it.first;
         const std::string &value = it.second;
         if (key == "originX") {
-            img->origin.x = ParseUtil::parseFloat(value);
+            img->origin.x = Parse::parse<float>(value);
         } else if (key == "originY") {
-            img->origin.y = ParseUtil::parseFloat(value);
+            img->origin.y = Parse::parse<float>(value);
         }
     }
     node->attachSprite(img);
@@ -364,11 +356,11 @@ void parseText(LayoutParseData *data,
     for (auto &it : attrMap) {
         const std::string &key = it.first;
         const std::string &value = it.second;
-        if (key == "size")
+        if (key == "size") {
             options.size = stoi(value);
-        else if (key == "wrap")
-            options.wordWrap = ParseUtil::parseBool(value);
-        else if (key == "align") {
+        } else if (key == "wrap") {
+            options.wordWrap = Parse::parse<bool>(value);
+        } else if (key == "align") {
             if (value == "left")
                 options.align = LeftAlign;
             else if (value == "center")
@@ -394,11 +386,17 @@ void parseText(LayoutParseData *data,
                 txt->tabStops.push_back(stop);
             }
         } else if (key == "baseColor") {
-            txt->baseColor = ParseUtil::parseColor(value);
+            txt->baseColor = Parse::parse<Color>(value);
         } else if (key == "rich") {
             txt->setRichText(value);
         } else if (key == "text") {
             txt->setText(value);
+        } else if (key == "border") {
+            txt->border = Parse::parse<bool>(value);
+        } else if (key == "borderThickness") {
+            txt->borderThickness = Parse::parse<int>(value);
+        } else if (key == "borderColor") {
+            txt->borderColor = Parse::parse<Color>(value);
         }
     }
 }
@@ -426,7 +424,7 @@ void parseSpine(LayoutParseData *data,
         } else if (key == "skin2") {
             spine->setSkin(value);
         } else if (key == "flipX") {
-            spine->scale.x = ParseUtil::parseBool(value) ? -1 : 1;
+            spine->scale.x = Parse::parse<bool>(value) ? -1 : 1;
         }
     }
 }
@@ -438,31 +436,31 @@ void parseNineSlice(LayoutParseData *data,
     int lw, rw, th, bh;
     auto found = attrMap.find("border");
     if (found != attrMap.end()) {
-        lw = rw = th = bh = ParseUtil::parseInt(found->second);
+        lw = rw = th = bh = Parse::parseInt(found->second);
     }
     found = attrMap.find("borderWidth");
     if (found != attrMap.end()) {
-        lw = rw = ParseUtil::parseInt(found->second);
+        lw = rw = Parse::parseInt(found->second);
     }
     found = attrMap.find("borderHeight");
     if (found != attrMap.end()) {
-        th = bh = ParseUtil::parseInt(found->second);
+        th = bh = Parse::parseInt(found->second);
     }
     found = attrMap.find("lw");
     if (found != attrMap.end()) {
-        lw = ParseUtil::parseInt(found->second);
+        lw = Parse::parseInt(found->second);
     }
     found = attrMap.find("rw");
     if (found != attrMap.end()) {
-        rw = ParseUtil::parseInt(found->second);
+        rw = Parse::parseInt(found->second);
     }
     found = attrMap.find("th");
     if (found != attrMap.end()) {
-        th = ParseUtil::parseInt(found->second);
+        th = Parse::parseInt(found->second);
     }
     found = attrMap.find("bh");
     if (found != attrMap.end()) {
-        bh = ParseUtil::parseInt(found->second);
+        bh = Parse::parseInt(found->second);
     }
     NineSlice *img = new NineSlice(src, lw, rw, th, bh);
     LayoutRoot::parseAndApplyStyle(attrMap, img);
@@ -586,5 +584,4 @@ void LayoutRoot::parse(const char *markup, size_t length) {
     XML_ParserFree(parser);
     this->rootNode = std::unique_ptr<LayoutNode>(data.node);
 }
-
 }

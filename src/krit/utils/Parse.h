@@ -3,29 +3,40 @@
 
 #include "krit/math/Measurement.h"
 #include "krit/utils/Color.h"
+#include <cassert>
 #include <string>
+#include <unordered_map>
 
 namespace krit {
 
-struct ParseUtil {
-    static Measurement parseMeasurement(std::string s) {
-        bool percent = false;
-        if (s.back() == '%') {
-            percent = true;
-            s.pop_back();
+struct Parse {
+    static void defineConstant(const std::string &name,
+                               const std::string &value) {
+        assert(name.c_str()[0] == '$');
+        constants.insert(std::make_pair(name, value));
+    }
+
+    template <typename T> static T parse(const std::string &s);
+    static int parseInt(const std::string &s, int base = 10);
+
+private:
+    static std::unordered_map<std::string, std::string> constants;
+
+    static const std::string &_preParse(const std::string &val) {
+        if (val[0] == '$') {
+            assert(constants.find(val) != constants.end());
+            auto &found = constants.at(val);
+            return found;
         }
-        int value = std::stoi(s);
-        return Measurement(percent ? Percent : Absolute, value);
+        return val;
     }
-    static int parseInt(const std::string &s, int base = 10) {
-        return std::stoi(s, 0, base);
-    }
-    static float parseFloat(const std::string &s) { return std::stof(s, 0); }
-    static Color parseColor(const std::string &s) {
-        return Color(ParseUtil::parseInt(s, 16), 1.0);
-    }
-    static bool parseBool(const std::string &s) { return s == "true"; }
 };
+
+template <> Measurement Parse::parse(const std::string &_s);
+template <> int Parse::parse(const std::string &_s);
+template <> float Parse::parse(const std::string &_s);
+template <> Color Parse::parse(const std::string &_s);
+template <> bool Parse::parse(const std::string &_s);
 
 }
 

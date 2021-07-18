@@ -92,6 +92,7 @@ struct TextFormatTagOptions {
     Option<AlignType> align;
     bool newline = false;
     bool tab = false;
+    bool border = false;
     int charDelay = 0;
     CustomTextRenderFunction *custom = nullptr;
     VisibleSprite *sprite = nullptr;
@@ -124,6 +125,10 @@ struct TextFormatTagOptions {
     }
     TextFormatTagOptions &setDelay(int delay) {
         this->charDelay = delay;
+        return *this;
+    }
+    TextFormatTagOptions &setBorder() {
+        this->border = true;
         return *this;
     }
 };
@@ -185,6 +190,9 @@ struct Text : public VisibleSprite, public TextOptions {
     std::string text;
     Dimensions textDimensions;
     bool allowPixelPerfect = true;
+    bool border = false;
+    int borderThickness = 0;
+    Color borderColor = Color::black();
 
     Text() = default;
     Text(const TextOptions &options);
@@ -225,8 +233,12 @@ private:
     hb_buffer_t *hbBuf = nullptr;
     bool rich = false;
     bool dirty = false;
-    friend struct TextParser;
+    bool hasBorderTags = false;
     float lineHeight;
+
+    friend struct TextParser;
+
+    void __render(RenderContext &ctx, bool border);
 };
 
 }

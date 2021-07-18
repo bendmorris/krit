@@ -8,6 +8,7 @@
 
 #include "freetype/config/ftheader.h"
 #include "freetype/ftimage.h"
+#include "freetype/ftstroke.h"
 #include "freetype/fttypes.h"
 #include "harfbuzz/hb.h"
 #include "krit/Assets.h"
@@ -22,6 +23,8 @@
 #include FT_FREETYPE_H
 
 namespace krit {
+
+static FT_Stroker stroker;
 
 GlyphCache Font::glyphCache, Font::nextGlyphCache;
 
@@ -42,6 +45,7 @@ void Font::init() {
     if (error) {
         panic("failed to initialize freetype: %i\n", error);
     }
+    FT_Stroker_New(ftLibrary, &stroker);
 }
 
 void Font::commit() {
@@ -88,18 +92,19 @@ void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_shape(font, buf, nullptr, 0);
 }
 
-GlyphData &Font::getGlyph(char32_t codePoint, unsigned int size) {
+GlyphData &Font::getGlyph(char32_t codePoint, unsigned int size,
+                          unsigned int border) {
     if (!nextGlyphCache.img) {
         if (!glyphCache.img) {
             glyphCache.createTexture();
         }
-        GlyphData *found = glyphCache.getGlyph(this, codePoint, size);
+        GlyphData *found = glyphCache.getGlyph(this, codePoint, size, border);
         if (found) {
             return *found;
         }
         nextGlyphCache.createTexture();
     }
-    GlyphData *found = nextGlyphCache.getGlyph(this, codePoint, size);
+    GlyphData *found = nextGlyphCache.getGlyph(this, codePoint, size, border);
     if (!found) {
         panic("ran out of space in backup texture");
     }
@@ -113,10 +118,10 @@ GlyphCache::~GlyphCache() {
 }
 
 GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
-                                unsigned int size) {
+                                unsigned int size, unsigned int border) {
     {
         // check if we already contain this glyph at this size
-        auto it = glyphs.find(GlyphSize(font, codePoint, size));
+        auto it = glyphs.find(GlyphSize(font, codePoint, size, border));
         if (it != glyphs.end()) {
             return &it->second;
         }
@@ -124,9 +129,18 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
     FT_Face face = (FT_Face)font->ftFace;
     FT_Set_Pixel_Sizes(face, size, size);
     FT_Load_Glyph(face, codePoint, FT_LOAD_DEFAULT);
-    FT_GlyphSlot slot = face->glyph;
-    int width = slot->bitmap.width;
-    int height = slot->bitmap.rows;
+    FT_Glyph glyph;
+    FT_Get_Glyph(face->glyph, &glyph);
+    if (border > 0) {
+        FT_Stroker_Set(stroker, border * 64, FT_STROKER_LINECAP_ROUND,
+                       FT_STROKER_LINEJOIN_ROUND, 0);
+        FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
+    }
+    FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
+    FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
+
+    int width = bitmap->bitmap.width;
+    int height = bitmap->bitmap.rows;
     int neededWidth =
         (width / SIZE_PRECISION + (width % SIZE_PRECISION ? 1 : 0)) *
         SIZE_PRECISION;
@@ -139,14 +153,15 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
                 // use this one
                 auto it = glyphs.emplace(
                     std::piecewise_construct,
-                    std::make_tuple(font, codePoint, size),
+                    std::make_tuple(font, codePoint, size, border),
                     std::make_tuple(
                         ImageRegion(img, IntRectangle(x + PADDING,
                                                       column.height + PADDING,
                                                       width, height)),
-                        slot->bitmap_left, slot->bitmap_top));
+                        bitmap->left, bitmap->top));
                 column.height += height + PADDING * 2;
-                pending.emplace_back(font, codePoint, size);
+                pending.emplace_back(font, codePoint, size, border);
+                FT_Done_Glyph(glyph);
                 return &it.first->second;
             }
             x += column.width + PADDING * 2;
@@ -159,15 +174,17 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
             columns.emplace_back(neededWidth, height + PADDING * 2);
             auto it = glyphs.emplace(
                 std::piecewise_construct,
-                std::make_tuple(font, codePoint, size),
+                std::make_tuple(font, codePoint, size, border),
                 std::make_tuple(
                     ImageRegion(
                         img, IntRectangle(x + PADDING, PADDING, width, height)),
-                    slot->bitmap_left, slot->bitmap_top));
-            pending.emplace_back(font, codePoint, size);
+                    bitmap->left, bitmap->top));
+            pending.emplace_back(font, codePoint, size, border);
+            FT_Done_Glyph(glyph);
             return &it.first->second;
         }
     }
+    FT_Done_Glyph(glyph);
     return nullptr;
 }
 
@@ -185,18 +202,28 @@ void GlyphCache::commitChanges() {
         for (auto &it : pending) {
             Font *font = it.font;
             FT_Face face = (FT_Face)font->ftFace;
-            FT_GlyphSlot slot = face->glyph;
             GlyphData &glyphData =
-                glyphs[GlyphSize(it.font, it.glyphIndex, it.size)];
+                glyphs[GlyphSize(it.font, it.glyphIndex, it.size, it.border)];
             FT_Set_Pixel_Sizes(face, it.size, it.size);
-            FT_Load_Glyph(face, it.glyphIndex, FT_LOAD_RENDER);
-            for (unsigned int i = 0; i < slot->bitmap.rows; ++i) {
+            FT_Load_Glyph(face, it.glyphIndex, FT_LOAD_DEFAULT);
+            FT_Glyph glyph;
+            FT_Get_Glyph(face->glyph, &glyph);
+            if (it.border > 0) {
+                FT_Stroker_Set(stroker, it.border * 64,
+                               FT_STROKER_LINECAP_ROUND,
+                               FT_STROKER_LINEJOIN_ROUND, 0);
+                FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
+            }
+            FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
+            FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
+            for (unsigned int i = 0; i < bitmap->bitmap.rows; ++i) {
                 memcpy(
                     &pixelData[(glyphData.region.y() + i) * CACHE_TEXTURE_SIZE +
                                glyphData.region.x()],
-                    &slot->bitmap.buffer[slot->bitmap.width * i],
-                    slot->bitmap.width);
+                    &bitmap->bitmap.buffer[bitmap->bitmap.pitch * i],
+                    bitmap->bitmap.width);
             }
+            FT_Done_Glyph(glyph);
         }
         // upload the texture
         glBindTexture(GL_TEXTURE_2D, img->texture);
@@ -208,8 +235,6 @@ void GlyphCache::commitChanges() {
     }
 }
 
-template <> bool AssetLoader<Font>::assetIsReady(Font *img) {
-    return true;
-}
+template <> bool AssetLoader<Font>::assetIsReady(Font *img) { return true; }
 
 }

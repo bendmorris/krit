@@ -41,6 +41,8 @@ enum TextOpcodeType : int {
     Tab,
     Whitespace,
     CharDelay,
+    EnableBorder,
+    DisableBorder,
 };
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
@@ -51,6 +53,7 @@ std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
     {"right", TextFormatTagOptions().setAlign(RightAlign)},
     {"\t", TextFormatTagOptions().setTab()},
     {"tab", TextFormatTagOptions().setTab()},
+    {"b", TextFormatTagOptions().setBorder()},
 };
 
 void Text::addFormatTag(std::string tagName, TextFormatTagOptions tagOptions) {
@@ -124,6 +127,14 @@ void TextOpcode::debugPrint() {
         }
         case CharDelay: {
             printf("CharDelay");
+            break;
+        }
+        case EnableBorder: {
+            printf("EnableBorder");
+            break;
+        }
+        case DisableBorder: {
+            printf("DisableBorder");
             break;
         }
     }
@@ -249,6 +260,7 @@ struct TextParser {
         txt.opcodes.push_back(
             TextOpcode(NewLine, TextOpcodeData(Dimensions(), txt.align)));
         txt.maxChars = rawText.size();
+        txt.hasBorderTags = false;
 
         hb_font_extents_t extents;
         hb_font_get_h_extents(txt.font->font, &extents);
@@ -386,6 +398,9 @@ struct TextParser {
                 this->addOp(
                     txt, TextOpcode(CharDelay, TextOpcodeData(tag.charDelay)));
             }
+            if (tag.border) {
+                this->addOp(txt, TextOpcode(close ? DisableBorder : EnableBorder));
+            }
         }
     }
 
@@ -476,6 +491,9 @@ struct TextParser {
                 }
                 break;
             }
+            case EnableBorder: {
+                txt.hasBorderTags = true;
+            }
             default: {
                 word.push_back(op);
             }
@@ -516,7 +534,16 @@ void Text::resize(float w, float h) {
 }
 
 void Text::render(RenderContext &ctx) {
+    // if (borderThickness > 0 && borderColor.a > 0 && (this->border || hasBorderTags)) {
+        __render(ctx, true);
+    // }
+    __render(ctx, false);
+}
+
+void Text::__render(RenderContext &ctx, bool border) {
     this->refresh();
+
+    bool _borderEnabled = this->border;
 
     Color color = this->color * this->baseColor;
     Point cursor;
@@ -528,7 +555,7 @@ void Text::render(RenderContext &ctx) {
 
     float cameraScale = std::max(ctx.camera->scale.x, ctx.camera->scale.y);
     float size = this->size * cameraScale;
-    float fontScale = std::floor(size) / cameraScale / 64.0;
+    float fontScale = std::round(size) / cameraScale / 64.0;
     bool pixelPerfect = allowPixelPerfect && fontScale < 20;
 
     for (TextOpcode &op : this->opcodes) {
@@ -561,22 +588,24 @@ void Text::render(RenderContext &ctx) {
                 break;
             }
             case RenderSprite: {
-                auto sprite = op.data.sprite;
-                GlyphRenderData renderData(cursor);
-                if (custom) {
-                    custom(&ctx, this, &renderData);
+                if (!border) {
+                    auto sprite = op.data.sprite;
+                    GlyphRenderData renderData(cursor);
+                    if (custom) {
+                        custom(&ctx, this, &renderData);
+                    }
+                    auto size = sprite->getSize();
+                    sprite->scale.setTo(scale);
+                    sprite->position.setTo(
+                        this->position.x + renderData.position.x,
+                        this->position.y + renderData.position.y +
+                            (lineHeight * scale.y - size.height()));
+                    Color originalColor(sprite->color);
+                    sprite->color = sprite->color * this->color;
+                    sprite->render(ctx);
+                    sprite->color = originalColor;
+                    cursor.x += size.width();
                 }
-                auto size = sprite->getSize();
-                sprite->scale.setTo(scale);
-                sprite->position.setTo(
-                    this->position.x + renderData.position.x,
-                    this->position.y + renderData.position.y +
-                        (lineHeight * scale.y - size.height()));
-                Color originalColor(sprite->color);
-                sprite->color = sprite->color * this->color;
-                sprite->render(ctx);
-                sprite->color = originalColor;
-                cursor.x += size.width();
                 break;
             }
             case CharDelay: {
@@ -586,6 +615,14 @@ void Text::render(RenderContext &ctx) {
                         return;
                     }
                 }
+                break;
+            }
+            case EnableBorder: {
+                _borderEnabled = true;
+                break;
+            }
+            case DisableBorder: {
+                _borderEnabled = this->border;
                 break;
             }
             case GlyphBlock: {
@@ -601,7 +638,7 @@ void Text::render(RenderContext &ctx) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
                     GlyphData &glyph =
-                        font->getGlyph(_info.codepoint, std::floor(size));
+                        font->getGlyph(_info.codepoint, std::round(size));
 
                     GlyphRenderData renderData(
                         _info.codepoint, color,
@@ -643,8 +680,20 @@ void Text::render(RenderContext &ctx) {
                     key.shader = this->shader
                                      ? this->shader
                                      : ctx.app->renderer.getDefaultTextShader();
-                    ctx.addRectRaw(key, glyph.region.rect, matrix,
-                                   renderData.color);
+                    if (border) {
+                        if (_borderEnabled) {
+                            float thickness = borderThickness * cameraScale;
+                            key.smooth = SmoothingMode::SmoothLinear;
+                            Color borderColor(this->borderColor.r, this->borderColor.g, this->borderColor.b, this->borderColor.a * color.a);
+                            GlyphData &borderGlyph = font->getGlyph(_info.codepoint, std::round(size), std::round(thickness));
+                            matrix.tx += borderGlyph.offset.x - glyph.offset.x;
+                            matrix.ty -= borderGlyph.offset.y - glyph.offset.y;
+                            ctx.addRectRaw(key, borderGlyph.region.rect, matrix, borderColor);
+                        }
+                    } else {
+                        ctx.addRectRaw(key, glyph.region.rect, matrix,
+                                    renderData.color);
+                    }
 
                     cursor.x += _pos.x_advance;
                     if (charCount > -1 && --charCount <= 0) {

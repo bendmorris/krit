@@ -25,19 +25,21 @@ struct GlyphSize {
     Font *font;
     char32_t glyphIndex;
     unsigned int size;
+    unsigned int border;
 
-    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size)
-        : font(font), glyphIndex(glyphIndex), size(size) {}
+    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size, unsigned int border)
+        : font(font), glyphIndex(glyphIndex), size(size), border(border) {}
     bool operator==(const GlyphSize &other) const {
         return font == other.font && glyphIndex == other.glyphIndex &&
-               size == other.size;
+               size == other.size && border == other.border;
     }
 };
 
 struct GlyphSizeHash {
     std::size_t operator()(const GlyphSize &size) const {
         return std::hash<char32_t>()(size.glyphIndex) ^
-               std::hash<unsigned int>()(size.size);
+               std::hash<unsigned int>()(size.size) ^
+               std::hash<unsigned int>()(size.border);
     }
 };
 
@@ -71,7 +73,7 @@ struct GlyphCache {
     GlyphCache() {}
     ~GlyphCache();
 
-    GlyphData *getGlyph(Font *font, char32_t codePoint, unsigned int size);
+    GlyphData *getGlyph(Font *font, char32_t codePoint, unsigned int size, unsigned int border = 0);
     void createTexture();
     void commitChanges();
 };
@@ -97,7 +99,7 @@ struct Font {
     Font(const std::string &path, const char *fontData, size_t fontDataLen);
 
     std::string path;
-    GlyphData &getGlyph(char32_t glyphId, unsigned int size);
+    GlyphData &getGlyph(char32_t glyphId, unsigned int size, unsigned int border = 0);
     void shape(hb_buffer_t *buf, size_t pointSize);
     void commitChanges();
     void flushCache();

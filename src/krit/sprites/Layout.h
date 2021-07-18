@@ -168,15 +168,17 @@ struct LayoutRoot : public Sprite {
     }
 
     static std::unordered_map<std::string, LayoutParseFunction *> parsers;
-    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
-                                const std::string &key,
-                                const std::string &value);
-    static SpriteStyle parseStyle(std::string &s);
+
     static void
     parseAndApplyStyle(std::unordered_map<std::string, std::string> &attrMap,
                        VisibleSprite *e);
     static ImageRegion
     parseSrc(std::unordered_map<std::string, std::string> &attrMap);
+    static void parseStyle(VisibleSprite *e, const std::string &key,
+                           const std::string &value);
+    static void parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
+                                const std::string &key,
+                                const std::string &value);
 
     static void addParser(const std::string &tag, LayoutParseFunction *f) {
         parsers.insert(std::make_pair(tag, f));
