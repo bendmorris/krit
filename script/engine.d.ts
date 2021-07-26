@@ -5,6 +5,8 @@
  */
 interface Engine {
     input: InputContext;
+    camera: Camera;
+    uiCamera: Camera;
 
     pushAssetCache(): void;
     popAssetCache(): void;

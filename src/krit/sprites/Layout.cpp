@@ -299,13 +299,14 @@ ImageRegion
 LayoutRoot::parseSrc(std::unordered_map<std::string, std::string> &attrMap) {
     auto found = attrMap.find("src");
     if (found != attrMap.end()) {
-        return ImageRegion(App::ctx.engine->getImage(found->second));
+        return ImageRegion(App::ctx.engine->getImage(Parse::parse<const std::string&>(found->second)));
     }
     found = attrMap.find("atlas");
     if (found != attrMap.end()) {
         std::shared_ptr<TextureAtlas> atlas =
-            App::ctx.engine->getAtlas(found->second);
-        return atlas->getRegion(attrMap["region"]);
+            App::ctx.engine->getAtlas(Parse::parse<const std::string&>(found->second));
+        assert(attrMap.find("region") != attrMap.end());
+        return atlas->getRegion(Parse::parse<const std::string&>(attrMap["region"]));
     }
     panic("couldn't find src");
 }

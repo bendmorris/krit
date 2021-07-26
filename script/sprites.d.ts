@@ -121,6 +121,8 @@ declare class LayoutNode extends VisibleSprite {
     attachSprite(s: Pointer<VisibleSprite>): void;
     addChild(node: Pointer<LayoutNode>): void;
     clearChildren(): void;
+    setAbsolutePosition(x: number, y: number, anchorX: number, anchorY: number): void;
+    isVisible(): boolean;
 }
 
 /**

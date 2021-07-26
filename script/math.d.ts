@@ -32,6 +32,7 @@ interface Dimensions {
 
     width(): Reference<number>;
     height(): Reference<number>;
+    setTo(x: number, y: number): void;
 }
 
 /**
@@ -69,6 +70,7 @@ declare const enum MeasurementType {
 interface Measurement {
     /** @cast MeasurementType */ type: integer;
     value: number;
+    latest: number;
 }
 
 /**
@@ -78,6 +80,7 @@ interface Measurement {
 interface AnchoredMeasurement {
     value: Measurement;
     anchor: number;
+    latest: number;
 }
 
 /**

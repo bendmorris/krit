@@ -30,7 +30,9 @@ struct TriangleData {
     /**
      * Returns the AABB containing this triangle.
      */
-    Rectangle bounds();
+    Rectangle bounds() {
+        return t.bounds();
+    }
 };
 
 struct DrawCall {
@@ -46,13 +48,6 @@ struct DrawCall {
     bool matches(const DrawKey &other) { return this->key == other; }
 
     void reset() { this->indices.clear(); }
-
-    void addTriangle(DrawCommandBuffer *buf, const Triangle &t,
-                     const Triangle &uv, const Color &color);
-    void addTriangle(DrawCommandBuffer *buf, float t1, float t2, float t3,
-                     float t4, float t5, float t6, float uv1, float uv2,
-                     float uv3, float uv4, float uv5, float uv6,
-                     const Color &color);
 };
 
 }

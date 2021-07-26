@@ -28,7 +28,7 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
                                     const Color &color) {
     if (color.a > 0) {
         DrawCall &call = this->getDrawCall(key);
-        call.addTriangle(this, t, uv, color);
+        addTriangle(call, t, uv, color);
     }
 }
 
@@ -63,11 +63,11 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
     float xc = rect.height * matrix.c + matrix.tx;
     float yd = rect.height * matrix.d + matrix.ty;
 
-    call.addTriangle(this, matrix.tx, matrix.ty, xa, yb, xc, yd, uvx1, uvy1,
-                     uvx2, uvy1, uvx1, uvy2, color);
-    call.addTriangle(this, xc, yd, xa, yb, xa + rect.height * matrix.c,
-                     yb + rect.height * matrix.d, uvx1, uvy2, uvx2, uvy1, uvx2,
-                     uvy2, color);
+    addTriangle(call, matrix.tx, matrix.ty, xa, yb, xc, yd, uvx1, uvy1, uvx2,
+                uvy1, uvx1, uvy2, color);
+    addTriangle(call, xc, yd, xa, yb, xa + rect.height * matrix.c,
+                yb + rect.height * matrix.d, uvx1, uvy2, uvx2, uvy1, uvx2, uvy2,
+                color);
 }
 
 }

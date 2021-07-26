@@ -56,6 +56,7 @@ struct LayoutNode : public VisibleSprite {
     Point offset;
     PositionMode positionMode = PositionAbsolute;
     PositionMode childPositionMode = PositionAbsolute;
+    LayoutNode *parent = nullptr;
     std::unique_ptr<LayoutNode> nextSibling;
     std::unique_ptr<LayoutNode> firstChild;
     float siblingSpacing = 0;
@@ -109,6 +110,7 @@ struct LayoutNode : public VisibleSprite {
     }
 
     void addChild(LayoutNode *node) {
+        node->parent = this;
         if (!this->firstChild) {
             this->firstChild = std::unique_ptr<LayoutNode>(node);
         } else {
@@ -140,6 +142,15 @@ struct LayoutNode : public VisibleSprite {
                    : (this->sprite ? this->sprite->getSize()
                                    : Dimensions(this->width.measure(0),
                                                 this->height.measure(0)));
+    }
+
+    void setAbsolutePosition(float x, float y, float anchorX = 0, float anchorY = 0) {
+        this->x = AnchoredMeasurement(Measurement(x), anchorX);
+        this->y = AnchoredMeasurement(Measurement(y), anchorY);
+    }
+
+    bool isVisible() {
+        return this->visible && (!parent || parent->isVisible());
     }
 
     void fixedUpdate(UpdateContext &ctx) override;

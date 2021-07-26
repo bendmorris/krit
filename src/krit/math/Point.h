@@ -74,6 +74,13 @@ template <typename T, typename Self> struct BasePoint {
         return std::sqrt(derived.x * derived.x + derived.y * derived.y);
     }
 
+    T squaredDistance(T x, T y) {
+        Self &derived = static_cast<Self &>(*this);
+        T dx = derived.x - x;
+        T dy = derived.y - y;
+        return dx * dx + dy * dy;
+    }
+
     T squaredDistance(Self &other) {
         Self &derived = static_cast<Self &>(*this);
         T dx = derived.x - other.x;

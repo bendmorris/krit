@@ -22,6 +22,10 @@ int Parse::parseInt(const std::string &_s, int base) {
     return std::stoi(s, 0, base);
 }
 
+template <> const std::string &Parse::parse(const std::string &_s) {
+    return _preParse(_s);
+}
+
 template <> int Parse::parse(const std::string &_s) {
     return Parse::parseInt(_s, 10);
 }

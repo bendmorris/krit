@@ -32,6 +32,7 @@ private:
     }
 };
 
+template <> const std::string &Parse::parse(const std::string &_s);
 template <> Measurement Parse::parse(const std::string &_s);
 template <> int Parse::parse(const std::string &_s);
 template <> float Parse::parse(const std::string &_s);
