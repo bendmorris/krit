@@ -43,8 +43,8 @@ struct InputContext {
         Point mousePos;
         bool mouseOver = false;
 
-        Action mappings[4] = {0};
-        bool active[4] = {0};
+        Action mappings[MouseButtonMax] = {0};
+        bool active[MouseButtonMax] = {0};
 
         MouseManager() : mousePos(-1, -1) {}
 
@@ -112,6 +112,10 @@ struct InputContext {
     }
     void mouseUp(MouseButton btn) {
         this->mouse.registerMouseState(*this, btn, 0);
+    }
+    void mouseWheel(int y) {
+        this->mouse.registerMouseState(*this, MouseWheel, y);
+        this->mouse.registerMouseState(*this, MouseWheel, 0);
     }
 
     void bindKey(Key key, Action action) { this->key.define(key, action); }

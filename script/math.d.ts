@@ -92,6 +92,8 @@ interface Rectangle {
     y: number;
     width: number;
     height: number;
+
+    contains(x: number, y: number): boolean;
 }
 
 /**
@@ -103,4 +105,6 @@ interface Rectangle {
     y: integer;
     width: integer;
     height: integer;
+
+    contains(x: integer, y: integer): boolean;
 }

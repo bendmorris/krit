@@ -11,8 +11,10 @@ struct UpdateContext;
 
 enum MouseButton {
     MouseLeft = 1,
-    MouseMiddle = 2,
-    MouseRight = 3,
+    MouseMiddle,
+    MouseRight,
+    MouseWheel,
+    MouseButtonMax,
 };
 
 }

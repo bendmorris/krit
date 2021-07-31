@@ -231,6 +231,12 @@ void App::handleEvents() {
                 seenMouseEvent = true;
                 break;
             }
+            case SDL_MOUSEWHEEL: {
+                if (handleMouse && event.wheel.y) {
+                    engine.input.mouseWheel(event.wheel.y * (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1 : -1));
+                }
+                break;
+            }
         }
     }
 

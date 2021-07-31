@@ -69,6 +69,11 @@ template <typename T, typename Self> struct BaseRectangle {
                p.y >= this->y && p.y <= (this->y + this->height);
     }
 
+    bool contains(T x, T y) {
+        return x >= this->x && x <= (this->x + this->width) &&
+               y >= this->y && y <= (this->y + this->height);
+    }
+
     Self &setTo(const Self &other) {
         return this->setTo(other.x, other.y, other.width, other.height);
     }
