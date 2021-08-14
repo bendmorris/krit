@@ -204,6 +204,10 @@ struct LayoutRoot : public Sprite {
     void parse(const char *markup, size_t len);
     void parse(const std::string &markup);
 
+    bool has(const std::string &id) {
+        return this->nodeMap.find(id) != this->nodeMap.end();
+    }
+
     LayoutNode *getNodeById(const std::string &id) {
         auto found = this->nodeMap.find(id);
         if (found == this->nodeMap.end()) {

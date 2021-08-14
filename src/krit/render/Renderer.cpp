@@ -17,9 +17,9 @@
 #include "krit/render/FrameBuffer.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
-#include "krit/render/Material.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
+#include "krit/render/SceneShader.h"
 #include "krit/render/Shader.h"
 #include "krit/render/SmoothingMode.h"
 #include "krit/render/Uniform.h"
@@ -36,117 +36,28 @@ SpriteShader *defaultTextSpriteShader;
 
 }
 
-SpriteShader *Renderer::getDefaultTextureShader() {
-    if (!defaultTextureSpriteShader) {
-        defaultTextureSpriteShader =
-            new SpriteShader(R"(
-// Krit texture vertex shader
-attribute vec4 aPosition;
-attribute vec2 aTexCoord;
-attribute vec4 aColor;
-varying vec2 vTexCoord;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    vTexCoord = aTexCoord;
-    gl_Position = uMatrix * aPosition;
-}
-)",
-                             R"(// Krit texture fragment shader
-varying vec4 vColor;
-varying vec2 vTexCoord;
-uniform sampler2D uImage;
-
-void main(void) {
-    vec4 color = texture2D(uImage, vTexCoord);
-    if (color.a == 0.0) {
-        discard;
-    } else {
-        gl_FragColor = color * vColor;
+void Renderer::setSmoothingMode(SmoothingMode mode) {
+    switch (mode) {
+        case SmoothNearest: {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            break;
+        }
+        case SmoothLinear: {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            break;
+        }
+        case SmoothMipmap: {
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                            GL_LINEAR_MIPMAP_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            break;
+        }
     }
 }
-)");
-    }
-    return defaultTextureSpriteShader;
-}
 
-SpriteShader *Renderer::getDefaultColorShader() {
-    if (!defaultColorSpriteShader) {
-        defaultColorSpriteShader = new SpriteShader(R"(
-// Krit color vertex shader
-attribute vec4 aPosition;
-attribute vec4 aColor;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    gl_Position = uMatrix * aPosition;
-})",
-                                                    R"(
-// Krit color fragment shader
-varying vec4 vColor;
-
-void main(void) {
-    gl_FragColor = vColor;
-}
-)");
-    }
-    return defaultColorSpriteShader;
-}
-
-SpriteShader *Renderer::getDefaultTextShader() {
-    if (!defaultTextSpriteShader) {
-        defaultTextSpriteShader =
-            new SpriteShader(R"(
-// Krit text vertex shader
-attribute vec4 aPosition;
-attribute vec2 aTexCoord;
-attribute vec4 aColor;
-varying vec2 vTexCoord;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    vTexCoord = aTexCoord;
-    gl_Position = uMatrix * aPosition;
-}
-)",
-                             R"(// Krit text fragment shader
-varying vec4 vColor;
-varying vec2 vTexCoord;
-uniform sampler2D uImage;
-
-void main(void) {
-    vec4 color = texture2D(uImage, vTexCoord);
-    if (color.r == 0.0) {
-        discard;
-    } else {
-        gl_FragColor = vec4(color.r, color.r, color.r, color.r) * vColor;
-    }
-}
-)");
-    }
-    return defaultTextSpriteShader;
-}
-
-SDL_mutex *Renderer::renderMutex = SDL_CreateMutex();
-
-RenderFloat _ortho[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-
-void ortho(RenderFloat x0, RenderFloat x1, RenderFloat y0, RenderFloat y1) {
-    RenderFloat sx = 1.0 / (x1 - x0);
-    RenderFloat sy = 1.0 / (y1 - y0);
-    _ortho[0] = 2.0 * sx;
-    _ortho[5] = 2.0 * sy;
-    _ortho[12] = -(x0 + x1) * sx;
-    _ortho[13] = -(y0 + y1) * sy;
-}
-
-void setBlendMode(BlendMode mode) {
+void Renderer::setBlendMode(BlendMode mode) {
     switch (mode) {
         case Add: {
             glBlendEquation(GL_FUNC_ADD);
@@ -180,6 +91,114 @@ void setBlendMode(BlendMode mode) {
         }
     }
     checkForGlErrors("setBlendMode");
+}
+
+SpriteShader *Renderer::getDefaultTextureShader() {
+    if (!defaultTextureSpriteShader) {
+        defaultTextureSpriteShader =
+            new SpriteShader(new Shader(R"(
+// Krit texture vertex shader
+attribute vec4 aPosition;
+attribute vec2 aTexCoord;
+attribute vec4 aColor;
+varying vec2 vTexCoord;
+varying vec4 vColor;
+uniform mat4 uMatrix;
+
+void main(void) {
+    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
+    vTexCoord = aTexCoord;
+    gl_Position = uMatrix * aPosition;
+}
+)",
+                                        R"(// Krit texture fragment shader
+varying vec4 vColor;
+varying vec2 vTexCoord;
+uniform sampler2D uImage;
+
+void main(void) {
+    vec4 color = texture2D(uImage, vTexCoord);
+    if (color.a == 0.0) {
+        discard;
+    } else {
+        gl_FragColor = color * vColor;
+    }
+}
+)"));
+    }
+    return defaultTextureSpriteShader;
+}
+
+SpriteShader *Renderer::getDefaultColorShader() {
+    if (!defaultColorSpriteShader) {
+        defaultColorSpriteShader = new SpriteShader(new Shader(R"(
+// Krit color vertex shader
+attribute vec4 aPosition;
+attribute vec4 aColor;
+varying vec4 vColor;
+uniform mat4 uMatrix;
+
+void main(void) {
+    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
+    gl_Position = uMatrix * aPosition;
+})",
+                                                               R"(
+// Krit color fragment shader
+varying vec4 vColor;
+
+void main(void) {
+    gl_FragColor = vColor;
+}
+)"));
+    }
+    return defaultColorSpriteShader;
+}
+
+SpriteShader *Renderer::getDefaultTextShader() {
+    if (!defaultTextSpriteShader) {
+        defaultTextSpriteShader =
+            new SpriteShader(new Shader(R"(
+// Krit text vertex shader
+attribute vec4 aPosition;
+attribute vec2 aTexCoord;
+attribute vec4 aColor;
+varying vec2 vTexCoord;
+varying vec4 vColor;
+uniform mat4 uMatrix;
+
+void main(void) {
+    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
+    vTexCoord = aTexCoord;
+    gl_Position = uMatrix * aPosition;
+}
+)",
+                                        R"(// Krit text fragment shader
+varying vec4 vColor;
+varying vec2 vTexCoord;
+uniform sampler2D uImage;
+
+void main(void) {
+    vec4 color = texture2D(uImage, vTexCoord);
+    if (color.r == 0.0) {
+        discard;
+    } else {
+        gl_FragColor = vec4(color.r, color.r, color.r, color.r) * vColor;
+    }
+}
+)"));
+    }
+    return defaultTextSpriteShader;
+}
+
+RenderFloat _ortho[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+
+void ortho(RenderFloat x0, RenderFloat x1, RenderFloat y0, RenderFloat y1) {
+    RenderFloat sx = 1.0 / (x1 - x0);
+    RenderFloat sy = 1.0 / (y1 - y0);
+    _ortho[0] = 2.0 * sx;
+    _ortho[5] = 2.0 * sy;
+    _ortho[12] = -(x0 + x1) * sx;
+    _ortho[13] = -(y0 + y1) * sy;
 }
 
 static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
@@ -262,7 +281,8 @@ void Renderer::init(SDL_Window *window) {
 }
 
 template <>
-void Renderer::drawCall<PushClipRect, Rectangle>(Rectangle &clipRect) {
+void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
+                                                 Rectangle &clipRect) {
     clipStack.emplace_back();
     Rectangle &newClip = clipStack.back();
     if (clipStack.size() > 1) {
@@ -274,7 +294,8 @@ void Renderer::drawCall<PushClipRect, Rectangle>(Rectangle &clipRect) {
               newClip.width, newClip.height);
 }
 
-template <> void Renderer::drawCall<PopClipRect, char>(char &_) {
+template <>
+void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
     clipStack.pop_back();
     if (clipStack.empty()) {
         glScissor(0, 0, this->width, this->height);
@@ -287,7 +308,7 @@ template <> void Renderer::drawCall<PopClipRect, char>(char &_) {
 
 template <>
 void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer *>(
-    BaseFrameBuffer *&fb) {
+    RenderContext &ctx, BaseFrameBuffer *&fb) {
     // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
     if (fb) {
         fb->_resize();
@@ -296,7 +317,8 @@ void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer *>(
     checkForGlErrors("bind framebuffer");
 }
 
-template <> void Renderer::drawCall<ClearColor, Color>(Color &c) {
+template <>
+void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
     glDisable(GL_SCISSOR_TEST);
     glClearColor(c.r, c.g, c.b, c.a);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -304,7 +326,8 @@ template <> void Renderer::drawCall<ClearColor, Color>(Color &c) {
 }
 
 template <>
-void Renderer::drawCall<RenderImGui, ImDrawData *>(ImDrawData *&drawData) {
+void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
+                                                   ImDrawData *&drawData) {
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(Editor::window);
@@ -313,7 +336,8 @@ void Renderer::drawCall<RenderImGui, ImDrawData *>(ImDrawData *&drawData) {
 }
 
 template <>
-void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
+void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
+                                                 DrawCall &drawCall) {
     // puts("draw");
     checkForGlErrors("drawCall");
 
@@ -331,40 +355,21 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
             if (drawCall.key.image) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, drawCall.key.image->texture);
-                switch (drawCall.key.smooth) {
-                    case SmoothNearest: {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                        GL_NEAREST);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                        GL_NEAREST);
-                        break;
-                    }
-                    case SmoothLinear: {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                        GL_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                        GL_LINEAR);
-                        break;
-                    }
-                    case SmoothMipmap: {
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
-                                        GL_LINEAR_MIPMAP_LINEAR);
-                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
-                                        GL_LINEAR);
-                        break;
-                    }
-                }
+                setSmoothingMode(drawCall.key.smooth);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
                                 GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
                                 GL_CLAMP_TO_EDGE);
                 checkForGlErrors("bind texture");
             }
-            shader->bindOrtho(_ortho);
+            shader->bind(ctx);
+            if (shader->matrixIndex > -1) {
+                glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
+            }
             setBlendMode(drawCall.key.blend);
-            checkForGlErrors("set blend mode");
 
-            int dataSize = drawCall.length() * shader->bytesPerVertex * 3;
+            int dataSize =
+                drawCall.length() * shader->shader.bytesPerVertex * 3;
             this->renderData.reserve(dataSize);
             glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[0]);
             checkForGlErrors("bind buffer");
@@ -375,7 +380,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
                 checkForGlErrors("buffer data");
                 this->bufferPtr = (RenderFloat *)this->renderData.data();
             }
-            shader->prepare(&drawCommandBuffer, &drawCall,
+            shader->prepare(ctx, &drawCall,
                             (RenderFloat *)this->renderData.data());
             checkForGlErrors("prepare");
 
@@ -390,99 +395,28 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(DrawCall &drawCall) {
 }
 
 template <>
-void Renderer::drawCall<DrawMaterial, Material>(Material &material) {
-    // puts("material");
-    checkForGlErrors("material");
-
+void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
+                                                        SceneShader *&shader) {
     glBlendEquation(GL_FUNC_ADD);
     glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE);
 
-    Shader *shader = material.shader;
-    shader->bind();
+    shader->bind(ctx);
+    if (shader->matrixIndex > -1) {
+        glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
+    }
     checkForGlErrors("bind");
 
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
     checkForGlErrors("bindBuffer");
-    RenderFloat *origin = nullptr;
-    glEnableVertexAttribArray(shader->positionIndex);
-    glEnableVertexAttribArray(shader->texCoordIndex);
-    glVertexAttribPointer(shader->positionIndex, 2, GL_FLOAT, GL_FALSE,
-                          4 * sizeof(RenderFloat), origin);
-    checkForGlErrors("vertex attrib pointers 1");
-    glVertexAttribPointer(shader->texCoordIndex, 2, GL_FLOAT, GL_FALSE,
-                          4 * sizeof(RenderFloat), origin + 2);
-    checkForGlErrors("vertex attrib pointers 2");
 
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, material.img.texture);
-    checkForGlErrors("bind texture");
+    setBlendMode(shader->blend);
 
-    for (auto it : material.uniforms) {
-        auto loc = material.findUniform(it.first);
-        if (loc > -1) {
-            auto &uniform = it.second;
-            switch (uniform.type) {
-                case UniformInt:
-                case UniformTexture: {
-                    glUniform1i(loc, uniform.intValue);
-                    break;
-                }
-                case UniformFloat: {
-                    glUniform1f(loc, uniform.floatValue);
-                    break;
-                }
-                case UniformVec2: {
-                    glUniform2f(loc, uniform.vec2Value[0],
-                                uniform.vec2Value[1]);
-                    break;
-                }
-                case UniformVec3: {
-                    glUniform3f(loc, uniform.vec3Value[0], uniform.vec3Value[1],
-                                uniform.vec3Value[2]);
-                    break;
-                }
-                case UniformVec4: {
-                    glUniform4f(loc, uniform.vec4Value[0], uniform.vec4Value[1],
-                                uniform.vec4Value[2], uniform.vec4Value[3]);
-                    break;
-                }
-                case UniformFloat1v: {
-                    glUniform1fv(loc, uniform.floatData.first,
-                                 uniform.floatData.second);
-                    break;
-                }
-                case UniformFloat2v: {
-                    glUniform2fv(loc, uniform.floatData.first,
-                                 uniform.floatData.second);
-                    break;
-                }
-                case UniformFloat3v: {
-                    glUniform3fv(loc, uniform.floatData.first,
-                                 uniform.floatData.second);
-                    break;
-                }
-                case UniformFloat4v: {
-                    glUniform4fv(loc, uniform.floatData.first,
-                                 uniform.floatData.second);
-                    break;
-                }
-                default: {
-                    panic("unknown uniform type: %i\n", uniform.type);
-                }
-            }
-        }
-    }
-    checkForGlErrors("uniforms");
-
-    setBlendMode(material.blend);
-
+    renderData.reserve(shader->shader.bytesPerVertex * 6);
+    shader->prepare(ctx, (RenderFloat *)renderData.data());
     glDrawArrays(GL_TRIANGLES, 0, 6);
     checkForGlErrors("drawArrays");
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDisableVertexAttribArray(shader->positionIndex);
-    glDisableVertexAttribArray(shader->texCoordIndex);
-
     shader->unbind();
 }
 
@@ -506,18 +440,21 @@ void Renderer::renderFrame(RenderContext &ctx) {
         switch (commandType) {
 #define DISPATCH_COMMAND(cmd)                                                  \
     case cmd:                                                                  \
-        this->drawCall<cmd>(this->drawCommandBuffer.buf.get<cmd>()[index]);    \
+        this->drawCall<cmd>(ctx,                                               \
+                            this->drawCommandBuffer.buf.get<cmd>()[index]);    \
         break;
 
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(PushClipRect)
             DISPATCH_COMMAND(PopClipRect)
             DISPATCH_COMMAND(SetRenderTarget)
-            DISPATCH_COMMAND(DrawMaterial)
+            DISPATCH_COMMAND(DrawSceneShader)
             DISPATCH_COMMAND(ClearColor)
             DISPATCH_COMMAND(RenderImGui)
         }
     }
+
+#undef DISPATCH_COMMAND
 
     glDisable(GL_SCISSOR_TEST);
 

@@ -6,8 +6,8 @@
 #include "krit/render/CommandBuffer.h"
 #include "krit/render/FrameBuffer.h"
 #include "krit/render/ImageData.h"
-#include "krit/render/Shader.h"
 #include "krit/render/SmoothingMode.h"
+#include "krit/render/SpriteShader.h"
 #include "krit/utils/Color.h"
 #include <memory>
 #include <tuple>

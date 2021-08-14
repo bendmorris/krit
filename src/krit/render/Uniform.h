@@ -1,9 +1,13 @@
 #ifndef KRIT_RENDER_UNIFORM
 #define KRIT_RENDER_UNIFORM
 
+#include "krit/render/ImageData.h"
+#include "krit/utils/Slice.h"
+
 namespace krit {
 
 enum UniformValueType {
+    UniformEmpty,
     UniformInt,
     UniformFloat,
     UniformVec2,
@@ -25,9 +29,10 @@ struct UniformValue {
         float vec2Value[2];
         float vec3Value[3];
         float vec4Value[4];
-        std::pair<size_t, float *> floatData;
+        Slice<float> floatData;
     };
 
+    UniformValue() : type(UniformEmpty), intValue(0) {}
     UniformValue(int f) : type(UniformInt), intValue(f) {}
     UniformValue(float f) : type(UniformFloat), floatValue(f) {}
     UniformValue(float a, float b) : type(UniformVec2), vec2Value{a, b} {}
@@ -37,8 +42,14 @@ struct UniformValue {
         : type(UniformVec4), vec4Value{a, b, c, d} {}
     UniformValue(size_t N, size_t c, float *v)
         : type(static_cast<UniformValueType>(UniformFloat1v + N - 1)),
-          floatData(std::make_pair(c, v)) {}
-    UniformValue(ImageData img) : type(UniformTexture), intValue(img.texture) {}
+          floatData(v, c) {}
+    UniformValue(const ImageData &img)
+        : type(UniformTexture), intValue(img.texture) {}
+    UniformValue(const Color &c)
+        : type(UniformVec4), vec4Value{c.r, c.g, c.b, c.a} {}
+    // template <typename T>
+    // UniformValue(const BasePoint<T> &p)
+    //     : type(UniformVec2), vec2Value{p.x, p.y} {}
 };
 
 }

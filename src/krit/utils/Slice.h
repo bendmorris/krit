@@ -21,24 +21,6 @@ template <typename T> struct Slice {
     T &operator[](int index) { return this->data[index]; }
 };
 
-struct StringSlice : public Slice<char> {
-    StringSlice() : Slice() {}
-    StringSlice(char *data, unsigned int length) : Slice(data, length) {}
-
-    template <typename Arg> bool operator==(Arg other) {
-        return this->cmp(other);
-    }
-
-    int cmp(char *other) { return strncmp(this->data, other, this->length); }
-
-    int cmp(const std::string &other) { return this->cmp(other.c_str()); }
-
-    int cmp(StringSlice &other) {
-        return this->length == other.length &&
-               strncmp(this->data, other.data, this->length);
-    }
-};
-
 }
 
 #endif

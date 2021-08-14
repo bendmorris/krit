@@ -67,27 +67,26 @@ void NineSlice::render(RenderContext &render) {
     key.smooth = this->smooth;
     key.blend = this->blendMode;
 
-#define RENDER_SLICE(_r, _x, _y, _w, _h)                                       \
-    do {                                                                       \
-        Matrix m;                                                              \
-        m.scale(_w / _r.width(), _h / _r.height())                             \
-            .translate(_x - this->origin.x, _y - this->origin.y)               \
-            .scale(this->scale.x, this->scale.y)                               \
-            .translate(this->position.x, this->position.y);                    \
-        render.addRect(key, _r.rect, m, this->color);                          \
-    } while (0)
+    auto renderSlice = [&](ImageRegion &_r, float _x, float _y, float _w, float _h) {
+        if (w > 0 && h > 0) {
+            Matrix m;
+            m.scale(_w / _r.width(), _h / _r.height())
+                .translate(_x - this->origin.x, _y - this->origin.y)
+                .scale(this->scale.x, this->scale.y)
+                .translate(this->position.x, this->position.y);
+            render.addRect(key, _r.rect, m, this->color);
+        }
+    };
 
-    RENDER_SLICE(this->ul, 0, 0, lw, uh);
-    RENDER_SLICE(this->ur, rx, 0, rw, uh);
-    RENDER_SLICE(this->bl, 0, by, lw, bh);
-    RENDER_SLICE(this->br, rx, by, rw, bh);
-    RENDER_SLICE(this->uc, cx, 0, cw, uh);
-    RENDER_SLICE(this->bc, cx, by, cw, bh);
-    RENDER_SLICE(this->cl, 0, cy, lw, ch);
-    RENDER_SLICE(this->cr, rx, cy, rw, ch);
-    RENDER_SLICE(this->cc, cx, cy, cw, ch);
-
-#undef RENDER_SLICE
+    renderSlice(this->ul, 0, 0, lw, uh);
+    renderSlice(this->ur, rx, 0, rw, uh);
+    renderSlice(this->bl, 0, by, lw, bh);
+    renderSlice(this->br, rx, by, rw, bh);
+    renderSlice(this->uc, cx, 0, cw, uh);
+    renderSlice(this->bc, cx, by, cw, bh);
+    renderSlice(this->cl, 0, cy, lw, ch);
+    renderSlice(this->cr, rx, cy, rw, ch);
+    renderSlice(this->cc, cx, cy, cw, ch);
 }
 
 }

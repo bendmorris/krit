@@ -99,6 +99,12 @@ void App::run() {
         this->setFullScreen(true);
     }
 
+    // generate an initial MouseMotion event; without this, SDL will return an invalid initial mouse position
+    int x, y, wx, wy;
+    SDL_GetGlobalMouseState(&x, &y);
+    SDL_GetWindowPosition(this->window, &wx, &wy);
+    SDL_WarpMouseInWindow(this->window, x - wx, y - wy);
+
     invoke(engine.onBegin, update);
 
     running = true;
@@ -114,6 +120,7 @@ void App::run() {
         // } while (lockFramerate && elapsed < frameDelta2);
         accumulator += elapsed;
         ctx.elapsed = ctx.frameCount = 0;
+        engine.elapsed += elapsed;
 
         engine.input.startFrame();
         handleEvents();
@@ -140,11 +147,9 @@ void App::run() {
         }
         frameStart = frameFinish;
 
-        SDL_LockMutex(renderer.renderMutex);
         Font::commit();
         engine.render(ctx);
         renderer.renderFrame(ctx);
-        SDL_UnlockMutex(renderer.renderMutex);
 
         Font::flush();
     }
@@ -228,7 +233,9 @@ void App::handleEvents() {
                 break;
             }
             case SDL_MOUSEMOTION: {
-                seenMouseEvent = true;
+                if (event.motion.x || event.motion.y) {
+                    seenMouseEvent = true;
+                }
                 break;
             }
             case SDL_MOUSEWHEEL: {
@@ -265,8 +272,9 @@ void App::setFullScreen(bool full) {
     } else {
         SDL_SetWindowFullscreen(this->window, 0);
     }
-    SDL_WarpMouseInWindow(this->window, this->dimensions.width() / 2,
-                          this->dimensions.height() / 2);
+    int x = this->dimensions.width() / 2,
+        y = this->dimensions.height() / 2;
+    SDL_WarpMouseInWindow(this->window, x, y);
 }
 
 }

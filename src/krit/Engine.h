@@ -43,6 +43,7 @@ struct Engine {
     bool fixedFrameRate = false;
     bool finished = false;
     float speed = 1;
+    float elapsed = 0;
 
     UpdateSignal onBegin = nullptr;
     UpdateSignal onUpdate = nullptr;

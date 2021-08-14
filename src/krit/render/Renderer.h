@@ -20,8 +20,6 @@ struct RenderContext;
 struct SpriteShader;
 
 struct Renderer {
-    static SDL_mutex *renderMutex;
-
     SDL_GLContext glContext;
 
     DrawCommandBuffer drawCommandBuffer;
@@ -48,7 +46,9 @@ private:
     int width = 0;
     int height = 0;
 
-    template <size_t, typename T> void drawCall(T &);
+    template <size_t, typename T> void drawCall(RenderContext &ctx, T &);
+    void setSmoothingMode(SmoothingMode mode);
+    void setBlendMode(BlendMode mode);
 };
 
 }

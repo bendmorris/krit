@@ -4,7 +4,7 @@
 #include "krit/math/Rectangle.h"
 #include "krit/render/CommandBuffer.h"
 #include "krit/render/DrawCall.h"
-#include "krit/render/Material.h"
+#include "krit/render/SceneShader.h"
 #include "krit/utils/Color.h"
 #include <algorithm>
 #include <vector>
@@ -25,7 +25,7 @@ enum DrawCommandType {
     PushClipRect,
     PopClipRect,
     SetRenderTarget,
-    DrawMaterial,
+    DrawSceneShader,
     ClearColor,
     RenderImGui,
 
@@ -34,8 +34,8 @@ enum DrawCommandType {
 
 struct DrawCommandBuffer {
     std::vector<TriangleData> triangles;
-    CommandBuffer<DrawCall, Rectangle, char, BaseFrameBuffer *, Material, Color,
-                  ImDrawData *>
+    CommandBuffer<DrawCall, Rectangle, char, BaseFrameBuffer *, SceneShader *,
+                  Color, ImDrawData *>
         buf;
 
     DrawCommandBuffer() {
@@ -44,7 +44,7 @@ struct DrawCommandBuffer {
         buf.get<PushClipRect>().reserve(0x10);
         buf.get<PopClipRect>().reserve(0x10);
         buf.get<SetRenderTarget>().reserve(0x10);
-        buf.get<DrawMaterial>().reserve(0x10);
+        buf.get<DrawSceneShader>().reserve(0x10);
         buf.get<ClearColor>().reserve(0x10);
     }
 
@@ -74,8 +74,8 @@ struct DrawCommandBuffer {
 
     void clearColor(const Color &color) { buf.emplace_back<ClearColor>(color); }
 
-    Material &addMaterial(Shader *shader) {
-        return buf.emplace_back<DrawMaterial>(shader);
+    void drawSceneShader(SceneShader *shader) {
+        buf.emplace_back<DrawSceneShader>(shader);
     }
 
     void addTriangle(DrawCall &draw, const Triangle &t, const Triangle &uv,

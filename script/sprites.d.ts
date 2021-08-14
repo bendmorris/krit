@@ -91,6 +91,8 @@ declare class Backdrop extends VisibleSprite {
 declare class SpineSprite extends VisibleSprite {
     static from(value: Sprite): SpineSprite;
 
+    rate: number;
+
     setSkin(name: string): void;
     setAnimation(track: integer, name: string, loop: boolean): float;
 }
@@ -133,6 +135,7 @@ declare class LayoutNode extends VisibleSprite {
 declare class LayoutRoot extends Sprite {
     static from(value: Sprite): LayoutRoot;
 
+    has(id: string): boolean;
     getById(id: string): Pointer<VisibleSprite>;
     getNodeById(id: string): Pointer<LayoutNode>;
 }

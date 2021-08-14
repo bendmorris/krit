@@ -8,11 +8,17 @@
 #include <unordered_map>
 
 #include "krit/render/Gl.h"
+#include "krit/render/RenderContext.h"
+#include "krit/render/Uniform.h"
 
 namespace krit {
 
 struct DrawCommandBuffer;
 struct DrawCall;
+
+struct UniformInfo {
+    std::string name;
+};
 
 struct Shader {
     GLuint program = 0;
@@ -20,8 +26,9 @@ struct Shader {
     const char *fragmentSource;
     GLint positionIndex = 0;
     GLint texCoordIndex = 0;
+    GLint colorIndex = 0;
     size_t bytesPerVertex = 0;
-    std::unordered_map<std::string, GLint> uniformLocations;
+    std::vector<UniformInfo> uniforms;
 
     Shader(const char *vertexSource, const char *fragmentSource)
         : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
@@ -30,21 +37,32 @@ struct Shader {
 
     GLint getUniformLocation(const std::string &);
     virtual void init();
-    virtual void bind();
+    virtual void bind(RenderContext &ctx);
     virtual void unbind();
 };
 
-struct SpriteShader : public Shader {
-    GLint matrixIndex;
-    GLint colorIndex;
+struct ShaderInstance {
+    Shader &shader;
+    std::vector<UniformValue> uniforms;
 
-    SpriteShader(const char *v, const char *f) : Shader(v, f) {}
+    ShaderInstance(Shader &shader);
+    ShaderInstance(Shader *shader): ShaderInstance(*shader) {}
 
-    virtual void init() override;
-    virtual void bindOrtho(GLfloat *matrix);
-    virtual void unbind() override;
-    virtual void prepare(DrawCommandBuffer *buf, DrawCall *drawCall,
-                         RenderFloat *buffer);
+    virtual void init() { shader.init(); }
+    virtual void bind(RenderContext &ctx);
+    virtual void unbind() { shader.unbind(); }
+
+    void setUniform(const std::string &name, UniformValue value) {
+        shader.init();
+        int index = shader.getUniformLocation(name);
+        uniforms[index] = value;
+    }
+
+    void clear() {
+        for (size_t i = 0; i < uniforms.size(); ++i) {
+            uniforms[i] = UniformValue();
+        }
+    }
 };
 
 }
