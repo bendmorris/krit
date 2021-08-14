@@ -1,7 +1,6 @@
 #ifndef KRIT_ASSET_ASSETCACHE
 #define KRIT_ASSET_ASSETCACHE
 
-#include "krit/Assets.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
 #include <functional>
@@ -49,7 +48,7 @@ struct AssetCache {
                 std::shared_ptr<void> asset = found->second.lock();
                 if (asset && request.ready(asset.get())) {
                     request.callback();
-                    assetRequests.erase(assetRequests.begin()+i);
+                    assetRequests.erase(assetRequests.begin() + i);
                     --i;
                 }
             }

@@ -206,6 +206,7 @@ struct Text : public VisibleSprite, public TextOptions {
     Text &setText(const std::string &text);
     Text &setRichText(const std::string &text);
     Text &refresh();
+    void invalidate() { dirty = true; }
 
     const std::string &getText() { return this->text; }
     const Dimensions &getTextDimensions() {

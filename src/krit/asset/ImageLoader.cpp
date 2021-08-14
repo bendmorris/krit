@@ -28,25 +28,7 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         if (!surface) {
             panic("IMG_Load(%s) is null\n", info.path.c_str());
         }
-        SDL_LockSurface(surface);
-        int size = surface->w * surface->h;
-        uint8_t *pixels = static_cast<uint8_t *>(surface->pixels);
-        unsigned int mode = GL_RGB;
-        // FIXME: do this ahead of time
-        if (surface->format->BytesPerPixel == 4) {
-            // premultiply alpha
-            for (int i = 0; i < size; ++i) {
-                uint8_t a = pixels[i * 4 + 3];
-                pixels[i * 4] =
-                    (static_cast<uint32_t>(pixels[i * 4]) * a / 0xff);
-                pixels[i * 4 + 1] =
-                    (static_cast<uint32_t>(pixels[i * 4 + 1]) * a / 0xff);
-                pixels[i * 4 + 2] =
-                    (static_cast<uint32_t>(pixels[i * 4 + 2]) * a / 0xff);
-            }
-            mode = GL_RGBA;
-        }
-        SDL_UnlockSurface(surface);
+        unsigned int mode = surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
 
         TaskManager::instance->pushRender([info, img, surface,
                                            mode](RenderContext &render) {
