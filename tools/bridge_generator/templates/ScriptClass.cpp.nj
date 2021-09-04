@@ -81,7 +81,7 @@ JS_FUNC({{wrapper.name}}___from__) {
     bool owned = false;
     if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
         // if this was owned, we'll transfer ownership to the return value
-        Log::debug("transfer finalizer: {{wrapper.name}}");
+        //Log::debug("transfer finalizer: {{wrapper.name}}");
         owned = true;
         JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
         JS_SetOpaque(finalizer, nullptr);
@@ -149,7 +149,7 @@ static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
     // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetRuntimeOpaque(rt));
     {{ wrapper.namespace }}::{{ wrapper.name }} *p = static_cast<{{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque(val, 0));
     if (p) {
-        // puts("deleted {{wrapper.name}}");
+        //puts("deleted {{wrapper.name}}");
         delete p;
     }
 }
@@ -177,7 +177,6 @@ template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::va
 }
 {% if not wrapper.pointerOnly %}
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::jsToValue(JSContext *ctx, JSValue val) {
-    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     return *static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, 0));
 }
 {% endif %}
@@ -191,7 +190,9 @@ template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::v
     return val;
 }
 template <> {{ wrapper.namespace }}::{{ wrapper.name }} *ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::jsToValue(JSContext *ctx, JSValue val) {
-    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    if (JS_IsNull(val)) {
+        return nullptr;
+    }
     return static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, 0));
 }
 

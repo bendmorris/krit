@@ -274,7 +274,9 @@ void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
 void LayoutRoot::parseStyle(VisibleSprite *e, const std::string &key,
                             const std::string &value) {
     if (key == "color") {
+        float a = e->color.a;
         e->color = Parse::parse<Color>(value);
+        e->color.a = a;
     } else if (key == "alpha") {
         e->color.a = Parse::parse<float>(value);
     } else if (key == "scale") {
@@ -512,7 +514,7 @@ void layoutStartElement(void *userData, const char *name, const char **attrs) {
     }
     data->layoutStack.push(node);
     std::unordered_map<std::string, std::string>::const_iterator it;
-    if ((it = attrMap.find("id")) != attrMap.end()) {
+    if ((it = attrMap.find("id")) != attrMap.end() && !it->second.empty()) {
         data->root->nodeMap.insert(std::make_pair(it->second, node));
     }
 }

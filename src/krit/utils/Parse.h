@@ -3,6 +3,7 @@
 
 #include "krit/math/Measurement.h"
 #include "krit/utils/Color.h"
+#include "krit/utils/Panic.h"
 #include <cassert>
 #include <string>
 #include <unordered_map>
@@ -24,9 +25,11 @@ private:
 
     static const std::string &_preParse(const std::string &val) {
         if (val[0] == '$') {
-            assert(constants.find(val) != constants.end());
-            auto &found = constants.at(val);
-            return found;
+            auto found = constants.find(val);
+            if (found == constants.end()) {
+                panic("missing constant: %s", val.c_str());
+            }
+            return found->second;
         }
         return val;
     }

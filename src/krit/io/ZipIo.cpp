@@ -10,14 +10,8 @@ namespace krit {
 zip_t *ZipIo::archive = nullptr;
 
 void ZipIo::setArchive(const std::string &path) {
-    int len = 0;
-    char *buffer = FileIo::read(path.c_str(), &len);
-    zip_source_t *source =
-        zip_source_buffer_create(static_cast<void *>(buffer), len, 1, nullptr);
+    zip_source_t *source = zip_source_file_create(path.c_str(), 0, 0, nullptr);
     archive = zip_open_from_source(source, ZIP_RDONLY, nullptr);
-    // if (err) {
-    //     panic("zip_open error setting archive %s: %i\n", path.c_str(), err);
-    // }
 }
 
 bool ZipIo::exists(const std::string &path) {

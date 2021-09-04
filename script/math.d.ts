@@ -108,3 +108,13 @@ interface Rectangle {
 
     contains(x: integer, y: integer): boolean;
 }
+
+/**
+ * @namespace krit
+ * @import krit/math/Triangle.h
+ */
+interface Triangle {
+    p1: Point;
+    p2: Point;
+    p3: Point;
+}

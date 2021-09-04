@@ -57,7 +57,6 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
 template <> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
     GLuint texture = img->texture;
     TaskManager::instance->pushRender([texture](RenderContext &) {
-        Log::info("image deleted");
         glDeleteTextures(1, &texture);
     });
     delete img;

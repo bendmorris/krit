@@ -33,7 +33,7 @@ struct Shader {
     Shader(const char *vertexSource, const char *fragmentSource)
         : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
 
-    ~Shader();
+    virtual ~Shader();
 
     GLint getUniformLocation(const std::string &);
     virtual void init();

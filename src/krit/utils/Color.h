@@ -35,6 +35,7 @@ struct Color {
         return *this;
     }
 
+    void setTo(const Color &c) { *this = c; }
     void setTo(unsigned c) { *this = c; }
     void setTo(float r, float g, float b, float a) {
         this->r = r;

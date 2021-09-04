@@ -37,6 +37,10 @@ struct Assets {
         return _assets[found->second];
     }
 
+    static const bool exists(const std::string &path) {
+        return _byPath.find(path) != _byPath.end();
+    }
+
 private:
     static const AssetInfo _assets[];
     static std::unordered_map<std::string, int> _byPath;

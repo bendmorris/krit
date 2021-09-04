@@ -7,6 +7,7 @@ interface Engine {
     input: InputContext;
     camera: Camera;
     uiCamera: Camera;
+    speed: number;
 
     pushAssetCache(): void;
     popAssetCache(): void;
@@ -40,15 +41,6 @@ interface UpdateContext {
     camera: Pointer<Camera>;
     window: Pointer<IntDimensions>;
     engine: Pointer<Engine>;
-}
-
-/**
- * @namespace krit
- * @import krit/render/RenderContext.h
- */
-interface RenderContext extends UpdateContext {
-    pushClip(rect: Rectangle): void;
-    popClip(): void;
 }
 
 /**

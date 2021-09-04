@@ -66,6 +66,7 @@ declare class Image extends VisibleSprite {
     /** @readonly @getter height */ height: integer;
     angle: float;
     centerOrigin(): void;
+    shader: Pointer<SpriteShader>;
 }
 
 /**

@@ -12,6 +12,7 @@ struct BaseFrameBuffer {
     IntDimensions currentSize, requestedSize;
 
     BaseFrameBuffer(int width, int height) : requestedSize(width, height) {}
+    virtual ~BaseFrameBuffer() {}
 
     void init() {
         if (!frameBuffer) {
@@ -33,6 +34,12 @@ template <size_t N> struct FrameBuffer : public BaseFrameBuffer {
 
     FrameBuffer(unsigned int width, unsigned int height)
         : BaseFrameBuffer(width, height) {}
+
+    ~FrameBuffer() {
+        if (textures[0]) {
+            glDeleteTextures(N, textures);
+        }
+    }
 
     void _resize() override {
         int width = requestedSize.width(), height = requestedSize.height();
@@ -81,6 +88,9 @@ template <size_t N> struct FrameBuffer : public BaseFrameBuffer {
         return ImageData(textures[index], currentSize);
     }
 };
+
+using FrameBuffer1 = FrameBuffer<1>;
+using FrameBuffer2 = FrameBuffer<2>;
 
 }
 

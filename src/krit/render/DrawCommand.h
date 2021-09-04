@@ -48,6 +48,8 @@ struct DrawCommandBuffer {
         buf.get<ClearColor>().reserve(0x10);
     }
 
+    virtual ~DrawCommandBuffer() {}
+
     DrawCall &getDrawCall(const DrawKey &key);
 
     void clear() {

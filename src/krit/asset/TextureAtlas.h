@@ -15,6 +15,7 @@ struct TextureAtlas {
     std::unordered_map<std::string, ImageRegion> regions;
 
     TextureAtlas(const std::string &path);
+
     ImageRegion &getRegion(const std::string &region) {
         auto found = this->regions.find(region);
         if (found == this->regions.end()) {
@@ -22,6 +23,10 @@ struct TextureAtlas {
                        region.c_str());
         }
         return found->second;
+    }
+
+    bool hasRegion(const std::string &region) {
+        return regions.find(region) != regions.end();
     }
 };
 

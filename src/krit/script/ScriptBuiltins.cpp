@@ -75,4 +75,18 @@ JS_FUNC(timeout) {
     return engine->delay(duration);
 }
 
+JS_FUNC(gc) {
+    JSRuntime *rt = JS_GetRuntime(ctx);
+    JS_RunGC(rt);
+    return JS_UNDEFINED;
+}
+
+JS_FUNC(dumpMemoryUsage) {
+    JSMemoryUsage mem;
+    JSRuntime *rt = JS_GetRuntime(ctx);
+    JS_ComputeMemoryUsage(rt, &mem);
+    JS_DumpMemoryUsage(stdout, &mem, rt);
+    return JS_UNDEFINED;
+}
+
 }

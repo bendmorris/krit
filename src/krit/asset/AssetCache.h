@@ -3,6 +3,7 @@
 
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
+#include "krit/utils/Log.h"
 #include <functional>
 #include <memory>
 #include <string>
@@ -88,8 +89,10 @@ struct AssetCache {
             }
         }
         // we need to load this asset
+        Log::info("load asset: %s", info.path.c_str());
         std::shared_ptr<T> asset =
             std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
+                Log::info("unload asset: %s", info.path.c_str());
                 AssetLoader<T>::unloadAsset(ptr);
             });
         globalCache[id] = std::weak_ptr<void>(asset);
