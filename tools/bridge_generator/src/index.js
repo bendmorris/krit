@@ -1,3 +1,5 @@
+const startTime = Date.now();
+
 const ts = require('typescript');
 const fs = require('fs');
 const path = require('path');
@@ -29,6 +31,7 @@ const basePaths = ['../../script'];
 if (bridgePath) {
     basePaths.push(bridgePath);
 }
+
 
 const filePaths = [].concat(
     ...basePaths.map(function walk(dir) {
@@ -339,3 +342,5 @@ for (const wrapper of wrappers) {
         }),
     );
 }
+
+console.log(`bridge generation duration: ${Date.now() - startTime}ms`);
