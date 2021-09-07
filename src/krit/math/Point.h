@@ -81,14 +81,14 @@ template <typename T, typename Self> struct BasePoint {
         return dx * dx + dy * dy;
     }
 
-    T squaredDistance(Self &other) {
+    T squaredDistance(const Self &other) {
         Self &derived = static_cast<Self &>(*this);
         T dx = derived.x - other.x;
         T dy = derived.y - other.y;
         return dx * dx + dy * dy;
     }
 
-    T squaredDistance(Self &other, T yFactor) {
+    T squaredDistance(const Self &other, T yFactor) {
         Self &derived = static_cast<Self &>(*this);
         T dx = derived.x - other.x;
         T dy = derived.y - other.y;
@@ -101,21 +101,21 @@ template <typename T, typename Self> struct BasePoint {
         return sqrt(dx * dx + dy * dy);
     }
 
-    T distance(Self &other) {
+    T distance(const Self &other) {
         Self &derived = static_cast<Self &>(*this);
         T dx = derived.x - other.x;
         T dy = derived.y - other.y;
         return sqrt(dx * dx + dy * dy);
     }
 
-    T distance(Self &other, T yFactor) {
+    T distance(const Self &other, T yFactor) {
         Self &derived = static_cast<Self &>(*this);
         T dx = derived.x - other.x;
         T dy = derived.y - other.y;
         return sqrt(dx * dx + (dy * dy) * yFactor);
     }
 
-    bool eq(Self &other) {
+    bool eq(Self &other) const {
         Self &derived = static_cast<Self &>(*this);
         return derived.x == other.x && derived.y == other.y;
     }

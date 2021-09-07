@@ -50,6 +50,7 @@ struct LayoutNode : public VisibleSprite {
     Measurement spacing = Measurement(0);
     bool stretch = false;
     bool keepSize = false;
+    bool flex = false;
     bool visible = true;
     bool clip = false;
 
@@ -137,14 +138,15 @@ struct LayoutNode : public VisibleSprite {
 
     Point getPosition() override { return this->position; }
     Dimensions getSize() override {
-        return this->keepSize
+        return (this->keepSize || this->flex)
                    ? this->dimensions
                    : (this->sprite ? this->sprite->getSize()
                                    : Dimensions(this->width.measure(0),
                                                 this->height.measure(0)));
     }
 
-    void setAbsolutePosition(float x, float y, float anchorX = 0, float anchorY = 0) {
+    void setAbsolutePosition(float x, float y, float anchorX = 0,
+                             float anchorY = 0) {
         this->x = AnchoredMeasurement(Measurement(x), anchorX);
         this->y = AnchoredMeasurement(Measurement(y), anchorY);
     }

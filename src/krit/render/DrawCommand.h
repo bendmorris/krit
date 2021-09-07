@@ -75,6 +75,7 @@ struct DrawCommandBuffer {
     }
 
     void clearColor(const Color &color) { buf.emplace_back<ClearColor>(color); }
+    void clearColor(float r, float g, float b, float a) { buf.emplace_back<ClearColor>(Color(r, g, b, a)); }
 
     void drawSceneShader(SceneShader *shader) {
         buf.emplace_back<DrawSceneShader>(shader);

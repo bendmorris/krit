@@ -99,10 +99,43 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
     }
 
     LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
+    if (flex) {
+        dimensions.setTo(0, 0);
+    }
     while (child) {
         child->measure(ctx, this, prevChild);
+        if (flex) {
+            auto size = child->getSize();
+            switch (positionMode) {
+                case PositionHbox: {
+                    dimensions.x += size.x;
+                    dimensions.y = std::max(dimensions.y, size.y);
+                    if (prevChild) {
+                        dimensions.x += spacing.measure(availableWidth);
+                    }
+                    break;
+                }
+                case PositionVbox: {
+                    dimensions.x = std::max(dimensions.x, size.x);
+                    dimensions.y += size.y;
+                    if (prevChild) {
+                        dimensions.y += spacing.measure(availableWidth);
+                    }
+                    break;
+                }
+                default: {
+                    dimensions.x = std::max(dimensions.x, size.x);
+                    dimensions.y = std::max(dimensions.y, size.y);
+                }
+            }
+        }
         prevChild = child;
         child = child->nextSibling.get();
+    }
+
+    if (flex) {
+        dimensions.x += paddingLeft().measure(availableWidth) + paddingRight().measure(availableWidth);
+        dimensions.y += paddingTop().measure(availableHeight) + paddingBottom().measure(availableHeight);
     }
 }
 
@@ -268,6 +301,8 @@ void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
         if (Parse::parse<bool>(value)) {
             layout->positionMode = PositionMode::PositionFloat;
         }
+    } else if (key == "flex") {
+        layout->flex = Parse::parse<bool>(value);
     }
 }
 
@@ -301,14 +336,16 @@ ImageRegion
 LayoutRoot::parseSrc(std::unordered_map<std::string, std::string> &attrMap) {
     auto found = attrMap.find("src");
     if (found != attrMap.end()) {
-        return ImageRegion(App::ctx.engine->getImage(Parse::parse<const std::string&>(found->second)));
+        return ImageRegion(App::ctx.engine->getImage(
+            Parse::parse<const std::string &>(found->second)));
     }
     found = attrMap.find("atlas");
     if (found != attrMap.end()) {
-        std::shared_ptr<TextureAtlas> atlas =
-            App::ctx.engine->getAtlas(Parse::parse<const std::string&>(found->second));
+        std::shared_ptr<TextureAtlas> atlas = App::ctx.engine->getAtlas(
+            Parse::parse<const std::string &>(found->second));
         assert(attrMap.find("region") != attrMap.end());
-        return atlas->getRegion(Parse::parse<const std::string&>(attrMap["region"]));
+        return atlas->getRegion(
+            Parse::parse<const std::string &>(attrMap["region"]));
     }
     panic("couldn't find src");
 }

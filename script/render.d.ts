@@ -19,8 +19,10 @@ declare class SpriteShader {}
  * @namespace krit
  * @import krit/render/FrameBuffer.h
  */
-declare class BaseFrameBuffer {}
- 
+declare class BaseFrameBuffer {
+    resize(width: integer, height: integer): void;
+}
+
 /**
  * @namespace krit
  * @import krit/render/SceneShader.h
@@ -34,4 +36,5 @@ declare class SceneShader {}
 declare class DrawCommandBuffer {
     setRenderTarget(fb: Pointer<BaseFrameBuffer>): void;
     drawSceneShader(shader: Pointer<SceneShader>): void;
+    clearColor(r: float, g: float, b: float, a: float): void;
 }
