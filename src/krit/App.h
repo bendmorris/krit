@@ -6,6 +6,7 @@
 #include "krit/Engine.h"
 #include "krit/math/Dimensions.h"
 #include "krit/render/Renderer.h"
+#include "krit/sound/AudioBackend.h"
 #include <string>
 
 namespace krit {
@@ -23,7 +24,7 @@ struct App {
     IntDimensions dimensions;
     IntDimensions fullScreenDimensions;
     Renderer renderer;
-    // AudioBackend audio;
+    AudioBackend audio;
     int framerate;
     int fixedFramerate;
 

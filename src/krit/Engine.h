@@ -30,6 +30,7 @@ struct ImageData;
 struct TextureAtlas;
 struct Font;
 struct SkeletonBinaryData;
+struct SoundData;
 
 struct SpriteTree {
     std::unique_ptr<Sprite> root;
@@ -92,6 +93,8 @@ struct Engine {
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)
     DECLARE_ASSET_GETTER(Spine, SkeletonBinaryData)
+    DECLARE_ASSET_GETTER(Sound, SoundData)
+#undef DECLARE_ASSET_GETTER
 };
 
 }

@@ -82,6 +82,7 @@ void App::run() {
     ctx.window = &dimensions;
     ctx.camera = &engine.camera;
     ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
+    ctx.audio = &audio;
     ctx.userData = engine.userData;
 
     UpdateContext *update = &ctx;

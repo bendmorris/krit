@@ -9,15 +9,17 @@ struct App;
 struct Camera;
 struct Engine;
 struct InputContext;
+struct AudioBackend;
 
 struct UpdateContext {
     float elapsed;
     unsigned int frameCount;
     unsigned int frameId;
-    krit::App *app = nullptr;
-    krit::Engine *engine = nullptr;
-    krit::IntDimensions *window = nullptr;
-    krit::Camera *camera = nullptr;
+    App *app = nullptr;
+    Engine *engine = nullptr;
+    IntDimensions *window = nullptr;
+    Camera *camera = nullptr;
+    AudioBackend *audio = nullptr;
     void *userData = nullptr;
 
     UpdateContext() {}

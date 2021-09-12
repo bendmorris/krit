@@ -41,6 +41,7 @@ interface UpdateContext {
     camera: Pointer<Camera>;
     window: Pointer<IntDimensions>;
     engine: Pointer<Engine>;
+    audio: Pointer<AudioBackend>;
 }
 
 /**
@@ -57,4 +58,12 @@ interface Camera {
     center(): void;
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
+}
+
+/**
+ * @namespace krit
+ * @import krit/sound/AudioBackend.h
+ */
+interface AudioBackend {
+    playSound(id: string): void;
 }

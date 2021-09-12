@@ -106,7 +106,7 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
         child->measure(ctx, this, prevChild);
         if (flex) {
             auto size = child->getSize();
-            switch (positionMode) {
+            switch (childPositionMode) {
                 case PositionHbox: {
                     dimensions.x += size.x;
                     dimensions.y = std::max(dimensions.y, size.y);
@@ -136,6 +136,9 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
     if (flex) {
         dimensions.x += paddingLeft().measure(availableWidth) + paddingRight().measure(availableWidth);
         dimensions.y += paddingTop().measure(availableHeight) + paddingBottom().measure(availableHeight);
+
+        if (dimensions.x < width) dimensions.x = width;
+        if (dimensions.y < height) dimensions.y = height;
     }
 }
 

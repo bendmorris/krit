@@ -1,14 +1,16 @@
 #ifndef KRIT_BACKEND
 #define KRIT_BACKEND
 
+#include "krit/asset/AssetInfo.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
-
 #include <AL/al.h>
 #include <AL/alc.h>
 #include <string>
 
 namespace krit {
+
+struct SoundData;
 
 struct AudioBackend {
     ALCdevice *device = nullptr;
@@ -18,26 +20,12 @@ struct AudioBackend {
     ALenum format;
     unsigned char *buf;
 
-    AudioBackend() {
-        this->device = alcOpenDevice(nullptr);
-        if (!this->device) {
-            panic("couldn't open OpenAL device");
-        }
+    AudioBackend();
+    ~AudioBackend();
 
-        this->context = alcCreateContext(this->device, nullptr);
-        if (!this->context) {
-            panic("couldn't create OpenAL context");
-        }
-        if (!alcMakeContextCurrent(this->context)) {
-            panic("couldn't set OpenAL context");
-        }
-    }
-
-    ~AudioBackend() {
-        alcMakeContextCurrent(NULL);
-        alcDestroyContext(this->context);
-        alcCloseDevice(this->device);
-    }
+    void playSound(const std::string &name);
+    void playSound(const AssetInfo &info);
+    void playSound(SoundData *sound);
 };
 
 }

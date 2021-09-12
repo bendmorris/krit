@@ -15,6 +15,7 @@
 #include "krit/utils/Panic.h"
 
 namespace krit {
+
 struct RenderContext;
 struct UpdateContext;
 

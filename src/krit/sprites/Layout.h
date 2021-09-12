@@ -45,8 +45,8 @@ struct LayoutNode : public VisibleSprite {
                               Measurement(0)};
     AnchoredMeasurement x = AnchoredMeasurement(Measurement(0), 0);
     AnchoredMeasurement y = AnchoredMeasurement(Measurement(0), 0);
-    Measurement width = Measurement(Percent, 100);
-    Measurement height = Measurement(Percent, 100);
+    Measurement width = Measurement(Absolute, 0);
+    Measurement height = Measurement(Absolute, 0);
     Measurement spacing = Measurement(0);
     bool stretch = false;
     bool keepSize = false;

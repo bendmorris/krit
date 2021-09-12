@@ -9,6 +9,7 @@ enum AssetType {
     FontAsset,
     TextAsset,
     SpineSkeletonAsset,
+    SoundAsset,
 };
 
 }
