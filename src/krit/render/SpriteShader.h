@@ -10,6 +10,7 @@ struct SpriteShader : public ShaderInstance {
 
     SpriteShader(Shader &shader);
     SpriteShader(Shader *shader) : SpriteShader(*shader) {}
+    virtual ~SpriteShader() {}
 
     virtual void bind(RenderContext &ctx);
     virtual void unbind() override;

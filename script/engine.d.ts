@@ -59,11 +59,3 @@ interface Camera {
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
 }
-
-/**
- * @namespace krit
- * @import krit/sound/AudioBackend.h
- */
-interface AudioBackend {
-    playSound(id: string): void;
-}

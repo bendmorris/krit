@@ -1,10 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-
+#include "krit/App.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/utils/Log.h"
 #include "quickjs.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace krit {
 
@@ -55,7 +55,12 @@ JS_FUNC(exit) {
     if (argc > 0) {
         JS_ToInt32(ctx, &code, argv[0]);
     }
-    exit(code);
+    if (code) {
+        exit(code);
+    } else {
+        App::ctx.app->quit();
+    }
+    return JS_UNDEFINED;
 }
 
 JS_FUNC(__id) {

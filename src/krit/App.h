@@ -20,11 +20,11 @@ struct App {
     static RenderContext ctx;
 
     std::string title;
-    Engine engine;
     IntDimensions dimensions;
     IntDimensions fullScreenDimensions;
     Renderer renderer;
     AudioBackend audio;
+    Engine engine;
     int framerate;
     int fixedFramerate;
 
@@ -36,10 +36,7 @@ struct App {
         }
     }
 
-    /**
-     * Run the app; will continue until
-     */
-    [[noreturn]] void run();
+    void run();
 
     /**
      * Ends the run() loop.

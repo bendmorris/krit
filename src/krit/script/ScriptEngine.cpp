@@ -88,6 +88,7 @@ ScriptEngine::ScriptEngine() {
         initScriptClasses<0>();
     }
 
+    JS_SetMaxStackSize(rt, 4 * 1024 * 1024);
     JS_SetRuntimeOpaque(rt, this);
 
     ctx = JS_NewContext(rt);

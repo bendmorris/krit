@@ -142,6 +142,7 @@ void App::run() {
         }
 
         ctx.elapsed = elapsed;
+        audio.update();
         engine.update(ctx);
         if (engine.finished) {
             quit();
@@ -156,7 +157,6 @@ void App::run() {
     }
 
     TaskManager::instance->killed = true;
-    exit(0);
 }
 
 MouseButton sdlMouseButton(int b) {

@@ -56,6 +56,6 @@ char *ZipIo::read(const std::string &path, int *length) {
     return buffer;
 }
 
-void ZipIo::free(char *buf) { free(buf); }
+void ZipIo::free(char *buf) { ::free(buf); }
 
 }
