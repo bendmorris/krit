@@ -119,6 +119,9 @@ void App::run() {
                       .count() /
                   1000000.0 * engine.speed;
         // } while (lockFramerate && elapsed < frameDelta2);
+        // if (1.0 / elapsed < 50) {
+        //     printf("%.2f\n", 1.0 / elapsed);
+        // }
         accumulator += elapsed;
         ctx.elapsed = ctx.frameCount = 0;
         engine.elapsed += elapsed;

@@ -12,7 +12,11 @@ interface AudioBackend {
  * @import krit/sound/AudioBackend.h
  */
 interface AudioStream {
+    getVolume(): float;
+    setVolume(v: float): float;
+
     play(): void;
     pause(): void;
     stop(): void;
+    reset(): void;
 }

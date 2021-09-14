@@ -21,10 +21,8 @@ struct AudioSource {
 };
 
 struct AudioStream {
-    static const int STREAM_BUFFER_SIZE = 128 * 1024;
     static const int NUM_BUFFERS = 4;
 
-    float volume = 1;
     bool playing = false;
     bool repeat = false;
 
@@ -40,6 +38,10 @@ struct AudioStream {
     void pause();
     void stop();
     void feed(bool initial);
+    void reset();
+
+    float &getVolume() { return volume; }
+    float setVolume(float v);
 
     void clear() {
         volume = 1;
@@ -51,11 +53,13 @@ struct AudioStream {
     }
 
 private:
+    AudioBackend *backend;
     MusicData *data = nullptr;
     AudioSource *source = nullptr;
     ALuint buffer[NUM_BUFFERS] = {0};
     int bufferPtr = 0;
     char *ringBuffer = nullptr;
+    float volume = 1;
 
     friend struct AudioBackend;
 };

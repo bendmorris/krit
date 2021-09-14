@@ -6,6 +6,8 @@
 
 namespace krit {
 
+static const int STREAM_BUFFER_SIZE = 64 * 1024;
+
 AudioBackend::AudioBackend() {
     device = alcOpenDevice(nullptr);
     if (!device) {
@@ -34,6 +36,7 @@ AudioBackend::AudioBackend() {
 
     for (int i = 0; i < MAX_STREAMS; ++i) {
         _streams[i] = AudioStream();
+        _streams[i].backend = this;
         alGenBuffers(4, _streams[i].buffer);
     }
 }
@@ -118,7 +121,7 @@ void AudioBackend::update() {
     // feed any audio streams that have completed a buffer
     for (int i = 0; i < MAX_STREAMS; ++i) {
         AudioStream &stream = _streams[i];
-        if (stream.data) {
+        if (stream.source) {
             ALint buffersProcessed = 0;
             alGetSourcei(stream.source->source, AL_BUFFERS_PROCESSED,
                          &buffersProcessed);
@@ -150,7 +153,8 @@ AudioStream *AudioBackend::playMusic(MusicData *music) {
     stream.clear();
     stream.data = music;
     if (!stream.ringBuffer) {
-        stream.ringBuffer = new char[AudioStream::STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS];
+        stream.ringBuffer =
+            new char[STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS];
     }
     stream.source = getSource();
     if (!stream.source) {
@@ -158,26 +162,47 @@ AudioStream *AudioBackend::playMusic(MusicData *music) {
         // source for a new stream
         return nullptr;
     }
+    alSourcef(stream.source->source, AL_PITCH, 1);
+    alSourcef(stream.source->source, AL_GAIN, 1.0f);
+    alSource3f(stream.source->source, AL_POSITION, 0, 0, 0);
+    alSource3f(stream.source->source, AL_VELOCITY, 0, 0, 0);
+    alSourcei(stream.source->source, AL_LOOPING, AL_FALSE);
     for (int i = 0; i < AudioStream::NUM_BUFFERS; ++i) {
         stream.feed(true);
     }
-    alSourceQueueBuffers(stream.source->source, AudioStream::NUM_BUFFERS, stream.buffer);
+    alSourceQueueBuffers(stream.source->source, AudioStream::NUM_BUFFERS,
+                         stream.buffer);
     return &stream;
 }
 
-void AudioStream::play() {
-    alSourcef(source->source, AL_PITCH, 1);
-    alSourcef(source->source, AL_GAIN, 1.0f);
-    alSource3f(source->source, AL_POSITION, 0, 0, 0);
-    alSource3f(source->source, AL_VELOCITY, 0, 0, 0);
-    alSourcei(source->source, AL_LOOPING, AL_FALSE);
-    alSourcePlay(source->source);
-}
+void AudioStream::play() { if (source) { alSourcePlay(source->source); } }
 
-void AudioStream::pause() { alSourcePause(source->source); }
+void AudioStream::pause() { if (source) { alSourcePause(source->source); } }
+
+void AudioStream::reset() { if (data) { sf_seek(data->sndFile, 0, SEEK_SET); } }
 
 void AudioStream::stop() {
-    // TODO
+    if (source) {
+        for (int i = 0; i < NUM_BUFFERS; ++i) {
+            ALuint b;
+            alSourceUnqueueBuffers(source->source, 1, &b);
+        }
+        alSourceStop(source->source);
+        backend->recycleSource(source);
+        sf_seek(data->sndFile, 0, SEEK_SET);
+        bufferPtr = 0;
+        source = nullptr;
+        data = nullptr;
+    }
+}
+
+float AudioStream::setVolume(float v) {
+    if (source) {
+        alSourcef(source->source, AL_GAIN, volume = v);
+        return v;
+    } else {
+        return 0;
+    }
 }
 
 void AudioStream::feed(bool initial) {
@@ -195,8 +220,8 @@ void AudioStream::feed(bool initial) {
         alSourceUnqueueBuffers(source->source, 1, &buffer);
     }
     alBufferData(buffer, data->format,
-                 &ringBuffer[STREAM_BUFFER_SIZE * bufferPtr],
-                 read * 2, data->sampleRate);
+                 &ringBuffer[STREAM_BUFFER_SIZE * bufferPtr], read * 2,
+                 data->sampleRate);
     if (!initial) {
         alSourceQueueBuffers(source->source, 1, &buffer);
     }
