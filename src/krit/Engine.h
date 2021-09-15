@@ -96,6 +96,7 @@ struct Engine {
     DECLARE_ASSET_GETTER(Spine, SkeletonBinaryData)
     DECLARE_ASSET_GETTER(Sound, SoundData)
     DECLARE_ASSET_GETTER(Music, MusicData)
+    DECLARE_ASSET_GETTER(Text, std::string_view)
 #undef DECLARE_ASSET_GETTER
 };
 

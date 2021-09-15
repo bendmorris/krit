@@ -28,24 +28,30 @@ void Shader::init() {
         GLint status;
 
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
-        glShaderSource(vertexShader, 1, &this->vertexSource, nullptr);
-        glCompileShader(vertexShader);
-        glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
-        if (status == GL_FALSE) {
-            printShaderInfoLog(vertexShader);
-            panic("failed to compile vertex shader");
+        {
+            const char *s = this->vertexSource.c_str();
+            glShaderSource(vertexShader, 1, &s, nullptr);
+            glCompileShader(vertexShader);
+            glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
+            if (status == GL_FALSE) {
+                printShaderInfoLog(vertexShader);
+                panic("failed to compile vertex shader");
+            }
+            checkForGlErrors("compile vertex");
         }
-        checkForGlErrors("compile vertex");
 
         GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-        glShaderSource(fragmentShader, 1, &this->fragmentSource, nullptr);
-        glCompileShader(fragmentShader);
-        glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
-        if (status == GL_FALSE) {
-            printShaderInfoLog(fragmentShader);
-            panic("failed to compile fragment shader");
+        {
+            const char *s = this->fragmentSource.c_str();
+            glShaderSource(fragmentShader, 1, &s, nullptr);
+            glCompileShader(fragmentShader);
+            glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
+            if (status == GL_FALSE) {
+                printShaderInfoLog(fragmentShader);
+                panic("failed to compile fragment shader");
+            }
+            checkForGlErrors("compile fragment");
         }
-        checkForGlErrors("compile fragment");
 
         this->program = glCreateProgram();
         checkForGlErrors("create program");

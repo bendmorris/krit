@@ -1,15 +1,15 @@
 #ifndef KRIT_RENDER_SHADER
 #define KRIT_RENDER_SHADER
 
-#include <GL/glew.h>
-#include <cstdio>
-#include <cstdlib>
-#include <string>
-#include <unordered_map>
-
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Uniform.h"
+#include <GL/glew.h>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
+#include <string>
+#include <unordered_map>
 
 namespace krit {
 
@@ -22,16 +22,26 @@ struct UniformInfo {
 
 struct Shader {
     GLuint program = 0;
-    const char *vertexSource;
-    const char *fragmentSource;
+    std::string vertexSource;
+    std::string fragmentSource;
     GLint positionIndex = 0;
     GLint texCoordIndex = 0;
     GLint colorIndex = 0;
     size_t bytesPerVertex = 0;
     std::vector<UniformInfo> uniforms;
 
+    Shader(const std::string &vertexSource, const std::string &fragmentSource)
+        : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
+
     Shader(const char *vertexSource, const char *fragmentSource)
         : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
+
+    Shader(std::string_view vertexSource, std::string_view fragmentSource)
+        : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
+
+    Shader(std::shared_ptr<std::string_view> vertexSource,
+           std::shared_ptr<std::string_view> fragmentSource)
+        : vertexSource(*vertexSource), fragmentSource(*fragmentSource) {}
 
     virtual ~Shader();
 
@@ -46,7 +56,7 @@ struct ShaderInstance {
     std::vector<UniformValue> uniforms;
 
     ShaderInstance(Shader &shader);
-    ShaderInstance(Shader *shader): ShaderInstance(*shader) {}
+    ShaderInstance(Shader *shader) : ShaderInstance(*shader) {}
 
     virtual void init() { shader.init(); }
     virtual void bind(RenderContext &ctx);
