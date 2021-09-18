@@ -48,7 +48,7 @@ struct AudioStream {
     }
 
 private:
-    char *ringBuffer = nullptr;
+    std::unique_ptr<char[]> ringBuffer;
     AudioBackend *backend;
     MusicData *data = nullptr;
     AudioSource *source = nullptr;

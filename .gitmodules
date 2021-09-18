@@ -3,4 +3,4 @@
 	url = https://github.com/EsotericSoftware/spine-runtimes
 [submodule "quickjs"]
 	path = quickjs
-	url = https://github.com/bellard/quickjs.git
+	url = https://github.com/bendmorris/quickjs.git

@@ -54,12 +54,12 @@ target_link_libraries(${PROJECT_NAME}
     "-lexpat"
     "-lopenal"
     "-lSDL2_image"
-    "-Wl,--gc-sections"
     "-lGLEW"
     "-lzip"
     "-lfreetype"
     "-lharfbuzz"
     "-lsndfile"
+    "-Wl,--gc-sections"
     ${CMAKE_CURRENT_SOURCE_DIR}/quickjs/libquickjs.a
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})

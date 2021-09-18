@@ -96,6 +96,7 @@ struct Font {
     static void registerFont(const std::string &name, AssetId id);
 
     Font(const std::string &path, const char *fontData, size_t fontDataLen);
+    ~Font();
 
     std::string path;
     GlyphData &getGlyph(char32_t glyphId, unsigned int size, unsigned int border = 0);

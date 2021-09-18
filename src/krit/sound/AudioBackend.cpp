@@ -158,8 +158,7 @@ AudioStream *AudioBackend::playMusic(MusicData *music) {
     stream.clear();
     stream.data = music;
     if (!stream.ringBuffer) {
-        stream.ringBuffer =
-            new char[STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS];
+        stream.ringBuffer = std::unique_ptr<char[]>(new char[STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS]);
     }
     stream.source = getSource();
     if (!stream.source) {

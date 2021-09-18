@@ -87,6 +87,10 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
     }
 }
 
+Font::~Font() {
+    // TODO
+}
+
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_font_set_ppem(font, pointSize, pointSize);
     hb_shape(font, buf, nullptr, 0);
