@@ -130,6 +130,11 @@ void App::run() {
         handleEvents();
         engine.input.endFrame();
 
+        if (engine.finished) {
+            quit();
+            break;
+        }
+
         while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
             accumulator -= frameDelta;
             if (accumulator < 0) {
@@ -149,6 +154,7 @@ void App::run() {
         engine.update(ctx);
         if (engine.finished) {
             quit();
+            break;
         }
         frameStart = frameFinish;
 
@@ -203,6 +209,10 @@ void App::handleEvents() {
                     }
                     case SDL_WINDOWEVENT_LEAVE: {
                         engine.input.registerMouseOver(false);
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_CLOSE: {
+                        engine.quit();
                         break;
                     }
                 }

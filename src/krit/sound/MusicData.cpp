@@ -14,7 +14,7 @@ MusicData::~MusicData() {
         sf_close(sndFile);
     }
     if (io.data) {
-        ZipIo::free(io.data);
+        IoRead::free(io.data);
     }
 }
 

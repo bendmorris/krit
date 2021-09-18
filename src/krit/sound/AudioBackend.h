@@ -6,6 +6,7 @@
 #include "krit/utils/Panic.h"
 #include <AL/al.h>
 #include <AL/alc.h>
+#include <memory>
 #include <string>
 
 namespace krit {
@@ -28,12 +29,6 @@ struct AudioStream {
 
     AudioStream(MusicData *data = nullptr) : data(data) {}
 
-    ~AudioStream() {
-        if (ringBuffer) {
-            delete[] ringBuffer;
-        }
-    }
-
     void play();
     void pause();
     void stop();
@@ -53,12 +48,12 @@ struct AudioStream {
     }
 
 private:
+    char *ringBuffer = nullptr;
     AudioBackend *backend;
     MusicData *data = nullptr;
     AudioSource *source = nullptr;
     ALuint buffer[NUM_BUFFERS] = {0};
     int bufferPtr = 0;
-    char *ringBuffer = nullptr;
     float volume = 1;
 
     friend struct AudioBackend;
@@ -72,7 +67,7 @@ struct VirtualIo {
 
 struct AudioBackend {
     static const int MAX_SOURCES = 64;
-    static const int MAX_STREAMS = 8;
+    static const int MAX_STREAMS = 4;
 
     ALCdevice *device = nullptr;
     ALCcontext *context = nullptr;

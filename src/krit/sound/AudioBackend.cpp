@@ -37,11 +37,16 @@ AudioBackend::AudioBackend() {
     for (int i = 0; i < MAX_STREAMS; ++i) {
         _streams[i] = AudioStream();
         _streams[i].backend = this;
-        alGenBuffers(4, _streams[i].buffer);
+        alGenBuffers(AudioStream::NUM_BUFFERS, _streams[i].buffer);
     }
 }
 
 AudioBackend::~AudioBackend() {
+    ALuint __sources[MAX_SOURCES] = {0};
+    for (int i = 0; i < MAX_SOURCES; ++i) {
+        __sources[i] = _sources[i].source;
+    }
+    alDeleteSources(MAX_SOURCES, __sources);
     alcMakeContextCurrent(nullptr);
     if (context) {
         alcDestroyContext(context);
@@ -175,11 +180,23 @@ AudioStream *AudioBackend::playMusic(MusicData *music) {
     return &stream;
 }
 
-void AudioStream::play() { if (source) { alSourcePlay(source->source); } }
+void AudioStream::play() {
+    if (source) {
+        alSourcePlay(source->source);
+    }
+}
 
-void AudioStream::pause() { if (source) { alSourcePause(source->source); } }
+void AudioStream::pause() {
+    if (source) {
+        alSourcePause(source->source);
+    }
+}
 
-void AudioStream::reset() { if (data) { sf_seek(data->sndFile, 0, SEEK_SET); } }
+void AudioStream::reset() {
+    if (data) {
+        sf_seek(data->sndFile, 0, SEEK_SET);
+    }
+}
 
 void AudioStream::stop() {
     if (source) {

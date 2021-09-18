@@ -33,7 +33,7 @@ char *ZipIo::read(const std::string &path, int *length) {
     if (index == -1) {
         return nullptr;
     }
-    char *buffer = static_cast<char *>(malloc(stat.size + 1));
+    char *buffer = new char[stat.size + 1];
     zip_file_t *f = zip_fopen_index(archive, index, 0);
     if (!f) {
         panic("error opening file from archive: %s\n", path.c_str());
@@ -56,6 +56,6 @@ char *ZipIo::read(const std::string &path, int *length) {
     return buffer;
 }
 
-void ZipIo::free(char *buf) { ::free(buf); }
+void ZipIo::free(char *buf) { delete[] buf; }
 
 }

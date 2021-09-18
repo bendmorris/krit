@@ -1,6 +1,7 @@
 /**
  * @namespace krit
  * @import krit/sound/AudioBackend.h
+ * @pointerOnly
  */
 interface AudioBackend {
     playSound(id: string): void;
@@ -10,6 +11,7 @@ interface AudioBackend {
 /**
  * @namespace krit
  * @import krit/sound/AudioBackend.h
+ * @pointerOnly
  */
 interface AudioStream {
     getVolume(): float;

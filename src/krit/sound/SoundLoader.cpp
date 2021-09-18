@@ -65,6 +65,8 @@ static SNDFILE *loadSoundFile(VirtualIo &io, const AssetInfo &info,
     if (!sndFile) {
         Log::error("error loading sound asset %s: %s\n", info.path.c_str(),
                    sf_strerror(nullptr));
+        IoRead::free(*data);
+        *data = io.data = nullptr;
         return nullptr;
     }
     return sndFile;
@@ -107,6 +109,7 @@ SoundData *AssetLoader<SoundData>::loadAsset(const AssetInfo &info) {
 
     alGenBuffers(1, &s->buffer);
     alBufferData(s->buffer, format, data, len * 2, s->sampleRate);
+    delete[] data;
 
     return s;
 }

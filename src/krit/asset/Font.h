@@ -68,10 +68,9 @@ struct GlyphCache {
     std::vector<ColumnData> columns;
     std::vector<GlyphSize> pending;
     std::shared_ptr<ImageData> img;
-    uint8_t *pixelData = nullptr;
+    std::unique_ptr<uint8_t[]> pixelData;
 
     GlyphCache() {}
-    ~GlyphCache();
 
     GlyphData *getGlyph(Font *font, char32_t codePoint, unsigned int size, unsigned int border = 0);
     void createTexture();

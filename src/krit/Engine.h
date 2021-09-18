@@ -55,7 +55,7 @@ struct Engine {
     std::list<TimedEvent> events;
 
     InputContext input;
-    std::vector<AssetCache *> assetCaches;
+    std::vector<std::unique_ptr<AssetCache>> assetCaches;
 
     Color bgColor = Color::black();
 
@@ -65,7 +65,7 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
-    Engine() { assetCaches.emplace_back(new AssetCache()); }
+    Engine() { assetCaches.emplace_back(std::make_unique<AssetCache>()); }
 
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
@@ -77,11 +77,9 @@ struct Engine {
     void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
 
-    void pushAssetCache() { assetCaches.emplace_back(new AssetCache()); }
+    void pushAssetCache() { assetCaches.emplace_back(std::make_unique<AssetCache>()); }
     void popAssetCache() {
-        AssetCache *cache = assetCaches.back();
         assetCaches.pop_back();
-        delete cache;
     }
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }

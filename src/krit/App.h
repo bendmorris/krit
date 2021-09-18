@@ -22,11 +22,12 @@ struct App {
     std::string title;
     IntDimensions dimensions;
     IntDimensions fullScreenDimensions;
+    Engine engine;
     Renderer renderer;
     AudioBackend audio;
-    Engine engine;
     int framerate;
     int fixedFramerate;
+    bool running = false;
 
     App(KritOptions &options);
 
@@ -53,7 +54,6 @@ struct App {
 private:
     SDL_Window *window;
     SDL_Surface *surface;
-    bool running = false;
     bool full = false;
     bool startFullscreen = false;
 

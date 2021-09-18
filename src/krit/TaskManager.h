@@ -28,8 +28,8 @@ template <typename T> struct AsyncQueue {
     }
 
     ~AsyncQueue() {
-        SDL_DestroyMutex(lock);
         SDL_DestroyCond(available);
+        SDL_DestroyMutex(lock);
     }
 
     size_t size() {

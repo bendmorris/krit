@@ -57,7 +57,7 @@ void Font::commit() {
 
 void Font::flush() {
     if (nextGlyphCache.img) {
-        glyphCache = nextGlyphCache;
+        glyphCache = std::move(nextGlyphCache);
         nextGlyphCache = GlyphCache();
     }
 }
@@ -109,12 +109,6 @@ GlyphData &Font::getGlyph(char32_t codePoint, unsigned int size,
         panic("ran out of space in backup texture");
     }
     return *found;
-}
-
-GlyphCache::~GlyphCache() {
-    if (pixelData) {
-        free(pixelData);
-    }
 }
 
 GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
@@ -193,7 +187,8 @@ void GlyphCache::createTexture() {
     glGenTextures(1, &textureId);
     img = std::make_shared<ImageData>(
         textureId, IntDimensions(CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE));
-    pixelData = (uint8_t *)calloc(CACHE_TEXTURE_SIZE * CACHE_TEXTURE_SIZE, 1);
+    pixelData =
+        std::make_unique<uint8_t[]>(CACHE_TEXTURE_SIZE * CACHE_TEXTURE_SIZE);
 }
 
 void GlyphCache::commitChanges() {
@@ -229,7 +224,7 @@ void GlyphCache::commitChanges() {
         glBindTexture(GL_TEXTURE_2D, img->texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CACHE_TEXTURE_SIZE,
                      CACHE_TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE,
-                     pixelData);
+                     pixelData.get());
         // glGenerateMipmap(GL_TEXTURE_2D);
         pending.clear();
     }

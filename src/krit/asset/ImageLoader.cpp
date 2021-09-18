@@ -5,6 +5,7 @@
 
 #include "SDL_pixels.h"
 #include "SDL_surface.h"
+#include "krit/App.h"
 #include "krit/TaskManager.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
@@ -30,27 +31,30 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         if (!surface) {
             panic("IMG_Load(%s) is null\n", info.path.c_str());
         }
-        unsigned int mode = surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+        unsigned int mode =
+            surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
 
-        TaskManager::instance->pushRender([info, img, surface,
-                                           mode](RenderContext &render) {
-            // upload texture
-            GLuint texture;
-            glActiveTexture(GL_TEXTURE0);
-            checkForGlErrors("active texture");
-            glGenTextures(1, &texture);
-            checkForGlErrors("gen textures");
-            glBindTexture(GL_TEXTURE_2D, texture);
-            checkForGlErrors("bind texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, mode, info.properties.img.realDimensions.x, info.properties.img.realDimensions.y, 0,
-                         mode, GL_UNSIGNED_BYTE, surface->pixels);
-            checkForGlErrors("texImage2D");
-            glGenerateMipmap(GL_TEXTURE_2D);
-            checkForGlErrors("asset load");
-            img->texture = texture;
+        TaskManager::instance->pushRender(
+            [info, img, surface, mode](RenderContext &render) {
+                // upload texture
+                GLuint texture;
+                glActiveTexture(GL_TEXTURE0);
+                checkForGlErrors("active texture");
+                glGenTextures(1, &texture);
+                checkForGlErrors("gen textures");
+                glBindTexture(GL_TEXTURE_2D, texture);
+                checkForGlErrors("bind texture");
+                glTexImage2D(GL_TEXTURE_2D, 0, mode,
+                             info.properties.img.realDimensions.x,
+                             info.properties.img.realDimensions.y, 0, mode,
+                             GL_UNSIGNED_BYTE, surface->pixels);
+                checkForGlErrors("texImage2D");
+                glGenerateMipmap(GL_TEXTURE_2D);
+                checkForGlErrors("asset load");
+                img->texture = texture;
 
-            SDL_FreeSurface(surface);
-        });
+                SDL_FreeSurface(surface);
+            });
     });
 
     return img;
@@ -58,9 +62,10 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
 
 template <> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
     GLuint texture = img->texture;
-    TaskManager::instance->pushRender([texture](RenderContext &) {
-        glDeleteTextures(1, &texture);
-    });
+    if (App::ctx.app->running) {
+        TaskManager::instance->pushRender(
+            [texture](RenderContext &) { glDeleteTextures(1, &texture); });
+    }
     delete img;
 }
 
