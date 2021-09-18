@@ -10,12 +10,21 @@
 namespace krit {
 
 enum AssetId : int;
+enum AssetRoot : int;
+
+struct ImageProperties {
+    IntDimensions dimensions;
+    IntDimensions realDimensions;
+    float scale = 1.0;
+
+    ImageProperties(int w, int h, int rw, int rh) : dimensions(w, h), realDimensions(rw, rh), scale((float)rh / h) {}
+};
 
 union AssetProperties {
-    IntDimensions dimensions;
+    ImageProperties img;
     bool _ = false;
 
-    AssetProperties(int width, int height) : dimensions(width, height) {}
+    AssetProperties(int w, int h, int rw, int rh) : img(w, h, rw, rh) {}
     AssetProperties() : _(false) {}
 };
 
@@ -27,19 +36,22 @@ struct AssetInfo {
 };
 
 struct Assets {
-    static const AssetInfo &byId(AssetId id) { return _assets[id]; }
+    static const AssetInfo &byId(AssetId id);
 
     static const AssetInfo &byPath(const std::string &path) {
         auto found = _byPath.find(path);
         if (found == _byPath.end()) {
             panic("unrecognized asset path: %s\n", path.c_str());
         }
-        return _assets[found->second];
+        return byId((AssetId)found->second);
     }
 
     static const bool exists(const std::string &path) {
         return _byPath.find(path) != _byPath.end();
     }
+
+    static void enableRoot(AssetRoot root);
+    static void disableRoot(AssetRoot root);
 
 private:
     static const AssetInfo _assets[];

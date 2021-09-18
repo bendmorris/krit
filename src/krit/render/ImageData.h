@@ -11,6 +11,7 @@ namespace krit {
  */
 struct ImageData {
     GLuint texture = 0;
+    float scale = 1.0;
     IntDimensions dimensions;
 
     ImageData(GLuint texture, IntDimensions dimensions)

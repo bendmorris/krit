@@ -7,18 +7,28 @@
 
 namespace krit {
 
-const AssetInfo Assets::_assets[AssetCount] = {
-    {% for asset in assets: %}
+static bool _rootEnabled[AssetRootCount] = {1, 0};
+
+const AssetInfo Assets::_assets[AssetRootCount * AssetCount] = {
+    {% for root in roots: %}
+    {% for asset in root.assets: %}
+    {% if asset %}
     {
-        .id = {{ asset.assetId }},
+        .id = {{ asset.id }},
         .type = {{ asset.type}}Asset,
         .path = "{{ asset.path }}",
         {% if asset.type == 'Image': %}
-        .properties = AssetProperties({{ asset.width }}, {{ asset.height }}),
+        .properties = AssetProperties({{ asset.width }}, {{ asset.height }}, {{ asset.realWidth }}, {{ asset.realHeight }}),
         {% else %}
         .properties = AssetProperties(),
         {% endif %}
     },
+    {% else %}
+    {
+        .id = NoAsset,
+    },
+    {% endif %}
+    {% endfor %}
     {% endfor %}
 };
 
@@ -26,6 +36,31 @@ std::unordered_map<std::string, int> Assets::_byPath = {
     {% for asset in assets %}
     { "{{ asset.path }}", {{ loop.index - 1 }} },
     {% endfor %}
+    {% for root in roots: %}
+    {% for asset in root.assets: %}
+    {% if asset %}
+    { "{{ asset.path }}", {{ loop.index - 1 }} },
+    {% endif %}
+    {% endfor %}
+    {% endfor %}
 };
+
+void Assets::enableRoot(AssetRoot root) { _rootEnabled[root] = true; }
+void Assets::disableRoot(AssetRoot root) { _rootEnabled[root] = false; }
+
+const AssetInfo &Assets::byId(AssetId id) {
+    if (id >= AssetCount) {
+        return _assets[id];
+    }
+    for (int i = AssetRootCount - 1; i >= 0; --i) {
+        if (_rootEnabled[i]) {
+            auto &asset = _assets[i * AssetCount + id];
+            if (asset.id != NoAsset) {
+                return asset;
+            }
+        }
+    }
+    panic("couldn't find asset: %i", id);
+}
 
 }

@@ -4,30 +4,55 @@ from jinja2 import Template
 import yaml
 from PIL import Image
 
-def assetId(path):
+def pascalCase(path):
     return ''.join(filter(lambda s: s.isalpha() or s.isdigit(), list(''.join(s.title() for s in path.split('/')))))
 
+
 def run(inputPath, outputDir):
+    nextAssetId = 0
+    assetIds = {}
     with open(inputPath) as inputFile:
         spec = yaml.safe_load(inputFile)
     assets = []
     mtime = 0
-    for item in spec:
-        matches = glob(item['pattern'], recursive=True)
-        for match in matches:
-            mtime = max(mtime, os.path.getmtime(match))
-            asset = {k: v for (k, v) in item.items()}
-            asset['assetId'] = assetId(match)
-            asset['path'] = match
-            t = asset['type']
-            if t == 'Image':
-                # get the image dimensions
-                im = Image.open(asset['path'])
-                w, h = im.size
-                asset['width'] = w
-                asset['height'] = h
+    roots = [{'id': pascalCase(path), 'path': path, 'assets': []} for path in spec['roots']]
+    for item in spec['patterns']:
+        for n, root in enumerate(roots):
+            matches = glob(os.path.join(root['path'], item['pattern']), recursive=True)
+            for matchPath in matches:
+                match = matchPath[len(root['path'])+1:]
+                assetId = assetIds.get(match)
+                name = pascalCase(match)
+                if assetId is None:
+                    assetId = nextAssetId
+                    nextAssetId += 1
+                    assetIds[match] = assetId
+                    for _root in roots:
+                        _root['assets'].append(None)
+                    assets.append({ 'id': name, 'path': match })
+                mtime = max(mtime, os.path.getmtime(matchPath))
+                asset = {k: v for (k, v) in item.items()}
+                asset['id'] = name
+                asset['path'] = matchPath
+                t = asset['type']
+                if t == 'Image':
+                    # get the image dimensions
+                    im = Image.open(matchPath)
+                    w, h = im.size
+                    asset['width'] = asset['realWidth'] = w
+                    asset['height'] = asset['realHeight'] = h
+                    if n > 0:
+                        # resolution scaling
+                        existing = roots[0]['assets'][assetId]
+                        if existing:
+                            h2 = existing['height']
+                            asset['width'] = existing['width']
+                            asset['height'] = h2
+                            asset['scale'] = h / h2
+                    else:
+                        asset['scale'] = 1.0
 
-            assets.append(asset)
+                root['assets'][assetId] = asset
     for artifact in ('Assets.cpp', 'Assets.h'):
         outPath = os.path.join(outputDir, artifact)
         existing = None
@@ -36,7 +61,7 @@ def run(inputPath, outputDir):
                 existing = existingFile.read()
         with open(os.path.join(os.path.dirname(__file__), artifact + '.jinja2')) as templateFile:
             template = Template(templateFile.read())
-        newContent = template.render(assets=assets)
+        newContent = template.render(assets=assets, roots=roots)
         if not existing or newContent != existing:
             with open(outPath, 'w') as outFile:
                 outFile.write(newContent)

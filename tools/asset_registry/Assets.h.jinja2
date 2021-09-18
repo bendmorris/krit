@@ -5,10 +5,18 @@
 namespace krit {
 
 enum AssetId: int {
+    NoAsset = -1,
     {% for asset in assets: -%}
-    {{ asset.assetId }} = {{ loop.index - 1 }},
+    {{ asset.id }} = {{ loop.index - 1 }},
     {% endfor -%}
     AssetCount,
+};
+
+enum AssetRoot: int {
+    {% for root in roots: -%}
+    {{ root.id }} = {{ loop.index - 1 }},
+    {% endfor -%}
+    AssetRootCount,
 };
 
 }

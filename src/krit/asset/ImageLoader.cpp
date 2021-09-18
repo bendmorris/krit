@@ -22,7 +22,8 @@ struct UpdateContext;
 template <>
 ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
     ImageData *img = new ImageData();
-    img->dimensions.setTo(info.properties.dimensions);
+    img->dimensions.setTo(info.properties.img.dimensions);
+    img->scale = info.properties.img.scale;
 
     TaskManager::instance->push([info, img](UpdateContext &) {
         SDL_Surface *surface = IMG_Load(info.path.c_str());
@@ -41,7 +42,7 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
             checkForGlErrors("gen textures");
             glBindTexture(GL_TEXTURE_2D, texture);
             checkForGlErrors("bind texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, mode, img->width(), img->height(), 0,
+            glTexImage2D(GL_TEXTURE_2D, 0, mode, info.properties.img.realDimensions.x, info.properties.img.realDimensions.y, 0,
                          mode, GL_UNSIGNED_BYTE, surface->pixels);
             checkForGlErrors("texImage2D");
             glGenerateMipmap(GL_TEXTURE_2D);
