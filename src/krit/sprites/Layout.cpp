@@ -134,11 +134,15 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
     }
 
     if (flex) {
-        dimensions.x += paddingLeft().measure(availableWidth) + paddingRight().measure(availableWidth);
-        dimensions.y += paddingTop().measure(availableHeight) + paddingBottom().measure(availableHeight);
+        dimensions.x += paddingLeft().measure(availableWidth) +
+                        paddingRight().measure(availableWidth);
+        dimensions.y += paddingTop().measure(availableHeight) +
+                        paddingBottom().measure(availableHeight);
 
-        if (dimensions.x < width) dimensions.x = width;
-        if (dimensions.y < height) dimensions.y = height;
+        if (dimensions.x < width)
+            dimensions.x = width;
+        if (dimensions.y < height)
+            dimensions.y = height;
     }
 }
 
@@ -208,6 +212,9 @@ void LayoutNode::arrange(UpdateContext &ctx, LayoutNode *parent,
                 }
             }
             break;
+        }
+        default: {
+            ex = ey = 0;
         }
     }
 
@@ -476,7 +483,7 @@ void parseNineSlice(LayoutParseData *data,
                     std::unordered_map<std::string, std::string> &attrMap) {
     LayoutNode *node = data->node;
     ImageRegion src = LayoutRoot::parseSrc(attrMap);
-    int lw, rw, th, bh;
+    int lw = 0, rw = 0, th = 0, bh = 0;
     auto found = attrMap.find("border");
     if (found != attrMap.end()) {
         lw = rw = th = bh = Parse::parseInt(found->second);
@@ -621,10 +628,12 @@ void LayoutRoot::parse(const char *markup, size_t length) {
     data.root = this;
     XML_SetUserData(parser, &data);
     XML_SetElementHandler(parser, layoutStartElement, layoutEndElement);
-    if (XML_Parse(parser, markup, length, 1) == XML_STATUS_ERROR) {
+    XML_Status status = XML_Parse(parser, markup, length, 1);
+    if (status != XML_STATUS_OK) {
         panic("failed to parse layout XML!\n\n%s\n", markup);
     }
     XML_ParserFree(parser);
     this->rootNode = std::unique_ptr<LayoutNode>(data.node);
 }
+
 }

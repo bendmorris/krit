@@ -1,19 +1,19 @@
-#include <GL/glew.h>
-#include <SDL_image.h>
-#include <cstdint>
-#include <string>
-
-#include "SDL_pixels.h"
-#include "SDL_surface.h"
 #include "krit/App.h"
 #include "krit/TaskManager.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetLoader.h"
+#include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
+#include <GL/glew.h>
+#include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_image.h>
+#include <cstdint>
+#include <string>
 
 namespace krit {
 
@@ -25,9 +25,14 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
     ImageData *img = new ImageData();
     img->dimensions.setTo(info.properties.img.dimensions);
     img->scale = info.properties.img.scale;
+        int len;
+    char *s = IoRead::read(info.path, &len);
 
-    TaskManager::instance->push([info, img](UpdateContext &) {
-        SDL_Surface *surface = IMG_Load(info.path.c_str());
+    TaskManager::instance->push([info, img, s, len](UpdateContext &) {
+        SDL_RWops *rw = SDL_RWFromConstMem(s, len);
+        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
+        SDL_RWclose(rw);
+        IoRead::free(s);
         if (!surface) {
             panic("IMG_Load(%s) is null\n", info.path.c_str());
         }
@@ -52,7 +57,6 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
                 glGenerateMipmap(GL_TEXTURE_2D);
                 checkForGlErrors("asset load");
                 img->texture = texture;
-
                 SDL_FreeSurface(surface);
             });
     });

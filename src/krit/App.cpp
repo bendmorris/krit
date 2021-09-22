@@ -1,23 +1,12 @@
 #include "krit/App.h"
-
-#include <SDL.h>
-#include <chrono>
-#include <cmath>
-#include <csignal>
-#include <stdlib.h>
-
-#include "SDL_error.h"
-#include "SDL_events.h"
-#include "SDL_image.h"
-#include "SDL_keyboard.h"
-#include "SDL_mouse.h"
-#include "SDL_mutex.h"
+#if ENABLE_TOOLS
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
+#include "krit/editor/Editor.h"
+#endif
 #include "krit/Options.h"
 #include "krit/TaskManager.h"
 #include "krit/asset/Font.h"
-#include "krit/editor/Editor.h"
 #include "krit/input/InputContext.h"
 #include "krit/input/Key.h"
 #include "krit/input/Mouse.h"
@@ -25,6 +14,17 @@
 #include "krit/render/RenderContext.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_error.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_mutex.h>
+#include <chrono>
+#include <cmath>
+#include <csignal>
+#include <stdlib.h>
 
 namespace krit {
 struct UpdateContext;
@@ -67,8 +67,6 @@ void App::run() {
 
     surface = SDL_GetWindowSurface(window);
 
-    checkForGlErrors("SDL init");
-
     double frameDelta = 1.0 / fixedFramerate;
     double frameDelta2 = 1.0 / (fixedFramerate + 1);
 
@@ -95,12 +93,14 @@ void App::run() {
 
     TaskManager taskManager(ctx, 3);
     renderer.init(window);
+    checkForGlErrors("renderer init");
 
     if (startFullscreen) {
         this->setFullScreen(true);
     }
 
-    // generate an initial MouseMotion event; without this, SDL will return an invalid initial mouse position
+    // generate an initial MouseMotion event; without this, SDL will return an
+    // invalid initial mouse position
     int x, y, wx, wy;
     SDL_GetGlobalMouseState(&x, &y);
     SDL_GetWindowPosition(this->window, &wx, &wy);
@@ -184,12 +184,14 @@ void App::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         bool handleKey = true, handleMouse = true;
+#if ENABLE_TOOLS
         if (Editor::imguiInitialized) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             auto &io = ImGui::GetIO();
             handleKey = !io.WantTextInput;
             handleMouse = !io.WantCaptureMouse;
         }
+#endif
         switch (event.type) {
             case SDL_QUIT: {
                 quit();
@@ -254,7 +256,10 @@ void App::handleEvents() {
             }
             case SDL_MOUSEWHEEL: {
                 if (handleMouse && event.wheel.y) {
-                    engine.input.mouseWheel(event.wheel.y * (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1 : -1));
+                    engine.input.mouseWheel(
+                        event.wheel.y *
+                        (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1
+                                                                         : -1));
                 }
                 break;
             }
@@ -286,8 +291,7 @@ void App::setFullScreen(bool full) {
     } else {
         SDL_SetWindowFullscreen(this->window, 0);
     }
-    int x = this->dimensions.width() / 2,
-        y = this->dimensions.height() / 2;
+    int x = this->dimensions.width() / 2, y = this->dimensions.height() / 2;
     SDL_WarpMouseInWindow(this->window, x, y);
 }
 

@@ -1,12 +1,12 @@
 #ifndef KRIT_APP
 #define KRIT_APP
 
-#include "SDL_surface.h"
-#include "SDL_video.h"
 #include "krit/Engine.h"
 #include "krit/math/Dimensions.h"
 #include "krit/render/Renderer.h"
 #include "krit/sound/AudioBackend.h"
+#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_video.h>
 #include <string>
 
 namespace krit {

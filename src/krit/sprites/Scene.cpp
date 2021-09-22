@@ -49,7 +49,6 @@ void Scene::render(RenderContext &ctx) {
 ScriptScene::ScriptScene(ScriptEngine &engine)
     : Scene(), engine(engine),
       _update(JS_GetPropertyStr(engine.ctx, engine.exports, "update")),
-      _updateUi(JS_GetPropertyStr(engine.ctx, engine.exports, "updateUi")),
       _fixedUpdate(
           JS_GetPropertyStr(engine.ctx, engine.exports, "fixedUpdate")),
       _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render")),
@@ -60,9 +59,6 @@ void ScriptScene::fixedUpdate(UpdateContext &ctx) {
 }
 void ScriptScene::update(UpdateContext &ctx) {
     engine.callVoid(_update, ctx);
-    ctx.camera = &ctx.engine->uiCamera;
-    engine.callVoid(_updateUi, ctx);
-    ctx.camera = &ctx.engine->camera;
 }
 void ScriptScene::render(RenderContext &ctx) {
     engine.callVoid(_render, ctx);

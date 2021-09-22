@@ -1,13 +1,9 @@
-#include <algorithm>
-#include <cassert>
-#include <memory>
-#include <stdint.h>
-#include <utility>
-
-#include "SDL_error.h"
+#include "krit/render/Renderer.h"
+#if ENABLE_TOOLS
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
+#endif
 #include "krit/App.h"
 #include "krit/editor/Editor.h"
 #include "krit/render/BlendMode.h"
@@ -18,13 +14,18 @@
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include "krit/render/RenderContext.h"
-#include "krit/render/Renderer.h"
 #include "krit/render/SceneShader.h"
 #include "krit/render/Shader.h"
 #include "krit/render/SmoothingMode.h"
 #include "krit/render/Uniform.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
+#include <SDL2/SDL_error.h>
+#include <algorithm>
+#include <cassert>
+#include <memory>
+#include <stdint.h>
+#include <utility>
 
 namespace krit {
 
@@ -244,6 +245,7 @@ void Renderer::init(SDL_Window *window) {
         }
         checkForGlErrors("glew init");
 
+#if ENABLE_TOOLS
         ImGui::CreateContext();
         ImGui_ImplSDL2_InitForOpenGL(window, glContext);
         ImGui_ImplOpenGL3_Init(nullptr);
@@ -267,6 +269,7 @@ void Renderer::init(SDL_Window *window) {
 
         io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
         Editor::imguiInitialized = true;
+#endif
 
         glGenVertexArrays(1, &this->vao);
         glBindVertexArray(this->vao);
@@ -328,11 +331,13 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 template <>
 void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
                                                    ImDrawData *&drawData) {
+#if ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(Editor::window);
         ImGui_ImplOpenGL3_RenderDrawData(drawData);
     }
+#endif
 }
 
 template <>

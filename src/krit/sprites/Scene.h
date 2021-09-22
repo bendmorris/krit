@@ -48,7 +48,6 @@ private:
 struct ScriptScene : public Scene {
     ScriptEngine &engine;
     JSValue _update;
-    JSValue _updateUi;
     JSValue _fixedUpdate;
     JSValue _render;
     JSValue _renderUi;

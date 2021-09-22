@@ -2,9 +2,9 @@
 #define KRIT_EDITOR_EDITOR
 
 #define IMGUI_DEFINE_MATH_OPERATORS
-#include "SDL_video.h"
 #include "krit/Sprite.h"
 #include <GL/glew.h>
+#include <SDL2/SDL_video.h>
 #include <algorithm>
 #include <functional>
 #include <memory>

@@ -4,10 +4,9 @@
  * License: Creative Commons Attribution 3.0 Unported License
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
-
-#include <bits/types/struct_rusage.h>
-
 #include "krit/Utils.h"
+
+#if ENABLE_TOOLS
 
 #if defined(_WIN32)
 #include <psapi.h>
@@ -15,6 +14,7 @@
 
 #elif defined(__unix__) || defined(__unix) || defined(unix) ||                 \
     (defined(__APPLE__) && defined(__MACH__))
+#include <bits/types/struct_rusage.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
@@ -124,3 +124,14 @@ size_t getCurrentRss() {
 }
 
 }
+
+#else
+
+namespace krit {
+
+size_t getPeakRss() { return 0; }
+size_t getCurrentRss() { return 0; }
+
+}
+
+#endif

@@ -7,6 +7,7 @@
 namespace krit {
 
 using IoRead = ZipIo;
+// using IoRead = FileIo;
 using IoWrite = FileIo;
 
 }

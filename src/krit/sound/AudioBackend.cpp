@@ -3,6 +3,7 @@
 #include "krit/sound/MusicData.h"
 #include "krit/sound/SoundData.h"
 #include "krit/utils/Log.h"
+#include <sndfile.h>
 
 namespace krit {
 

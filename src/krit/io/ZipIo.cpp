@@ -12,6 +12,9 @@ zip_t *ZipIo::archive = nullptr;
 void ZipIo::setArchive(const std::string &path) {
     zip_source_t *source = zip_source_file_create(path.c_str(), 0, 0, nullptr);
     archive = zip_open_from_source(source, ZIP_RDONLY, nullptr);
+    if (!archive) {
+        panic("failed to open archive: %s", path.c_str());
+    }
 }
 
 bool ZipIo::exists(const std::string &path) {

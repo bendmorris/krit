@@ -1,88 +1,126 @@
 project(krit)
 cmake_policy (SET CMP0072 OLD)
 
-find_package(SDL2 REQUIRED)
-#find_package(SDL2_image REQUIRED)
+option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
+option(ENABLE_TOOLS "Cross-compile for Windows using mingw-w64" OFF)
+
+if(BUILD_WINDOWS)
+    include(${KRIT_DIR}/toolchain/windows.cmake)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    include(${KRIT_DIR}/toolchain/emscripten.cmake)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    include(${KRIT_DIR}/toolchain/linux.cmake)
+else()
+    message(FATAL_ERROR "Unrecognized platform")
+endif()
+
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -O3 -ffast-math -ffunction-sections -fdata-sections -fno-exceptions")
+set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -ffast-math -fno-exceptions -g")
+set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
+set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_ASAN} ${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+
 find_package(OpenGL REQUIRED)
-find_package(OpenAL REQUIRED)
-find_package(GLEW REQUIRED)
-#find_package(libzip REQUIRED)
-find_package(harfbuzz REQUIRED)
-find_package(Freetype REQUIRED)
-# find_package(SndFile REQUIRED)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+endif()
 
-add_definitions(
-    "-DIMGUI_IMPL_OPENGL_LOADER_GLEW"
-)
+if(ENABLE_TOOLS)
+    add_definitions(-DENABLE_TOOLS)
+    file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS imgui/*.cpp)
+    include_directories(${KRIT_DIR}/imgui)
+endif()
 
-file(GLOB_RECURSE KRIT_SRC_FILES
-    CONFIGURE_DEPENDS
-    src/krit/*.cpp
-)
-file(GLOB_RECURSE KRIT_THIRDPARTY_FILES
-    CONFIGURE_DEPENDS
-    spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp
-    imgui/*.cpp
-)
-include_directories(src)
-include_directories(spine-runtimes/spine-cpp/spine-cpp/include)
-include_directories(/usr/include/SDL2)
-include_directories(imgui)
-include_directories(quickjs)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
+file(GLOB_RECURSE KRIT_SRC_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/src/krit/*.cpp)
+file(GLOB_RECURSE KRIT_THIRDPARTY_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp)
+
 include_directories(${KRIT_INCLUDE_PATHS})
+include_directories(${KRIT_DIR}/src)
+include_directories(${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/include)
+include_directories(${KRIT_DIR}/quickjs)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
 
-string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
+# string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
 file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
     CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.*.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC
-    ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
     ${KRIT_GENERATED_SCRIPT_FILES}
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
+    ${TOOLS_FILES}
 )
+
+include_directories(krit/src)
+include_directories(krit/spine-runtimes/spine-cpp/spine-cpp/include)
+include_directories(krit/imgui)
+include_directories(krit/quickjs)
+include_directories(/usr/include/SDL2)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
+message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
+
+find_library(EXPAT_LIB NAMES expat HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(FREETYPE_LIB NAMES freetype freetype-6 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(HARFBUZZ_LIB NAMES harfbuzz HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(QUICKJS_LIB NAMES quickjs HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SDL_LIB NAMES SDL2 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SNDFILE_LIB NAMES sndfile HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(Z_LIB NAMES z HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(ZIP_LIB NAMES zip HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    set(OPENAL_LIB "")
+    set(GLEW_LIB "-lGLEW")
+else()
+    find_library(GLEW_LIB NAMES GLEW glew32 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+    find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(SDL_IMAGE_LIB "-lSDL2_image")
+else()
+    find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+endif()
+
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-    ${SDL2_LIBRARIES}
     ${OPENGL_LIBRARIES}
-    "-lyaml"
-    "-lexpat"
-    "-lopenal"
-    "-lSDL2_image"
-    "-lGLEW"
-    "-lzip"
-    "-lfreetype"
-    "-lharfbuzz"
-    "-lsndfile"
+    ${OPENAL_LIB}
+    ${SDL_LIB}
+    ${SDL_IMAGE_LIB}
+    ${HARFBUZZ_LIB}
+    ${GLEW_LIB}
+    ${FREETYPE_LIB}
+
+    ${STATIC}
+    ${ZIP_LIB}
+    ${Z_LIB}
+    ${SNDFILE_LIB}
+    ${QUICKJS_LIB}
+    ${EXPAT_LIB}
+    ${YAML_LIB}
+    "-lpthread"
     "-Wl,--gc-sections"
-    ${CMAKE_CURRENT_SOURCE_DIR}/quickjs/libquickjs.a
+    "-static-libgcc"
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 add_custom_target(
-    quickjs
-    COMMAND make libquickjs.a CONFIG_BIGNUM= CONFIG_LTO=n
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/quickjs
-)
-
-add_dependencies(${PROJECT_NAME} quickjs)
-
-add_custom_target(
     compile-assets ALL
-    COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${CMAKE_CURRENT_SOURCE_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}
-    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/Assets.cpp
+    COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${KRIT_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}/krit
+    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.cpp
 )
 add_dependencies(${PROJECT_NAME} compile-assets)
 
 add_custom_target(
     copy-assets ALL
     COMMAND
-        ${CMAKE_CURRENT_SOURCE_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
+        ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
     BYPRODUCTS assets.zip
 )
 add_dependencies(compile-assets copy-assets)
@@ -90,8 +128,9 @@ add_dependencies(compile-assets copy-assets)
 if(KRIT_SCRIPT_BRIDGE_PATH)
     add_custom_target(
         generate-bridge ALL
-        COMMAND cd ${CMAKE_CURRENT_SOURCE_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} ${CMAKE_CURRENT_BINARY_DIR}
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/script/ScriptBridge.cpp
+        mkdir -p "${CMAKE_CURRENT_BINARY_DIR}/krit"
+        COMMAND cd ${KRIT_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} "${CMAKE_CURRENT_BINARY_DIR}/krit"
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
     )
     add_dependencies(${PROJECT_NAME} generate-bridge)
 endif()

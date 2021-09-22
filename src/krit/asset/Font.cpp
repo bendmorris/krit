@@ -1,15 +1,4 @@
 #include "krit/asset/Font.h"
-
-#include <GL/glew.h>
-#include <cstring>
-#include <stdlib.h>
-#include <tuple>
-#include <utility>
-
-#include "freetype/config/ftheader.h"
-#include "freetype/ftimage.h"
-#include "freetype/ftstroke.h"
-#include "freetype/fttypes.h"
 #include "harfbuzz/hb.h"
 #include "krit/Assets.h"
 #include "krit/asset/AssetInfo.h"
@@ -19,6 +8,15 @@
 #include "krit/math/Rectangle.h"
 #include "krit/render/ImageData.h"
 #include "krit/utils/Panic.h"
+#include <GL/glew.h>
+#include <cstring>
+#include <freetype2/freetype/config/ftheader.h>
+#include <freetype2/freetype/ftimage.h>
+#include <freetype2/freetype/ftstroke.h>
+#include <freetype2/freetype/fttypes.h>
+#include <stdlib.h>
+#include <tuple>
+#include <utility>
 
 #include FT_FREETYPE_H
 

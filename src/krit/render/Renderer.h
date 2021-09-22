@@ -1,19 +1,18 @@
 #ifndef KRIT_RENDER_RENDERER
 #define KRIT_RENDER_RENDERER
 
-#include <GL/glew.h>
-#include <SDL.h>
-#include <stddef.h>
-#include <vector>
-
-#include "SDL_mutex.h"
-#include "SDL_video.h"
 #include "krit/math/Rectangle.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawCall.h"
 #include "krit/render/DrawCommand.h"
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
+#include <GL/glew.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_video.h>
+#include <stddef.h>
+#include <vector>
 
 namespace krit {
 struct RenderContext;

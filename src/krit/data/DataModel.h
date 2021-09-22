@@ -2,11 +2,11 @@
 #define KRIT_DATA_MODEL
 
 #include "krit/utils/Panic.h"
-#include "yaml.h"
 #include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <yaml.h>
 
 namespace krit {
 

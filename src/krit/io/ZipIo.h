@@ -1,6 +1,8 @@
 #ifndef KRIT_IO_ZIPIO
 #define KRIT_IO_ZIPIO
 
+#define ZIP_STATIC 1
+
 #include <fstream>
 #include <sstream>
 #include <string>

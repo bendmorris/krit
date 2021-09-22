@@ -541,6 +541,10 @@ void Text::render(RenderContext &ctx) {
 }
 
 void Text::__render(RenderContext &ctx, bool border) {
+    if (charCount == 0) {
+        return;
+    }
+
     this->refresh();
 
     bool _borderEnabled = this->border;

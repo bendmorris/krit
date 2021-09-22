@@ -1,8 +1,8 @@
 #ifndef KRIT_TASKMANAGER
 #define KRIT_TASKMANAGER
 
-#include "SDL_mutex.h"
-#include "SDL_thread.h"
+#include <SDL2/SDL_mutex.h>
+#include <SDL2/SDL_thread.h>
 #include <algorithm>
 #include <functional>
 #include <queue>

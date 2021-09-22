@@ -1,3 +1,4 @@
+#if ENABLE_TOOLS
 #include "krit/editor/Editor.h"
 
 #include "imgui.h"
@@ -86,3 +87,4 @@ void Editor::render(krit::RenderContext &ctx) {
 }
 
 }
+#endif

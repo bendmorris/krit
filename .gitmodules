@@ -4,3 +4,6 @@
 [submodule "quickjs"]
 	path = quickjs
 	url = https://github.com/bendmorris/quickjs.git
+[submodule "toolchain"]
+	path = toolchain
+	url = https://github.com/bendmorris/krit-toolchain.git
