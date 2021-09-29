@@ -1,8 +1,10 @@
 #ifndef KRIT_TASKMANAGER
 #define KRIT_TASKMANAGER
 
+#if KRIT_ENABLE_THREADS
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_thread.h>
+#endif
 #include <algorithm>
 #include <functional>
 #include <queue>
@@ -18,6 +20,7 @@ template <typename T> using AsyncTask = std::function<void(T &)>;
 using UpdateTask = AsyncTask<UpdateContext>;
 using RenderTask = AsyncTask<RenderContext>;
 
+#if KRIT_ENABLE_THREADS
 template <typename T> struct AsyncQueue {
     SDL_mutex *lock;
     SDL_cond *available;
@@ -52,6 +55,20 @@ private:
     std::queue<T> queue;
 };
 
+#else
+
+template <typename T> struct AsyncQueue {
+    size_t size() { return queue.size(); }
+    void push(T job) { queue.push(job); }
+
+    bool pop(T *to);
+
+private:
+    td::queue<T> queue;
+}
+
+#endif
+
 struct TaskManager {
     static TaskManager *instance;
 
@@ -71,25 +88,39 @@ struct TaskManager {
     }
 
     size_t size;
+#if KRIT_ENABLE_THREADS
     SDL_Thread **threads;
+#endif
     UpdateContext &ctx;
 
     AsyncQueue<UpdateTask> mainQueue;
     AsyncQueue<RenderTask> renderQueue;
+#if KRIT_ENABLE_THREADS
     AsyncQueue<UpdateTask> workQueue;
+#endif
 
     bool killed = false;
 
     TaskManager(UpdateContext &ctx, size_t size) : size(size), ctx(ctx) {
         instance = this;
+#if KRIT_ENABLE_THREADS
         threads = new SDL_Thread *[size];
         for (size_t i = 0; i < size; ++i) {
             std::string threadName = "worker" + std::to_string(i + 1);
             SDL_CreateThread(workerFunc, threadName.c_str(), this);
         }
+#endif
     }
 
+    ~TaskManager() {
+        delete[] threads;
+    }
+
+#if KRIT_ENABLE_THREADS
     void push(UpdateTask task) { workQueue.push(task); }
+#else
+    void push(UpdateTask task) { mainQueue.push(task); }
+#endif
     void pushMain(UpdateTask task) { mainQueue.push(task); }
     void pushRender(RenderTask task) { renderQueue.push(task); }
 

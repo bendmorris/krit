@@ -6,4 +6,4 @@
 	url = https://github.com/bendmorris/quickjs.git
 [submodule "toolchain"]
 	path = toolchain
-	url = https://github.com/bendmorris/krit-toolchain.git
+	url = git@github.com:bendmorris/krit-toolchain.git

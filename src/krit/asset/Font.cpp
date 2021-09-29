@@ -46,11 +46,15 @@ void Font::init() {
     FT_Stroker_New(ftLibrary, &stroker);
 }
 
+void Font::shutdown() { FT_Done_FreeType(ftLibrary); }
+
 void Font::commit() {
-    if (glyphCache.img)
+    if (glyphCache.img) {
         glyphCache.commitChanges();
-    if (nextGlyphCache.img)
+    }
+    if (nextGlyphCache.img) {
         nextGlyphCache.commitChanges();
+    }
 }
 
 void Font::flush() {
@@ -86,7 +90,10 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
 }
 
 Font::~Font() {
-    // TODO
+    IoRead::free((char*)fontData);
+    FT_Done_Face((FT_Face)ftFace);
+    hb_font_destroy(font);
+    hb_face_destroy(face);
 }
 
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
@@ -227,7 +234,6 @@ void GlyphCache::commitChanges() {
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CACHE_TEXTURE_SIZE,
                      CACHE_TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE,
                      pixelData.get());
-        // glGenerateMipmap(GL_TEXTURE_2D);
         pending.clear();
     }
 }

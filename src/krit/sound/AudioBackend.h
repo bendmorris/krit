@@ -35,8 +35,12 @@ struct AudioStream {
     void feed(bool initial);
     void reset();
 
+    // void seek(float time);
     float &getVolume() { return volume; }
     float setVolume(float v);
+
+    int sampleRate();
+    float currentPlayTime();
 
     void clear() {
         volume = 1;
@@ -54,6 +58,7 @@ private:
     AudioSource *source = nullptr;
     ALuint buffer[NUM_BUFFERS] = {0};
     int bufferPtr = 0;
+    int samplesPlayed = 0;
     float volume = 1;
 
     friend struct AudioBackend;
@@ -69,6 +74,7 @@ struct AudioBackend {
     static const int MAX_SOURCES = 64;
     static const int MAX_STREAMS = 4;
 
+    bool enabled = false;
     ALCdevice *device = nullptr;
     ALCcontext *context = nullptr;
     AudioSource *sourcePool = nullptr;

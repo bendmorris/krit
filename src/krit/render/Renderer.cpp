@@ -1,5 +1,5 @@
 #include "krit/render/Renderer.h"
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
 #include "imgui.h"
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
@@ -96,97 +96,33 @@ void Renderer::setBlendMode(BlendMode mode) {
 
 SpriteShader *Renderer::getDefaultTextureShader() {
     if (!defaultTextureSpriteShader) {
-        defaultTextureSpriteShader =
-            new SpriteShader(new Shader(R"(
-// Krit texture vertex shader
-attribute vec4 aPosition;
-attribute vec2 aTexCoord;
-attribute vec4 aColor;
-varying vec2 vTexCoord;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    vTexCoord = aTexCoord;
-    gl_Position = uMatrix * aPosition;
-}
-)",
-                                        R"(// Krit texture fragment shader
-varying vec4 vColor;
-varying vec2 vTexCoord;
-uniform sampler2D uImage;
-
-void main(void) {
-    vec4 color = texture2D(uImage, vTexCoord);
-    if (color.a == 0.0) {
-        discard;
-    } else {
-        gl_FragColor = color * vColor;
-    }
-}
-)"));
+        defaultTextureSpriteShader = new SpriteShader(new Shader(
+#include "./renderer.texture.vert"
+            ,
+#include "./renderer.texture.frag"
+            ));
     }
     return defaultTextureSpriteShader;
 }
 
 SpriteShader *Renderer::getDefaultColorShader() {
     if (!defaultColorSpriteShader) {
-        defaultColorSpriteShader = new SpriteShader(new Shader(R"(
-// Krit color vertex shader
-attribute vec4 aPosition;
-attribute vec4 aColor;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    gl_Position = uMatrix * aPosition;
-})",
-                                                               R"(
-// Krit color fragment shader
-varying vec4 vColor;
-
-void main(void) {
-    gl_FragColor = vColor;
-}
-)"));
+        defaultColorSpriteShader = new SpriteShader(new Shader(
+#include "./renderer.color.vert"
+            ,
+#include "./renderer.color.frag"
+            ));
     }
     return defaultColorSpriteShader;
 }
 
 SpriteShader *Renderer::getDefaultTextShader() {
     if (!defaultTextSpriteShader) {
-        defaultTextSpriteShader =
-            new SpriteShader(new Shader(R"(
-// Krit text vertex shader
-attribute vec4 aPosition;
-attribute vec2 aTexCoord;
-attribute vec4 aColor;
-varying vec2 vTexCoord;
-varying vec4 vColor;
-uniform mat4 uMatrix;
-
-void main(void) {
-    vColor = vec4(aColor.rgb * aColor.a, aColor.a);
-    vTexCoord = aTexCoord;
-    gl_Position = uMatrix * aPosition;
-}
-)",
-                                        R"(// Krit text fragment shader
-varying vec4 vColor;
-varying vec2 vTexCoord;
-uniform sampler2D uImage;
-
-void main(void) {
-    vec4 color = texture2D(uImage, vTexCoord);
-    if (color.r == 0.0) {
-        discard;
-    } else {
-        gl_FragColor = vec4(color.r, color.r, color.r, color.r) * vColor;
-    }
-}
-)"));
+        defaultTextSpriteShader = new SpriteShader(new Shader(
+#include "./renderer.text.vert"
+            ,
+#include "./renderer.text.frag"
+            ));
     }
     return defaultTextSpriteShader;
 }
@@ -210,7 +146,8 @@ Renderer::Renderer() {}
 
 void Renderer::init(SDL_Window *window) {
     if (!initialized) {
-        // SDL_GL
+// SDL_GL
+#ifndef __EMSCRIPTEN__
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
@@ -222,30 +159,38 @@ void Renderer::init(SDL_Window *window) {
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
         SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
+#endif
 
         this->glContext = SDL_GL_CreateContext(window);
         if (!this->glContext) {
             panic(SDL_GetError());
         }
         SDL_GL_MakeCurrent(window, this->glContext);
+        checkForGlErrors("context");
         // // try to get adaptive vsync
         // int result = SDL_GL_SetSwapInterval(-1);
         // // fall back to regular vsync
         // if (result == -1) {
         SDL_GL_SetSwapInterval(1);
-        // }
+        checkForGlErrors("swap interval");
+// }
+#ifndef __EMSCRIPTEN__
         glEnable(GL_MULTISAMPLE);
+        checkForGlErrors("multisample");
+#endif
         glEnable(GL_BLEND);
+        checkForGlErrors("blend");
         glDisable(GL_DEPTH_TEST);
+        checkForGlErrors("depth test");
 
-        glewExperimental = GL_TRUE;
+        // glewExperimental = GL_TRUE;
         GLenum err = glewInit();
         if (err != GLEW_OK) {
             panic("%s\n", glewGetErrorString(err));
         }
         checkForGlErrors("glew init");
 
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
         ImGui::CreateContext();
         ImGui_ImplSDL2_InitForOpenGL(window, glContext);
         ImGui_ImplOpenGL3_Init(nullptr);
@@ -331,7 +276,7 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 template <>
 void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
                                                    ImDrawData *&drawData) {
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplSDL2_NewFrame(Editor::window);

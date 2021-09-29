@@ -6,7 +6,7 @@
  */
 #include "krit/Utils.h"
 
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
 
 #if defined(_WIN32)
 #include <psapi.h>

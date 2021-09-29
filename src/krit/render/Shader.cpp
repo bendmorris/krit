@@ -35,7 +35,7 @@ void Shader::init() {
             glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(vertexShader);
-                panic("failed to compile vertex shader");
+                panic("failed to compile vertex shader:\n\n%s", vertexSource.c_str());
             }
             checkForGlErrors("compile vertex");
         }
@@ -48,7 +48,7 @@ void Shader::init() {
             glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(fragmentShader);
-                panic("failed to compile fragment shader");
+                panic("failed to compile fragment shader:\n\n%s", vertexSource.c_str());
             }
             checkForGlErrors("compile fragment");
         }

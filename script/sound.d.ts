@@ -14,6 +14,10 @@ interface AudioBackend {
  * @pointerOnly
  */
 interface AudioStream {
+    sampleRate(): integer;
+    currentPlayTime(): float;
+    // seek(time: float): void;
+
     getVolume(): float;
     setVolume(v: float): float;
 

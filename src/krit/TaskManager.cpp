@@ -4,6 +4,7 @@ namespace krit {
 
 TaskManager *TaskManager::instance = nullptr;
 
+#if KRIT_ENABLE_THREADS
 template <typename T> bool AsyncQueue<T>::pop(T *to) {
     bool result = false;
     SDL_LockMutex(lock);
@@ -20,6 +21,19 @@ template <typename T> bool AsyncQueue<T>::pop(T *to) {
     SDL_UnlockMutex(lock);
     return result;
 }
+
+#else
+
+template <typename T> bool AsyncQueue<T>::pop(T *to) {
+    if (queue.empty()) {
+        return false;
+    }
+    *to = queue.front();
+    queue.pop();
+    return true;
+}
+
+#endif
 
 // explicit instantiation required here
 template struct AsyncQueue<UpdateTask>;

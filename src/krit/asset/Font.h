@@ -81,6 +81,7 @@ struct Font {
     static GlyphCache glyphCache, nextGlyphCache;
 
     static void init();
+    static void shutdown();
     static void commit();
     static void flush();
 

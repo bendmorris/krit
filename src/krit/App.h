@@ -7,11 +7,13 @@
 #include "krit/sound/AudioBackend.h"
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_video.h>
+#include <chrono>
 #include <string>
 
 namespace krit {
 struct KritOptions;
 struct RenderContext;
+struct TaskManager;
 
 const int MAX_FRAMES = 5;
 const int FPS = 60;
@@ -22,6 +24,7 @@ struct App {
     std::string title;
     IntDimensions dimensions;
     IntDimensions fullScreenDimensions;
+    InputContext input;
     Engine engine;
     Renderer renderer;
     AudioBackend audio;
@@ -38,6 +41,7 @@ struct App {
     }
 
     void run();
+    bool doFrame();
 
     /**
      * Ends the run() loop.
@@ -56,8 +60,14 @@ private:
     SDL_Surface *surface;
     bool full = false;
     bool startFullscreen = false;
+    std::chrono::steady_clock clock;
+    std::chrono::steady_clock::time_point frameStart, frameFinish;
+    double accumulator = 0, elapsed;
+    double frameDelta, frameDelta2;
+    TaskManager *taskManager = nullptr;
 
     void handleEvents();
+    void cleanup();
 
     friend struct Editor;
     friend struct Renderer;

@@ -3,6 +3,7 @@ cmake_policy (SET CMP0072 OLD)
 
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
 option(ENABLE_TOOLS "Cross-compile for Windows using mingw-w64" OFF)
+option(ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 
 if(BUILD_WINDOWS)
     include(${KRIT_DIR}/toolchain/windows.cmake)
@@ -17,17 +18,18 @@ endif()
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wall -O3 -ffast-math -ffunction-sections -fdata-sections -fno-exceptions")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -ffast-math -fno-exceptions -g")
-set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address")
+set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
 set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_ASAN} ${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 
+if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 find_package(OpenGL REQUIRED)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 if(ENABLE_TOOLS)
-    add_definitions(-DENABLE_TOOLS)
-    file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS imgui/*.cpp)
+    message(STATUS "tools enabled")
+    add_definitions(-DKRIT_ENABLE_TOOLS)
+    file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/imgui/*.cpp)
     include_directories(${KRIT_DIR}/imgui)
 endif()
 
@@ -56,6 +58,10 @@ add_library(${PROJECT_NAME} STATIC
     ${TOOLS_FILES}
 )
 
+if(ENABLE_THREADS)
+    add_definitions(-DKRIT_ENABLE_THREADS)
+endif()
+
 include_directories(krit/src)
 include_directories(krit/spine-runtimes/spine-cpp/spine-cpp/include)
 include_directories(krit/imgui)
@@ -75,8 +81,9 @@ find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_P
 find_library(Z_LIB NAMES z HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(ZIP_LIB NAMES zip HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    set(OPENAL_LIB "")
-    set(GLEW_LIB "-lGLEW")
+    set(OPENAL_LIB "-lopenal")
+    set(GLEW_LIB "")
+    set(OPENGL_LIBRARIES "-lGLEW -lGLU -lm -lGL")
 else()
     find_library(GLEW_LIB NAMES GLEW glew32 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
@@ -85,6 +92,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(SDL_IMAGE_LIB "-lSDL2_image")
 else()
     find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+endif()
+if(ENABLE_THREADS)
+    set(PTHREAD_LIB "-lpthread")
+else()
+    set(PTHREAD_LIB "")
 endif()
 
 target_link_libraries(${PROJECT_NAME}
@@ -104,7 +116,7 @@ target_link_libraries(${PROJECT_NAME}
     ${QUICKJS_LIB}
     ${EXPAT_LIB}
     ${YAML_LIB}
-    "-lpthread"
+    ${PTHREAD_LIB}
     "-Wl,--gc-sections"
     "-static-libgcc"
 )

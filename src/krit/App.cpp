@@ -1,5 +1,5 @@
 #include "krit/App.h"
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
 #include "imgui.h"
 #include "imgui_impl_sdl.h"
 #include "krit/editor/Editor.h"
@@ -21,10 +21,12 @@
 #include <SDL2/SDL_keyboard.h>
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_mutex.h>
-#include <chrono>
 #include <cmath>
 #include <csignal>
 #include <stdlib.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 
 namespace krit {
 struct UpdateContext;
@@ -40,13 +42,21 @@ App::App(KritOptions &options)
       framerate(options.framerate), fixedFramerate(options.fixedFramerate),
       startFullscreen(options.fullscreen) {}
 
+#ifdef __EMSCRIPTEN__
+static void __doFrame(void *app) {
+    ((App*)app)->doFrame();
+}
+#endif
+
 void App::run() {
     if (ctx.app) {
         panic("can only have a single App running at once");
     }
     current = this;
 
+    #ifndef __EMSCRIPTEN
     std::signal(SIGINT, sigintHandler);
+    #endif
 
     // freetype
     Font::init();
@@ -67,11 +77,8 @@ void App::run() {
 
     surface = SDL_GetWindowSurface(window);
 
-    double frameDelta = 1.0 / fixedFramerate;
-    double frameDelta2 = 1.0 / (fixedFramerate + 1);
-
-    // base context structs
-    InputContext input;
+    frameDelta = 1.0 / fixedFramerate;
+    frameDelta2 = 1.0 / (fixedFramerate + 1);
 
     // the RenderContext will be upcast to an UpdateContext during the update
     // phase
@@ -85,15 +92,11 @@ void App::run() {
 
     UpdateContext *update = &ctx;
 
-    double accumulator = 0, elapsed;
-    std::chrono::steady_clock clock;
-    auto frameStart = clock.now();
-    auto frameFinish = frameStart;
+    frameStart = clock.now();
+    frameFinish = frameStart;
     // bool lockFramerate = true;
 
-    TaskManager taskManager(ctx, 3);
-    renderer.init(window);
-    checkForGlErrors("renderer init");
+    taskManager = new TaskManager(ctx, 3);
 
     if (startFullscreen) {
         this->setFullScreen(true);
@@ -108,64 +111,87 @@ void App::run() {
 
     invoke(engine.onBegin, update);
 
+    #ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop_arg(__doFrame, this, 0, 0);
+    #endif
+
+    renderer.init(window);
+    checkForGlErrors("renderer init");
+
     running = true;
+    #ifndef __EMSCRIPTEN__
     while (running) {
-        TaskManager::work(taskManager.mainQueue, *update);
-        TaskManager::work(taskManager.renderQueue, ctx);
-        // do {
-        frameFinish = clock.now();
-        elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                      frameFinish - frameStart)
-                      .count() /
-                  1000000.0 * engine.speed;
-        // } while (lockFramerate && elapsed < frameDelta2);
-        // if (1.0 / elapsed < 50) {
-        //     printf("%.2f\n", 1.0 / elapsed);
-        // }
-        accumulator += elapsed;
-        ctx.elapsed = ctx.frameCount = 0;
-        engine.elapsed += elapsed;
-
-        engine.input.startFrame();
-        handleEvents();
-        engine.input.endFrame();
-
-        if (engine.finished) {
-            quit();
+        if (!doFrame()) {
             break;
         }
-
-        while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
-            accumulator -= frameDelta;
-            if (accumulator < 0) {
-                accumulator = 0;
-            }
-            ++ctx.frameCount;
-            ++ctx.frameId;
-            ctx.elapsed = frameDelta;
-            engine.fixedUpdate(ctx);
-        }
-        if (accumulator > frameDelta2) {
-            accumulator = fmod(accumulator, frameDelta2);
-        }
-
-        ctx.elapsed = elapsed;
-        audio.update();
-        engine.update(ctx);
-        if (engine.finished) {
-            quit();
-            break;
-        }
-        frameStart = frameFinish;
-
-        Font::commit();
-        engine.render(ctx);
-        renderer.renderFrame(ctx);
-
-        Font::flush();
     }
 
+    cleanup();
+    #endif
+}
+
+void App::cleanup() {
     TaskManager::instance->killed = true;
+    Font::shutdown();
+}
+
+bool App::doFrame() {
+    UpdateContext *update = &ctx;
+    TaskManager::work(taskManager->mainQueue, *update);
+    TaskManager::work(taskManager->renderQueue, ctx);
+    // do {
+    frameFinish = clock.now();
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                    frameFinish - frameStart)
+                    .count() /
+                1000000.0 * engine.speed;
+    // } while (lockFramerate && elapsed < frameDelta2);
+    // if (1.0 / elapsed < 50) {
+    //     printf("%.2f\n", 1.0 / elapsed);
+    // }
+    accumulator += elapsed;
+    ctx.elapsed = ctx.frameCount = 0;
+    engine.elapsed += elapsed;
+
+    engine.input.startFrame();
+    handleEvents();
+    engine.input.endFrame();
+
+    if (engine.finished) {
+        quit();
+        return false;
+    }
+
+    while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
+        accumulator -= frameDelta;
+        if (accumulator < 0) {
+            accumulator = 0;
+        }
+        ++ctx.frameCount;
+        ++ctx.frameId;
+        ctx.elapsed = frameDelta;
+        engine.fixedUpdate(ctx);
+    }
+    if (accumulator > frameDelta2) {
+        accumulator = fmod(accumulator, frameDelta2);
+    }
+
+    ctx.elapsed = elapsed;
+    audio.update();
+    engine.update(ctx);
+    if (engine.finished) {
+        quit();
+        return false;
+    }
+    frameStart = frameFinish;
+
+    Font::commit();
+    engine.render(ctx);
+    renderer.renderFrame(ctx);
+
+    Font::flush();
+
+    return true;
 }
 
 MouseButton sdlMouseButton(int b) {
@@ -184,7 +210,7 @@ void App::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         bool handleKey = true, handleMouse = true;
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
         if (Editor::imguiInitialized) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             auto &io = ImGui::GetIO();

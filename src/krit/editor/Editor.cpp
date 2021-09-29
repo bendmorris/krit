@@ -1,4 +1,4 @@
-#if ENABLE_TOOLS
+#if KRIT_ENABLE_TOOLS
 #include "krit/editor/Editor.h"
 
 #include "imgui.h"

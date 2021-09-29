@@ -12,27 +12,28 @@ static const int STREAM_BUFFER_SIZE = 64 * 1024;
 AudioBackend::AudioBackend() {
     device = alcOpenDevice(nullptr);
     if (!device) {
-        panic("couldn't open OpenAL default device");
+        Log::error("couldn't open OpenAL default device");
+        return;
     }
 
     context = alcCreateContext(device, nullptr);
     if (!context) {
-        panic("couldn't create OpenAL context");
+        Log::error("couldn't create OpenAL context");
+        return;
     }
     if (!alcMakeContextCurrent(context)) {
-        panic("couldn't set OpenAL context");
+        Log::error("couldn't set OpenAL context");
+        return;
     }
 
     ALuint __sources[MAX_SOURCES] = {0};
     alGenSources(MAX_SOURCES, __sources);
     sourcePool = &_sources[0];
-    _sources[0].source = __sources[0];
-    for (int i = 0; i < MAX_SOURCES - 1; ++i) {
-        if (!__sources[i + 1]) {
-            break;
+    for (int i = 0; i < MAX_SOURCES; ++i) {
+        _sources[i].source = __sources[i];
+        if (i > 0) {
+            _sources[i - 1].next = &_sources[i];
         }
-        _sources[i + 1].source = __sources[i + 1];
-        _sources[i].next = &_sources[i + 1];
     }
 
     for (int i = 0; i < MAX_STREAMS; ++i) {
@@ -40,6 +41,8 @@ AudioBackend::AudioBackend() {
         _streams[i].backend = this;
         alGenBuffers(AudioStream::NUM_BUFFERS, _streams[i].buffer);
     }
+
+    enabled = true;
 }
 
 AudioBackend::~AudioBackend() {
@@ -66,19 +69,21 @@ void AudioBackend::playSound(const AssetInfo &info) {
 }
 
 void AudioBackend::playSound(SoundData *sound) {
-    ALuint buffer = sound->buffer;
-    AudioSource *source = getSource();
-    if (source) {
-        ALuint s = source->source;
-        alSourcef(s, AL_PITCH, 1);
-        alSourcef(s, AL_GAIN, 1.0f);
-        alSource3f(s, AL_POSITION, 0, 0, 0);
-        alSource3f(s, AL_VELOCITY, 0, 0, 0);
-        alSourcei(s, AL_LOOPING, AL_FALSE);
-        alSourcei(s, AL_BUFFER, buffer);
-        alSourcePlay(s);
-        source->next = activeSources;
-        activeSources = source;
+    if (enabled) {
+        ALuint buffer = sound->buffer;
+        AudioSource *source = getSource();
+        if (source) {
+            ALuint s = source->source;
+            alSourcef(s, AL_PITCH, 1);
+            alSourcef(s, AL_GAIN, 1.0f);
+            alSource3f(s, AL_POSITION, 0, 0, 0);
+            alSource3f(s, AL_VELOCITY, 0, 0, 0);
+            alSourcei(s, AL_LOOPING, AL_FALSE);
+            alSourcei(s, AL_BUFFER, buffer);
+            alSourcePlay(s);
+            source->next = activeSources;
+            activeSources = source;
+        }
     }
 }
 
@@ -104,6 +109,7 @@ void AudioBackend::update() {
     // try to reclaim sources from active list
     AudioSource *candidate = activeSources;
     AudioSource *last = nullptr;
+    // FIXME: with source reclamation, music crossfade sometimes breaks
     while (candidate) {
         ALenum state;
         alGetSourcei(candidate->source, AL_SOURCE_STATE, &state);
@@ -115,8 +121,8 @@ void AudioBackend::update() {
                 activeSources = candidate->next;
             }
             AudioSource *next = candidate->next;
-            candidate->next = sourcePool;
-            sourcePool = candidate;
+            alSourcei(candidate->source, AL_BUFFER, 0);
+            recycleSource(candidate);
             candidate = next;
         } else {
             last = candidate;
@@ -200,11 +206,11 @@ void AudioStream::reset() {
 
 void AudioStream::stop() {
     if (source) {
+        alSourceStop(source->source);
         for (int i = 0; i < NUM_BUFFERS; ++i) {
             ALuint b;
             alSourceUnqueueBuffers(source->source, 1, &b);
         }
-        alSourceStop(source->source);
         backend->recycleSource(source);
         sf_seek(data->sndFile, 0, SEEK_SET);
         bufferPtr = 0;
@@ -223,18 +229,24 @@ float AudioStream::setVolume(float v) {
 }
 
 void AudioStream::feed(bool initial) {
+    if (!data || !data->channels) {
+        return;
+    }
     int toRead = STREAM_BUFFER_SIZE / (data->channels * 2);
     int read = sf_read_short(
         data->sndFile, (int16_t *)(&ringBuffer[STREAM_BUFFER_SIZE * bufferPtr]),
         toRead);
     if (read < toRead) {
         sf_seek(data->sndFile, 0, SEEK_SET);
+        // FIXME: slightly off; should only set samplesPlayed when this queued buffer starts
+        samplesPlayed = 0;
     }
     ALuint buffer;
     if (initial) {
         buffer = this->buffer[bufferPtr];
     } else {
         alSourceUnqueueBuffers(source->source, 1, &buffer);
+        samplesPlayed += read / data->channels;
     }
     alBufferData(buffer, data->format,
                  &ringBuffer[STREAM_BUFFER_SIZE * bufferPtr], read * 2,
@@ -244,6 +256,16 @@ void AudioStream::feed(bool initial) {
     }
     ++bufferPtr;
     bufferPtr %= NUM_BUFFERS;
+}
+
+int AudioStream::sampleRate() {
+    return data ? data->sampleRate : 0;
+}
+
+float AudioStream::currentPlayTime() {
+    int sampleOffset;
+    alGetSourcei(source->source, AL_SAMPLE_OFFSET, &sampleOffset);
+    return static_cast<float>(samplesPlayed + sampleOffset) / data->sampleRate;
 }
 
 }
