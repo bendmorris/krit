@@ -142,90 +142,86 @@ static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
                                     -1.0, 1.0,  0.0, 1.0, 1.0,  -1.0, 1.0, 0.0,
                                     1.0,  1.0,  1.0, 1.0, -1.0, 1.0,  0.0, 1.0};
 
-Renderer::Renderer() {}
-
-void Renderer::init(SDL_Window *window) {
-    if (!initialized) {
+Renderer::Renderer(Window &_window): window(_window) {
+    SDL_Window *window = _window.window;
 // SDL_GL
 #ifndef __EMSCRIPTEN__
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                            SDL_GL_CONTEXT_PROFILE_CORE);
-        SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-        SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
-        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
 #endif
 
-        this->glContext = SDL_GL_CreateContext(window);
-        if (!this->glContext) {
-            panic(SDL_GetError());
-        }
-        SDL_GL_MakeCurrent(window, this->glContext);
-        checkForGlErrors("context");
-        // // try to get adaptive vsync
-        // int result = SDL_GL_SetSwapInterval(-1);
-        // // fall back to regular vsync
-        // if (result == -1) {
-        SDL_GL_SetSwapInterval(1);
-        checkForGlErrors("swap interval");
+    this->glContext = SDL_GL_CreateContext(window);
+    if (!this->glContext) {
+        panic(SDL_GetError());
+    }
+    SDL_GL_MakeCurrent(window, this->glContext);
+    checkForGlErrors("context");
+    // // try to get adaptive vsync
+    // int result = SDL_GL_SetSwapInterval(-1);
+    // // fall back to regular vsync
+    // if (result == -1) {
+    SDL_GL_SetSwapInterval(1);
+    checkForGlErrors("swap interval");
 // }
 #ifndef __EMSCRIPTEN__
-        glEnable(GL_MULTISAMPLE);
-        checkForGlErrors("multisample");
+    glEnable(GL_MULTISAMPLE);
+    checkForGlErrors("multisample");
 #endif
-        glEnable(GL_BLEND);
-        checkForGlErrors("blend");
-        glDisable(GL_DEPTH_TEST);
-        checkForGlErrors("depth test");
+    glEnable(GL_BLEND);
+    checkForGlErrors("blend");
+    glDisable(GL_DEPTH_TEST);
+    checkForGlErrors("depth test");
 
-        // glewExperimental = GL_TRUE;
-        GLenum err = glewInit();
-        if (err != GLEW_OK) {
-            panic("%s\n", glewGetErrorString(err));
-        }
-        checkForGlErrors("glew init");
+    // glewExperimental = GL_TRUE;
+    GLenum err = glewInit();
+    if (err != GLEW_OK) {
+        panic("%s\n", glewGetErrorString(err));
+    }
+    checkForGlErrors("glew init");
 
 #if KRIT_ENABLE_TOOLS
-        ImGui::CreateContext();
-        ImGui_ImplSDL2_InitForOpenGL(window, glContext);
-        ImGui_ImplOpenGL3_Init(nullptr);
-        checkForGlErrors("imgui init");
+    ImGui::CreateContext();
+    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+    ImGui_ImplOpenGL3_Init(nullptr);
+    checkForGlErrors("imgui init");
 
-        auto &io = ImGui::GetIO();
+    auto &io = ImGui::GetIO();
 
-        unsigned char *pixels = nullptr;
-        int width, height;
-        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
+    unsigned char *pixels = nullptr;
+    int width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
-        glActiveTexture(GL_TEXTURE0);
-        checkForGlErrors("imgui active texture");
-        glGenTextures(1, &Editor::imguiTextureId);
-        checkForGlErrors("imgui gen textures");
-        glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
-        checkForGlErrors("imgui bind texture");
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, pixels);
-        checkForGlErrors("imgui texImage2D");
+    glActiveTexture(GL_TEXTURE0);
+    checkForGlErrors("imgui active texture");
+    glGenTextures(1, &Editor::imguiTextureId);
+    checkForGlErrors("imgui gen textures");
+    glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
+    checkForGlErrors("imgui bind texture");
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                    GL_UNSIGNED_BYTE, pixels);
+    checkForGlErrors("imgui texImage2D");
 
-        io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
-        Editor::imguiInitialized = true;
+    io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
+    Editor::imguiInitialized = true;
 #endif
 
-        glGenVertexArrays(1, &this->vao);
-        glBindVertexArray(this->vao);
-        glGenBuffers(2, this->renderBuffer);
-        glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices,
-                     GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        checkForGlErrors("renderer init");
-        initialized = true;
-    }
+    glGenVertexArrays(1, &this->vao);
+    glBindVertexArray(this->vao);
+    glGenBuffers(2, this->renderBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices,
+                    GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    checkForGlErrors("renderer init");
 }
 
 template <>
@@ -371,7 +367,9 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 }
 
 void Renderer::renderFrame(RenderContext &ctx) {
-    ctx.app->getWindowSize(&this->width, &this->height);
+    auto &size = ctx.window->size();
+    this->width = size.x;
+    this->height = size.y;
     ortho(0, this->width, this->height, 0);
     glViewport(0, 0, this->width, this->height);
     glClearColor(0, 0, 0, 1);
@@ -410,7 +408,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
 
     this->drawCommandBuffer.clear();
 
-    SDL_GL_SwapWindow(ctx.app->window);
+    SDL_GL_SwapWindow(ctx.window->window);
     // printf("triangles: %i\n", this->triangleCount);
 }
 

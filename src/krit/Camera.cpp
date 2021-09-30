@@ -1,6 +1,7 @@
 #include "krit/Camera.h"
 
 #include "krit/UpdateContext.h"
+#include "krit/Window.h"
 #include "krit/math/Matrix.h"
 
 namespace krit {
@@ -55,6 +56,7 @@ Matrix &Camera::transformMatrix(Matrix &m) {
 }
 
 void Camera::update(UpdateContext &context) {
+    auto &windowSize = context.window->size();
     switch (scaleMode) {
         case NoScale: {
             // nothing to do
@@ -62,42 +64,39 @@ void Camera::update(UpdateContext &context) {
         }
         case Stretch: {
             // stretch to show the camera's logical size
-            scale.setTo(context.window->width() / dimensions.width(),
-                        context.window->height() / dimensions.height());
+            scale.setTo(windowSize.width() / windowSize.width(),
+                        windowSize.height() / windowSize.height());
             break;
         }
         case KeepWidth: {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleHeight = context.window->height() * dimensions.width() /
-                                context.window->width();
+            int visibleHeight =
+                windowSize.height() * dimensions.width() / windowSize.width();
             if (visibleHeight < min) {
                 visibleHeight = min;
             } else if (visibleHeight > max) {
                 visibleHeight = max;
             }
-            scale.setTo(static_cast<float>(context.window->width()) /
-                            dimensions.width(),
-                        static_cast<float>(context.window->height()) /
-                            visibleHeight);
+            scale.setTo(
+                static_cast<float>(windowSize.width()) / dimensions.width(),
+                static_cast<float>(windowSize.height()) / visibleHeight);
             offset.y =
-                (context.window->height() / scale.y - dimensions.height()) / 2;
+                (windowSize.height() / scale.y - dimensions.height()) / 2;
             break;
         }
         case KeepHeight: {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleWidth = context.window->width() * dimensions.height() /
-                               context.window->height();
+            int visibleWidth =
+                windowSize.width() * dimensions.height() / windowSize.height();
             if (visibleWidth < min) {
                 visibleWidth = min;
             } else if (visibleWidth > max) {
                 visibleWidth = max;
             }
-            scale.setTo(static_cast<float>(context.window->width()) /
-                            visibleWidth,
-                        static_cast<float>(context.window->height()) /
+            scale.setTo(static_cast<float>(windowSize.width()) / visibleWidth,
+                        static_cast<float>(windowSize.height()) /
                             dimensions.height());
-            offset.x =
-                (context.window->width() / scale.x - dimensions.width()) / 2;
+            offset.x = (windowSize.width() / scale.x - dimensions.width()) / 2;
             break;
         }
     }

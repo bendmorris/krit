@@ -64,11 +64,7 @@ struct TextOptions {
         this->font = font;
         return *this;
     }
-    TextOptions &setFont(const std::string &name) {
-        this->font = Font::getFont(name);
-        assert(this->font);
-        return *this;
-    }
+    TextOptions &setFont(const std::string &name);
     TextOptions &setSize(int size) {
         this->size = size;
         return *this;

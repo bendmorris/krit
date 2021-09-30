@@ -1,6 +1,7 @@
 #ifndef KRIT_RENDER_RENDERER
 #define KRIT_RENDER_RENDERER
 
+#include "krit/Window.h"
 #include "krit/math/Rectangle.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawCall.h"
@@ -23,9 +24,8 @@ struct Renderer {
 
     DrawCommandBuffer drawCommandBuffer;
 
-    Renderer();
+    Renderer(Window &window);
 
-    void init(SDL_Window *window);
     void renderFrame(RenderContext &ctx);
 
     SpriteShader *getDefaultTextureShader();
@@ -39,8 +39,8 @@ private:
     GLuint materialBuffer;
     RenderFloat *bufferPtr = nullptr;
     unsigned int triangleCount;
-    bool initialized = false;
     std::vector<Rectangle> clipStack;
+    Window &window;
 
     int width = 0;
     int height = 0;

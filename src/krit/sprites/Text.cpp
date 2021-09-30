@@ -399,7 +399,8 @@ struct TextParser {
                     txt, TextOpcode(CharDelay, TextOpcodeData(tag.charDelay)));
             }
             if (tag.border) {
-                this->addOp(txt, TextOpcode(close ? DisableBorder : EnableBorder));
+                this->addOp(txt,
+                            TextOpcode(close ? DisableBorder : EnableBorder));
             }
         }
     }
@@ -503,6 +504,12 @@ struct TextParser {
 
 TextRenderStack TextParser::stack;
 
+TextOptions &TextOptions::setFont(const std::string &name) {
+    this->font = App::ctx.engine->fonts.getFont(name);
+    assert(this->font);
+    return *this;
+}
+
 Text::Text(const TextOptions &options) : TextOptions(options) { assert(font); }
 
 Text::~Text() {
@@ -534,8 +541,9 @@ void Text::resize(float w, float h) {
 }
 
 void Text::render(RenderContext &ctx) {
-    // if (borderThickness > 0 && borderColor.a > 0 && (this->border || hasBorderTags)) {
-        __render(ctx, true);
+    // if (borderThickness > 0 && borderColor.a > 0 && (this->border ||
+    // hasBorderTags)) {
+    __render(ctx, true);
     // }
     __render(ctx, false);
 }
@@ -642,7 +650,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
                     GlyphData &glyph =
-                        font->getGlyph(_info.codepoint, std::round(size));
+                        ctx.engine->fonts.getGlyph(font, _info.codepoint, std::round(size));
 
                     GlyphRenderData renderData(
                         _info.codepoint, color,
@@ -681,22 +689,29 @@ void Text::__render(RenderContext &ctx, bool border) {
                     }
                     key.image = glyph.region.img;
                     key.blend = blendMode;
-                    key.shader = this->shader
-                                     ? this->shader
-                                     : ctx.app->renderer.getDefaultTextShader();
+                    key.shader =
+                        this->shader
+                            ? this->shader
+                            : ctx.engine->renderer.getDefaultTextShader();
                     if (border) {
                         if (_borderEnabled) {
                             float thickness = borderThickness * cameraScale;
                             key.smooth = SmoothingMode::SmoothLinear;
-                            Color borderColor(this->borderColor.r, this->borderColor.g, this->borderColor.b, this->borderColor.a * color.a);
-                            GlyphData &borderGlyph = font->getGlyph(_info.codepoint, std::round(size), std::round(thickness));
+                            Color borderColor(this->borderColor.r,
+                                              this->borderColor.g,
+                                              this->borderColor.b,
+                                              this->borderColor.a * color.a);
+                            GlyphData &borderGlyph = ctx.engine->fonts.getGlyph(
+                                font, _info.codepoint, std::round(size),
+                                std::round(thickness));
                             matrix.tx += borderGlyph.offset.x - glyph.offset.x;
                             matrix.ty -= borderGlyph.offset.y - glyph.offset.y;
-                            ctx.addRectRaw(key, borderGlyph.region.rect, matrix, borderColor);
+                            ctx.addRectRaw(key, borderGlyph.region.rect, matrix,
+                                           borderColor);
                         }
                     } else {
                         ctx.addRectRaw(key, glyph.region.rect, matrix,
-                                    renderData.color);
+                                       renderData.color);
                     }
 
                     cursor.x += _pos.x_advance;
@@ -738,5 +753,4 @@ Text &Text::setRichText(const std::string &text) {
     }
     return *this;
 }
-
 }

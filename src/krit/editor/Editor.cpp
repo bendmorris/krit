@@ -80,7 +80,7 @@ void Editor::render(krit::RenderContext &ctx) {
         ImGui::Render();
 
         // frame will be finished in the render thread
-        window = ctx.app->window;
+        window = ctx.window->window;
         ctx.drawCommandBuffer->buf.emplace_back<RenderImGui>(
             ImGui::GetDrawData());
     }

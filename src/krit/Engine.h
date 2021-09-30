@@ -3,8 +3,12 @@
 
 #include "krit/Camera.h"
 #include "krit/Sprite.h"
+#include "krit/Window.h"
 #include "krit/asset/AssetCache.h"
+#include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
+#include "krit/render/Renderer.h"
+#include "krit/sound/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
 #include <list>
@@ -53,9 +57,13 @@ struct Engine {
     RenderSignal onRender = nullptr;
     RenderSignal postRender = nullptr;
     std::list<TimedEvent> events;
-
-    InputContext input;
     std::vector<std::unique_ptr<AssetCache>> assetCaches;
+
+    Window window;
+    Renderer renderer;
+    FontManager fonts;
+    AudioBackend audio;
+    InputContext input;
 
     Color bgColor = Color::black();
 
@@ -65,7 +73,7 @@ struct Engine {
     Camera camera;
     Camera uiCamera;
 
-    Engine() { assetCaches.emplace_back(std::make_unique<AssetCache>()); }
+    Engine(KritOptions &options);
 
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
@@ -77,10 +85,10 @@ struct Engine {
     void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
 
-    void pushAssetCache() { assetCaches.emplace_back(std::make_unique<AssetCache>()); }
-    void popAssetCache() {
-        assetCaches.pop_back();
+    void pushAssetCache() {
+        assetCaches.emplace_back(std::make_unique<AssetCache>());
     }
+    void popAssetCache() { assetCaches.pop_back(); }
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 

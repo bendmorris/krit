@@ -10,6 +10,10 @@
 
 namespace krit {
 
+Engine::Engine(KritOptions &options) : window(options), renderer(window) {
+    assetCaches.emplace_back(std::make_unique<AssetCache>());
+}
+
 void Engine::fixedUpdate(UpdateContext &ctx) {
     if (this->paused) {
         return;
@@ -26,6 +30,9 @@ void Engine::update(UpdateContext &ctx) {
     if (this->paused) {
         return;
     }
+    audio.update();
+    // refresh window size
+    window.size();
     ctx.userData = this->userData;
 
     // handle setTimeout events
@@ -74,12 +81,15 @@ void Engine::update(UpdateContext &ctx) {
 void Engine::render(RenderContext &ctx) {
     ctx.userData = userData;
 
+    fonts.commit();
+
     invoke(onRender, &ctx);
 
     if (this->bgColor.a > 0) {
         DrawKey key;
-        IntRectangle windowRect(0, 0, ctx.window->width(),
-                                ctx.window->height());
+        IntDimensions &dims = ctx.window->size();
+        IntRectangle windowRect(0, 0, dims.width(),
+                                dims.height());
         Matrix m;
         ctx.drawCommandBuffer->addRect(ctx, key, windowRect, m, this->bgColor);
     }
@@ -92,6 +102,9 @@ void Engine::render(RenderContext &ctx) {
     }
 
     invoke(this->postRender, &ctx);
+
+    renderer.renderFrame(ctx);
+    fonts.flush();
 }
 
 void Engine::setTimeout(CustomSignal s, float delay, void *userData) {

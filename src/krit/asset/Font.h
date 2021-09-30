@@ -77,30 +77,34 @@ struct GlyphCache {
     void commitChanges();
 };
 
-struct Font {
-    static GlyphCache glyphCache, nextGlyphCache;
+struct FontManager {
+    GlyphCache glyphCache, nextGlyphCache;
+    std::unordered_map<std::string, Font *> fontRegistry;
 
-    static void init();
-    static void shutdown();
-    static void commit();
-    static void flush();
+    FontManager();
+    ~FontManager();
 
-    static std::unordered_map<std::string, Font *> fontRegistry;
-    static Font *getFont(const std::string &name) {
+    void commit();
+    void flush();
+    void registerFont(const std::string &name, const std::string &path);
+    void registerFont(const std::string &name, AssetId id);
+
+    Font *getFont(const std::string &name) {
         Font *font = fontRegistry[name];
         if (!font) {
             panic("missing font: %s\n", name.c_str());
         }
         return font;
     }
-    static void registerFont(const std::string &name, const std::string &path);
-    static void registerFont(const std::string &name, AssetId id);
 
+    GlyphData &getGlyph(Font *font, char32_t glyphId, unsigned int size, unsigned int border = 0);
+};
+
+struct Font {
     Font(const std::string &path, const char *fontData, size_t fontDataLen);
     ~Font();
 
     std::string path;
-    GlyphData &getGlyph(char32_t glyphId, unsigned int size, unsigned int border = 0);
     void shape(hb_buffer_t *buf, size_t pointSize);
     void commitChanges();
     void flushCache();

@@ -6,10 +6,11 @@
 namespace krit {
 
 struct App;
+struct AudioBackend;
 struct Camera;
 struct Engine;
 struct InputContext;
-struct AudioBackend;
+struct Window;
 
 struct UpdateContext {
     float elapsed;
@@ -17,9 +18,9 @@ struct UpdateContext {
     unsigned int frameId;
     App *app = nullptr;
     Engine *engine = nullptr;
-    IntDimensions *window = nullptr;
     Camera *camera = nullptr;
     AudioBackend *audio = nullptr;
+    Window *window = nullptr;
     void *userData = nullptr;
 
     UpdateContext() {}

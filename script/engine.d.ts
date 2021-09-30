@@ -34,12 +34,22 @@ interface ActionEvent {
 
 /**
  * @namespace krit
+ * @import krit/Window.h
+ */
+interface Window {
+    size(): IntDimensions;
+    width(): integer;
+    height(): integer;
+}
+
+/**
+ * @namespace krit
  * @import krit/UpdateContext.h
  */
 interface UpdateContext {
     /** @readonly */ elapsed: number;
     camera: Pointer<Camera>;
-    window: Pointer<IntDimensions>;
+    window: Pointer<Window>;
     engine: Pointer<Engine>;
     audio: Pointer<AudioBackend>;
 }

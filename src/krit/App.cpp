@@ -31,51 +31,29 @@
 namespace krit {
 struct UpdateContext;
 
-static App *current;
 RenderContext App::ctx;
 
-void sigintHandler(int sig_num) { current->quit(); }
+void sigintHandler(int sig_num) { App::ctx.app->quit(); }
 
 App::App(KritOptions &options)
-    : dimensions(options.width, options.height),
-      fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight),
-      framerate(options.framerate), fixedFramerate(options.fixedFramerate),
-      startFullscreen(options.fullscreen) {}
+    : engine(options), framerate(options.framerate),
+      fixedFramerate(options.fixedFramerate) {}
 
 #ifdef __EMSCRIPTEN__
-static void __doFrame(void *app) {
-    ((App*)app)->doFrame();
-}
+static void __doFrame(void *app) { ((App *)app)->doFrame(); }
 #endif
 
 void App::run() {
     if (ctx.app) {
         panic("can only have a single App running at once");
     }
-    current = this;
 
-    #ifndef __EMSCRIPTEN
+#ifndef __EMSCRIPTEN
     std::signal(SIGINT, sigintHandler);
-    #endif
-
-    // freetype
-    Font::init();
-
-    // SDL
-    SDL_Init(SDL_INIT_VIDEO);
+#endif
 
     // SDL_Image
     IMG_Init(IMG_INIT_PNG);
-
-    window = SDL_CreateWindow(
-        title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        dimensions.width(), dimensions.height(),
-        SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (!window) {
-        panic(SDL_GetError());
-    }
-
-    surface = SDL_GetWindowSurface(window);
 
     frameDelta = 1.0 / fixedFramerate;
     frameDelta2 = 1.0 / (fixedFramerate + 1);
@@ -84,10 +62,10 @@ void App::run() {
     // phase
     ctx.app = this;
     ctx.engine = &engine;
-    ctx.window = &dimensions;
+    ctx.window = &engine.window;
     ctx.camera = &engine.camera;
-    ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
-    ctx.audio = &audio;
+    ctx.drawCommandBuffer = &engine.renderer.drawCommandBuffer;
+    ctx.audio = &engine.audio;
     ctx.userData = engine.userData;
 
     UpdateContext *update = &ctx;
@@ -98,28 +76,17 @@ void App::run() {
 
     taskManager = new TaskManager(ctx, 3);
 
-    if (startFullscreen) {
-        this->setFullScreen(true);
-    }
-
     // generate an initial MouseMotion event; without this, SDL will return an
     // invalid initial mouse position
-    int x, y, wx, wy;
-    SDL_GetGlobalMouseState(&x, &y);
-    SDL_GetWindowPosition(this->window, &wx, &wy);
-    SDL_WarpMouseInWindow(this->window, x - wx, y - wy);
 
     invoke(engine.onBegin, update);
 
-    #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(__doFrame, this, 0, 0);
-    #endif
-
-    renderer.init(window);
-    checkForGlErrors("renderer init");
+#endif
 
     running = true;
-    #ifndef __EMSCRIPTEN__
+#ifndef __EMSCRIPTEN__
     while (running) {
         if (!doFrame()) {
             break;
@@ -127,12 +94,11 @@ void App::run() {
     }
 
     cleanup();
-    #endif
+#endif
 }
 
 void App::cleanup() {
     TaskManager::instance->killed = true;
-    Font::shutdown();
 }
 
 bool App::doFrame() {
@@ -142,9 +108,9 @@ bool App::doFrame() {
     // do {
     frameFinish = clock.now();
     elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
-                    frameFinish - frameStart)
-                    .count() /
-                1000000.0 * engine.speed;
+                  frameFinish - frameStart)
+                  .count() /
+              1000000.0 * engine.speed;
     // } while (lockFramerate && elapsed < frameDelta2);
     // if (1.0 / elapsed < 50) {
     //     printf("%.2f\n", 1.0 / elapsed);
@@ -177,7 +143,6 @@ bool App::doFrame() {
     }
 
     ctx.elapsed = elapsed;
-    audio.update();
     engine.update(ctx);
     if (engine.finished) {
         quit();
@@ -185,11 +150,7 @@ bool App::doFrame() {
     }
     frameStart = frameFinish;
 
-    Font::commit();
     engine.render(ctx);
-    renderer.renderFrame(ctx);
-
-    Font::flush();
 
     return true;
 }
@@ -225,12 +186,6 @@ void App::handleEvents() {
             }
             case SDL_WINDOWEVENT: {
                 switch (event.window.event) {
-                    case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                        // resize
-                        int w = event.window.data1, h = event.window.data2;
-                        dimensions.setTo(w, h);
-                        break;
-                    }
                     case SDL_WINDOWEVENT_ENTER: {
                         engine.input.registerMouseOver(true);
                         break;
@@ -301,24 +256,6 @@ void App::handleEvents() {
         SDL_GetMouseState(&mouseX, &mouseY);
         engine.input.registerMousePos(mouseX, mouseY);
     }
-}
-
-void App::setFullScreen(bool full) {
-    if ((this->full = full)) {
-        SDL_DisplayMode mode;
-        SDL_GetDesktopDisplayMode(0, &mode);
-        if (fullScreenDimensions.width() > 0 &&
-            fullScreenDimensions.height() > 0) {
-            mode.w = fullScreenDimensions.width();
-            mode.h = fullScreenDimensions.height();
-        }
-        SDL_SetWindowDisplayMode(this->window, &mode);
-        SDL_SetWindowFullscreen(this->window, SDL_WINDOW_FULLSCREEN);
-    } else {
-        SDL_SetWindowFullscreen(this->window, 0);
-    }
-    int x = this->dimensions.width() / 2, y = this->dimensions.height() / 2;
-    SDL_WarpMouseInWindow(this->window, x, y);
 }
 
 }

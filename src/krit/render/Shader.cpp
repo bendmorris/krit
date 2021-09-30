@@ -159,7 +159,8 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 if (uniformName == "uTime") {
                     glUniform1f(i, ctx.engine->elapsed);
                 } else if (uniformName == "uResolution") {
-                    glUniform2f(i, ctx.window->x, ctx.window->y);
+                    IntDimensions &size = ctx.window->size();
+                    glUniform2f(i, size.x, size.y);
                 }
                 break;
             }

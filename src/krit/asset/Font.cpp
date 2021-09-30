@@ -24,8 +24,6 @@ namespace krit {
 
 static FT_Stroker stroker;
 
-GlyphCache Font::glyphCache, Font::nextGlyphCache;
-
 template <> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
     int length;
     char *content = IoRead::read(info.path, &length);
@@ -36,9 +34,8 @@ template <> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
 template <> void AssetLoader<Font>::unloadAsset(Font *font) { delete font; }
 
 static FT_Library ftLibrary;
-std::unordered_map<std::string, Font *> Font::fontRegistry;
 
-void Font::init() {
+FontManager::FontManager() {
     int error = FT_Init_FreeType(&ftLibrary);
     if (error) {
         panic("failed to initialize freetype: %i\n", error);
@@ -46,9 +43,12 @@ void Font::init() {
     FT_Stroker_New(ftLibrary, &stroker);
 }
 
-void Font::shutdown() { FT_Done_FreeType(ftLibrary); }
+FontManager::~FontManager() {
+    FT_Done_FreeType(ftLibrary);
+    ftLibrary = nullptr;
+}
 
-void Font::commit() {
+void FontManager::commit() {
     if (glyphCache.img) {
         glyphCache.commitChanges();
     }
@@ -57,19 +57,39 @@ void Font::commit() {
     }
 }
 
-void Font::flush() {
+void FontManager::flush() {
     if (nextGlyphCache.img) {
         glyphCache = std::move(nextGlyphCache);
         nextGlyphCache = GlyphCache();
     }
 }
 
-void Font::registerFont(const std::string &name, AssetId id) {
+void FontManager::registerFont(const std::string &name, AssetId id) {
     fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byId(id));
 }
 
-void Font::registerFont(const std::string &name, const std::string &path) {
+void FontManager::registerFont(const std::string &name,
+                               const std::string &path) {
     fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byPath(path));
+}
+
+GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,
+                                 unsigned int size, unsigned int border) {
+    if (!nextGlyphCache.img) {
+        if (!glyphCache.img) {
+            glyphCache.createTexture();
+        }
+        GlyphData *found = glyphCache.getGlyph(font, codePoint, size, border);
+        if (found) {
+            return *found;
+        }
+        nextGlyphCache.createTexture();
+    }
+    GlyphData *found = nextGlyphCache.getGlyph(font, codePoint, size, border);
+    if (!found) {
+        panic("ran out of space in backup texture");
+    }
+    return *found;
 }
 
 Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
@@ -90,7 +110,7 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
 }
 
 Font::~Font() {
-    IoRead::free((char*)fontData);
+    IoRead::free((char *)fontData);
     FT_Done_Face((FT_Face)ftFace);
     hb_font_destroy(font);
     hb_face_destroy(face);
@@ -99,25 +119,6 @@ Font::~Font() {
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_font_set_ppem(font, pointSize, pointSize);
     hb_shape(font, buf, nullptr, 0);
-}
-
-GlyphData &Font::getGlyph(char32_t codePoint, unsigned int size,
-                          unsigned int border) {
-    if (!nextGlyphCache.img) {
-        if (!glyphCache.img) {
-            glyphCache.createTexture();
-        }
-        GlyphData *found = glyphCache.getGlyph(this, codePoint, size, border);
-        if (found) {
-            return *found;
-        }
-        nextGlyphCache.createTexture();
-    }
-    GlyphData *found = nextGlyphCache.getGlyph(this, codePoint, size, border);
-    if (!found) {
-        panic("ran out of space in backup texture");
-    }
-    return *found;
 }
 
 GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
