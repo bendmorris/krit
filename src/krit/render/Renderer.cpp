@@ -142,7 +142,7 @@ static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
                                     -1.0, 1.0,  0.0, 1.0, 1.0,  -1.0, 1.0, 0.0,
                                     1.0,  1.0,  1.0, 1.0, -1.0, 1.0,  0.0, 1.0};
 
-Renderer::Renderer(Window &_window): window(_window) {
+Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
 // SDL_GL
 #ifndef __EMSCRIPTEN__
@@ -207,7 +207,7 @@ Renderer::Renderer(Window &_window): window(_window) {
     glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
     checkForGlErrors("imgui bind texture");
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                    GL_UNSIGNED_BYTE, pixels);
+                 GL_UNSIGNED_BYTE, pixels);
     checkForGlErrors("imgui texImage2D");
 
     io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
@@ -219,7 +219,7 @@ Renderer::Renderer(Window &_window): window(_window) {
     glGenBuffers(2, this->renderBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices,
-                    GL_STATIC_DRAW);
+                 GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkForGlErrors("renderer init");
 }

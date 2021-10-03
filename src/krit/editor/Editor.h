@@ -19,6 +19,7 @@ struct ImageData;
 struct RenderContext;
 
 struct DevTool {
+    virtual ~DevTool() {}
     virtual void draw(krit::RenderContext &ctx) {}
 };
 

@@ -35,12 +35,9 @@ interface ActionEvent {
 /**
  * @namespace krit
  * @import krit/Window.h
+ * @pointerOnly
  */
-interface Window {
-    size(): IntDimensions;
-    width(): integer;
-    height(): integer;
-}
+interface Window extends IntDimensions {}
 
 /**
  * @namespace krit

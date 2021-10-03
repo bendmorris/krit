@@ -1,5 +1,4 @@
-R"(
-#version 330
+R"(#version 330
 #ifdef GLES
 precision mediump float;
 #endif
