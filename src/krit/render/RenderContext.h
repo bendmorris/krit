@@ -3,6 +3,7 @@
 
 #include "krit/Camera.h"
 #include "krit/UpdateContext.h"
+#include "krit/Window.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
 #include "krit/math/Rectangle.h"
@@ -20,6 +21,11 @@ struct RenderContext : public UpdateContext {
     bool debugDraw = false;
 
     RenderContext() {}
+
+    IntDimensions size();
+
+    int width() { return size().x; }
+    int height() { return size().y; }
 
     void pushClip(Rectangle rect);
     void popClip();

@@ -16,8 +16,8 @@
 #include <vector>
 
 namespace krit {
-struct RenderContext;
 struct SpriteShader;
+struct BaseFrameBuffer;
 
 struct Renderer {
     SDL_GLContext glContext;
@@ -41,6 +41,7 @@ private:
     unsigned int triangleCount;
     std::vector<Rectangle> clipStack;
     Window &window;
+    BaseFrameBuffer *currentRenderTarget = nullptr;
 
     int width = 0;
     int height = 0;
@@ -48,6 +49,7 @@ private:
     template <size_t, typename T> void drawCall(RenderContext &ctx, T &);
     void setSmoothingMode(SmoothingMode mode);
     void setBlendMode(BlendMode mode);
+    void setSize(RenderContext &ctx);
 };
 
 }

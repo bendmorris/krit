@@ -1,11 +1,21 @@
 #include "krit/render/RenderContext.h"
-
 #include "krit/render/DrawCommand.h"
 
 namespace krit {
 
 struct Matrix;
 struct DrawKey;
+
+IntDimensions RenderContext::size() {
+    if (drawCommandBuffer->currentRenderTarget) {
+        IntDimensions d(drawCommandBuffer->currentRenderTarget->currentSize);
+        d.x *= drawCommandBuffer->currentRenderTarget->scale.x;
+        d.y *= drawCommandBuffer->currentRenderTarget->scale.y;
+        return d;
+    } else {
+        return window->size();
+    }
+}
 
 void RenderContext::pushClip(Rectangle rect) {
     this->transformRect(rect);

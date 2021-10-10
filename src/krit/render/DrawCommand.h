@@ -37,6 +37,7 @@ struct DrawCommandBuffer {
     CommandBuffer<DrawCall, Rectangle, char, BaseFrameBuffer *, SceneShader *,
                   Color, ImDrawData *>
         buf;
+    BaseFrameBuffer *currentRenderTarget = nullptr;
 
     DrawCommandBuffer() {
         triangles.reserve(0x10000);
@@ -55,6 +56,7 @@ struct DrawCommandBuffer {
     void clear() {
         triangles.clear();
         buf.clear();
+        currentRenderTarget = nullptr;
     }
 
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
@@ -71,11 +73,14 @@ struct DrawCommandBuffer {
     void popClip() { buf.emplace_back<PopClipRect>(); }
 
     void setRenderTarget(BaseFrameBuffer *fb = nullptr) {
-        buf.emplace_back<SetRenderTarget>(fb);
+        buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb);
     }
 
+    void clearColor() { buf.emplace_back<ClearColor>(Color(0, 0, 0, 0)); }
     void clearColor(const Color &color) { buf.emplace_back<ClearColor>(color); }
-    void clearColor(float r, float g, float b, float a) { buf.emplace_back<ClearColor>(Color(r, g, b, a)); }
+    void clearColor(float r, float g, float b, float a) {
+        buf.emplace_back<ClearColor>(Color(r, g, b, a));
+    }
 
     void drawSceneShader(SceneShader *shader) {
         buf.emplace_back<DrawSceneShader>(shader);

@@ -9,7 +9,7 @@ enum BlendMode {
     Subtract,
     Multiply,
     BlendScreen,
-    BlendModeCount,
+    Replace,
 };
 
 }

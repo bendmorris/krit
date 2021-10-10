@@ -3,12 +3,14 @@
 
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
+#include "krit/math/ScaleFactor.h"
 #include <cstddef>
 
 namespace krit {
 
 struct BaseFrameBuffer {
     GLuint frameBuffer = 0;
+    ScaleFactor scale;
     IntDimensions currentSize, requestedSize;
 
     BaseFrameBuffer(int width, int height) : requestedSize(width, height) {}

@@ -87,6 +87,11 @@ void Renderer::setBlendMode(BlendMode mode) {
             glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
             break;
         }
+        case Replace: {
+            glBlendEquation(GL_FUNC_ADD);
+            glBlendFunc(GL_ONE, GL_ZERO);
+            break;
+        }
         default: {
             assert(false);
         }
@@ -258,6 +263,7 @@ void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer *>(
         fb->_resize();
     }
     glBindFramebuffer(GL_FRAMEBUFFER, fb ? fb->frameBuffer : 0);
+    currentRenderTarget = fb;
     checkForGlErrors("bind framebuffer");
 }
 
@@ -286,6 +292,8 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                                  DrawCall &drawCall) {
     // puts("draw");
     checkForGlErrors("drawCall");
+
+    setSize(ctx);
 
     if (drawCall.length() &&
         (!drawCall.key.image || drawCall.key.image->texture)) {
@@ -343,8 +351,10 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
                                                         SceneShader *&shader) {
-    glBlendEquation(GL_FUNC_ADD);
-    glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+    setSize(ctx);
+    // glBlendEquation(GL_FUNC_ADD);
+    // glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE);
+    setBlendMode(shader->blend);
 
     shader->bind(ctx);
     if (shader->matrixIndex > -1) {
@@ -367,11 +377,9 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 }
 
 void Renderer::renderFrame(RenderContext &ctx) {
-    auto &size = ctx.window->size();
-    this->width = size.x;
-    this->height = size.y;
-    ortho(0, this->width, this->height, 0);
-    glViewport(0, 0, this->width, this->height);
+    this->currentRenderTarget = nullptr;
+
+    setSize(ctx);
     glClearColor(0, 0, 0, 1);
     glClear(GL_COLOR_BUFFER_BIT);
     this->triangleCount = 0;
@@ -409,7 +417,19 @@ void Renderer::renderFrame(RenderContext &ctx) {
     this->drawCommandBuffer.clear();
 
     SDL_GL_SwapWindow(ctx.window->window);
+    this->currentRenderTarget = nullptr;
+
     // printf("triangles: %i\n", this->triangleCount);
+}
+
+void Renderer::setSize(RenderContext &ctx) {
+    auto &size = currentRenderTarget ? currentRenderTarget->currentSize
+                                     : ctx.window->size();
+    ScaleFactor scale = currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
+    width = size.x * scale.x;
+    height = size.y * scale.y;
+    ortho(0, width, height, 0);
+    glViewport(0, 0, width / scale.x, height / scale.y);
 }
 
 }

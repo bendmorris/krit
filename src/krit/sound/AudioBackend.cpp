@@ -4,6 +4,7 @@
 #include "krit/sound/SoundData.h"
 #include "krit/utils/Log.h"
 #include <sndfile.h>
+#include <AL/alext.h>
 
 namespace krit {
 
@@ -165,7 +166,8 @@ AudioStream *AudioBackend::playMusic(MusicData *music) {
     stream.clear();
     stream.data = music;
     if (!stream.ringBuffer) {
-        stream.ringBuffer = std::unique_ptr<char[]>(new char[STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS]);
+        stream.ringBuffer = std::unique_ptr<char[]>(
+            new char[STREAM_BUFFER_SIZE * AudioStream::NUM_BUFFERS]);
     }
     stream.source = getSource();
     if (!stream.source) {
@@ -232,13 +234,15 @@ void AudioStream::feed(bool initial) {
     if (!data || !data->channels) {
         return;
     }
-    int toRead = STREAM_BUFFER_SIZE / (data->channels * 2);
-    int read = sf_read_short(
-        data->sndFile, (int16_t *)(&ringBuffer[STREAM_BUFFER_SIZE * bufferPtr]),
+    int toRead = STREAM_BUFFER_SIZE / (data->channels * 4);
+    memset(&ringBuffer[STREAM_BUFFER_SIZE * bufferPtr], 0, STREAM_BUFFER_SIZE);
+    int read = sf_read_float(
+        data->sndFile, (float *)(&ringBuffer[STREAM_BUFFER_SIZE * bufferPtr]),
         toRead);
     if (read < toRead) {
         sf_seek(data->sndFile, 0, SEEK_SET);
-        // FIXME: slightly off; should only set samplesPlayed when this queued buffer starts
+        // FIXME: slightly off; should only set samplesPlayed when this queued
+        // buffer starts
         samplesPlayed = 0;
     }
     ALuint buffer;
@@ -248,8 +252,8 @@ void AudioStream::feed(bool initial) {
         alSourceUnqueueBuffers(source->source, 1, &buffer);
         samplesPlayed += read / data->channels;
     }
-    alBufferData(buffer, data->format,
-                 &ringBuffer[STREAM_BUFFER_SIZE * bufferPtr], read * 2,
+    alBufferData(buffer, AL_FORMAT_STEREO_FLOAT32,
+                 &ringBuffer[STREAM_BUFFER_SIZE * bufferPtr], read * 4,
                  data->sampleRate);
     if (!initial) {
         alSourceQueueBuffers(source->source, 1, &buffer);
@@ -258,9 +262,7 @@ void AudioStream::feed(bool initial) {
     bufferPtr %= NUM_BUFFERS;
 }
 
-int AudioStream::sampleRate() {
-    return data ? data->sampleRate : 0;
-}
+int AudioStream::sampleRate() { return data ? data->sampleRate : 0; }
 
 float AudioStream::currentPlayTime() {
     int sampleOffset;

@@ -34,6 +34,7 @@ declare class SceneShader {}
  * @import krit/render/DrawCommand.h
  */
 declare class DrawCommandBuffer {
+    currentRenderTarget: Pointer<BaseFrameBuffer>;
     setRenderTarget(fb: Pointer<BaseFrameBuffer>): void;
     drawSceneShader(shader: Pointer<SceneShader>): void;
     clearColor(r: float, g: float, b: float, a: float): void;
