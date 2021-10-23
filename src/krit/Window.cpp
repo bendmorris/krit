@@ -11,15 +11,18 @@ namespace krit {
 
 Window::Window(KritOptions &options)
     : fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight) {
+    SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     SDL_Init(SDL_INIT_VIDEO);
 
-    window = SDL_CreateWindow(
-        options.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        options.width, options.height,
-        SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    window =
+        SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_UNDEFINED,
+                         SDL_WINDOWPOS_UNDEFINED, options.width, options.height,
+                         SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL |
+                             SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!window) {
         panic(SDL_GetError());
     }
+    SDL_SetWindowSize(window, options.width, options.height);
 
     surface = SDL_GetWindowSurface(window);
 

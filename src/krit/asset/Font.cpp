@@ -2,13 +2,12 @@
 #include "harfbuzz/hb.h"
 #include "krit/Assets.h"
 #include "krit/asset/AssetInfo.h"
-#include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
+#include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include "krit/utils/Panic.h"
-#include <GL/glew.h>
 #include <cstring>
 #include <freetype2/freetype/config/ftheader.h>
 #include <freetype2/freetype/ftimage.h>
@@ -21,6 +20,12 @@
 #include FT_FREETYPE_H
 
 namespace krit {
+
+#ifndef __EMSCRIPTEN__
+static const int BYTES_PER_PIXEL = 1;
+#else
+static const int BYTES_PER_PIXEL = 4;
+#endif
 
 static FT_Stroker stroker;
 
@@ -65,12 +70,16 @@ void FontManager::flush() {
 }
 
 void FontManager::registerFont(const std::string &name, AssetId id) {
-    fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byId(id));
+    fontRegistry.emplace(
+        std::piecewise_construct, std::forward_as_tuple(name),
+        std::forward_as_tuple(AssetLoader<Font>::loadAsset(Assets::byId(id))));
 }
 
 void FontManager::registerFont(const std::string &name,
                                const std::string &path) {
-    fontRegistry[name] = AssetLoader<Font>::loadAsset(Assets::byPath(path));
+    fontRegistry.emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                         std::forward_as_tuple(AssetLoader<Font>::loadAsset(
+                             Assets::byPath(path))));
 }
 
 GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,
@@ -110,10 +119,18 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
 }
 
 Font::~Font() {
-    IoRead::free((char *)fontData);
-    FT_Done_Face((FT_Face)ftFace);
-    hb_font_destroy(font);
-    hb_face_destroy(face);
+    // if (ftFace) {
+    //     FT_Done_Face((FT_Face)ftFace);
+    // }
+    if (font) {
+        hb_font_destroy(font);
+    }
+    if (face) {
+        hb_face_destroy(face);
+    }
+    if (fontData) {
+        IoRead::free((char *)fontData);
+    }
 }
 
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
@@ -197,8 +214,8 @@ void GlyphCache::createTexture() {
     glGenTextures(1, &textureId);
     img = std::make_shared<ImageData>(
         textureId, IntDimensions(CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE));
-    pixelData =
-        std::make_unique<uint8_t[]>(CACHE_TEXTURE_SIZE * CACHE_TEXTURE_SIZE);
+    pixelData = std::make_unique<uint8_t[]>(
+        CACHE_TEXTURE_SIZE * CACHE_TEXTURE_SIZE * BYTES_PER_PIXEL);
 }
 
 void GlyphCache::commitChanges() {
@@ -222,19 +239,38 @@ void GlyphCache::commitChanges() {
             FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
             FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
             for (unsigned int i = 0; i < bitmap->bitmap.rows; ++i) {
+#ifndef __EMSCRIPTEN__
                 memcpy(
                     &pixelData[(glyphData.region.y() + i) * CACHE_TEXTURE_SIZE +
                                glyphData.region.x()],
                     &bitmap->bitmap.buffer[bitmap->bitmap.pitch * i],
                     bitmap->bitmap.width);
+#else
+                int offset = (glyphData.region.y() + i) * CACHE_TEXTURE_SIZE +
+                             glyphData.region.x();
+                for (int j = 0; j < bitmap->bitmap.width; ++j) {
+                    pixelData[(offset + j) * BYTES_PER_PIXEL + 0] =
+
+                        bitmap->bitmap.buffer[bitmap->bitmap.pitch * i + j];
+                    pixelData[(offset + j) * BYTES_PER_PIXEL + 1] =
+                        pixelData[(offset + j) * BYTES_PER_PIXEL + 2] = 0;
+                    pixelData[(offset + j) * BYTES_PER_PIXEL + 3] = 0xff;
+                }
+#endif
             }
             FT_Done_Glyph(glyph);
         }
         // upload the texture
         glBindTexture(GL_TEXTURE_2D, img->texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, CACHE_TEXTURE_SIZE,
-                     CACHE_TEXTURE_SIZE, 0, GL_RED, GL_UNSIGNED_BYTE,
+#ifndef __EMSCRIPTEN__
+        auto mode = GL_RED;
+#else
+        auto mode = GL_RGBA;
+#endif
+        glTexImage2D(GL_TEXTURE_2D, 0, mode, CACHE_TEXTURE_SIZE,
+                     CACHE_TEXTURE_SIZE, 0, mode, GL_UNSIGNED_BYTE,
                      pixelData.get());
+        glBindTexture(GL_TEXTURE_2D, 0);
         pending.clear();
     }
 }

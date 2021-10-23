@@ -39,6 +39,7 @@ template <typename T> bool AsyncQueue<T>::pop(T *to) {
 template struct AsyncQueue<UpdateTask>;
 template struct AsyncQueue<RenderTask>;
 
+#if KRIT_ENABLE_THREADS
 void TaskManager::workerLoop() {
     while (true) {
         UpdateTask job;
@@ -51,5 +52,6 @@ void TaskManager::workerLoop() {
         }
     }
 }
+#endif
 
 }

@@ -149,16 +149,14 @@ static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
 
 Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
-// SDL_GL
-#ifndef __EMSCRIPTEN__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+#ifndef __EMSCRIPTEN__
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
@@ -186,12 +184,14 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glDisable(GL_DEPTH_TEST);
     checkForGlErrors("depth test");
 
-    // glewExperimental = GL_TRUE;
+#if KRIT_USE_GLEW
+    glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
         panic("%s\n", glewGetErrorString(err));
     }
     checkForGlErrors("glew init");
+#endif
 
 #if KRIT_ENABLE_TOOLS
     ImGui::CreateContext();
@@ -214,18 +214,21 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, pixels);
     checkForGlErrors("imgui texImage2D");
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
     Editor::imguiInitialized = true;
 #endif
 
+#ifndef __EMSCRIPTEN__
     glGenVertexArrays(1, &this->vao);
     glBindVertexArray(this->vao);
+#endif
     glGenBuffers(2, this->renderBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
     glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices,
                  GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    // glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkForGlErrors("renderer init");
 }
 
@@ -259,9 +262,6 @@ template <>
 void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer *>(
     RenderContext &ctx, BaseFrameBuffer *&fb) {
     // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
-    if (fb) {
-        fb->_resize();
-    }
     glBindFramebuffer(GL_FRAMEBUFFER, fb ? fb->frameBuffer : 0);
     currentRenderTarget = fb;
     checkForGlErrors("bind framebuffer");
@@ -324,7 +324,8 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 
             int dataSize =
                 drawCall.length() * shader->shader.bytesPerVertex * 3;
-            this->renderData.reserve(dataSize);
+            renderData.reserve(dataSize);
+            renderData.resize(renderData.capacity());
             glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[0]);
             checkForGlErrors("bind buffer");
             if ((RenderFloat *)this->renderData.data() != this->bufferPtr) {
@@ -344,6 +345,9 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             shader->unbind();
+            if (drawCall.key.image) {
+                glBindTexture(GL_TEXTURE_2D, 0);
+            }
         }
     }
 }
@@ -368,6 +372,7 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     setBlendMode(shader->blend);
 
     renderData.reserve(shader->shader.bytesPerVertex * 6);
+    renderData.resize(renderData.capacity());
     shader->prepare(ctx, (RenderFloat *)renderData.data());
     glDrawArrays(GL_TRIANGLES, 0, 6);
     checkForGlErrors("drawArrays");
@@ -380,7 +385,8 @@ void Renderer::renderFrame(RenderContext &ctx) {
     this->currentRenderTarget = nullptr;
 
     setSize(ctx);
-    glClearColor(0, 0, 0, 1);
+    auto &bgColor = ctx.engine->bgColor;
+    glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     this->triangleCount = 0;
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -423,9 +429,10 @@ void Renderer::renderFrame(RenderContext &ctx) {
 }
 
 void Renderer::setSize(RenderContext &ctx) {
-    auto &size = currentRenderTarget ? currentRenderTarget->currentSize
-                                     : ctx.window->size();
-    ScaleFactor scale = currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
+    auto &size =
+        currentRenderTarget ? currentRenderTarget->size : ctx.window->size();
+    ScaleFactor scale =
+        currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
     width = size.x * scale.x;
     height = size.y * scale.y;
     ortho(0, width, height, 0);

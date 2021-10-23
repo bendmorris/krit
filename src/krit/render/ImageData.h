@@ -1,5 +1,5 @@
-#ifndef KRIT_RENDER_IMAGE_DATA
-#define KRIT_RENDER_IMAGE_DATA
+#ifndef KRIT_RENDER_IMAGEDATA
+#define KRIT_RENDER_IMAGEDATA
 
 #include "krit/Math.h"
 #include "krit/render/Gl.h"
@@ -17,10 +17,13 @@ struct ImageData {
     ImageData(GLuint texture, IntDimensions dimensions)
         : texture(texture), dimensions(dimensions) {}
 
+    ImageData(uint8_t *data, size_t width, size_t height);
+
     int width() { return this->dimensions.width(); }
     int height() { return this->dimensions.height(); }
 
     ImageData() {}
+    ~ImageData();
 };
 
 }

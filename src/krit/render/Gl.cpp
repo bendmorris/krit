@@ -1,8 +1,7 @@
+#include "krit/render/Gl.h"
 #include <cstdio>
 #include <stdarg.h>
 #include <stdlib.h>
-
-#include "krit/render/Gl.h"
 
 namespace krit {
 

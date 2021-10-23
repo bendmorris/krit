@@ -4,7 +4,6 @@
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
 #include "krit/render/Uniform.h"
-#include <GL/glew.h>
 #include <cstdio>
 #include <cstdlib>
 #include <memory>
@@ -19,6 +18,7 @@ struct DrawCall;
 
 struct UniformInfo {
     std::string name;
+    GLint location;
 };
 
 struct Shader {
@@ -31,13 +31,18 @@ struct Shader {
     size_t bytesPerVertex = 0;
     std::vector<UniformInfo> uniforms;
 
-    Shader(const std::string &vertexSource, const std::string &fragmentSource)
-        : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
+    template <typename T>
+    Shader(const T &vertexSource,
+           std::shared_ptr<std::string_view> fragmentSource)
+        : vertexSource(vertexSource), fragmentSource(*fragmentSource) {}
 
-    Shader(const char *vertexSource, const char *fragmentSource)
-        : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
+    template <typename T>
+    Shader(std::shared_ptr<std::string_view> vertexSource,
+           const T &fragmentSource)
+        : vertexSource(*vertexSource), fragmentSource(fragmentSource) {}
 
-    Shader(std::string_view vertexSource, std::string_view fragmentSource)
+    template <typename T, typename U>
+    Shader(const T &vertexSource, const U &fragmentSource)
         : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
 
     Shader(std::shared_ptr<std::string_view> vertexSource,
@@ -52,9 +57,14 @@ struct Shader {
     virtual void unbind();
 };
 
+struct UniformValueInfo {
+    int location;
+    UniformValue value;
+};
+
 struct ShaderInstance {
     Shader &shader;
-    std::vector<UniformValue> uniforms;
+    std::vector<UniformValueInfo> uniforms;
 
     ShaderInstance(Shader &shader);
     ShaderInstance(Shader *shader) : ShaderInstance(*shader) {}
@@ -63,15 +73,12 @@ struct ShaderInstance {
     virtual void bind(RenderContext &ctx);
     virtual void unbind() { shader.unbind(); }
 
-    void setUniform(const std::string &name, UniformValue value) {
-        shader.init();
-        int index = shader.getUniformLocation(name);
-        uniforms[index] = value;
-    }
+    void setUniform(const std::string &name, UniformValue value);
 
     void clear() {
         for (size_t i = 0; i < uniforms.size(); ++i) {
-            uniforms[i] = UniformValue();
+            uniforms[i].location = -1;
+            uniforms[i].value = UniformValue();
         }
     }
 };

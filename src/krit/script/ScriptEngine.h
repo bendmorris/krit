@@ -220,7 +220,7 @@ struct ScriptEngine {
     friend struct ScriptFinalizer;
 
 private:
-    std::list<DelayRequest> delayPromises;
+    std::vector<DelayRequest> delayPromises;
 };
 
 template <int C>

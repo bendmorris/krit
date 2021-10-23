@@ -6,8 +6,11 @@
 
 namespace krit {
 
-// using IoRead = ZipIo;
+#ifdef __EMSCRIPTEN__
 using IoRead = FileIo;
+#else
+using IoRead = ZipIo;
+#endif
 using IoWrite = FileIo;
 
 }

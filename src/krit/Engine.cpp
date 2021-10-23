@@ -75,6 +75,8 @@ void Engine::update(UpdateContext &ctx) {
             tree.root->update(ctx);
         }
     }
+    camera.update(ctx);
+    uiCamera.update(ctx);
     invoke(postUpdate, &ctx);
 }
 
@@ -84,15 +86,6 @@ void Engine::render(RenderContext &ctx) {
     fonts.commit();
 
     invoke(onRender, &ctx);
-
-    if (this->bgColor.a > 0) {
-        DrawKey key;
-        IntDimensions &dims = ctx.window->size();
-        IntRectangle windowRect(0, 0, dims.width(),
-                                dims.height());
-        Matrix m;
-        ctx.drawCommandBuffer->addRect(ctx, key, windowRect, m, this->bgColor);
-    }
 
     for (auto &tree : trees) {
         if (tree.root) {

@@ -1,5 +1,5 @@
-R"(#version 330
-#ifdef GLES
+R"(#version 300 es
+#ifdef GL_ES
 precision mediump float;
 #endif
 // Krit text vertex shader

@@ -8,7 +8,7 @@ struct DrawKey;
 
 IntDimensions RenderContext::size() {
     if (drawCommandBuffer->currentRenderTarget) {
-        IntDimensions d(drawCommandBuffer->currentRenderTarget->currentSize);
+        IntDimensions d(drawCommandBuffer->currentRenderTarget->size);
         d.x *= drawCommandBuffer->currentRenderTarget->scale.x;
         d.y *= drawCommandBuffer->currentRenderTarget->scale.y;
         return d;

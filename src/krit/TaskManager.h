@@ -21,6 +21,7 @@ using UpdateTask = AsyncTask<UpdateContext>;
 using RenderTask = AsyncTask<RenderContext>;
 
 #if KRIT_ENABLE_THREADS
+
 template <typename T> struct AsyncQueue {
     SDL_mutex *lock;
     SDL_cond *available;
@@ -64,8 +65,8 @@ template <typename T> struct AsyncQueue {
     bool pop(T *to);
 
 private:
-    td::queue<T> queue;
-}
+    std::queue<T> queue;
+};
 
 #endif
 
@@ -113,7 +114,9 @@ struct TaskManager {
     }
 
     ~TaskManager() {
+#if KRIT_ENABLE_THREADS
         delete[] threads;
+#endif
     }
 
 #if KRIT_ENABLE_THREADS

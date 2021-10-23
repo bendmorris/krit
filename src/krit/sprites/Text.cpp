@@ -298,11 +298,11 @@ struct TextParser {
                     break;
                 }
                 default: {
-                    auto &back = word.back();
-                    if (!word.empty() && back.type == GlyphBlock &&
-                        back.data.glyphBlock.startIndex +
-                                back.data.glyphBlock.glyphs ==
+                    if (!word.empty() && word.back().type == GlyphBlock &&
+                        word.back().data.glyphBlock.startIndex +
+                                word.back().data.glyphBlock.glyphs ==
                             i) {
+                        auto &back = word.back();
                         // add this glyph to the existing opcode
                         ++back.data.glyphBlock.glyphs;
                         wordLength += _glyphPos.x_advance;
@@ -359,21 +359,21 @@ struct TextParser {
         auto found = Text::formatTags.find(tagStr);
         if (found != Text::formatTags.end()) {
             TextFormatTagOptions &tag = found->second;
-            if (tag.color.present) {
+            if (tag.color) {
                 if (close)
                     this->addOp(txt, TextOpcode(PopColor));
                 else
-                    this->addOp(
-                        txt,
-                        TextOpcode(SetColor, TextOpcodeData(tag.color.value)));
+                    this->addOp(txt,
+                                TextOpcode(SetColor,
+                                           TextOpcodeData(tag.color.value())));
             }
-            if (tag.align.present) {
+            if (tag.align) {
                 if (close)
                     this->addOp(txt, TextOpcode(PopAlign));
                 else
-                    this->addOp(
-                        txt,
-                        TextOpcode(SetAlign, TextOpcodeData(tag.align.value)));
+                    this->addOp(txt,
+                                TextOpcode(SetAlign,
+                                           TextOpcodeData(tag.align.value())));
             }
             if (tag.custom != nullptr) {
                 if (close)
@@ -649,8 +649,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                      ++i) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
-                    GlyphData &glyph =
-                        ctx.engine->fonts.getGlyph(font, _info.codepoint, std::round(size));
+                    GlyphData &glyph = ctx.engine->fonts.getGlyph(
+                        font, _info.codepoint, std::round(size));
 
                     GlyphRenderData renderData(
                         _info.codepoint, color,

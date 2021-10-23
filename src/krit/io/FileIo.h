@@ -16,7 +16,7 @@ struct FileIo {
         }
         std::streamsize size = file.tellg();
         file.seekg(0, std::ios::beg);
-        char *buffer = static_cast<char *>(malloc(size + 1));
+        char *buffer = new char[size + 1];
         file.read(buffer, size);
         buffer[size] = 0;
         if (length) {
@@ -25,7 +25,7 @@ struct FileIo {
         return buffer;
     }
 
-    static void free(char *buf) { std::free(buf); }
+    static void free(char *buf) { delete[] buf; }
 
     static bool exists(const std::string &path) {
         std::ifstream infile(path);

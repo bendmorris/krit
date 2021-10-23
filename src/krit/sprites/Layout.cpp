@@ -93,9 +93,11 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
     float width = this->width.measure(availableWidth);
     float height = this->height.measure(availableHeight);
 
-    this->dimensions.setTo(width, height);
-    if (this->sprite && this->stretch) {
-        this->sprite->resize(width, height);
+    if (width || height) {
+        this->dimensions.setTo(width, height);
+    } else if (this->sprite) {
+        auto size = this->sprite->getSize();
+        this->dimensions.setTo(size.x, size.y);
     }
 
     LayoutNode *child = this->firstChild.get(), *prevChild = nullptr;
@@ -143,6 +145,10 @@ void LayoutNode::measure(UpdateContext &ctx, LayoutNode *parent,
             dimensions.x = width;
         if (dimensions.y < height)
             dimensions.y = height;
+    }
+
+    if (sprite && stretch) {
+        sprite->resize(dimensions.x, dimensions.y);
     }
 }
 

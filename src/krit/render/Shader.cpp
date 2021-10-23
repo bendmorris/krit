@@ -35,7 +35,8 @@ void Shader::init() {
             glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(vertexShader);
-                panic("failed to compile vertex shader:\n\n%s", vertexSource.c_str());
+                panic("failed to compile vertex shader:\n\n%s",
+                      vertexSource.c_str());
             }
             checkForGlErrors("compile vertex");
         }
@@ -48,7 +49,8 @@ void Shader::init() {
             glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(fragmentShader);
-                panic("failed to compile fragment shader:\n\n%s", vertexSource.c_str());
+                panic("failed to compile fragment shader:\n\n%s",
+                      vertexSource.c_str());
             }
             checkForGlErrors("compile fragment");
         }
@@ -93,7 +95,11 @@ void Shader::init() {
         for (int i = 0; i < count; i++) {
             glGetActiveUniform(program, (GLuint)i, bufSize, &length, &size,
                                &type, name);
-            uniforms[i] = (UniformInfo){.name = std::string(name, length)};
+            GLint location = glGetUniformLocation(program, name);
+
+            uniforms[i] = (UniformInfo){.name = std::string(name, length),
+                                        .location = location};
+            // printf("%s = %i\n", name, location);
         }
         checkForGlErrors("uniform info");
     }
@@ -136,7 +142,7 @@ GLint Shader::getUniformLocation(const std::string &name) {
     this->init();
     for (size_t i = 0; i < this->uniforms.size(); ++i) {
         if (this->uniforms[i].name == name) {
-            return i;
+            return this->uniforms[i].location;
         }
     }
     return -1;
@@ -147,72 +153,110 @@ ShaderInstance::ShaderInstance(Shader &shader) : shader(shader) {
     uniforms.resize(shader.uniforms.size());
 }
 
+void ShaderInstance::setUniform(const std::string &name, UniformValue value) {
+    shader.init();
+    if (uniforms.size() < shader.uniforms.size()) {
+        uniforms.resize(shader.uniforms.size());
+    }
+    for (size_t i = 0; i < shader.uniforms.size(); ++i) {
+        if (shader.uniforms[i].name == name) {
+            uniforms[i] = (UniformValueInfo){
+                .location = shader.uniforms[i].location, .value = value};
+            break;
+        }
+    }
+}
+
 void ShaderInstance::bind(RenderContext &ctx) {
     shader.bind(ctx);
     int textureIndex = 1;
-    for (size_t i = 0; i < uniforms.size(); ++i) {
-        auto &uniform = uniforms[i];
+    for (size_t idx = 0; idx < uniforms.size(); ++idx) {
+        auto &info = uniforms[idx];
+        int i = info.location;
+        if (i < 0) {
+            continue;
+        }
+        auto &uniform = info.value;
         switch (uniform.type) {
             case UniformEmpty: {
                 // automatic uniforms
-                auto &uniformName = shader.uniforms[i].name;
+                auto &uniformName = shader.uniforms[idx].name;
+                i = shader.uniforms[idx].location;
                 if (uniformName == "uTime") {
                     glUniform1f(i, ctx.engine->elapsed);
+                    checkForGlErrors("glUniform1f");
                 } else if (uniformName == "uResolution") {
                     IntDimensions size = ctx.window->size();
                     glUniform2f(i, size.x, size.y);
+                    checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uSize") {
                     IntDimensions size = ctx.size();
                     glUniform2f(i, size.x, size.y);
+                    checkForGlErrors("glUniform2f");
+                } else if (uniformName == "uScale") {
+                    ScaleFactor &scale = ctx.camera->scale;
+                    glUniform2f(i, scale.x, scale.y);
+                    checkForGlErrors("glUniform2f");
                 }
                 break;
             }
             case UniformInt: {
                 glUniform1i(i, uniform.intValue);
+                checkForGlErrors("glUniform1i %i", uniform.intValue);
                 break;
             }
             case UniformTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
                 glBindTexture(GL_TEXTURE_2D, uniform.intValue);
+                checkForGlErrors("glBindTexture");
                 glUniform1i(i, textureIndex++);
+                checkForGlErrors("glUniform1i %i", textureIndex - 1);
                 break;
             }
             case UniformFloat: {
                 glUniform1f(i, uniform.floatValue);
+                checkForGlErrors("glUniform1f");
                 break;
             }
             case UniformVec2: {
                 glUniform2f(i, uniform.vec2Value[0], uniform.vec2Value[1]);
+                checkForGlErrors("glUniform2f");
                 break;
             }
             case UniformVec3: {
                 glUniform3f(i, uniform.vec3Value[0], uniform.vec3Value[1],
                             uniform.vec3Value[2]);
+                checkForGlErrors("glUniform3f");
                 break;
             }
             case UniformVec4: {
                 glUniform4f(i, uniform.vec4Value[0], uniform.vec4Value[1],
                             uniform.vec4Value[2], uniform.vec4Value[3]);
+                checkForGlErrors("glUniform4f");
                 break;
             }
             case UniformFloat1v: {
                 glUniform1fv(i, uniform.floatData.length,
-                                uniform.floatData.data);
+                             uniform.floatData.data);
+                checkForGlErrors("glUniform1fv");
                 break;
             }
             case UniformFloat2v: {
                 glUniform2fv(i, uniform.floatData.length,
-                                uniform.floatData.data);
+                             uniform.floatData.data);
+                checkForGlErrors("glUniform2fv");
                 break;
             }
             case UniformFloat3v: {
                 glUniform3fv(i, uniform.floatData.length,
-                                uniform.floatData.data);
+                             uniform.floatData.data);
+                checkForGlErrors("glUniform3fv");
                 break;
             }
             case UniformFloat4v: {
                 glUniform4fv(i, uniform.floatData.length,
-                                uniform.floatData.data);
+                             uniform.floatData.data);
+                checkForGlErrors("glUniform4fv");
                 break;
             }
             default: {
@@ -220,7 +264,6 @@ void ShaderInstance::bind(RenderContext &ctx) {
             }
         }
     }
-    checkForGlErrors("set uniforms");
 }
 
 }

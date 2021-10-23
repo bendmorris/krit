@@ -7,10 +7,10 @@
 #include "krit/math/Point.h"
 #include "krit/math/ScaleFactor.h"
 #include "krit/utils/Color.h"
-#include "krit/utils/Option.h"
 #include <cassert>
 #include <stddef.h>
 #include <string>
+#include <optional>
 #include <unordered_map>
 #include <vector>
 
@@ -84,8 +84,8 @@ struct TextOptions {
 };
 
 struct TextFormatTagOptions {
-    Option<Color> color;
-    Option<AlignType> align;
+    std::optional<Color> color;
+    std::optional<AlignType> align;
     bool newline = false;
     bool tab = false;
     bool border = false;
@@ -96,11 +96,11 @@ struct TextFormatTagOptions {
     TextFormatTagOptions() = default;
 
     TextFormatTagOptions &setColor(Color c) {
-        this->color = Option<Color>(c);
+        this->color = c;
         return *this;
     }
     TextFormatTagOptions &setAlign(AlignType a) {
-        this->align = Option<AlignType>(a);
+        this->align = a;
         return *this;
     }
     TextFormatTagOptions &setNewline() {

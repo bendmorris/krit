@@ -4,6 +4,7 @@ cmake_policy (SET CMP0072 OLD)
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
 option(ENABLE_TOOLS "Cross-compile for Windows using mingw-w64" OFF)
 option(ENABLE_THREADS "Whether task managers should use multiple threads" ON)
+option(USE_GLEW "Whether to use glew instead of direct GL" ON)
 
 if(BUILD_WINDOWS)
     include(${KRIT_DIR}/toolchain/windows.cmake)
@@ -20,7 +21,7 @@ set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -ffast-math -fno-exceptions -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
-set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_ASAN} ${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
+set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_ASAN} ${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 find_package(OpenGL REQUIRED)
@@ -60,6 +61,9 @@ add_library(${PROJECT_NAME} STATIC
 
 if(ENABLE_THREADS)
     add_definitions(-DKRIT_ENABLE_THREADS)
+endif()
+if(USE_GLEW)
+    add_definitions(-DKRIT_USE_GLEW)
 endif()
 
 include_directories(krit/src)

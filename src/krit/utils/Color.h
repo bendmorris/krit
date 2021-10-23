@@ -76,6 +76,34 @@ struct Color {
     }
 
     Color withAlpha(float alpha) { return Color(r, g, b, alpha); }
+
+    uint32_t bgra() {
+        return (static_cast<uint32_t>(b * 0xff) << 24) |
+               (static_cast<uint32_t>(g * 0xff) << 16) |
+               (static_cast<uint32_t>(r * 0xff) << 8) |
+               static_cast<uint32_t>(a * 0xff);
+    }
+
+    uint32_t rgba() {
+        return (static_cast<uint32_t>(r * 0xff) << 24) |
+               (static_cast<uint32_t>(g * 0xff) << 16) |
+               (static_cast<uint32_t>(b * 0xff) << 8) |
+               static_cast<uint32_t>(a * 0xff);
+    }
+
+    uint32_t argb() {
+        return (static_cast<uint32_t>(a * 0xff) << 24) |
+               (static_cast<uint32_t>(r * 0xff) << 16) |
+               (static_cast<uint32_t>(g * 0xff) << 8) |
+               static_cast<uint32_t>(b * 0xff);
+    }
+
+    uint32_t abgr() {
+        return (static_cast<uint32_t>(a * 0xff) << 24) |
+               (static_cast<uint32_t>(b * 0xff) << 16) |
+               (static_cast<uint32_t>(g * 0xff) << 8) |
+               static_cast<uint32_t>(r * 0xff);
+    }
 };
 
 }

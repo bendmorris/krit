@@ -65,4 +65,5 @@ interface Camera {
     center(): void;
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
+    setLogicalSize(w: integer, h: integer): void;
 }

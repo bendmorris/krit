@@ -140,3 +140,13 @@ declare class LayoutRoot extends Sprite {
     getById(id: string): Pointer<VisibleSprite>;
     getNodeById(id: string): Pointer<LayoutNode>;
 }
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Emitter.h
+ */
+declare class Emitter extends VisibleSprite {
+    static from(value: Sprite): Emitter;
+
+    emit(name: string, count: number): void;
+}

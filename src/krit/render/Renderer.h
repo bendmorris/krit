@@ -8,7 +8,6 @@
 #include "krit/render/DrawCommand.h"
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
-#include <GL/glew.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mutex.h>
 #include <SDL2/SDL_video.h>

@@ -82,9 +82,16 @@ struct InputContext {
         events.clear();
     }
 
-    void addEvent(Action action, int state) {
-        events.emplace_back((ActionEvent){
-            .action = action, .state = state, .prevState = states[action]});
+    void addEvent(Action action, int state, bool prepend = false) {
+        if (prepend) {
+            events.emplace(events.begin(),
+                           (ActionEvent){.action = action,
+                                         .state = state,
+                                         .prevState = states[action]});
+        } else {
+            events.emplace_back((ActionEvent){
+                .action = action, .state = state, .prevState = states[action]});
+        }
         states[action] = state;
         seen[action] = true;
     }
@@ -94,7 +101,7 @@ struct InputContext {
         while (it != states.end()) {
             if (!seen[it->first]) {
                 if (it->second) {
-                    addEvent(it->first, it->second);
+                    addEvent(it->first, it->second, true);
                     ++it;
                 } else {
                     it = states.erase(it);

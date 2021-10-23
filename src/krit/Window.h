@@ -3,6 +3,7 @@
 
 #include "krit/Options.h"
 #include "krit/math/Dimensions.h"
+#include <SDL2/SDL.h>
 #include <SDL2/SDL_surface.h>
 #include <SDL2/SDL_video.h>
 
@@ -26,6 +27,7 @@ struct Window: public IntDimensions {
         if (window) {
             SDL_DestroyWindow(window);
         }
+        SDL_Quit();
     }
 
     void setFullScreen(bool full);

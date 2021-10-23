@@ -23,6 +23,7 @@ struct Image : public VisibleSprite {
     ImageRegion region;
 
     Image(const std::string &id);
+    Image(std::shared_ptr<ImageData> img) : region(img) {}
     Image(ImageRegion region) : region(region) {}
 
     int &width() { return this->region.rect.width; }

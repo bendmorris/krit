@@ -11,13 +11,6 @@
 
 namespace krit {
 
-static uint32_t colorToInt(Color &c) {
-    return (static_cast<uint32_t>(c.a * 0xff) << 24) |
-           (static_cast<uint32_t>(c.b * 0xff) << 16) |
-           (static_cast<uint32_t>(c.g * 0xff) << 8) |
-           (static_cast<uint32_t>(c.r * 0xff));
-}
-
 SpriteShader::SpriteShader(Shader &shader) : ShaderInstance(shader) {
     matrixIndex = shader.getUniformLocation("uMatrix");
 }
@@ -26,6 +19,10 @@ void SpriteShader::bind(RenderContext &ctx) { ShaderInstance::bind(ctx); }
 
 void SpriteShader::unbind() { ShaderInstance::unbind(); }
 
+static void *offset(int n) {
+    return (void*)(sizeof(RenderFloat)*n);
+}
+
 void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
                            RenderFloat *buffer) {
     DrawCommandBuffer *buf = ctx.drawCommandBuffer;
@@ -33,11 +30,10 @@ void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
     bool hasTexCoord = shader.texCoordIndex > -1;
     bool hasColor = shader.colorIndex > -1;
     int i = 0;
-    RenderFloat *origin = nullptr;
     if (hasTexCoord && hasColor) {
         for (size_t t = 0; t < drawCall->length(); ++t) {
             TriangleData &tri = buf->triangles[drawCall->indices[t]];
-            uint32_t c = colorToInt(tri.color);
+            uint32_t c = tri.color.abgr();
             buffer[i++] = tri.t.p1.x;
             buffer[i++] = tri.t.p1.y;
             static_cast<uint32_t *>(static_cast<void *>(buffer))[i++] = c;
@@ -57,16 +53,16 @@ void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
         checkForGlErrors("bufferSubData");
         glVertexAttribPointer(shader.positionIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin);
+                              stride, offset(0));
         glVertexAttribPointer(shader.colorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                              stride, origin + 2);
+                              stride, offset(2));
         glVertexAttribPointer(shader.texCoordIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin + 3);
+                              stride, offset(3));
         checkForGlErrors("attrib pointers");
     } else if (hasColor) {
         for (size_t t = 0; t < drawCall->length(); ++t) {
             TriangleData &tri = buf->triangles[drawCall->indices[t]];
-            uint32_t c = colorToInt(tri.color);
+            uint32_t c = tri.color.abgr();
             buffer[i++] = tri.t.p1.x;
             buffer[i++] = tri.t.p1.y;
             static_cast<uint32_t *>(static_cast<void *>(buffer))[i++] = c;
@@ -80,9 +76,9 @@ void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
         checkForGlErrors("bufferSubData");
         glVertexAttribPointer(shader.positionIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin);
+                              stride, offset(0));
         glVertexAttribPointer(shader.colorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE,
-                              stride, origin + 2);
+                              stride, offset(2));
         checkForGlErrors("attrib pointers");
     } else if (hasTexCoord) {
         for (size_t t = 0; t < drawCall->length(); ++t) {
@@ -103,9 +99,9 @@ void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
         checkForGlErrors("bufferSubData");
         glVertexAttribPointer(shader.positionIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin);
+                              stride, offset(0));
         glVertexAttribPointer(shader.texCoordIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin + 2);
+                              stride, offset(2));
         checkForGlErrors("attrib pointers");
     } else {
         for (size_t t = 0; t < drawCall->length(); ++t) {
@@ -120,7 +116,7 @@ void SpriteShader::prepare(RenderContext &ctx, DrawCall *drawCall,
         glBufferSubData(GL_ARRAY_BUFFER, 0, i * sizeof(RenderFloat), buffer);
         checkForGlErrors("bufferSubData");
         glVertexAttribPointer(shader.positionIndex, 2, GL_FLOAT, GL_FALSE,
-                              stride, origin);
+                              stride, offset(0));
         checkForGlErrors("attrib pointers");
     }
 }

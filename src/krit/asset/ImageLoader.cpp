@@ -8,10 +8,9 @@
 #include "krit/render/ImageData.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
-#include <GL/glew.h>
+#include <SDL2/SDL_image.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_image.h>
 #include <cstdint>
 #include <string>
 
@@ -25,7 +24,15 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
     ImageData *img = new ImageData();
     img->dimensions.setTo(info.properties.img.dimensions);
     img->scale = info.properties.img.scale;
-        int len;
+#ifdef __EMSCRIPTEN__
+    TaskManager::instance->push([info, img](UpdateContext &) {
+        SDL_Surface *surface = IMG_Load(info.path.c_str());
+        if (!surface) {
+            panic("IMG_Load(%s) is null: %s\n", info.path.c_str(),
+                  IMG_GetError());
+        }
+#else
+    int len;
     char *s = IoRead::read(info.path, &len);
 
     TaskManager::instance->push([info, img, s, len](UpdateContext &) {
@@ -34,8 +41,10 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
         SDL_RWclose(rw);
         IoRead::free(s);
         if (!surface) {
-            panic("IMG_Load(%s) is null\n", info.path.c_str());
+            panic("IMG_Load(%s) is null: %s\n", info.path.c_str(),
+                  IMG_GetError());
         }
+#endif
         unsigned int mode =
             surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
 
@@ -56,6 +65,7 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
                 checkForGlErrors("texImage2D");
                 glGenerateMipmap(GL_TEXTURE_2D);
                 checkForGlErrors("asset load");
+                glBindTexture(GL_TEXTURE_2D, 0);
                 img->texture = texture;
                 SDL_FreeSurface(surface);
             });
@@ -65,11 +75,6 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
 }
 
 template <> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
-    GLuint texture = img->texture;
-    if (App::ctx.app->running) {
-        TaskManager::instance->pushRender(
-            [texture](RenderContext &) { glDeleteTextures(1, &texture); });
-    }
     delete img;
 }
 

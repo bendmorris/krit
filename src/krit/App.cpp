@@ -35,13 +35,19 @@ RenderContext App::ctx;
 
 void sigintHandler(int sig_num) { App::ctx.app->quit(); }
 
-App::App(KritOptions &options)
-    : engine(options), framerate(options.framerate),
-      fixedFramerate(options.fixedFramerate) {}
-
 #ifdef __EMSCRIPTEN__
 static void __doFrame(void *app) { ((App *)app)->doFrame(); }
 #endif
+
+App::App(KritOptions &options)
+    :
+#ifdef __EMSCRIPTEN__
+      engine((emscripten_set_main_loop_arg(__doFrame, this, 0, 0), options)),
+#else
+      engine(options),
+#endif
+      framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
+}
 
 void App::run() {
     if (ctx.app) {
@@ -52,8 +58,12 @@ void App::run() {
     std::signal(SIGINT, sigintHandler);
 #endif
 
-    // SDL_Image
-    IMG_Init(IMG_INIT_PNG);
+    // // SDL_Image
+    // int flags = IMG_INIT_PNG;
+    // int result = IMG_Init(flags);
+    // if ((result & flags) != flags) {
+    //     panic("PNG support is required");
+    // }
 
     frameDelta = 1.0 / fixedFramerate;
     frameDelta2 = 1.0 / (fixedFramerate + 1);
@@ -81,10 +91,6 @@ void App::run() {
 
     invoke(engine.onBegin, update);
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop_arg(__doFrame, this, 0, 0);
-#endif
-
     running = true;
 #ifndef __EMSCRIPTEN__
     while (running) {
@@ -97,9 +103,7 @@ void App::run() {
 #endif
 }
 
-void App::cleanup() {
-    TaskManager::instance->killed = true;
-}
+void App::cleanup() { TaskManager::instance->killed = true; }
 
 bool App::doFrame() {
     UpdateContext *update = &ctx;

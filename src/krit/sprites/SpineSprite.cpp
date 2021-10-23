@@ -13,6 +13,7 @@
 #include "krit/render/DrawKey.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
+#include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "spine/AnimationState.h"
 #include "spine/Attachment.h"
@@ -50,6 +51,12 @@ SpineSprite::SpineSprite(const AssetInfo &info) {
     this->animationState =
         new spine::AnimationState(&this->animationStateData());
     this->skin = new spine::Skin(spine::String("custom"));
+
+    this->skeleton->setToSetupPose();
+    this->skeleton->update(0);
+    this->animationState->update(0);
+    this->animationState->apply(*this->skeleton);
+    this->skeleton->updateWorldTransform();
 }
 
 SpineSprite::~SpineSprite() {
@@ -65,15 +72,20 @@ SkeletonBinaryData *
 AssetLoader<SkeletonBinaryData>::loadAsset(const AssetInfo &info) {
     const spine::String &atlasName(
         (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
-    const spine::String &skelName((info.path).c_str());
     spine::Atlas *atlas =
         new spine::Atlas(atlasName, &SpineTextureLoader::instance);
     spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
-    spine::SkeletonData *skeletonData = binary->readSkeletonDataFile(skelName);
+    int length;
+    unsigned char *s = (unsigned char *)IoRead::read(info.path, &length);
+    spine::SkeletonData *skeletonData = binary->readSkeletonData(s, length);
+    if (!skeletonData) {
+        Log::error("failed to load skeleton data: %s", info.path.c_str());
+    }
     spine::AnimationStateData *animationStateData =
         new spine::AnimationStateData(skeletonData);
     SkeletonBinaryData *bin =
         new SkeletonBinaryData(atlas, binary, skeletonData, animationStateData);
+    IoRead::free((char*)s);
     return bin;
 }
 
@@ -92,7 +104,7 @@ float SpineSprite::setAnimation(size_t track, const std::string &name,
     if (mix >= 0) {
         trackEntry->setMixTime(mix);
     }
-    return trackEntry->getAnimationEnd();
+    return std::max(1.0f/60, trackEntry->getAnimationEnd());
 }
 
 float SpineSprite::addAnimation(size_t track, const std::string &name,
@@ -102,7 +114,7 @@ float SpineSprite::addAnimation(size_t track, const std::string &name,
     if (mix >= 0) {
         trackEntry->setMixTime(mix);
     }
-    return trackEntry->getAnimationEnd();
+    return std::max(1.0f/60, trackEntry->getAnimationEnd());
 }
 
 spine::String SpineSprite::_customSkin("custom");

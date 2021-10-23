@@ -2,6 +2,7 @@
 #define KRIT_ASSET_FONT
 
 #include "krit/asset/AssetInfo.h"
+#include "krit/asset/AssetLoader.h"
 #include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Panic.h"
@@ -27,7 +28,8 @@ struct GlyphSize {
     unsigned int size;
     unsigned int border;
 
-    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size, unsigned int border)
+    GlyphSize(Font *font, char32_t glyphIndex, unsigned int size,
+              unsigned int border)
         : font(font), glyphIndex(glyphIndex), size(size), border(border) {}
     bool operator==(const GlyphSize &other) const {
         return font == other.font && glyphIndex == other.glyphIndex &&
@@ -72,14 +74,20 @@ struct GlyphCache {
 
     GlyphCache() {}
 
-    GlyphData *getGlyph(Font *font, char32_t codePoint, unsigned int size, unsigned int border = 0);
+    GlyphData *getGlyph(Font *font, char32_t codePoint, unsigned int size,
+                        unsigned int border = 0);
     void createTexture();
     void commitChanges();
 };
 
+struct FontDeleter {
+    void operator()(Font *f) { if (f) AssetLoader<Font>::unloadAsset(f); }
+};
+
 struct FontManager {
     GlyphCache glyphCache, nextGlyphCache;
-    std::unordered_map<std::string, Font *> fontRegistry;
+    std::unordered_map<std::string, std::unique_ptr<Font, FontDeleter>>
+        fontRegistry;
 
     FontManager();
     ~FontManager();
@@ -90,19 +98,32 @@ struct FontManager {
     void registerFont(const std::string &name, AssetId id);
 
     Font *getFont(const std::string &name) {
-        Font *font = fontRegistry[name];
+        Font *font = fontRegistry[name].get();
         if (!font) {
             panic("missing font: %s\n", name.c_str());
         }
         return font;
     }
 
-    GlyphData &getGlyph(Font *font, char32_t glyphId, unsigned int size, unsigned int border = 0);
+    GlyphData &getGlyph(Font *font, char32_t glyphId, unsigned int size,
+                        unsigned int border = 0);
 };
 
 struct Font {
     Font(const std::string &path, const char *fontData, size_t fontDataLen);
+    Font() {}
     ~Font();
+    Font(Font &&other) {
+        this->face = other.face;
+        this->font = other.font;
+        this->ftFace = other.ftFace;
+        this->fontData = other.fontData;
+        this->path = std::move(other.path);
+        other.face = nullptr;
+        other.font = nullptr;
+        other.ftFace = nullptr;
+        other.fontData = nullptr;
+    }
 
     std::string path;
     void shape(hb_buffer_t *buf, size_t pointSize);
@@ -110,10 +131,10 @@ struct Font {
     void flushCache();
 
 private:
-    hb_face_t *face;
-    hb_font_t *font;
-    void *ftFace;
-    void *fontData;
+    hb_face_t *face = nullptr;
+    hb_font_t *font = nullptr;
+    void *ftFace = nullptr;
+    void *fontData = nullptr;
     friend struct GlyphCache;
     friend struct Text;
     friend struct TextParser;

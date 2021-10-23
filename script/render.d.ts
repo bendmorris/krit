@@ -5,6 +5,8 @@
  interface RenderContext extends UpdateContext {
     drawCommandBuffer: Pointer<DrawCommandBuffer>;
 
+    width(): integer;
+    height(): integer;
     pushClip(rect: Rectangle): void;
     popClip(): void;
 }

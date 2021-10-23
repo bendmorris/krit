@@ -1,167 +1,119 @@
 #include "krit/sprites/Emitter.h"
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
-#include <stddef.h>
-#include <unordered_map>
-
-#include "krit/App.h"
-#include "krit/Engine.h"
-#include "krit/UpdateContext.h"
-#include "krit/asset/TextureAtlas.h"
-#include "krit/math/ScaleFactor.h"
-#include "krit/particles/ParticleEffect.h"
-#include "krit/particles/ParticleProperties.h"
-#include "krit/particles/ParticleSystem.h"
-#include "krit/render/ImageRegion.h"
-#include "krit/render/RenderContext.h"
-#include "krit/utils/Color.h"
-
 namespace krit {
 
-EmissionTrack::EmissionTrack(ParticleEmission *data, float elapsed)
-    : data(data),
-      image(data->atlas.empty() ? App::ctx.engine->getImage(data->region)
-                                : App::ctx.engine->getAtlas(data->atlas)
-                                      ->getRegion(data->region)),
-      elapsed(elapsed) {
-    image.blendMode = data->blend;
+ParticleType::ParticleType(int index, ImageRegion region, BlendMode blend)
+    : index(index), image(region), colorStart(Color::white(), Color::white()),
+      colorEnd(Color::white(), Color::white()), scaleStart(1, 1),
+      scaleEnd(1, 1), angle(0, M_PI * 2) {
+    image.blendMode = blend;
     image.centerOrigin();
 }
 
-void EffectTrack::stop() {
-    continuous = false;
-    elapsed = data->duration();
+void Emitter::emit(const std::string &name, int count) {
+    emit(system.get(name), count);
 }
 
-EffectTrack &Emitter::emit(const std::string &effectType) {
-    effects.emplace_back(system.effects[effectType]);
-    // FIXME
-    return effects.back();
-}
-
-EffectTrack &Emitter::emit(ParticleEffect *effect) {
-    effects.emplace_back(effect);
-    // FIXME
-    return effects.back();
-}
-
-void Emitter::clear() { effects.clear(); }
-
-static int pcount(float start, float duration, int count, float t) {
-    if (t < start)
-        return 0;
-    else if (t >= start + duration)
-        return count;
-    else
-        return count * (t - start) / duration;
+void Emitter::emit(ParticleType &type, int count) {
+    std::uniform_real_distribution<float> r(0, 1);
+    for (int i = 0; i < count; ++i) {
+        this->_particles.emplace_back(type.index);
+        auto &particle = this->_particles.back();
+        particle.color.setTo(
+            type.colorStart.start.lerp(type.colorStart.end, r(rng)),
+            type.colorEnd.start.lerp(type.colorEnd.end, r(rng)));
+        particle.scale.setTo(
+            krit::lerp(type.scaleStart.start, type.scaleStart.end, r(rng)),
+            krit::lerp(type.scaleEnd.start, type.scaleEnd.end, r(rng)));
+        particle.rotation.setTo(
+            krit::lerp(type.rotationStart.start, type.rotationStart.end,
+                       r(rng)),
+            krit::lerp(type.rotationEnd.start, type.rotationEnd.end, r(rng)));
+        particle.start = this->position;
+        particle.duration =
+            krit::lerp(type.duration.start, type.duration.end, r(rng));
+        particle.origin.setTo(r(rng) * 2 - 1, r(rng) * 2 - 1);
+        particle.origin.normalize(krit::lerp(type.distanceStart.start,
+                                             type.distanceStart.end, r(rng)));
+        particle.origin.add(type.offset);
+        particle.angle = krit::lerp(type.angle.start, type.angle.end, r(rng));
+        particle.move.setTo(cos(particle.angle), -sin(particle.angle));
+        particle.move.multiply(
+            krit::lerp(type.distanceEnd.start, type.distanceEnd.end, r(rng)));
+    }
 }
 
 void Emitter::update(UpdateContext &ctx) {
-    // update particles
-    for (auto &particles : this->particles) {
-        for (size_t i = 0; i < particles.size(); ++i) {
-            auto &particle = particles[i].particle;
-            particle.elapsed += ctx.elapsed / particle.props.duration;
-            if (particle.elapsed > 1) {
-                if (particles.size() > 1) {
-                    std::iter_swap(particles.begin() + i, particles.end() - 1);
-                }
-                particles.pop_back();
-                --i;
-            }
+    size_t i = 0;
+    int trailCount = 0;
+    while (i < this->_particles.size()) {
+        auto &it = this->_particles[i];
+        auto &type = system.types[it.typeIndex];
+        if (!it.isTrail && type.trail > 0) {
+            ++trailCount;
         }
+        ++i;
     }
-
-    // update emissions to generate new particles
-    for (auto &emission : emissions) {
-        float elapsed = ctx.elapsed;
-        if (emission.elapsed < 0) {
-            elapsed -= emission.elapsed;
-            emission.elapsed = 0;
+    this->_particles.reserve(this->_particles.size() + trailCount);
+    i = 0;
+    while (i < this->_particles.size()) {
+        auto &it = this->_particles[i];
+        auto &type = system.types[it.typeIndex];
+        if (!it.isTrail && type.trail > 0) {
+            this->_particles.emplace_back(type.index);
+            auto &trail = this->_particles.back();
+            trail.duration = type.trail;
+            trail.isTrail = true;
+            trail.origin.setTo(this->position);
+            trail.origin.add(it.origin);
+            Color c = it.color.start.lerp(it.color.end, it.decay);
+            c.a *= 0.5;
+            trail.color.setTo(c);
+            trail.scale.setTo(
+                krit::lerp(it.scale.start, it.scale.end, it.decay));
+            trail.angle = it.angle;
+            Point m(it.move);
+            // m.multiply(maybeLerp(it.decay, type.distanceLerp));
+            m.multiply(it.decay);
+            trail.origin.add(m);
         }
-        int last = pcount(emission.data->time, emission.data->duration,
-                          emission.data->count, emission.elapsed);
-        emission.elapsed += elapsed;
-        int current = pcount(emission.data->time, emission.data->duration,
-                             emission.data->count, emission.elapsed);
-        for (int i = 0; i < current - last; ++i) {
-            if (particles.size() <
-                static_cast<size_t>(emission.data->layer + 1)) {
-                particles.resize(emission.data->layer + 1);
+        it.decay += ctx.elapsed / it.duration;
+        if (it.decay >= 1) {
+            if (this->_particles.size() > 1) {
+                std::iter_swap(this->_particles.begin() + i,
+                               this->_particles.end() - 1);
             }
-            auto &particles = this->particles[emission.data->layer];
-            particles.emplace_back(emission);
-            particles.back().particle.props.originX += emission.position.x;
-            particles.back().particle.props.originY += emission.position.y;
-        }
-    }
-    for (size_t i = 0; i < emissions.size(); ++i) {
-        auto &emission = emissions[i];
-        if (emission.elapsed >= emission.data->duration) {
-            if (emissions.size() > 1 && i < emissions.size() - 1) {
-                std::iter_swap(emissions.begin() + i, emissions.end() - 1);
-            }
-            emissions.pop_back();
-        }
-    }
-
-    // update effects to generate new emissions
-    for (auto &effect : effects) {
-        // float duration = effect.data->duration();
-        // float elapsed = ctx.elapsed;
-        float last = effect.elapsed;
-        effect.elapsed += ctx.elapsed;
-
-        for (auto &emission : effect.data->timeline) {
-            if ((!last || emission.time < last) &&
-                emission.time < effect.elapsed) {
-                emissions.emplace_back(&emission,
-                                       emission.time - effect.elapsed);
-                emissions.back().position.setTo(effect.position);
-            }
-        }
-    }
-    for (size_t i = 0; i < effects.size(); ++i) {
-        auto &effect = effects[i];
-        if (effect.elapsed > effect.data->duration()) {
-            if (effect.continuous) {
-                effect.elapsed = 0;
-            } else {
-                if (effects.size() > 1 && i < effects.size() - 1) {
-                    std::iter_swap(effects.begin() + i, effects.end() - 1);
-                }
-                effects.pop_back();
-            }
+            this->_particles.pop_back();
+        } else {
+            ++i;
         }
     }
 }
 
 void Emitter::render(RenderContext &ctx) {
-    for (auto &particles : this->particles) {
-        for (auto &track : particles) {
-            auto &particle = track.particle;
-            auto &image = track.image;
-            auto &props = particle.props;
-            auto &emission = *particle.emission;
-            float t = particle.elapsed / particle.props.duration;
-            image.position.setTo(position.x + props.originX,
-                                 position.y + props.originY);
-            float distance = props.evaluate(props.distance, t),
-                  orthoDistance = props.evaluate(props.orthoDistance, t);
-            float s = std::sin(props.direction), c = std::cos(props.direction);
-            image.position.add(c * distance, -s * distance);
-            image.position.add(s * orthoDistance, c * orthoDistance);
-            image.angle = (emission.aligned ? props.direction : 0) +
-                          props.evaluate(props.rotation, t);
-            image.color = Color(
-                props.evaluate(props.red, t), props.evaluate(props.green, t),
-                props.evaluate(props.blue, t), props.evaluate(props.alpha, t));
-            float scale = props.evaluate(props.scale, t);
-            image.scale.setTo(scale, scale);
-            image.render(ctx);
+    for (auto &particle : this->_particles) {
+        auto &type = system.types[particle.typeIndex];
+        auto &image = type.image;
+        if (particle.isTrail) {
+            image.position.setTo(particle.origin);
+            image.color = particle.color.start;
+            image.scale.setTo(particle.scale.start);
+        } else {
+            image.position.setTo(particle.start);
+            image.position.add(particle.origin);
+            Point m(particle.move);
+            m.multiply(maybeLerp(particle.decay, type.distanceLerp));
+            image.position.add(m);
+            image.color = particle.color.start.lerp(
+                particle.color.end, maybeLerp(particle.decay, type.colorLerp));
+            image.scale.setTo(
+                krit::lerp(particle.scale.start, particle.scale.end,
+                           maybeLerp(particle.decay, type.scaleLerp)));
         }
+        image.angle = particle.angle +
+                      krit::lerp(particle.rotation.start, particle.rotation.end,
+                                 maybeLerp(particle.decay, type.rotationLerp));
+        image.render(ctx);
     }
 }
 
