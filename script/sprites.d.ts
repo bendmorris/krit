@@ -6,6 +6,12 @@ declare const enum BlendMode {
     BlendScreen,
 }
 
+declare const enum SmoothingMode {
+    SmoothNearest,
+    SmoothLinear,
+    SmoothMipmap,
+}
+
 /**
  * @namespace krit
  * @import krit/Sprite.h
@@ -26,15 +32,17 @@ declare class VisibleSprite extends Sprite {
     /** @readonly */ position: Point;
     /** @readonly */ dimensions: Dimensions;
     /** @readonly */ scale: ScaleFactor;
+    zIndex: integer;
     color: Color;
     /** @cast BlendMode */ blendMode: BlendMode;
+    /** @cast SmoothingMode */ smooth: SmoothingMode;
 }
 
 /**
  * @namespace krit
  * @import krit/sprites/Text.h
  */
- declare class Text extends VisibleSprite {
+declare class Text extends VisibleSprite {
     static from(value: Sprite): Text;
 
     /** @readonly @getter width */ width: number;
@@ -95,7 +103,8 @@ declare class SpineSprite extends VisibleSprite {
     rate: number;
 
     setSkin(name: string): void;
-    setAnimation(track: integer, name: string, loop: boolean): float;
+    setAnimation(track: integer, name: string, loop: boolean, speed: number, mix: number): float;
+    advance(t: number): void;
 }
 
 /**

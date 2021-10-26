@@ -25,25 +25,25 @@ void RenderContext::pushClip(Rectangle rect) {
 void RenderContext::popClip() { this->drawCommandBuffer->popClip(); }
 
 void RenderContext::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix,
-                            Color color) {
+                            Color color, int zIndex) {
     this->transformMatrix(matrix);
-    this->drawCommandBuffer->addRect(*this, key, rect, matrix, color);
+    this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
 }
 
 void RenderContext::addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix,
-                               Color color) {
-    this->drawCommandBuffer->addRect(*this, key, rect, matrix, color);
+                               Color color, int zIndex) {
+    this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
 }
 
 void RenderContext::addTriangle(DrawKey &key, Triangle &t, Triangle &uv,
-                                Color color) {
+                                Color color, int zIndex) {
     this->transformTriangle(t);
-    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color);
+    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
 }
 
 void RenderContext::addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv,
-                                   Color color) {
-    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color);
+                                   Color color, int zIndex) {
+    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
 }
 
 }

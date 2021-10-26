@@ -37,7 +37,7 @@ SpriteShader *defaultTextSpriteShader;
 
 }
 
-void Renderer::setSmoothingMode(SmoothingMode mode) {
+void Renderer::setSmoothingMode(SmoothingMode mode, ImageData &img) {
     switch (mode) {
         case SmoothNearest: {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -50,6 +50,11 @@ void Renderer::setSmoothingMode(SmoothingMode mode) {
             break;
         }
         case SmoothMipmap: {
+            if (!img.hasMipmaps) {
+                img.hasMipmaps = true;
+                glGenerateMipmap(GL_TEXTURE_2D);
+                checkForGlErrors("generate mipmaps");
+            }
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                             GL_LINEAR_MIPMAP_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -150,8 +155,14 @@ static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
 Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+#ifndef __EMSCRIPTEN__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
+#else
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#endif
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
@@ -168,17 +179,13 @@ Renderer::Renderer(Window &_window) : window(_window) {
     }
     SDL_GL_MakeCurrent(window, this->glContext);
     checkForGlErrors("context");
-    // // try to get adaptive vsync
-    // int result = SDL_GL_SetSwapInterval(-1);
-    // // fall back to regular vsync
-    // if (result == -1) {
-    SDL_GL_SetSwapInterval(1);
+    // try to get adaptive vsync
+    int result = SDL_GL_SetSwapInterval(-1);
+    // fall back to regular vsync
+    if (result == -1) {
+        SDL_GL_SetSwapInterval(1);
+    }
     checkForGlErrors("swap interval");
-// }
-#ifndef __EMSCRIPTEN__
-    glEnable(GL_MULTISAMPLE);
-    checkForGlErrors("multisample");
-#endif
     glEnable(GL_BLEND);
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
@@ -309,7 +316,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             if (drawCall.key.image) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, drawCall.key.image->texture);
-                setSmoothingMode(drawCall.key.smooth);
+                setSmoothingMode(drawCall.key.smooth, *drawCall.key.image);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
                                 GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,

@@ -33,13 +33,12 @@ const AssetInfo Assets::_assets[AssetRootCount * AssetCount] = {
 };
 
 std::unordered_map<std::string, int> Assets::_byPath = {
-    {% for asset in assets %}
-    { "{{ asset.path }}", {{ loop.index - 1 }} },
-    {% endfor %}
     {% for root in roots: %}
     {% for asset in root.assets: %}
     {% if asset %}
     { "{{ asset.path }}", {{ loop.index - 1 }} },
+    { "{{ asset.lookupPath1 }}", {{ loop.index - 1 }} },
+    { "{{ asset.lookupPath2 }}", {{ loop.index - 1 }} },
     {% endif %}
     {% endfor %}
     {% endfor %}

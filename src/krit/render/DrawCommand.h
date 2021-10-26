@@ -51,7 +51,7 @@ struct DrawCommandBuffer {
 
     virtual ~DrawCommandBuffer() {}
 
-    DrawCall &getDrawCall(const DrawKey &key);
+    DrawCall &getDrawCall(const DrawKey &key, int zIndex = 0);
 
     void clear() {
         triangles.clear();
@@ -60,10 +60,10 @@ struct DrawCommandBuffer {
     }
 
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
-                     const Triangle &uv, const Color &color);
+                     const Triangle &uv, const Color &color, int zIndex = 0);
     void addRect(RenderContext &ctx, const DrawKey &key,
                  const IntRectangle &rect, const Matrix &matrix,
-                 const Color &color);
+                 const Color &color, int zIndex = 0);
 
     void pushClip(Rectangle &clip) {
         auto &rect = buf.emplace_back<PushClipRect>();

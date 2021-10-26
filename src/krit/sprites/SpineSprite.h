@@ -41,20 +41,8 @@ struct UpdateContext;
 struct SpineTextureLoader : public spine::TextureLoader {
     static SpineTextureLoader instance;
 
-    void load(spine::AtlasPage &page, const spine::String &path) override {
-        std::string assetName(path.buffer());
-        std::shared_ptr<ImageData> texture =
-            App::ctx.engine->getImage(assetName);
-        ImageRegion *region = new ImageRegion(texture);
-        page.setRendererObject(region);
-        page.width = texture->width();
-        page.height = texture->height();
-    }
-
-    void unload(void *texture) override {
-        ImageRegion *region = static_cast<ImageRegion *>(texture);
-        delete region;
-    }
+    void load(spine::AtlasPage &page, const spine::String &path) override;
+    void unload(void *texture) override;
 };
 
 struct SkeletonBinaryData {

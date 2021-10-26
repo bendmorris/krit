@@ -5,7 +5,7 @@
 
 namespace krit {
 
-void checkForGlErrors(const char *fmt, ...) {
+void _checkForGlErrors(const char *fmt, ...) {
     GLenum err = glGetError();
     if (err) {
         va_list args;

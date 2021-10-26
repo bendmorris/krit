@@ -25,7 +25,8 @@ struct FileIo {
         return buffer;
     }
 
-    static void free(char *buf) { delete[] buf; }
+    static void *alloc(size_t size) { return malloc(size); }
+    static void free(char *buf) { std::free(buf); }
 
     static bool exists(const std::string &path) {
         std::ifstream infile(path);

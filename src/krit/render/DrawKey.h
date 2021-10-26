@@ -18,7 +18,7 @@ namespace krit {
 struct DrawKey {
     SpriteShader *shader = nullptr;
     std::shared_ptr<ImageData> image = nullptr;
-    SmoothingMode smooth = SmoothMipmap;
+    SmoothingMode smooth = SmoothLinear;
     BlendMode blend = Alpha;
 
     DrawKey() {}

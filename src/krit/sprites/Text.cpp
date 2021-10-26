@@ -696,7 +696,6 @@ void Text::__render(RenderContext &ctx, bool border) {
                     if (border) {
                         if (_borderEnabled) {
                             float thickness = borderThickness * cameraScale;
-                            key.smooth = SmoothingMode::SmoothLinear;
                             Color borderColor(this->borderColor.r,
                                               this->borderColor.g,
                                               this->borderColor.b,
@@ -707,11 +706,11 @@ void Text::__render(RenderContext &ctx, bool border) {
                             matrix.tx += borderGlyph.offset.x - glyph.offset.x;
                             matrix.ty -= borderGlyph.offset.y - glyph.offset.y;
                             ctx.addRectRaw(key, borderGlyph.region.rect, matrix,
-                                           borderColor);
+                                           borderColor, zIndex);
                         }
                     } else {
                         ctx.addRectRaw(key, glyph.region.rect, matrix,
-                                       renderData.color);
+                                       renderData.color, zIndex);
                     }
 
                     cursor.x += _pos.x_advance;

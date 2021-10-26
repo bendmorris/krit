@@ -22,6 +22,14 @@ template <typename... CommandTypes> struct CommandBuffer {
         return c.back();
     }
 
+    template <size_t e, typename ...Args>
+    auto emplace(int typeIndex, int index, Args &&... args) -> decltype(std::get<e>(commands)[0]) {
+        auto &c = std::get<e>(this->commands);
+        commandTypes.emplace(commandTypes.begin() + typeIndex, e);
+        c.emplace(c.begin() + index, args...);
+        return c[index];
+    }
+
     void clear() {
         this->commandTypes.clear();
         this->_clearAll<0, CommandTypes...>(CommandTypes()...);

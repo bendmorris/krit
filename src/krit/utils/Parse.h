@@ -2,6 +2,7 @@
 #define KRIT_UTILS_PARSE
 
 #include "krit/math/Measurement.h"
+#include "krit/render/SmoothingMode.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
 #include <cassert>
@@ -35,12 +36,13 @@ private:
     }
 };
 
-template <> const std::string &Parse::parse(const std::string &_s);
-template <> Measurement Parse::parse(const std::string &_s);
+template <> bool Parse::parse(const std::string &_s);
 template <> int Parse::parse(const std::string &_s);
 template <> float Parse::parse(const std::string &_s);
+template <> const std::string &Parse::parse(const std::string &_s);
+template <> Measurement Parse::parse(const std::string &_s);
 template <> Color Parse::parse(const std::string &_s);
-template <> bool Parse::parse(const std::string &_s);
+template <> SmoothingMode Parse::parse(const std::string &_s);
 
 }
 

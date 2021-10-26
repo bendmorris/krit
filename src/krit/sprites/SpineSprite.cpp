@@ -1,7 +1,4 @@
 #include "krit/sprites/SpineSprite.h"
-
-#include <spine/Extension.h>
-
 #include "krit/App.h"
 #include "krit/UpdateContext.h"
 #include "krit/asset/AssetInfo.h"
@@ -19,6 +16,7 @@
 #include "spine/Attachment.h"
 #include "spine/Bone.h"
 #include "spine/Color.h"
+#include "spine/Extension.h"
 #include "spine/MeshAttachment.h"
 #include "spine/RTTI.h"
 #include "spine/RegionAttachment.h"
@@ -29,6 +27,17 @@ struct KritSpineExtension : public spine::DefaultSpineExtension {
     char *_readFile(const spine::String &path, int *length) override {
         return krit::IoRead::read(std::string(path.buffer()), length);
     }
+
+    void *_alloc(size_t size, const char *_1, int _2) override {
+        if (!size) {
+            return nullptr;
+        }
+        return krit::IoRead::alloc(size);
+    }
+
+    void _free(void *mem, const char *_1, int _2) override {
+        krit::IoRead::free((char*)mem);
+    }
 };
 
 spine::SpineExtension *spine::getDefaultExtension() {
@@ -38,6 +47,21 @@ spine::SpineExtension *spine::getDefaultExtension() {
 namespace krit {
 
 SpineTextureLoader SpineTextureLoader::instance;
+
+void SpineTextureLoader::load(spine::AtlasPage &page,
+                              const spine::String &path) {
+    std::string assetName(path.buffer());
+    std::shared_ptr<ImageData> texture = App::ctx.engine->getImage(assetName);
+    ImageRegion *region = new ImageRegion(texture);
+    page.setRendererObject(region);
+    page.width = texture->width();
+    page.height = texture->height();
+}
+
+void SpineTextureLoader::unload(void *texture) {
+    ImageRegion *region = static_cast<ImageRegion *>(texture);
+    delete region;
+}
 
 SpineSprite::SpineSprite(const std::string &id)
     : SpineSprite(Assets::byPath(id)) {}
@@ -52,7 +76,6 @@ SpineSprite::SpineSprite(const AssetInfo &info) {
         new spine::AnimationState(&this->animationStateData());
     this->skin = new spine::Skin(spine::String("custom"));
 
-    this->skeleton->setToSetupPose();
     this->skeleton->update(0);
     this->animationState->update(0);
     this->animationState->apply(*this->skeleton);
@@ -85,7 +108,7 @@ AssetLoader<SkeletonBinaryData>::loadAsset(const AssetInfo &info) {
         new spine::AnimationStateData(skeletonData);
     SkeletonBinaryData *bin =
         new SkeletonBinaryData(atlas, binary, skeletonData, animationStateData);
-    IoRead::free((char*)s);
+    IoRead::free((char *)s);
     return bin;
 }
 
@@ -96,25 +119,26 @@ void AssetLoader<SkeletonBinaryData>::unloadAsset(SkeletonBinaryData *bin) {
 
 float SpineSprite::setAnimation(size_t track, const std::string &name,
                                 bool loop, float speed, float mix) {
+    // printf("set animation: %s %.2f %.2f %s\n", name.c_str(), speed, mix, loop ? "loop" : "");
     auto trackEntry = this->animationState->setAnimation(
         track, spine::String(name.c_str()), loop);
     if (speed != 1) {
         trackEntry->setTimeScale(speed);
     }
-    if (mix >= 0) {
-        trackEntry->setMixTime(mix);
+    if (mix > 0) {
+        trackEntry->setMixDuration(std::min(trackEntry->getAnimationEnd(), mix));
     }
-    return std::max(1.0f/60, trackEntry->getAnimationEnd());
+    return std::max(1.0f / 60, trackEntry->getAnimationEnd());
 }
 
 float SpineSprite::addAnimation(size_t track, const std::string &name,
                                 bool loop, float delay, float mix) {
     auto trackEntry = this->animationState->addAnimation(
         track, spine::String(name.c_str()), loop, delay);
-    if (mix >= 0) {
-        trackEntry->setMixTime(mix);
+    if (mix > 0) {
+        trackEntry->setMixDuration(std::min(trackEntry->getAnimationEnd(), mix));
     }
-    return std::max(1.0f/60, trackEntry->getAnimationEnd());
+    return std::max(1.0f / 60, trackEntry->getAnimationEnd());
 }
 
 spine::String SpineSprite::_customSkin("custom");

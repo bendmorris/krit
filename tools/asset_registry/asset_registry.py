@@ -13,9 +13,15 @@ def run(inputPath, outputDir):
     assetIds = {}
     with open(inputPath) as inputFile:
         spec = yaml.safe_load(inputFile)
+    baseScale = spec.get('baseScale', 1)
+    assetRoot = spec.get('root', 'assets')
+    variants = spec.get('variants', [])
+
     assets = []
     mtime = 0
-    roots = [{'id': pascalCase(path), 'path': path, 'assets': []} for path in spec['roots']]
+    roots = [{'id': 'AssetRootBase', 'path': assetRoot, 'assets': [] }]
+    roots.extend([{'id': 'AssetRoot' + pascalCase(str(v.get('path', ''))), '_id': v.get('path'), 'base': v.get('base'), 'path': os.path.join(assetRoot, str(v.get('path', ''))), 'scale': v.get('scale', 1), 'assets': []} for v in variants])
+
     for item in spec['patterns']:
         for n, root in enumerate(roots):
             matches = glob(os.path.join(root['path'], item['pattern']), recursive=True)
@@ -34,6 +40,8 @@ def run(inputPath, outputDir):
                 asset = {k: v for (k, v) in item.items()}
                 asset['id'] = name
                 asset['path'] = matchPath
+                asset['lookupPath1'] = match
+                asset['lookupPath2'] = os.path.join(assetRoot, match)
                 t = asset['type']
                 if t == 'Image':
                     # get the image dimensions
@@ -43,14 +51,20 @@ def run(inputPath, outputDir):
                     asset['height'] = asset['realHeight'] = h
                     if n > 0:
                         # resolution scaling
-                        existing = roots[0]['assets'][assetId]
+                        existing = None
+                        base = root.get('base')
+                        if base:
+                            for _root in roots:
+                                if _root.get('_id') == base:
+                                    existing = _root['assets'][assetId]
+                                    break
                         if existing:
                             h2 = existing['height']
                             asset['width'] = existing['width']
                             asset['height'] = h2
                             asset['scale'] = h / h2
                     else:
-                        asset['scale'] = 1.0
+                        asset['scale'] = root.get('scale', 1)
 
                 root['assets'][assetId] = asset
     for artifact in ('Assets.cpp', 'Assets.h'):

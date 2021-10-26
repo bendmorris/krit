@@ -42,7 +42,8 @@ struct VisibleSprite : public Sprite, public SpriteStyle {
     Dimensions dimensions;
     SpriteShader *shader = nullptr;
     BlendMode blendMode = Alpha;
-    SmoothingMode smooth = SmoothMipmap;
+    SmoothingMode smooth = SmoothLinear;
+    int zIndex = 0;
 
     VisibleSprite() {}
     virtual ~VisibleSprite() = default;

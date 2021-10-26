@@ -20,8 +20,6 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                      GL_UNSIGNED_BYTE, data);
         checkForGlErrors("texImage2D");
-        glGenerateMipmap(GL_TEXTURE_2D);
-        checkForGlErrors("asset load");
         glBindTexture(GL_TEXTURE_2D, 0);
         this->texture = texture;
         delete[] data;

@@ -46,7 +46,7 @@ private:
     int height = 0;
 
     template <size_t, typename T> void drawCall(RenderContext &ctx, T &);
-    void setSmoothingMode(SmoothingMode mode);
+    void setSmoothingMode(SmoothingMode mode, ImageData &img);
     void setBlendMode(BlendMode mode);
     void setSize(RenderContext &ctx);
 };

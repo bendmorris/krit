@@ -18,7 +18,7 @@ if [ -n "${RSYNC_OUTPUT}" ] || (( EXISTS != 0 )); then
         done
     else
         echo "rebuilding zip archive"
-        cd $2 && rm -f $ASSET_FILE && zip -r assets.zip assets
+        cd $2 && rm -f $ASSET_FILE && zip -r $ASSET_FILE assets
     fi
 else
     echo "no changes to assets"

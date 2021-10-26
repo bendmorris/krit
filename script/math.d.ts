@@ -94,6 +94,7 @@ interface Rectangle {
     height: number;
 
     contains(x: number, y: number): boolean;
+    setTo(x: number, y: number, width: number, height: number): void;
 }
 
 /**

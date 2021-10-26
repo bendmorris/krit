@@ -6,6 +6,8 @@
 
 namespace krit {
 
+struct Renderer;
+
 /**
  * Contains backend-specific data for an image.
  */
@@ -24,6 +26,11 @@ struct ImageData {
 
     ImageData() {}
     ~ImageData();
+
+private:
+    bool hasMipmaps = false;
+
+    friend struct Renderer;
 };
 
 }

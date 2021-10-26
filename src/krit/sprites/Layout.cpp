@@ -336,6 +336,10 @@ void LayoutRoot::parseStyle(VisibleSprite *e, const std::string &key,
         e->scale.x = Parse::parse<float>(value);
     } else if (key == "scaleY") {
         e->scale.y = Parse::parse<float>(value);
+    } else if (key == "smooth") {
+        e->smooth = Parse::parse<SmoothingMode>(value);
+    } else if (key == "z") {
+        e->zIndex = Parse::parse<int>(value);
     }
 }
 

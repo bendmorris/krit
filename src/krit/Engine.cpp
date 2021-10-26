@@ -81,6 +81,8 @@ void Engine::update(UpdateContext &ctx) {
 }
 
 void Engine::render(RenderContext &ctx) {
+    checkForGlErrors("engine render");
+
     ctx.userData = userData;
 
     fonts.commit();
@@ -96,8 +98,12 @@ void Engine::render(RenderContext &ctx) {
 
     invoke(this->postRender, &ctx);
 
+    checkForGlErrors("before render frame");
     renderer.renderFrame(ctx);
+    checkForGlErrors("after render frame");
+
     fonts.flush();
+    checkForGlErrors("flush fonts");
 }
 
 void Engine::setTimeout(CustomSignal s, float delay, void *userData) {

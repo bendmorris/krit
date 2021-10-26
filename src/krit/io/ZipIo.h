@@ -19,6 +19,7 @@ struct ZipIo {
     static void setArchive(const std::string &path);
 
     static char *read(const std::string &path, int *length = nullptr);
+    static void *alloc(size_t size);
     static void free(char *buf);
     static bool exists(const std::string &path);
 

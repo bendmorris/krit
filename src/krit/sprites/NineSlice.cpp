@@ -15,7 +15,6 @@ NineSlice::NineSlice(ImageRegion &base, int leftWidth, int rightWidth,
                      int topHeight, int bottomHeight)
     : ul(base), uc(base), ur(base), cl(base), cc(base), cr(base), bl(base),
       bc(base), br(base) {
-    smooth = SmoothLinear;
 
     int w = base.rect.width;
     int h = base.rect.height;
