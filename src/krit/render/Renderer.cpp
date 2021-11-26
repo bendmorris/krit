@@ -37,7 +37,7 @@ SpriteShader *defaultTextSpriteShader;
 
 }
 
-void Renderer::setSmoothingMode(SmoothingMode mode, ImageData &img) {
+void Renderer::setSmoothingMode(SmoothingMode mode, ImageData *img) {
     switch (mode) {
         case SmoothNearest: {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -50,8 +50,8 @@ void Renderer::setSmoothingMode(SmoothingMode mode, ImageData &img) {
             break;
         }
         case SmoothMipmap: {
-            if (!img.hasMipmaps) {
-                img.hasMipmaps = true;
+            if (img && !img->hasMipmaps) {
+                img->hasMipmaps = true;
                 glGenerateMipmap(GL_TEXTURE_2D);
                 checkForGlErrors("generate mipmaps");
             }
@@ -167,7 +167,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-#ifndef __EMSCRIPTEN__
+#if KRIT_ENABLE_MULTISAMPLING
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
@@ -190,6 +190,13 @@ Renderer::Renderer(Window &_window) : window(_window) {
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
     checkForGlErrors("depth test");
+    glDisable(GL_STENCIL_TEST);
+    checkForGlErrors("stencil test");
+
+    #if KRIT_ENABLE_MULTISAMPLING
+    glEnable(GL_MULTISAMPLE);
+    checkForGlErrors("multisample");
+    #endif
 
 #if KRIT_USE_GLEW
     glewExperimental = GL_TRUE;
@@ -266,11 +273,28 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
 }
 
 template <>
-void Renderer::drawCall<SetRenderTarget, BaseFrameBuffer *>(
-    RenderContext &ctx, BaseFrameBuffer *&fb) {
+void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
+    RenderContext &ctx, SetRenderTargetArgs &args) {
     // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, fb ? fb->frameBuffer : 0);
-    currentRenderTarget = fb;
+    #if KRIT_ENABLE_MULTISAMPLING
+    // if (args.clear && args.target && args.target->resolvedTexture) {
+    //     glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
+    //     glDisable(GL_SCISSOR_TEST);
+    //     glClearColor(0, 0, 0, 0);
+    //     glClear(GL_COLOR_BUFFER_BIT);
+    //     glEnable(GL_SCISSOR_TEST);
+    //     glBindTexture(GL_TEXTURE_2D, 0);
+    // }
+    #endif
+    glBindFramebuffer(GL_FRAMEBUFFER, args.target ? args.target->frameBuffer : 0);
+    if (args.clear && args.target) {
+        glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
+        glDisable(GL_SCISSOR_TEST);
+        glClearColor(0, 0, 0, 0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glEnable(GL_SCISSOR_TEST);
+    }
+    currentRenderTarget = args.target;
     checkForGlErrors("bind framebuffer");
 }
 
@@ -313,17 +337,18 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                             : getDefaultColorShader();
             }
 
+            shader->bind(ctx);
+
             if (drawCall.key.image) {
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, drawCall.key.image->texture);
-                setSmoothingMode(drawCall.key.smooth, *drawCall.key.image);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
                                 GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
                                 GL_CLAMP_TO_EDGE);
                 checkForGlErrors("bind texture");
             }
-            shader->bind(ctx);
+            setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
             if (shader->matrixIndex > -1) {
                 glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
             }
@@ -363,9 +388,8 @@ template <>
 void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
                                                         SceneShader *&shader) {
     setSize(ctx);
-    // glBlendEquation(GL_FUNC_ADD);
-    // glBlendFuncSeparate(GL_ONE, GL_ONE, GL_SRC_ALPHA, GL_ONE);
     setBlendMode(shader->blend);
+    setSmoothingMode(SmoothLinear, nullptr);
 
     shader->bind(ctx);
     if (shader->matrixIndex > -1) {
@@ -376,7 +400,6 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
     checkForGlErrors("bindBuffer");
 
-    setBlendMode(shader->blend);
 
     renderData.reserve(shader->shader.bytesPerVertex * 6);
     renderData.resize(renderData.capacity());

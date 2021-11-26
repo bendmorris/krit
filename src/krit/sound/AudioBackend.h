@@ -27,7 +27,7 @@ struct AudioStream {
     bool playing = false;
     bool repeat = false;
 
-    AudioStream(MusicData *data = nullptr) : data(data) {}
+    AudioStream(std::shared_ptr<MusicData> data = nullptr) : data(data) {}
 
     void play();
     void pause();
@@ -42,11 +42,16 @@ struct AudioStream {
     int sampleRate();
     float currentPlayTime();
 
+    void onLoop(const std::string &name);
+    void onLoop(const AssetInfo &info);
+    void onLoop(std::shared_ptr<MusicData> music);
+
     void clear() {
         volume = 1;
         playing = false;
         repeat = false;
         data = nullptr;
+        onLoopData = nullptr;
         source = nullptr;
         bufferPtr = 0;
     }
@@ -54,7 +59,8 @@ struct AudioStream {
 private:
     std::unique_ptr<char[]> ringBuffer;
     AudioBackend *backend;
-    MusicData *data = nullptr;
+    std::shared_ptr<MusicData> data = nullptr;
+    std::shared_ptr<MusicData> onLoopData = nullptr;
     AudioSource *source = nullptr;
     ALuint buffer[NUM_BUFFERS] = {0};
     int bufferPtr = 0;
@@ -89,7 +95,7 @@ struct AudioBackend {
 
     AudioStream *playMusic(const std::string &name);
     AudioStream *playMusic(const AssetInfo &info);
-    AudioStream *playMusic(MusicData *music);
+    AudioStream *playMusic(std::shared_ptr<MusicData> music);
 
     AudioSource *getSource();
     void recycleSource(AudioSource *source);

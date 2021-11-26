@@ -25,4 +25,6 @@ interface AudioStream {
     pause(): void;
     stop(): void;
     reset(): void;
+
+    onLoop(id: string): void;
 }

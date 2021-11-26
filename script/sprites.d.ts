@@ -104,6 +104,8 @@ declare class SpineSprite extends VisibleSprite {
 
     setSkin(name: string): void;
     setAnimation(track: integer, name: string, loop: boolean, speed: number, mix: number): float;
+    addAnimation(track: integer, name: string, loop: boolean, delay: number, mix: number): float;
+    getAnimation(track: integer): cstring;
     advance(t: number): void;
 }
 

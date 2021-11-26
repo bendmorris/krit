@@ -213,6 +213,14 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 checkForGlErrors("glUniform1i %i", textureIndex - 1);
                 break;
             }
+            case UniformFbTexture: {
+                glActiveTexture(GL_TEXTURE0 + textureIndex);
+                glBindTexture(GL_TEXTURE_2D, uniform.fbPtrValue->getTexture().texture);
+                checkForGlErrors("glBindTexture");
+                glUniform1i(i, textureIndex++);
+                checkForGlErrors("glUniform1i %i", textureIndex - 1);
+                break;
+            }
             case UniformFloat: {
                 glUniform1f(i, uniform.floatValue);
                 checkForGlErrors("glUniform1f");

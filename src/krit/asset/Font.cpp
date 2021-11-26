@@ -1,6 +1,5 @@
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
-#include "krit/Assets.h"
 #include "krit/asset/AssetInfo.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"

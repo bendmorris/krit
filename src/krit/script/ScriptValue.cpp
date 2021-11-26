@@ -75,11 +75,13 @@ template <> double ScriptValue<double>::jsToValue(JSContext *ctx, JSValue val) {
 }
 
 template <>
-JSValue ScriptValue<char *>::valueToJs(JSContext *ctx, char *const &s) {
+JSValue ScriptValue<const char *>::valueToJs(JSContext *ctx,
+                                             const char *const &s) {
     return JS_NewString(ctx, s);
 }
-template <> char *ScriptValue<char *>::jsToValue(JSContext *ctx, JSValue val) {
-    return (char *)JS_ToCString(ctx, val);
+template <>
+const char *ScriptValue<const char *>::jsToValue(JSContext *ctx, JSValue val) {
+    return (const char *)JS_ToCString(ctx, val);
 }
 
 template <>
@@ -94,7 +96,7 @@ JSValue ScriptValue<std::string *>::valueToJs(JSContext *ctx,
 }
 template <>
 std::string ScriptValue<std::string>::jsToValue(JSContext *ctx, JSValue val) {
-    auto s = ScriptValue<char *>::jsToValue(ctx, val);
+    auto s = ScriptValue<const char *>::jsToValue(ctx, val);
     auto str = std::string(s);
     JS_FreeCString(ctx, s);
     return str;

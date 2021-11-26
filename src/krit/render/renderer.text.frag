@@ -9,11 +9,11 @@ in vec2 vTexCoord;
 out vec4 FragColor;
 
 void main(void) {
-    vec4 color = texture(uImage, vTexCoord);
-    if (color.r == 0.0) {
+    vec4 color = vec4(texture(uImage, vTexCoord).r) * vColor;
+    if (color.a == 0.0) {
         discard;
     } else {
-        FragColor = vec4(color.r, color.r, color.r, color.r) * vColor;
+        FragColor = color;
     }
 }
 )"

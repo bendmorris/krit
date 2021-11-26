@@ -6,6 +6,8 @@
 
 namespace krit {
 
+struct FrameBuffer;
+
 enum UniformValueType {
     UniformEmpty,
     UniformInt,
@@ -18,6 +20,7 @@ enum UniformValueType {
     UniformFloat3v,
     UniformFloat4v,
     UniformTexture,
+    UniformFbTexture,
 };
 
 struct UniformValue {
@@ -30,6 +33,7 @@ struct UniformValue {
         float vec3Value[3];
         float vec4Value[4];
         Slice<float> floatData;
+        FrameBuffer *fbPtrValue;
     };
 
     UniformValue() : type(UniformEmpty), intValue(0) {}
@@ -45,6 +49,8 @@ struct UniformValue {
           floatData(v, c) {}
     UniformValue(const ImageData &img)
         : type(UniformTexture), intValue(img.texture) {}
+    UniformValue(FrameBuffer &fb)
+        : type(UniformFbTexture), fbPtrValue(&fb) {}
     UniformValue(const Color &c)
         : type(UniformVec4), vec4Value{c.r, c.g, c.b, c.a} {}
     // template <typename T>

@@ -6,3 +6,4 @@ type integer = number;
 type int64 = number;
 type float = number;
 type size_t = number;
+type cstring = string & { __cstr?: undefined };

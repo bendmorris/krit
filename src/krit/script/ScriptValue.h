@@ -40,8 +40,8 @@ template <>
 JSValue ScriptValue<double *>::valueToJs(JSContext *ctx, double *const &val);
 template <> double ScriptValue<double>::jsToValue(JSContext *ctx, JSValue val);
 template <>
-JSValue ScriptValue<char *>::valueToJs(JSContext *ctx, char *const &val);
-template <> char *ScriptValue<char *>::jsToValue(JSContext *ctx, JSValue val);
+JSValue ScriptValue<const char *>::valueToJs(JSContext *ctx, const char *const &val);
+template <> const char *ScriptValue<const char *>::jsToValue(JSContext *ctx, JSValue val);
 template <>
 JSValue ScriptValue<std::string>::valueToJs(JSContext *ctx,
                                             const std::string &val);

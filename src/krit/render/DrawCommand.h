@@ -15,7 +15,7 @@ namespace krit {
 
 struct RenderContext;
 struct Matrix;
-struct BaseFrameBuffer;
+struct FrameBuffer;
 struct DrawKey;
 struct Shader;
 struct Triangle;
@@ -32,16 +32,24 @@ enum DrawCommandType {
     DrawCommandTypeCount
 };
 
+struct SetRenderTargetArgs {
+    FrameBuffer *target = nullptr;
+    bool clear = false;
+
+    SetRenderTargetArgs() {}
+    SetRenderTargetArgs(FrameBuffer *target, bool clear): target(target), clear(clear) {}
+};
+
 struct DrawCommandBuffer {
     std::vector<TriangleData> triangles;
-    CommandBuffer<DrawCall, Rectangle, char, BaseFrameBuffer *, SceneShader *,
+    CommandBuffer<DrawCall, Rectangle, char, SetRenderTargetArgs, SceneShader *,
                   Color, ImDrawData *>
         buf;
-    BaseFrameBuffer *currentRenderTarget = nullptr;
+    FrameBuffer *currentRenderTarget = nullptr;
 
     DrawCommandBuffer() {
-        triangles.reserve(0x10000);
-        buf.get<DrawTriangles>().reserve(0x40);
+        triangles.reserve(0x1000);
+        buf.get<DrawTriangles>().reserve(0x80);
         buf.get<PushClipRect>().reserve(0x10);
         buf.get<PopClipRect>().reserve(0x10);
         buf.get<SetRenderTarget>().reserve(0x10);
@@ -72,8 +80,8 @@ struct DrawCommandBuffer {
 
     void popClip() { buf.emplace_back<PopClipRect>(); }
 
-    void setRenderTarget(BaseFrameBuffer *fb = nullptr) {
-        buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb);
+    void setRenderTarget(FrameBuffer *fb = nullptr, bool clear = false) {
+        buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb, clear);
     }
 
     void clearColor() { buf.emplace_back<ClearColor>(Color(0, 0, 0, 0)); }

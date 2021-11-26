@@ -70,6 +70,7 @@ SpineSprite::SpineSprite(const AssetInfo &info) {
     spine::Bone::setYDown(true);
 
     // load skeleton/animation data
+    this->smooth = SmoothMipmap;
     this->bin = App::ctx.engine->getSpine(info);
     this->skeleton = new spine::Skeleton(&this->skeletonData());
     this->animationState =
@@ -139,6 +140,14 @@ float SpineSprite::addAnimation(size_t track, const std::string &name,
         trackEntry->setMixDuration(std::min(trackEntry->getAnimationEnd(), mix));
     }
     return std::max(1.0f / 60, trackEntry->getAnimationEnd());
+}
+
+const char *SpineSprite::getAnimation(size_t track) {
+    spine::TrackEntry *t = animationState->getCurrent(track);
+    if (t) {
+        return t->getAnimation()->getName().buffer();
+    }
+    return "";
 }
 
 spine::String SpineSprite::_customSkin("custom");

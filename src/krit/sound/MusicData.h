@@ -14,6 +14,7 @@ struct MusicData {
     SNDFILE *sndFile = nullptr;
     VirtualIo io;
 
+    MusicData() {}
     ~MusicData();
 };
 

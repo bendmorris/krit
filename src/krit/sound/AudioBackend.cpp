@@ -146,12 +146,12 @@ void AudioBackend::update() {
 }
 
 AudioStream *AudioBackend::playMusic(const std::string &name) {
-    return playMusic(App::ctx.engine->getMusic(name).get());
+    return playMusic(App::ctx.engine->getMusic(name));
 }
 AudioStream *AudioBackend::playMusic(const AssetInfo &info) {
-    return playMusic(App::ctx.engine->getMusic(info).get());
+    return playMusic(App::ctx.engine->getMusic(info));
 }
-AudioStream *AudioBackend::playMusic(MusicData *music) {
+AudioStream *AudioBackend::playMusic(std::shared_ptr<MusicData> music) {
     int streamIndex = -1;
     for (int i = 0; i < MAX_STREAMS; ++i) {
         if (!_streams[i].data) {
@@ -240,7 +240,12 @@ void AudioStream::feed(bool initial) {
         data->sndFile, (float *)(&ringBuffer[STREAM_BUFFER_SIZE * bufferPtr]),
         toRead);
     if (read < toRead) {
-        sf_seek(data->sndFile, 0, SEEK_SET);
+        if (onLoopData) {
+            data = onLoopData;
+            onLoopData = nullptr;
+        } else {
+            sf_seek(data->sndFile, 0, SEEK_SET);
+        }
         // FIXME: slightly off; should only set samplesPlayed when this queued
         // buffer starts
         samplesPlayed = 0;
@@ -268,6 +273,16 @@ float AudioStream::currentPlayTime() {
     int sampleOffset;
     alGetSourcei(source->source, AL_SAMPLE_OFFSET, &sampleOffset);
     return static_cast<float>(samplesPlayed + sampleOffset) / data->sampleRate;
+}
+
+void AudioStream::onLoop(const std::string &name) {
+    onLoop(App::ctx.engine->getMusic(name));
+}
+void AudioStream::onLoop(const AssetInfo &info) {
+    onLoop(App::ctx.engine->getMusic(info));
+}
+void AudioStream::onLoop(std::shared_ptr<MusicData> music) {
+    onLoopData = music;
 }
 
 }

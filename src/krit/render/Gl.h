@@ -7,6 +7,9 @@
 #include <GLES3/gl3.h>
 #endif
 
+#define KRIT_GL_TEX_PARAM GL_TEXTURE_2D
+#define KRIT_GL_TEX_IMAGE_2D(width, height, format) glTexImage2D(KRIT_GL_TEX_PARAM, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, 0)
+
 namespace krit {
 
 typedef GLfloat RenderFloat;

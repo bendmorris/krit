@@ -93,8 +93,10 @@ struct Engine {
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
 #define DECLARE_ASSET_GETTER(N, T)                                             \
-    template <typename Arg> std::shared_ptr<T> get##N(const Arg &arg) {        \
-        return assetCaches.back()->get<T>(arg);                                \
+    template <typename Arg>                                                    \
+    std::shared_ptr<T> get##N(const Arg &arg, bool cache = true) {             \
+        return cache ? assetCaches.back()->get<T>(arg)                         \
+                     : AssetCache::load<T>(arg);                               \
     }
     DECLARE_ASSET_GETTER(Image, ImageData)
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)

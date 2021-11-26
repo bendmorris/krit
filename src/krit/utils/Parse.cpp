@@ -55,7 +55,7 @@ template <> SmoothingMode Parse::parse(const std::string &_s) {
     } else if (s == "nearest") {
         return SmoothNearest;
     } else {
-        panic("unrecognized smoothing mode: %s", s);
+        panic("unrecognized smoothing mode: %s", s.c_str());
     }
 }
 

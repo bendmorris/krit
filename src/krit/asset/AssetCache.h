@@ -13,6 +13,8 @@
 
 namespace krit {
 
+enum AssetId : int;
+
 struct AssetRequest {
     int id;
     bool (*ready)(void *id);
@@ -56,6 +58,23 @@ struct AssetCache {
         }
     }
 
+    template <typename T> static std::shared_ptr<T> load(const AssetId id) {
+        return load<T>(Assets::byId(id));
+    }
+
+    template <typename T>
+    static std::shared_ptr<T> load(const std::string &path) {
+        return load<T>(Assets::byPath(path));
+    }
+
+    template <typename T>
+    static std::shared_ptr<T> load(const AssetInfo &info) {
+        return std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
+            Log::info("unload asset: %s", info.path.c_str());
+            AssetLoader<T>::unloadAsset(ptr);
+        });
+    }
+
     std::unordered_map<int, std::shared_ptr<void>> cache;
 
     template <typename T> std::shared_ptr<T> get(const std::string &path) {
@@ -90,11 +109,7 @@ struct AssetCache {
         }
         // we need to load this asset
         Log::info("load asset: %s", info.path.c_str());
-        std::shared_ptr<T> asset =
-            std::shared_ptr<T>(AssetLoader<T>::loadAsset(info), [&](T *ptr) {
-                Log::info("unload asset: %s", info.path.c_str());
-                AssetLoader<T>::unloadAsset(ptr);
-            });
+        std::shared_ptr<T> asset = load<T>(info);
         globalCache[id] = std::weak_ptr<void>(asset);
         cache[id] = asset;
         return asset;

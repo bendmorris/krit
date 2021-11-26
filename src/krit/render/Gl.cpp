@@ -1,4 +1,5 @@
 #include "krit/render/Gl.h"
+#include "krit/utils/Panic.h"
 #include <cstdio>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -13,7 +14,7 @@ void _checkForGlErrors(const char *fmt, ...) {
         fprintf(stderr, "GL error: %i ", err);
         vfprintf(stderr, fmt, args);
         fputs("\n", stderr);
-        // panic("GL error");
+        panic("GL error");
     }
 }
 
