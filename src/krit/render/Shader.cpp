@@ -208,6 +208,12 @@ void ShaderInstance::bind(RenderContext &ctx) {
             case UniformTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
                 glBindTexture(GL_TEXTURE_2D, uniform.intValue);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                                GL_LINEAR);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,
+                                GL_LINEAR);
                 checkForGlErrors("glBindTexture");
                 glUniform1i(i, textureIndex++);
                 checkForGlErrors("glUniform1i %i", textureIndex - 1);
@@ -215,7 +221,8 @@ void ShaderInstance::bind(RenderContext &ctx) {
             }
             case UniformFbTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
-                glBindTexture(GL_TEXTURE_2D, uniform.fbPtrValue->getTexture().texture);
+                glBindTexture(GL_TEXTURE_2D,
+                              uniform.fbPtrValue->getTexture().texture);
                 checkForGlErrors("glBindTexture");
                 glUniform1i(i, textureIndex++);
                 checkForGlErrors("glUniform1i %i", textureIndex - 1);

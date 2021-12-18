@@ -156,7 +156,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 #ifndef __EMSCRIPTEN__
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
 #else
@@ -244,6 +244,12 @@ Renderer::Renderer(Window &_window) : window(_window) {
                  GL_STATIC_DRAW);
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
     checkForGlErrors("renderer init");
+}
+
+Renderer::~Renderer() {
+    if (this->glContext) {
+        SDL_GL_DeleteContext(this->glContext);
+    }
 }
 
 template <>

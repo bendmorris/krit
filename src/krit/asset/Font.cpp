@@ -104,7 +104,7 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
     : path(path) {
     this->fontData = (void *)fontData;
     // harfbuzz face initialization
-    hb_blob_t *blob = hb_blob_create(fontData, fontDataLen,
+    blob = hb_blob_create(fontData, fontDataLen,
                                      HB_MEMORY_MODE_READONLY, nullptr, nullptr);
     face = hb_face_create(blob, 0);
     font = hb_font_create(face);
@@ -126,6 +126,9 @@ Font::~Font() {
     }
     if (face) {
         hb_face_destroy(face);
+    }
+    if (blob) {
+        hb_blob_destroy(blob);
     }
     if (fontData) {
         IoRead::free((char *)fontData);
@@ -156,7 +159,7 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
                        FT_STROKER_LINEJOIN_ROUND, 0);
         FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
     }
-    FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
+    FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
     FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
 
     int width = bitmap->bitmap.width;
@@ -235,7 +238,7 @@ void GlyphCache::commitChanges() {
                                FT_STROKER_LINEJOIN_ROUND, 0);
                 FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
             }
-            FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, false);
+            FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
             FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
             for (unsigned int i = 0; i < bitmap->bitmap.rows; ++i) {
 #ifndef __EMSCRIPTEN__

@@ -33,9 +33,10 @@ declare class VisibleSprite extends Sprite {
     /** @readonly */ dimensions: Dimensions;
     /** @readonly */ scale: ScaleFactor;
     zIndex: integer;
-    color: Color;
+    /** @readonly */ color: Color;
     /** @cast BlendMode */ blendMode: BlendMode;
     /** @cast SmoothingMode */ smooth: SmoothingMode;
+    getBounds(): Rectangle;
 }
 
 /**

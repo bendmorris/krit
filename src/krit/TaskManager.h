@@ -108,13 +108,17 @@ struct TaskManager {
         threads = new SDL_Thread *[size];
         for (size_t i = 0; i < size; ++i) {
             std::string threadName = "worker" + std::to_string(i + 1);
-            SDL_CreateThread(workerFunc, threadName.c_str(), this);
+            threads[i] = SDL_CreateThread(workerFunc, threadName.c_str(), this);
         }
 #endif
     }
 
-    ~TaskManager() {
+    void cleanup() {
 #if KRIT_ENABLE_THREADS
+        killed = true;
+        for (size_t i = 0; i < size; ++i) {
+            SDL_WaitThread(threads[i], nullptr);
+        }
         delete[] threads;
 #endif
     }

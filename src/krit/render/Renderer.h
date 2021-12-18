@@ -24,6 +24,7 @@ struct Renderer {
     DrawCommandBuffer drawCommandBuffer;
 
     Renderer(Window &window);
+    ~Renderer();
 
     void renderFrame(RenderContext &ctx);
 

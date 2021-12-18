@@ -52,6 +52,7 @@ struct Engine {
     float elapsed = 0;
 
     UpdateSignal onBegin = nullptr;
+    UpdateSignal onEnd = nullptr;
     UpdateSignal onUpdate = nullptr;
     UpdateSignal postUpdate = nullptr;
     RenderSignal onRender = nullptr;

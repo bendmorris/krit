@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
+struct hb_blob_t;
 struct hb_face_t;
 struct hb_font_t;
 struct hb_buffer_t;
@@ -131,6 +132,7 @@ struct Font {
     void flushCache();
 
 private:
+    hb_blob_t *blob = nullptr;
     hb_face_t *face = nullptr;
     hb_font_t *font = nullptr;
     void *ftFace = nullptr;

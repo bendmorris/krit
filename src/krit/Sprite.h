@@ -56,6 +56,11 @@ struct VisibleSprite : public Sprite, public SpriteStyle {
         return Dimensions(this->width() * this->scale.x,
                           this->height() * this->scale.y);
     }
+    Rectangle getBounds() {
+        auto p = getPosition();
+        auto d = getSize();
+        return Rectangle(p.x, p.y, d.x, d.y);
+    }
     virtual void move(float x, float y) { this->position.setTo(x, y); }
     virtual void resize(float w, float h) {
         this->scale.setTo(w / this->width(), h / this->height());

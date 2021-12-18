@@ -103,7 +103,10 @@ void App::run() {
 #endif
 }
 
-void App::cleanup() { TaskManager::instance->killed = true; }
+void App::cleanup() {
+    invoke(engine.onEnd, &ctx);
+    TaskManager::instance->cleanup();
+}
 
 bool App::doFrame() {
     UpdateContext *update = &ctx;

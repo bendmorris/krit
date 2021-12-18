@@ -11,8 +11,6 @@
 
 namespace krit {
 
-JSRuntime *ScriptEngine::rt = JS_NewRuntime();
-
 static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
     const char *str = JS_ToCString(ctx, val);
     if (str) {
@@ -52,18 +50,17 @@ static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
     fprintf(stderr, "%s\n", err.c_str());
 }
 
-std::vector<JSClassID> ScriptEngine::classIds(ScriptClassCount);
-
-template <int N> static void initScriptClasses() {
-    JSRuntime *rt = ScriptEngine::rt;
-    auto &classIds = ScriptEngine::classIds;
+template <int N> void initScriptClasses(ScriptEngine &engine) {
+    if (N == 0) {
+        engine.classIds.resize(ScriptClassCount);
+    }
     JSClassDef *classDef = scriptClassDef<N>();
-    JS_NewClassID(&classIds[N]);
-    JS_NewClass(rt, classIds[N], classDef);
-    initScriptClasses<N + 1>();
+    JS_NewClassID(&engine.classIds[N]);
+    JS_NewClass(engine.rt, engine.classIds[N], classDef);
+    initScriptClasses<N + 1>(engine);
 }
 
-template <> void initScriptClasses<ScriptClassCount>() {}
+template <> void initScriptClasses<ScriptClassCount>(ScriptEngine &engine) {}
 
 template <int N> static void registerScriptClasses(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;
@@ -82,11 +79,8 @@ template <>
 void registerScriptClasses<ScriptClassCount>(ScriptEngine *engine) {}
 
 ScriptEngine::ScriptEngine() {
-    static bool initialized = false;
-    if (!initialized) {
-        initialized = true;
-        initScriptClasses<0>();
-    }
+    rt = JS_NewRuntime();
+    initScriptClasses<0>(*this);
 
     JS_SetMaxStackSize(rt, 4 * 1024 * 1024);
     JS_SetRuntimeOpaque(rt, this);
@@ -107,6 +101,8 @@ ScriptEngine::ScriptEngine() {
 ScriptEngine::~ScriptEngine() {
     JS_FreeValue(ctx, exports);
     JS_FreeContext(ctx);
+    // this will fail an assertion if values are still referenced
+    // JS_FreeRuntime(rt);
 }
 
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {

@@ -8,6 +8,11 @@ namespace krit {
 
 struct Renderer;
 
+enum WrapMode {
+    WrapClampEdge,
+    WrapRepeat,
+};
+
 /**
  * Contains backend-specific data for an image.
  */
@@ -15,6 +20,7 @@ struct ImageData {
     GLuint texture = 0;
     float scale = 1.0;
     IntDimensions dimensions;
+    WrapMode wrap = WrapClampEdge;
 
     ImageData(GLuint texture, IntDimensions dimensions)
         : texture(texture), dimensions(dimensions) {}

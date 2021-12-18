@@ -1,4 +1,4 @@
-R"(#version 300 es
+R"(#version 330
 #ifdef GL_ES
 precision mediump float;
 #endif

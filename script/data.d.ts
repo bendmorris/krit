@@ -10,6 +10,8 @@ interface DataItem {
 
 interface DataModel<T> {
     getById(id: string): Reference<T>;
+    all(): Reference<Array<T>>;
+    reserve(n: size_t): void;
     newItem(): Reference<T>;
     finish(x: Reference<T>): void;
 }

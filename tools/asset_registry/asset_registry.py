@@ -63,6 +63,10 @@ def run(inputPath, outputDir):
                             asset['width'] = existing['width']
                             asset['height'] = h2
                             asset['scale'] = h / h2
+                        else:
+                            asset['width'] = w / root.get('scale')
+                            asset['height'] = h / root.get('scale')
+                            asset['scale'] = root.get('scale')
                     else:
                         asset['scale'] = root.get('scale', 1)
 

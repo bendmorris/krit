@@ -59,13 +59,6 @@ struct DelayRequest {
 /**
  * ScriptEngine currently assumes the use of QuickJS.
  *
- * Before constructing a ScriptEngine,
- *
- * - Create a runtime with `JS_NewRuntime()` and assign to `ScriptEngine::rt`.
- *   Since QuickJS uses stack position, this should be done as low in the
- *   stack as possible, e.g. from `main()`.
- * - Initialize any script classes.
- *
  * There should be one ScriptEngine instance per JS context. After constructing
  * an instance, initialize any special bridge functions or objects.
  *
@@ -73,8 +66,7 @@ struct DelayRequest {
  * methods.
  */
 struct ScriptEngine {
-    static JSRuntime *rt;
-
+    JSRuntime *rt;
     JSContext *ctx = nullptr;
     JSValue exports = JS_UNDEFINED;
     void *userData;
@@ -83,7 +75,7 @@ struct ScriptEngine {
     ScriptEngine();
     ~ScriptEngine();
 
-    static std::vector<JSClassID> classIds;
+    std::vector<JSClassID> classIds;
 
     void eval(const std::string &scriptName, const std::string &src) {
         this->eval(scriptName.c_str(), src.c_str(), src.length());
