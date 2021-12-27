@@ -23,6 +23,9 @@ declare class SpriteShader {}
  */
 declare class FrameBuffer {
     multisample: boolean;
+
+    constructor(width: integer, height: integer, multisample: boolean);
+
     resize(width: integer, height: integer): void;
 }
 

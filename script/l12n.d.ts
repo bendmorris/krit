@@ -2,8 +2,10 @@
  * @namespace krit
  * @import krit/l12n/TextMap.h
  */
-interface TextMap {
+declare class TextMap {
     /** @readonly */ locale: string;
+
+    constructor();
 
     registerLocale(key: string, path: string): void;
     setLocale(key: string): void;

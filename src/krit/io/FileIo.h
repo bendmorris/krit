@@ -9,21 +9,10 @@
 namespace krit {
 
 struct FileIo {
-    static char *read(const std::string &path, int *length = nullptr) {
-        std::ifstream file(path, std::ios::binary | std::ios::ate);
-        if (!file.good()) {
-            panic("file does not exist: %s\n", path.c_str());
-        }
-        std::streamsize size = file.tellg();
-        file.seekg(0, std::ios::beg);
-        char *buffer = new char[size + 1];
-        file.read(buffer, size);
-        buffer[size] = 0;
-        if (length) {
-            *length = size;
-        }
-        return buffer;
-    }
+    static std::string dataDir();
+
+    static char *read(const std::string &path, int *length = nullptr);
+    static void write(const std::string &path, char *buf, size_t size);
 
     static void *alloc(size_t size) { return malloc(size); }
     static void free(char *buf) { std::free(buf); }

@@ -70,7 +70,7 @@ static JS_FUNC({{wrapper.name}}_toString) {
 }
 
 {% if wrapper.from %}
-JS_FUNC({{wrapper.name}}___from__) {
+static JS_FUNC({{wrapper.name}}___from__) {
     if (JS_IsUndefined(argv[0])) {
         return JS_UNDEFINED;
     }
@@ -91,6 +91,35 @@ JS_FUNC({{wrapper.name}}___from__) {
     return val;
 }
 {% endif %}
+
+{% if wrapper.constructor %}
+static JS_FUNC({{wrapper.name}}___constructor__) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    return engine->createOwned(ScriptClass{{wrapper.name}},
+                               new {{wrapper.name}}(
+                                {% set comma = joiner() %}
+                                {% for param in wrapper.constructor.params %}
+                                {{ comma() }}{% if param.tags.cast %}({{ param.tags.cast }}){% endif %}{% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
+                                {% endfor %}
+                               ));
+}
+{% endif %}
+
+{% for method in wrapper.staticMethods %}
+static JS_FUNC({{wrapper.name}}_{{method.name}}) {
+    {% set comma = joiner() %}
+    {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}{{ wrapper.name }}::{{ method.name }}(
+        {% for param in method.params %}
+        {{ comma() }}{% if param.tags.cast %}({{ param.tags.cast }}){% endif %}{% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
+        {% endfor %}
+    );
+    {% if method.returnCppType %}
+    return ScriptValue<{{ method.returnCppType.type }}{{ '*' | repeat(method.returnCppType.pointer) }}>::valueToJs(ctx, rt);
+    {% else %}
+    return JS_UNDEFINED;
+    {% endif %}
+}
+{% endfor %}
 
 {% for method in wrapper.methods %}
 static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
@@ -122,8 +151,8 @@ static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
     JS_CGETSET_DEF("{{ prop.name }}", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
     {% endfor %}
     JS_CFUNC_DEF("toString", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}_toString),
-    {% if wrapper.from %}
-    JS_CFUNC_DEF("from", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}___from__),
+    {% if wrapper.constructor %}
+    JS_CFUNC_SPECIAL_DEF("__ctor", {{ wrapper.constructor.params.length }}, constructor, {{ wrapper.namespace }}::js_{{ wrapper.name }}___constructor__),
     {% endif %}
     {% for method in wrapper.methods %}
     JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ wrapper.namespace }}::js_{{ wrapper.name }}_{{ method.name }}),
@@ -134,10 +163,6 @@ static JSClassDef classDef{{wrapper.name}} = {
     "{{ wrapper.name }}",
     .finalizer = nullptr,
 };
-
-template <> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs<ScriptClass{{ wrapper.name }}>() {
-    return std::make_pair(protoFuncs{{ wrapper.name }}, countof(protoFuncs{{ wrapper.name }}));
-}
 
 template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
     return &classDef{{ wrapper.name }};
@@ -158,10 +183,6 @@ static JSClassDef classDef{{wrapper.name}}Finalizer = {
     "{{ wrapper.name }}Finalizer",
     .finalizer = finalize{{wrapper.name}},
 };
-
-template <> std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs<ScriptClass{{ wrapper.name }}Finalizer>() {
-    return std::make_pair(protoFuncs{{ wrapper.name }}, countof(protoFuncs{{ wrapper.name }}));
-}
 
 template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}Finalizer>() {
     return &classDef{{ wrapper.name }}Finalizer;
@@ -196,5 +217,46 @@ template <> {{ wrapper.namespace }}::{{ wrapper.name }} *ScriptValue<{{ wrapper.
     return static_cast<typename {{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque2(ctx, val, 0));
 }
 
+// registration
+
+template <> void registerScriptClass<ScriptClass{{ wrapper.name }}>(ScriptEngine *engine) {
+    JSContext *ctx = engine->ctx;
+    auto funcs = protoFuncs{{ wrapper.name }};
+    JSValue proto = JS_NewObject(ctx);
+    JS_SetPropertyFunctionList(ctx, proto, funcs, countof(protoFuncs{{ wrapper.name }}));
+    JS_SetClassProto(ctx, engine->classIds[ScriptClass{{ wrapper.name }}], proto);
+    JSValue globalObj = JS_GetGlobalObject(ctx);
+    // bind prototype/constructor to global object
+    {% if wrapper.constructor %}
+    JSValue ctor = JS_GetPropertyStr(ctx, proto, "__ctor");
+    JS_SetConstructor(ctx, ctor, proto);
+    {% else %}
+    JSValue ctor = JS_NewObject(ctx);
+    JS_SetPropertyStr(ctx, ctor, "prototype", JS_DupValue(ctx, proto));
+    {% endif %}
+    JS_SetPropertyStr(ctx, globalObj, "{{ wrapper.name }}", JS_DupValue(ctx, ctor));
+    (void)ctor;
+    {% if wrapper.from %}
+    {
+        JSValue from = JS_NewCFunction(ctx, {{ wrapper.namespace }}::js_{{ wrapper.name }}___from__, "from", 0);
+        JS_SetPropertyStr(ctx, ctor, "from", JS_DupValue(ctx, from));
+    }
+    {% endif %}
+    {% for method in wrapper.staticMethods %}
+    {
+        JSValue method = JS_NewCFunction(ctx, {{ wrapper.namespace }}::js_{{ wrapper.name }}_{{ method.name }}, "{{ method.name }}", {{ method.params.length }});
+        JS_SetPropertyStr(ctx, ctor, "{{ method.name }}", JS_DupValue(ctx, method));
+    }
+    {% endfor %}
+    registerScriptClass<ScriptClass{{ wrapper.name }} + 1>(engine);
+}
+
+template <> void registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer>(ScriptEngine *engine) {
+    JSContext *ctx = engine->ctx;
+    JSValue proto = JS_NewObject(ctx);
+    JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
+    JS_SetClassProto(ctx, engine->classIds[ScriptClass{{ wrapper.name }}Finalizer], proto);
+    registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer + 1>(engine);
+}
 
 }

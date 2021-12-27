@@ -11,6 +11,8 @@ namespace {{ wrapper.namespace }} {
 
 namespace krit {
 
+struct ScriptEngine;
+
 template <typename I> static std::string n2hexstr(I w, size_t hex_len = sizeof(I)<<1) {
     static const char* digits = "0123456789abcdef";
     std::string rc(hex_len,'0');
@@ -29,6 +31,9 @@ enum ScriptClass: int {
     ScriptClassCount,
 };
 
+template <int N> void registerScriptClass(ScriptEngine *engine);
+template <int C> JSClassDef *scriptClassDef();
+
 {% for wrapper in wrappers %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &val);
 {% if not wrapper.pointerOnly %}
@@ -36,6 +41,8 @@ template <> {{ wrapper.namespace }}::{{ wrapper.name }} ScriptValue<{{ wrapper.n
 {% endif %}
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} * const &val);
 template <> {{ wrapper.namespace }}::{{ wrapper.name }}* ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::jsToValue(JSContext *ctx, JSValue val);
+template <> void registerScriptClass<ScriptClass{{ wrapper.name }}>(ScriptEngine *engine);
+template <> void registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer>(ScriptEngine *engine);
 {% endfor %}
 
 }

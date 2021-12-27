@@ -2,9 +2,11 @@
  * @namespace krit
  * @import krit/math/Point.h
  */
-interface Point {
+declare class Point {
     x: number;
     y: number;
+
+    constructor(x: number, y: number);
 
     setTo(x: number, y: number): void;
     distance(p: Reference<Point>): number;
@@ -15,9 +17,11 @@ interface Point {
  * @namespace krit
  * @import krit/math/Point.h
  */
-interface IntPoint {
+declare class IntPoint {
     x: integer;
     y: integer;
+
+    constructor(x: integer, y: integer);
 
     setTo(x: integer, y: integer): void;
 }
@@ -26,9 +30,11 @@ interface IntPoint {
  * @namespace krit
  * @import krit/math/Dimensions.h
  */
-interface Dimensions {
+declare class Dimensions {
     x: number;
     y: number;
+
+    constructor(x: number, y: number);
 
     width(): Reference<number>;
     height(): Reference<number>;
@@ -39,9 +45,11 @@ interface Dimensions {
  * @namespace krit
  * @import krit/math/Dimensions.h
  */
-interface IntDimensions {
+declare class IntDimensions {
     x: integer;
     y: integer;
+
+    constructor(x: integer, y: integer);
 
     width(): Reference<integer>;
     height(): Reference<integer>;
@@ -51,9 +59,11 @@ interface IntDimensions {
  * @namespace krit
  * @import krit/math/ScaleFactor.h
  */
-interface ScaleFactor {
+declare class ScaleFactor {
     x: number;
     y: number;
+
+    constructor(x: number, y: number);
 
     setTo(x: number, y: number): void;
 }
@@ -87,11 +97,13 @@ interface AnchoredMeasurement {
  * @namespace krit
  * @import krit/math/Rectangle.h
  */
-interface Rectangle {
+declare class Rectangle {
     x: number;
     y: number;
     width: number;
     height: number;
+
+    constructor(x: number, y: number, width: number, height: number);
 
     contains(x: number, y: number): boolean;
     setTo(x: number, y: number, width: number, height: number): void;
@@ -101,13 +113,16 @@ interface Rectangle {
  * @namespace krit
  * @import krit/math/Rectangle.h
  */
- interface IntRectangle {
+ declare class IntRectangle {
     x: integer;
     y: integer;
     width: integer;
     height: integer;
 
+    constructor(x: integer, y: integer, width: integer, height: integer);
+
     contains(x: integer, y: integer): boolean;
+    setTo(x: integer, y: integer, width: integer, height: integer): void;
 }
 
 /**

@@ -319,6 +319,10 @@ void LayoutRoot::parseLayoutAttr(LayoutParseData *data, LayoutNode *layout,
         }
     } else if (key == "flex") {
         layout->flex = Parse::parse<bool>(value);
+    } else if (key == "offsetX") {
+        layout->offset.x = Parse::parse<float>(value);
+    } else if (key == "offsetY") {
+        layout->offset.y = Parse::parse<float>(value);
     }
 }
 

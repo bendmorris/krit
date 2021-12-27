@@ -50,37 +50,22 @@ static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
     fprintf(stderr, "%s\n", err.c_str());
 }
 
-template <int N> void initScriptClasses(ScriptEngine &engine) {
+template <int N> void initScriptClass(ScriptEngine &engine) {
     if (N == 0) {
         engine.classIds.resize(ScriptClassCount);
     }
     JSClassDef *classDef = scriptClassDef<N>();
     JS_NewClassID(&engine.classIds[N]);
     JS_NewClass(engine.rt, engine.classIds[N], classDef);
-    initScriptClasses<N + 1>(engine);
+    initScriptClass<N + 1>(engine);
 }
 
-template <> void initScriptClasses<ScriptClassCount>(ScriptEngine &engine) {}
-
-template <int N> static void registerScriptClasses(ScriptEngine *engine) {
-    JSContext *ctx = engine->ctx;
-    JSClassDef *classDef = scriptClassDef<N>();
-    auto funcs = scriptClassProtoFuncs<N>();
-    JSValue proto = JS_NewObject(ctx);
-    JS_SetPropertyFunctionList(ctx, proto, funcs.first, funcs.second);
-    JS_SetClassProto(ctx, engine->classIds[N], proto);
-    JSValue globalObj = JS_GetGlobalObject(ctx);
-    JS_SetPropertyStr(ctx, globalObj, classDef->class_name,
-                      JS_DupValue(ctx, proto));
-    registerScriptClasses<N + 1>(engine);
-}
-
-template <>
-void registerScriptClasses<ScriptClassCount>(ScriptEngine *engine) {}
+template <> void initScriptClass<ScriptClassCount>(ScriptEngine &engine) {}
+template <> void registerScriptClass<ScriptClassCount>(ScriptEngine *engine) {}
 
 ScriptEngine::ScriptEngine() {
     rt = JS_NewRuntime();
-    initScriptClasses<0>(*this);
+    initScriptClass<0>(*this);
 
     JS_SetMaxStackSize(rt, 4 * 1024 * 1024);
     JS_SetRuntimeOpaque(rt, this);
@@ -94,7 +79,7 @@ ScriptEngine::ScriptEngine() {
     JS_FreeValue(ctx, globalObj);
 
     ScriptFinalizer::init(this);
-    registerScriptClasses<0>(this);
+    registerScriptClass<0>(this);
     initScriptBridge(*this);
 }
 
@@ -180,9 +165,9 @@ JSValue ScriptEngine::delay(float duration) {
                 it->duration -= duration;
                 this->delayPromises.emplace(
                     it + 1, DelayRequest{
-                            .duration = duration,
-                            .resolve = JS_DupValue(ctx, resolvingFuncs[0]),
-                            .reject = JS_DupValue(ctx, resolvingFuncs[1])});
+                                .duration = duration,
+                                .resolve = JS_DupValue(ctx, resolvingFuncs[0]),
+                                .reject = JS_DupValue(ctx, resolvingFuncs[1])});
                 inserted = true;
                 break;
             } else {

@@ -32,7 +32,6 @@ if (bridgePath) {
     basePaths.push(bridgePath);
 }
 
-
 const filePaths = [].concat(
     ...basePaths.map(function walk(dir) {
         var results = [];
@@ -191,7 +190,10 @@ for (const sourceFile of program.getSourceFiles()) {
                 name: node.name.text,
                 props: [],
                 methods: [],
+                staticProps: [],
+                staticMethods: [],
                 import: [],
+                constructor: undefined,
                 from: false,
             };
             for (const doc of node.jsDoc) {
@@ -208,47 +210,78 @@ for (const sourceFile of program.getSourceFiles()) {
             if (type.symbol.exports && type.symbol.exports.has('from')) {
                 options.from = true;
             }
-            for (const prop of checker.getPropertiesOfType(type)) {
-                const propType = checker.getTypeOfSymbolAtLocation(prop, node);
-                const tags = {};
-                for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
-                    tags[tag.tagName.text] = tagify(tag.comment);
+            if (ts.isClassDeclaration(node) && type.symbol.members && type.symbol.members.has('__constructor')) {
+                const symbol = checker.getSymbolAtLocation(node.name);
+                const constructorType = checker.getTypeOfSymbolAtLocation(symbol, symbol.valueDeclaration);
+                if (type.symbol.members.get('__constructor').declarations.length > 1) {
+                    throw new Error(
+                        `type ${node.name.text} has multiple constructors; only one constructor is supported`,
+                    );
                 }
-                if (tags.skip) {
-                    continue;
-                }
-                if (checker.typeToString(propType).indexOf('=>') !== -1) {
-                    // this is a method
-                    const functionType = propType.getCallSignatures()[0];
-                    const method = {
-                        name: prop.name,
-                        returnCppType: cppType(functionType.getReturnType()),
-                        params: [],
-                        tags,
+                const functionType = constructorType.getConstructSignatures()[0];
+                options.constructor = { params: [] };
+                for (const param of functionType.getParameters()) {
+                    const spec = {
+                        name: param.name,
+                        cppType: cppType(checker.getTypeOfSymbolAtLocation(param, node)),
+                        tags: {},
                     };
-                    for (const param of functionType.getParameters()) {
-                        const spec = {
-                            name: param.name,
-                            cppType: cppType(checker.getTypeOfSymbolAtLocation(param, node)),
-                            tags: {},
+                    for (const tag of ts.getJSDocTags(param.valueDeclaration)) {
+                        spec.tags[tag.tagName.text] = tagify(tag.comment);
+                    }
+                    options.constructor.params.push(spec);
+                }
+            }
+            const staticProperties = checker
+                .getPropertiesOfType(checker.getTypeOfSymbolAtLocation(node.symbol, node))
+                .filter((x) => ['prototype', 'from'].indexOf(x.escapedName) === -1);
+            const properties = checker.getPropertiesOfType(type);
+            for (const collection of [
+                { methods: options.staticMethods, props: options.staticProps, defined: staticProperties },
+                { methods: options.methods, props: options.props, defined: properties },
+            ]) {
+                for (const prop of collection.defined) {
+                    const propType = checker.getTypeOfSymbolAtLocation(prop, node);
+                    const tags = {};
+                    for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
+                        tags[tag.tagName.text] = tagify(tag.comment);
+                    }
+                    if (tags.skip) {
+                        continue;
+                    }
+                    if (checker.typeToString(propType).indexOf('=>') !== -1) {
+                        // this is a method
+                        const functionType = propType.getCallSignatures()[0];
+                        const method = {
+                            name: prop.name,
+                            returnCppType: cppType(functionType.getReturnType()),
+                            params: [],
+                            tags,
                         };
-                        for (const tag of ts.getJSDocTags(param.valueDeclaration)) {
-                            spec.tags[tag.tagName.text] = tagify(tag.comment);
+                        for (const param of functionType.getParameters()) {
+                            const spec = {
+                                name: param.name,
+                                cppType: cppType(checker.getTypeOfSymbolAtLocation(param, node)),
+                                tags: {},
+                            };
+                            for (const tag of ts.getJSDocTags(param.valueDeclaration)) {
+                                spec.tags[tag.tagName.text] = tagify(tag.comment);
+                            }
+                            method.params.push(spec);
                         }
-                        method.params.push(spec);
+                        collection.methods.push(method);
+                    } else {
+                        // this is a property
+                        let type = cppType(propType);
+                        if (tags.cppType) {
+                            type = { type: tags.cppType };
+                        }
+                        collection.props.push({
+                            name: prop.name,
+                            cppType: type,
+                            tags,
+                        });
                     }
-                    options.methods.push(method);
-                } else {
-                    // this is a property
-                    let type = cppType(propType);
-                    if (tags.cppType) {
-                        type = { type: tags.cppType };
-                    }
-                    options.props.push({
-                        name: prop.name,
-                        cppType: type,
-                        tags,
-                    });
                 }
             }
             wrappers.push(options);

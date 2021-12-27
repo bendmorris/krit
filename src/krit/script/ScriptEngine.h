@@ -215,10 +215,6 @@ private:
     std::vector<DelayRequest> delayPromises;
 };
 
-template <int C>
-std::pair<const JSCFunctionListEntry *, size_t> scriptClassProtoFuncs();
-template <int C> JSClassDef *scriptClassDef();
-
 }
 
 #endif
