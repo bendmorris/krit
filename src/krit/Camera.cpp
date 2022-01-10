@@ -72,9 +72,9 @@ void Camera::update(UpdateContext &context) {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
             int visibleHeight =
                 windowSize.height() * dimensions.width() / windowSize.width();
-            if (visibleHeight < min) {
+            if (min != 0 && visibleHeight < min) {
                 visibleHeight = min;
-            } else if (visibleHeight > max) {
+            } else if (max != 0 && visibleHeight > max) {
                 visibleHeight = max;
             }
             scale.setTo(
@@ -88,9 +88,9 @@ void Camera::update(UpdateContext &context) {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
             int visibleWidth =
                 windowSize.width() * dimensions.height() / windowSize.height();
-            if (visibleWidth < min) {
+            if (min != 0 && visibleWidth < min) {
                 visibleWidth = min;
-            } else if (visibleWidth > max) {
+            } else if (max != 0 && visibleWidth > max) {
                 visibleWidth = max;
             }
             scale.setTo(static_cast<float>(windowSize.width()) / visibleWidth,

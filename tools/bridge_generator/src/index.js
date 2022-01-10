@@ -4,6 +4,7 @@ const ts = require('typescript');
 const fs = require('fs');
 const path = require('path');
 const nunjucks = require('nunjucks');
+const { SyntaxKind } = require('typescript');
 
 const typeMap = new Map(
     Object.entries({
@@ -113,6 +114,7 @@ function tagify(v) {
 
 const functions = [];
 const wrappers = [];
+const enums = [];
 
 function defineFunction(node, functionType, namespace = []) {
     const name = node.name.text;
@@ -287,6 +289,34 @@ for (const sourceFile of program.getSourceFiles()) {
             wrappers.push(options);
         } else if (ts.isModuleDeclaration(node)) {
             ts.forEachChild(node, visit);
+        } else if (ts.isEnumDeclaration(node)) {
+            if (!node.jsDoc) {
+                return;
+            }
+            const isConst = (node.modifiers || []).reduce(
+                (prev, next) => prev || next.kind === SyntaxKind.ConstKeyword,
+                false,
+            );
+            if (!isConst) {
+                const e = {
+                    namespace: 'krit',
+                    prefix: '',
+                    name: node.name.text,
+                    members: node.members.map((member) => member.name.text),
+                    import: [],
+                };
+                for (const doc of node.jsDoc) {
+                    for (const tag of doc.tags) {
+                        const tagName = tag.tagName.text;
+                        if (e[tagName] && Array.isArray(e[tagName])) {
+                            e[tagName].push(tag.comment);
+                        } else {
+                            e[tagName] = tagify(tag.comment);
+                        }
+                    }
+                }
+                enums.push(e);
+            }
         }
     });
 }
@@ -365,12 +395,19 @@ replaceIfDifferent(
     }),
 );
 
+replaceIfDifferent(
+    path.join(scriptDir, 'ScriptClass.cpp'),
+    env.render('templates/ScriptClass.cpp.nj', {
+        enums,
+    }),
+);
+
 // generate script classes
 
 for (const wrapper of wrappers) {
     replaceIfDifferent(
         path.join(scriptDir, `ScriptClass.${wrapper.namespace.replace('::', '.')}.${wrapper.name}.cpp`),
-        env.render('templates/ScriptClass.cpp.nj', {
+        env.render('templates/ScriptClass.class.cpp.nj', {
             wrapper,
         }),
     );

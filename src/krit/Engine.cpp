@@ -11,7 +11,7 @@
 namespace krit {
 
 Engine::Engine(KritOptions &options) : window(options), renderer(window) {
-    assetCaches.emplace_back(std::make_unique<AssetCache>());
+    script.userData = this;
 }
 
 void Engine::fixedUpdate(UpdateContext &ctx) {
@@ -63,12 +63,13 @@ void Engine::update(UpdateContext &ctx) {
     }
 
     // asset requests
-    AssetCache::update();
+    assets.update();
 
     // actual update cycle
     invoke(onUpdate, &ctx);
     camera.update(ctx);
     uiCamera.update(ctx);
+    script.update();
     for (auto &tree : trees) {
         if (tree.root) {
             ctx.camera = tree.camera;
@@ -87,16 +88,20 @@ void Engine::render(RenderContext &ctx) {
 
     fonts.commit();
 
-    invoke(onRender, &ctx);
+    if (ctx.window->skipFrames > 0) {
+        --ctx.window->skipFrames;
+    } else {
+        invoke(onRender, &ctx);
 
-    for (auto &tree : trees) {
-        if (tree.root) {
-            ctx.camera = tree.camera;
-            tree.root->render(ctx);
+        for (auto &tree : trees) {
+            if (tree.root) {
+                ctx.camera = tree.camera;
+                tree.root->render(ctx);
+            }
         }
-    }
 
-    invoke(this->postRender, &ctx);
+        invoke(this->postRender, &ctx);
+    }
 
     checkForGlErrors("before render frame");
     renderer.renderFrame(ctx);

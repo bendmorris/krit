@@ -27,7 +27,7 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
 }
 
 ImageData::~ImageData() {
-    if (texture && App::ctx.app->running) {
+    if (App::ctx.app->running && texture) {
         GLuint tex = this->texture;
         TaskManager::instance->pushRender(
             [tex](RenderContext &) { glDeleteTextures(1, &tex); });

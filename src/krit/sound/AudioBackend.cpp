@@ -76,7 +76,7 @@ void AudioBackend::playSound(SoundData *sound) {
         if (source) {
             ALuint s = source->source;
             alSourcef(s, AL_PITCH, 1);
-            alSourcef(s, AL_GAIN, 1.0f);
+            alSourcef(s, AL_GAIN, soundVolume);
             alSource3f(s, AL_POSITION, 0, 0, 0);
             alSource3f(s, AL_VELOCITY, 0, 0, 0);
             alSourcei(s, AL_LOOPING, AL_FALSE);

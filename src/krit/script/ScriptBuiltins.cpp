@@ -1,4 +1,5 @@
 #include "krit/App.h"
+#include "krit/io/Io.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/utils/Log.h"
@@ -92,6 +93,15 @@ JS_FUNC(dumpMemoryUsage) {
     JS_ComputeMemoryUsage(rt, &mem);
     JS_DumpMemoryUsage(stdout, &mem, rt);
     return JS_UNDEFINED;
+}
+
+JS_FUNC(readFile) {
+    int len;
+    char *content =
+        FileIo::read(ScriptValue<std::string>::jsToValue(ctx, argv[0]), &len);
+    auto rt = JS_NewStringLen(ctx, content, len);
+    FileIo::free(content);
+    return rt;
 }
 
 }

@@ -1,34 +1,40 @@
 #include "krit/asset/AssetLoader.h"
 
-#include <cassert>
-#include <string_view>
-
 #include "krit/asset/AssetInfo.h"
 #include "krit/asset/AssetType.h"
 #include "krit/io/Io.h"
+#include <cassert>
+#include <string_view>
 
 namespace krit {
 
+struct TextDeleter {
+    void operator()(std::string_view const *view) {
+        IoRead::free(const_cast<char *>(view->data()));
+        delete view;
+    }
+};
+
 template <>
-std::string_view *
+std::shared_ptr<std::string_view>
 AssetLoader<std::string_view>::loadAsset(const AssetInfo &info) {
     // load asset as raw text
     assert(info.type == TextAsset);
     int length;
     char *content = IoRead::read(info.path, &length);
-    std::string_view *slice = new std::string_view(content, length);
-    return slice;
+    std::string_view *view = new std::string_view(content, length);
+    return std::shared_ptr<std::string_view>(view, TextDeleter());
 }
 
 template <>
-void AssetLoader<std::string_view>::unloadAsset(std::string_view *slice) {
-    IoRead::free((char *)(void *)slice->data());
-    delete slice;
-}
-
-template <>
-bool AssetLoader<std::string_view>::assetIsReady(std::string_view *img) {
+bool AssetLoader<std::string_view>::assetIsReady(std::string_view *txt) {
     return true;
+}
+
+template <> AssetType AssetLoader<std::string_view>::type() { return TextAsset; }
+
+template <> size_t AssetLoader<std::string_view>::cost(std::string_view *txt) {
+    return txt->size();
 }
 
 }

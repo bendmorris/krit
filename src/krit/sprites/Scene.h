@@ -53,6 +53,7 @@ struct ScriptScene : public Scene {
     JSValue _renderUi;
 
     ScriptScene(ScriptEngine &engine);
+    ~ScriptScene();
 
     void update(UpdateContext &ctx) override;
     void fixedUpdate(UpdateContext &ctx) override;

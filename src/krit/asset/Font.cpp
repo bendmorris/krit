@@ -28,14 +28,17 @@ static const int BYTES_PER_PIXEL = 4;
 
 static FT_Stroker stroker;
 
-template <> Font *AssetLoader<Font>::loadAsset(const AssetInfo &info) {
+template <>
+std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const AssetInfo &info) {
     int length;
     char *content = IoRead::read(info.path, &length);
-    Font *font = new Font(info.path, content, length);
-    return font;
+    // FIXME: do we leak content here, or does FT free it?
+    return std::make_shared<Font>(info.path, content, length);
 }
 
-template <> void AssetLoader<Font>::unloadAsset(Font *font) { delete font; }
+template <> AssetType AssetLoader<Font>::type() { return FontAsset; }
+
+template <> size_t AssetLoader<Font>::cost(Font *f) { return sizeof(Font); }
 
 static FT_Library ftLibrary;
 
@@ -104,8 +107,8 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
     : path(path) {
     this->fontData = (void *)fontData;
     // harfbuzz face initialization
-    blob = hb_blob_create(fontData, fontDataLen,
-                                     HB_MEMORY_MODE_READONLY, nullptr, nullptr);
+    blob = hb_blob_create(fontData, fontDataLen, HB_MEMORY_MODE_READONLY,
+                          nullptr, nullptr);
     face = hb_face_create(blob, 0);
     font = hb_font_create(face);
     hb_font_set_scale(font, 64, 64);

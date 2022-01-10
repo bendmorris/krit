@@ -45,21 +45,11 @@ struct SpineTextureLoader : public spine::TextureLoader {
     void unload(void *texture) override;
 };
 
-struct SkeletonBinaryData {
-    spine::Atlas *atlas;
-    spine::SkeletonBinary *binary;
-    spine::SkeletonData *skeletonData;
-    spine::AnimationStateData *animationStateData;
-
-    SkeletonBinaryData(spine::Atlas *a, spine::SkeletonBinary *b,
-                       spine::SkeletonData *sd, spine::AnimationStateData *asd)
-        : atlas(a), binary(b), skeletonData(sd), animationStateData(asd) {}
-    ~SkeletonBinaryData() {
-        delete this->animationStateData;
-        delete this->skeletonData;
-        delete this->binary;
-        delete this->atlas;
-    }
+struct SpineData {
+    std::unique_ptr<spine::Atlas> atlas;
+    std::unique_ptr<spine::SkeletonBinary> binary;
+    std::unique_ptr<spine::SkeletonData> skeletonData;
+    std::unique_ptr<spine::AnimationStateData> animationStateData;
 };
 
 struct SpineSprite : public VisibleSprite {
@@ -69,19 +59,19 @@ struct SpineSprite : public VisibleSprite {
     float angle = 0;
     float rate = 1;
 
-    std::shared_ptr<SkeletonBinaryData> bin;
-    spine::Skeleton *skeleton;
-    spine::AnimationState *animationState;
-    spine::Skin *skin;
+    std::shared_ptr<SpineData> data;
+    std::unique_ptr<spine::Skeleton> skeleton;
+    std::unique_ptr<spine::AnimationState> animationState;
+    std::unique_ptr<spine::Skin> skin;
 
-    spine::SkeletonData &skeletonData() { return *this->bin->skeletonData; }
+    spine::SkeletonData &skeletonData() { return *data->skeletonData; }
     spine::AnimationStateData &animationStateData() {
-        return *this->bin->animationStateData;
+        return *data->animationStateData;
     }
 
     SpineSprite(const std::string &id);
     SpineSprite(const AssetInfo &info);
-    ~SpineSprite();
+    virtual ~SpineSprite() {}
 
     float setAnimation(size_t track, const std::string &name, bool loop = true,
                        float speed = 1, float mix = -1);

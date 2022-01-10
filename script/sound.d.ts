@@ -4,6 +4,8 @@
  * @pointerOnly
  */
 interface AudioBackend {
+    soundVolume: number;
+
     playSound(id: string): void;
     playMusic(id: string): Pointer<AudioStream>;
 }

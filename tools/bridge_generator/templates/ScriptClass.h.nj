@@ -45,6 +45,8 @@ template <> void registerScriptClass<ScriptClass{{ wrapper.name }}>(ScriptEngine
 template <> void registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer>(ScriptEngine *engine);
 {% endfor %}
 
+template <> void registerScriptClass<ScriptClassCount>(ScriptEngine *engine);
+
 }
 
 #endif

@@ -68,7 +68,10 @@ declare class ScaleFactor {
     setTo(x: number, y: number): void;
 }
 
-declare const enum MeasurementType {
+/**
+ * @import krit/math/Measurement.h
+ */
+declare enum MeasurementType {
     Absolute,
     Percent,
 }
@@ -113,7 +116,7 @@ declare class Rectangle {
  * @namespace krit
  * @import krit/math/Rectangle.h
  */
- declare class IntRectangle {
+declare class IntRectangle {
     x: integer;
     y: integer;
     width: integer;

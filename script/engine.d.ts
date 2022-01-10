@@ -8,9 +8,6 @@ interface Engine {
     camera: Camera;
     uiCamera: Camera;
     speed: number;
-
-    pushAssetCache(): void;
-    popAssetCache(): void;
 }
 
 /**
@@ -65,5 +62,7 @@ interface Camera {
     center(): void;
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
-    setLogicalSize(w: integer, h: integer): void;
+    setLogicalSize(w: integer, h: integer): Reference<Camera>;
+    keepWidth(minHeight: integer, maxHeight: integer): Reference<Camera>;
+    keepHeight(minWidth: integer, maxWidth: integer): Reference<Camera>;
 }

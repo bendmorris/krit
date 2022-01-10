@@ -12,10 +12,6 @@ void TextMap::registerLocale(const std::string &key, const AssetInfo &asset) {
 
 void TextMap::setLocale(const std::string &key) {
     locale = key;
-    if (loaded) {
-        AssetLoader<std::string_view>::unloadAsset(loaded);
-        loaded = nullptr;
-    }
     loaded = AssetLoader<std::string_view>::loadAsset(*locales[key]);
     const char *current = loaded->data();
     size_t remaining = loaded->length();
@@ -40,7 +36,6 @@ void TextMap::setLocale(const std::string &key) {
 
 std::string_view TextMap::getString(const std::string &key) {
     return strings[std::string_view(key.data(), key.length())];
-    // return std::string(s.data(), s.size());
 }
 
 }

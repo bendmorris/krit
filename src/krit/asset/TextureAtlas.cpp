@@ -85,13 +85,9 @@ TextureAtlas::TextureAtlas(const std::string &path) {
 }
 
 template <>
-TextureAtlas *AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
-    TextureAtlas *atlas = new TextureAtlas(info.path);
-    return atlas;
-}
-
-template <> void AssetLoader<TextureAtlas>::unloadAsset(TextureAtlas *atlas) {
-    delete atlas;
+std::shared_ptr<TextureAtlas>
+AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
+    return std::make_shared<TextureAtlas>(info.path);
 }
 
 template <> bool AssetLoader<TextureAtlas>::assetIsReady(TextureAtlas *img) {
@@ -101,6 +97,12 @@ template <> bool AssetLoader<TextureAtlas>::assetIsReady(TextureAtlas *img) {
         }
     }
     return true;
+}
+
+template <> AssetType AssetLoader<TextureAtlas>::type() { return AtlasAsset; }
+
+template <> size_t AssetLoader<TextureAtlas>::cost(TextureAtlas *a) {
+    return sizeof(TextureAtlas);
 }
 
 }

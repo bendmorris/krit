@@ -84,9 +84,10 @@ static ALenum soundFormat(SF_INFO &sfInfo) {
 }
 
 template <>
-SoundData *AssetLoader<SoundData>::loadAsset(const AssetInfo &info) {
+std::shared_ptr<SoundData>
+AssetLoader<SoundData>::loadAsset(const AssetInfo &info) {
     VirtualIo io;
-    SoundData *s = new SoundData();
+    std::shared_ptr<SoundData> s = std::make_shared<SoundData>();
     SF_INFO sfInfo;
     char *fileData;
     SNDFILE *sndFile = loadSoundFile(io, info, sfInfo, &fileData);
@@ -114,17 +115,22 @@ SoundData *AssetLoader<SoundData>::loadAsset(const AssetInfo &info) {
     return s;
 }
 
-template <> void AssetLoader<SoundData>::unloadAsset(SoundData *s) { delete s; }
-
 template <> bool AssetLoader<SoundData>::assetIsReady(SoundData *s) {
     return s->buffer;
 }
 
+template <> size_t AssetLoader<SoundData>::cost(SoundData *s) {
+    return s->channels * s->frames * 2;
+}
+
+template <> AssetType AssetLoader<SoundData>::type() { return SoundAsset; }
+
 template <>
-MusicData *AssetLoader<MusicData>::loadAsset(const AssetInfo &info) {
-    MusicData *s = new MusicData();
-    SF_INFO sfInfo;
-    char *data;
+std::shared_ptr<MusicData>
+AssetLoader<MusicData>::loadAsset(const AssetInfo &info) {
+    std::shared_ptr<MusicData> s = std::make_shared<MusicData>();
+    SF_INFO sfInfo = {0};
+    char *data = nullptr;
     SNDFILE *sndFile = loadSoundFile(s->io, info, sfInfo, &data);
     if (!sndFile) {
         return nullptr;
@@ -139,7 +145,11 @@ MusicData *AssetLoader<MusicData>::loadAsset(const AssetInfo &info) {
     return s;
 }
 
-template <> void AssetLoader<MusicData>::unloadAsset(MusicData *s) { delete s; }
+template <> size_t AssetLoader<MusicData>::cost(MusicData *m) {
+    return m->channels * m->frames * 2;
+}
+
+template <> AssetType AssetLoader<MusicData>::type() { return MusicAsset; }
 
 template <> bool AssetLoader<MusicData>::assetIsReady(MusicData *s) {
     return s->sndFile;

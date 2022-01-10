@@ -9,13 +9,16 @@
 namespace krit {
 
 struct FileIo {
+    static std::string configDir();
     static std::string dataDir();
+    static bool mkdir(const std::string &path);
 
     static char *read(const std::string &path, int *length = nullptr);
-    static void write(const std::string &path, char *buf, size_t size);
+    static void write(const std::string &path, const char *buf, size_t size);
+    static void write(const std::string &path, const std::string &buf) { write(path, buf.c_str(), buf.size()); }
 
-    static void *alloc(size_t size) { return malloc(size); }
-    static void free(char *buf) { std::free(buf); }
+    static void *alloc(size_t size) { return new char[size]; }
+    static void free(char *buf) { delete[] buf; }
 
     static bool exists(const std::string &path) {
         std::ifstream infile(path);

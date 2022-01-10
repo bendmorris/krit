@@ -54,12 +54,17 @@ ScriptScene::ScriptScene(ScriptEngine &engine)
       _render(JS_GetPropertyStr(engine.ctx, engine.exports, "render")),
       _renderUi(JS_GetPropertyStr(engine.ctx, engine.exports, "renderUi")) {}
 
+ScriptScene::~ScriptScene() {
+    JS_FreeValue(engine.ctx, _update);
+    JS_FreeValue(engine.ctx, _fixedUpdate);
+    JS_FreeValue(engine.ctx, _render);
+    JS_FreeValue(engine.ctx, _renderUi);
+}
+
 void ScriptScene::fixedUpdate(UpdateContext &ctx) {
     engine.callVoid(_fixedUpdate, ctx);
 }
-void ScriptScene::update(UpdateContext &ctx) {
-    engine.callVoid(_update, ctx);
-}
+void ScriptScene::update(UpdateContext &ctx) { engine.callVoid(_update, ctx); }
 void ScriptScene::render(RenderContext &ctx) {
     engine.callVoid(_render, ctx);
     ctx.camera = &ctx.engine->uiCamera;

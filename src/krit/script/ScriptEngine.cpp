@@ -61,7 +61,6 @@ template <int N> void initScriptClass(ScriptEngine &engine) {
 }
 
 template <> void initScriptClass<ScriptClassCount>(ScriptEngine &engine) {}
-template <> void registerScriptClass<ScriptClassCount>(ScriptEngine *engine) {}
 
 ScriptEngine::ScriptEngine() {
     rt = JS_NewRuntime();
@@ -75,7 +74,7 @@ ScriptEngine::ScriptEngine() {
     exports = JS_NewObject(ctx);
     JSValue globalObj = JS_GetGlobalObject(ctx);
 
-    JS_SetPropertyStr(ctx, globalObj, "exports", exports);
+    JS_SetPropertyStr(ctx, globalObj, "exports", JS_DupValue(ctx, exports));
     JS_FreeValue(ctx, globalObj);
 
     ScriptFinalizer::init(this);
@@ -85,9 +84,11 @@ ScriptEngine::ScriptEngine() {
 
 ScriptEngine::~ScriptEngine() {
     JS_FreeValue(ctx, exports);
+    JS_FreeValue(ctx, finalizerSymbol);
     JS_FreeContext(ctx);
+    JS_RunGC(rt);
     // this will fail an assertion if values are still referenced
-    // JS_FreeRuntime(rt);
+    JS_FreeRuntime(rt);
 }
 
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {

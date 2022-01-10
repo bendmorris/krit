@@ -36,7 +36,7 @@ struct KritSpineExtension : public spine::DefaultSpineExtension {
     }
 
     void _free(void *mem, const char *_1, int _2) override {
-        krit::IoRead::free((char*)mem);
+        krit::IoRead::free((char *)mem);
     }
 };
 
@@ -47,6 +47,39 @@ spine::SpineExtension *spine::getDefaultExtension() {
 namespace krit {
 
 SpineTextureLoader SpineTextureLoader::instance;
+
+template <>
+std::shared_ptr<SpineData>
+AssetLoader<SpineData>::loadAsset(const AssetInfo &info) {
+    auto data = std::make_shared<SpineData>();
+    const spine::String &atlasName(
+        (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
+    data->atlas = std::unique_ptr<spine::Atlas>(
+        new spine::Atlas(atlasName, &SpineTextureLoader::instance));
+    data->binary = std::unique_ptr<spine::SkeletonBinary>(
+        new spine::SkeletonBinary(data->atlas.get()));
+    int length;
+    unsigned char *s = (unsigned char *)IoRead::read(info.path, &length);
+    data->skeletonData = std::unique_ptr<spine::SkeletonData>(
+        data->binary->readSkeletonData(s, length));
+    if (!data->skeletonData) {
+        Log::error("failed to load skeleton data: %s", info.path.c_str());
+    }
+    data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
+        new spine::AnimationStateData(data->skeletonData.get()));
+    IoRead::free((char *)s);
+    return data;
+}
+
+template <> size_t AssetLoader<SpineData>::cost(SpineData *s) {
+    return sizeof(SpineData) + sizeof(spine::Atlas) +
+           sizeof(spine::SkeletonBinary) + sizeof(spine::SkeletonData) +
+           sizeof(spine::AnimationStateData);
+}
+
+template <> AssetType AssetLoader<SpineData>::type() {
+    return SpineSkeletonAsset;
+}
 
 void SpineTextureLoader::load(spine::AtlasPage &page,
                               const spine::String &path) {
@@ -71,11 +104,13 @@ SpineSprite::SpineSprite(const AssetInfo &info) {
 
     // load skeleton/animation data
     this->smooth = SmoothMipmap;
-    this->bin = App::ctx.engine->getSpine(info);
-    this->skeleton = new spine::Skeleton(&this->skeletonData());
-    this->animationState =
-        new spine::AnimationState(&this->animationStateData());
-    this->skin = new spine::Skin(spine::String("custom"));
+    this->data = App::ctx.engine->getSpine(info);
+    this->skeleton = std::unique_ptr<spine::Skeleton>(
+        new spine::Skeleton(&this->skeletonData()));
+    this->animationState = std::unique_ptr<spine::AnimationState>(
+        new spine::AnimationState(&this->animationStateData()));
+    this->skin =
+        std::unique_ptr<spine::Skin>(new spine::Skin(spine::String("custom")));
 
     this->skeleton->update(0);
     this->animationState->update(0);
@@ -83,51 +118,20 @@ SpineSprite::SpineSprite(const AssetInfo &info) {
     this->skeleton->updateWorldTransform();
 }
 
-SpineSprite::~SpineSprite() {
-    delete this->skeleton;
-    delete this->animationState;
-    delete this->skin;
-}
-
 float SpineSprite::worldVertices[1024] = {0};
-
-template <>
-SkeletonBinaryData *
-AssetLoader<SkeletonBinaryData>::loadAsset(const AssetInfo &info) {
-    const spine::String &atlasName(
-        (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
-    spine::Atlas *atlas =
-        new spine::Atlas(atlasName, &SpineTextureLoader::instance);
-    spine::SkeletonBinary *binary = new spine::SkeletonBinary(atlas);
-    int length;
-    unsigned char *s = (unsigned char *)IoRead::read(info.path, &length);
-    spine::SkeletonData *skeletonData = binary->readSkeletonData(s, length);
-    if (!skeletonData) {
-        Log::error("failed to load skeleton data: %s", info.path.c_str());
-    }
-    spine::AnimationStateData *animationStateData =
-        new spine::AnimationStateData(skeletonData);
-    SkeletonBinaryData *bin =
-        new SkeletonBinaryData(atlas, binary, skeletonData, animationStateData);
-    IoRead::free((char *)s);
-    return bin;
-}
-
-template <>
-void AssetLoader<SkeletonBinaryData>::unloadAsset(SkeletonBinaryData *bin) {
-    delete bin;
-}
 
 float SpineSprite::setAnimation(size_t track, const std::string &name,
                                 bool loop, float speed, float mix) {
-    // printf("set animation: %s %.2f %.2f %s\n", name.c_str(), speed, mix, loop ? "loop" : "");
+    // printf("set animation: %s %.2f %.2f %s\n", name.c_str(), speed, mix, loop
+    // ? "loop" : "");
     auto trackEntry = this->animationState->setAnimation(
         track, spine::String(name.c_str()), loop);
     if (speed != 1) {
         trackEntry->setTimeScale(speed);
     }
     if (mix > 0) {
-        trackEntry->setMixDuration(std::min(trackEntry->getAnimationEnd(), mix));
+        trackEntry->setMixDuration(
+            std::min(trackEntry->getAnimationEnd(), mix));
     }
     return std::max(1.0f / 60, trackEntry->getAnimationEnd());
 }
@@ -137,7 +141,8 @@ float SpineSprite::addAnimation(size_t track, const std::string &name,
     auto trackEntry = this->animationState->addAnimation(
         track, spine::String(name.c_str()), loop, delay);
     if (mix > 0) {
-        trackEntry->setMixDuration(std::min(trackEntry->getAnimationEnd(), mix));
+        trackEntry->setMixDuration(
+            std::min(trackEntry->getAnimationEnd(), mix));
     }
     return std::max(1.0f / 60, trackEntry->getAnimationEnd());
 }
@@ -169,7 +174,7 @@ void SpineSprite::setSkin(const std::string &name) {
     } else {
         panic("unknown skin: %s\n", name.c_str());
     }
-    this->skeleton->setSkin(this->skin);
+    this->skeleton->setSkin(this->skin.get());
     this->skeleton->setSlotsToSetupPose();
     this->animationState->apply(*this->skeleton);
 }

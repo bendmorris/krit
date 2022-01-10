@@ -85,6 +85,7 @@ struct AudioBackend {
     ALCcontext *context = nullptr;
     AudioSource *sourcePool = nullptr;
     AudioSource *activeSources = nullptr;
+    float soundVolume = 1;
 
     AudioBackend();
     ~AudioBackend();

@@ -9,13 +9,18 @@
 
 namespace krit {
 
-struct Engine;
+struct App;
 struct Editor;
+struct Engine;
 struct Renderer;
 
-struct Window: public IntDimensions {
+struct Window : public IntDimensions {
     IntDimensions &size() {
+        int _x = x, _y = y;
         getWindowSize(&x, &y);
+        if (x != _x || y != _y) {
+            skipFrames = 3;
+        }
         return *this;
     }
 
@@ -41,9 +46,11 @@ private:
     SDL_Window *window = nullptr;
     SDL_Surface *surface = nullptr;
     IntDimensions fullScreenDimensions;
+    int skipFrames = 0;
 
-    friend struct Engine;
+    friend struct App;
     friend struct Editor;
+    friend struct Engine;
     friend struct Renderer;
 };
 

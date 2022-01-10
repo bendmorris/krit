@@ -20,8 +20,9 @@ struct RenderContext;
 struct UpdateContext;
 
 template <>
-ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
-    ImageData *img = new ImageData();
+std::shared_ptr<ImageData>
+AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
+    std::shared_ptr<ImageData> img = std::make_shared<ImageData>();
     img->dimensions.setTo(info.properties.img.dimensions);
     img->scale = info.properties.img.scale;
 #ifdef __EMSCRIPTEN__
@@ -74,12 +75,14 @@ ImageData *AssetLoader<ImageData>::loadAsset(const AssetInfo &info) {
     return img;
 }
 
-template <> void AssetLoader<ImageData>::unloadAsset(ImageData *img) {
-    delete img;
-}
-
 template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
     return img->texture > 0;
 }
+
+template <> size_t AssetLoader<ImageData>::cost(ImageData *img) {
+    return img->dimensions.x * img->dimensions.y;
+}
+
+template <> AssetType AssetLoader<ImageData>::type() { return ImageAsset; }
 
 }

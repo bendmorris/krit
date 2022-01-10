@@ -2,6 +2,7 @@
 #define KRIT_L12N_TEXTMAP
 
 #include "krit/asset/AssetInfo.h"
+#include <memory>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -24,7 +25,7 @@ struct TextMap {
 private:
     std::unordered_map<std::string, const AssetInfo *> locales;
     std::unordered_map<std::string_view, std::string_view> strings;
-    std::string_view *loaded = nullptr;
+    std::shared_ptr<std::string_view> loaded = nullptr;
 };
 
 }

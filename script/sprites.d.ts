@@ -1,4 +1,7 @@
-declare const enum BlendMode {
+/**
+ * @import krit/render/BlendMode.h
+ */
+declare enum BlendMode {
     Alpha,
     Add,
     Subtract,
@@ -6,7 +9,10 @@ declare const enum BlendMode {
     BlendScreen,
 }
 
-declare const enum SmoothingMode {
+/**
+ * @import krit/render/SmoothingMode.h
+ */
+declare enum SmoothingMode {
     SmoothNearest,
     SmoothLinear,
     SmoothMipmap,
@@ -97,6 +103,7 @@ declare class Backdrop extends VisibleSprite {
 /**
  * @namespace krit
  * @import krit/sprites/SpineSprite.h
+ * @pointerOnly
  */
 declare class SpineSprite extends VisibleSprite {
     static from(value: Sprite): SpineSprite;

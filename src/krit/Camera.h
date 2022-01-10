@@ -59,8 +59,8 @@ struct Camera {
         return *this;
     }
 
-    Camera &keepWidth(int minHeight, int maxHeight);
-    Camera &keepHeight(int minWidth, int maxWidth);
+    Camera &keepWidth(int minHeight = 0, int maxHeight = 0);
+    Camera &keepHeight(int minWidth = 0, int maxWidth = 0);
     Camera &move(float x, float y);
     Point &transformPoint(Point &p);
     Point &untransformPoint(Point &p);

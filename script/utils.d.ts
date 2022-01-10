@@ -12,6 +12,9 @@ interface Color {
     lerpInPlace(c: integer, mix: number): void;
 }
 
+/**
+ * @import krit/utils/Log.h
+ */
 declare enum LogLevel {
     Debug,
     Info,

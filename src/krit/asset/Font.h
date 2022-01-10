@@ -81,14 +81,9 @@ struct GlyphCache {
     void commitChanges();
 };
 
-struct FontDeleter {
-    void operator()(Font *f) { if (f) AssetLoader<Font>::unloadAsset(f); }
-};
-
 struct FontManager {
     GlyphCache glyphCache, nextGlyphCache;
-    std::unordered_map<std::string, std::unique_ptr<Font, FontDeleter>>
-        fontRegistry;
+    std::unordered_map<std::string, std::shared_ptr<Font>> fontRegistry;
 
     FontManager();
     ~FontManager();

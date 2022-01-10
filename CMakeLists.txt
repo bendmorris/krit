@@ -18,7 +18,7 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than -Wno-stringop-overflow -Wno-parentheses -Wno-unused-result -Werror -Wall -ffast-math -fno-exceptions")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE -g")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
@@ -55,6 +55,7 @@ file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
 add_library(${PROJECT_NAME} STATIC
     ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
+    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp
     ${KRIT_GENERATED_SCRIPT_FILES}
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
@@ -151,7 +152,7 @@ if(KRIT_SCRIPT_BRIDGE_PATH)
         generate-bridge ALL
         mkdir -p "${CMAKE_CURRENT_BINARY_DIR}/krit"
         COMMAND cd ${KRIT_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} "${CMAKE_CURRENT_BINARY_DIR}/krit"
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
     )
     add_dependencies(${PROJECT_NAME} generate-bridge)
 endif()

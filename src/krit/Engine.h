@@ -8,6 +8,7 @@
 #include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/Renderer.h"
+#include "krit/script/ScriptEngine.h"
 #include "krit/sound/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
@@ -35,6 +36,7 @@ struct TextureAtlas;
 struct Font;
 struct SkeletonBinaryData;
 struct SoundData;
+struct SpineData;
 struct MusicData;
 
 struct SpriteTree {
@@ -58,17 +60,19 @@ struct Engine {
     RenderSignal onRender = nullptr;
     RenderSignal postRender = nullptr;
     std::list<TimedEvent> events;
-    std::vector<std::unique_ptr<AssetCache>> assetCaches;
 
     Window window;
     Renderer renderer;
     FontManager fonts;
     AudioBackend audio;
     InputContext input;
+    AssetCache assets;
+    ScriptEngine script;
+
+    std::vector<SpriteTree> trees;
 
     Color bgColor = Color::black();
 
-    std::vector<SpriteTree> trees;
     void *userData = nullptr;
 
     Camera camera;
@@ -86,23 +90,16 @@ struct Engine {
     void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
 
-    void pushAssetCache() {
-        assetCaches.emplace_back(std::make_unique<AssetCache>());
-    }
-    void popAssetCache() { assetCaches.pop_back(); }
-
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
 #define DECLARE_ASSET_GETTER(N, T)                                             \
-    template <typename Arg>                                                    \
-    std::shared_ptr<T> get##N(const Arg &arg, bool cache = true) {             \
-        return cache ? assetCaches.back()->get<T>(arg)                         \
-                     : AssetCache::load<T>(arg);                               \
+    template <typename Arg> std::shared_ptr<T> get##N(const Arg &arg) {        \
+        return assets.get<T>(arg);                                             \
     }
     DECLARE_ASSET_GETTER(Image, ImageData)
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)
-    DECLARE_ASSET_GETTER(Spine, SkeletonBinaryData)
+    DECLARE_ASSET_GETTER(Spine, SpineData)
     DECLARE_ASSET_GETTER(Sound, SoundData)
     DECLARE_ASSET_GETTER(Music, MusicData)
     DECLARE_ASSET_GETTER(Text, std::string_view)
