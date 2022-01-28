@@ -28,13 +28,18 @@ void Overlay::draw(krit::RenderContext &ctx) {
     if (ImGui::Begin("FPS", &pOpen,
                      ImGuiWindowFlags_NoDecoration |
                          ImGuiWindowFlags_AlwaysAutoResize)) {
-        int next = (index++) % 4;
-        fpsBuffer[next] = 1.0 / ctx.elapsed;
-        float total = 0;
-        for (int i = 0; i < 4; ++i) {
-            total += fpsBuffer[next];
+        int next = (index++) % 60;
+        index %= 60;
+        fpsBuffer[next] = ctx.elapsed;
+        double total = 0;
+        float min = -1, max = -1;
+        for (int i = 0; i < 60; ++i) {
+            float v = fpsBuffer[i];
+            total += v;
+            if (min < 0 || v < min) min = v;
+            if (max < 0 || v > max) max = v;
         }
-        ImGui::Text("FPS: %.2f", total / 4);
+        ImGui::Text("Frame time: %.2f (%.2f-%.2f)", total * 1000 / 60, min * 1000, max * 1000);
         ImGui::Text("Time: %.1f", elapsed);
         ImGui::Text("Memory: %.3f MB", getCurrentRss() / 1000000.0);
         ImGui::Text("Peak Mem: %.3f MB", getPeakRss() / 1000000.0);

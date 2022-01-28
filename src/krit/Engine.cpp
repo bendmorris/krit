@@ -1,12 +1,17 @@
 #include "krit/Engine.h"
 
+#include "krit/TaskManager.h"
 #include "krit/UpdateContext.h"
+#include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Rectangle.h"
 #include "krit/render/DrawCommand.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/RenderContext.h"
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_pixels.h>
+#include <SDL2/SDL_surface.h>
 
 namespace krit {
 
@@ -30,9 +35,16 @@ void Engine::update(UpdateContext &ctx) {
     if (this->paused) {
         return;
     }
+
     audio.update();
     // refresh window size
+    int height = window.height();
     window.size();
+
+    if (!cursor.empty() && (height != window.height() || !_cursor)) {
+        chooseCursor();
+    }
+
     ctx.userData = this->userData;
 
     // handle setTimeout events
@@ -140,6 +152,49 @@ void Engine::addTree(Sprite *root, Camera *camera) {
 
 void Engine::setRoot(int index, Sprite *root) {
     trees[index].root = std::unique_ptr<Sprite>(root);
+}
+
+void Engine::addCursor(const std::string &cursorPath,
+                       const std::string &cursorName, int resolution) {
+    int len;
+    char *s = IoRead::read(cursorPath, &len);
+
+    TaskManager::instance->push([=](UpdateContext &) {
+        SDL_RWops *rw = SDL_RWFromConstMem(s, len);
+        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
+        SDL_RWclose(rw);
+        IoRead::free(s);
+
+        SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 0, 0);
+
+        TaskManager::instance->pushRender([=](RenderContext &) {
+            this->cursors[cursorName].push_back(
+                std::make_pair(resolution, cursor));
+        });
+    });
+}
+
+void Engine::setCursor(const std::string &cursor) {
+    if (this->cursor != cursor) {
+        this->cursor = cursor;
+        chooseCursor();
+    }
+}
+
+void Engine::chooseCursor() {
+    auto &list = cursors[cursor];
+    SDL_Cursor *candidate = nullptr;
+    int candidateY = -1;
+    for (size_t i = 0; i < list.size(); ++i) {
+        if (list[i].second &&
+            (list[i].first <= window.height() && list[i].first > candidateY)) {
+            candidate = list[i].second;
+            candidateY = list[i].first;
+        }
+    }
+    if (candidate && candidate != _cursor) {
+        SDL_SetCursor(_cursor = candidate);
+    }
 }
 
 }

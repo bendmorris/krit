@@ -5,6 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const nunjucks = require('nunjucks');
 const { SyntaxKind } = require('typescript');
+const assert = require('assert');
 
 const typeMap = new Map(
     Object.entries({
@@ -91,6 +92,11 @@ function cppType(t) {
         case 'Pointer': {
             const { type, pointer } = cppType(t.aliasTypeArguments[0]);
             return { type, pointer: pointer + 1 };
+        }
+        case 'SharedPtr': {
+            const { type, pointer } = cppType(t.aliasTypeArguments[0]);
+            assert(!pointer, "SharedPtr<Pointer<...>> is not supported");
+            return { type: `std::shared_ptr<${type}>` };
         }
         case 'StringMap': {
             const subType = cppType(t.aliasTypeArguments[0]);

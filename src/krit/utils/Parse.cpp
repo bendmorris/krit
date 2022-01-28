@@ -6,6 +6,13 @@ namespace krit {
 
 std::unordered_map<std::string, std::string> Parse::constants;
 
+void Parse::parseColor(const std::string &s, Color &into) {
+    Color c = parse<Color>(s);
+    into.r = c.r;
+    into.g = c.g;
+    into.b = c.b;
+}
+
 int Parse::parseInt(const std::string &_s, int base) {
     const std::string &s = _preParse(_s);
     return std::stoi(s, 0, base);

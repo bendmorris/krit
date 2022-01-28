@@ -27,13 +27,11 @@ void Scene::update(UpdateContext &ctx) {
             this->fadeColor.a = 0;
         }
     }
-    this->layout.update(ctx);
 }
 
 void Scene::render(RenderContext &ctx) {
     Camera *oldCamera = ctx.camera;
     ctx.camera = &ctx.engine->uiCamera;
-    this->layout.render(ctx);
     if (this->fadeColor.a > 0) {
         DrawKey key;
         IntRectangle windowRect(0, 0, ctx.window->width(),

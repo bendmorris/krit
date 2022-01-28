@@ -43,6 +43,30 @@ declare class VisibleSprite extends Sprite {
     /** @cast BlendMode */ blendMode: BlendMode;
     /** @cast SmoothingMode */ smooth: SmoothingMode;
     getBounds(): Rectangle;
+    shader: Pointer<SpriteShader>;
+}
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Text.h
+ */
+declare enum AlignType {
+    LeftAlign,
+    CenterAlign,
+    RightAlign,
+}
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Text.h
+ */
+declare class TextOptions {
+    setFont(font: string): void;
+    setSize(size: integer): void;
+    setWordWrap(wrap: boolean): void;
+    setAlign(/** @cast AlignType */ align: AlignType): void;
+
+    constructor();
 }
 
 /**
@@ -51,6 +75,8 @@ declare class VisibleSprite extends Sprite {
  */
 declare class Text extends VisibleSprite {
     static from(value: Sprite): Text;
+
+    constructor(options: Reference<TextOptions>);
 
     /** @readonly @getter width */ width: number;
     /** @readonly @getter height */ height: number;
@@ -67,6 +93,7 @@ declare class Text extends VisibleSprite {
     refresh(): void;
     setText(s: string): void;
     setRichText(s: string): void;
+    setTabStops(s: string): void;
 }
 
 /**
@@ -76,12 +103,13 @@ declare class Text extends VisibleSprite {
 declare class Image extends VisibleSprite {
     static from(value: Sprite): Image;
 
+    constructor(region: Reference<ImageRegion>);
+
     /** @readonly */ origin: Point;
     /** @readonly @getter width */ width: integer;
     /** @readonly @getter height */ height: integer;
     angle: float;
     centerOrigin(): void;
-    shader: Pointer<SpriteShader>;
 }
 
 /**
@@ -90,6 +118,8 @@ declare class Image extends VisibleSprite {
  */
 declare class NineSlice extends VisibleSprite {
     static from(value: Sprite): NineSlice;
+
+    constructor(region: Reference<ImageRegion>, l: integer, r: integer, t: integer, b: integer);
 }
 
 /**
@@ -98,6 +128,8 @@ declare class NineSlice extends VisibleSprite {
  */
 declare class Backdrop extends VisibleSprite {
     static from(value: Sprite): Backdrop;
+
+    constructor(region: Reference<ImageRegion>);
 }
 
 /**
@@ -115,49 +147,6 @@ declare class SpineSprite extends VisibleSprite {
     addAnimation(track: integer, name: string, loop: boolean, delay: number, mix: number): float;
     getAnimation(track: integer): cstring;
     advance(t: number): void;
-}
-
-/**
- * @namespace krit
- * @import krit/sprites/Layout.h
- * @pointerOnly
- */
-declare class LayoutNode extends VisibleSprite {
-    static from(value: Sprite): LayoutNode;
-
-    x: AnchoredMeasurement;
-    y: AnchoredMeasurement;
-    width: Measurement;
-    height: Measurement;
-    spacing: Measurement;
-    /** @readonly @getter paddingTop */ paddingTop: Measurement;
-    /** @readonly @getter paddingBottom */ paddingBottom: Measurement;
-    /** @readonly @getter paddingLeft */ paddingLeft: Measurement;
-    /** @readonly @getter paddingRight */ paddingRight: Measurement;
-    stretch: boolean;
-    keepSize: boolean;
-    visible: boolean;
-    /** @readonly */ offset: Point;
-
-    getSprite(): Pointer<VisibleSprite>;
-    attachSprite(s: Pointer<VisibleSprite>): void;
-    addChild(node: Pointer<LayoutNode>): void;
-    clearChildren(): void;
-    setAbsolutePosition(x: number, y: number, anchorX: number, anchorY: number): void;
-    isVisible(): boolean;
-}
-
-/**
- * @namespace krit
- * @import krit/sprites/Layout.h
- * @pointerOnly
- */
-declare class LayoutRoot extends Sprite {
-    static from(value: Sprite): LayoutRoot;
-
-    has(id: string): boolean;
-    getById(id: string): Pointer<VisibleSprite>;
-    getNodeById(id: string): Pointer<LayoutNode>;
 }
 
 /**

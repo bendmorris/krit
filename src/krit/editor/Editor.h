@@ -32,7 +32,7 @@ struct Overlay : public DevTool {
         metrics.emplace_back(std::move(getter));
     };
 
-    int fpsBuffer[4] = {0};
+    float fpsBuffer[60] = {0};
     int index = 0;
     float elapsed = 0;
 

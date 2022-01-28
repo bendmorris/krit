@@ -62,8 +62,20 @@ template <int N> void initScriptClass(ScriptEngine &engine) {
 
 template <> void initScriptClass<ScriptClassCount>(ScriptEngine &engine) {}
 
+static void js_std_promise_rejection_tracker(JSContext *ctx,
+                                             JSValueConst promise,
+                                             JSValueConst reason,
+                                             int is_handled, void *opaque) {
+    if (!is_handled) {
+        fprintf(stderr, "Possibly unhandled promise rejection: ");
+        js_std_dump_error(ctx, reason);
+    }
+}
+
 ScriptEngine::ScriptEngine() {
     rt = JS_NewRuntime();
+    JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
+                                      NULL);
     initScriptClass<0>(*this);
 
     JS_SetMaxStackSize(rt, 4 * 1024 * 1024);

@@ -137,6 +137,16 @@ SpriteShader *Renderer::getDefaultTextShader() {
     return defaultTextSpriteShader;
 }
 
+// static void GLAPIENTRY messageCallback(GLenum source, GLenum type, GLuint id,
+//                                        GLenum severity, GLsizei length,
+//                                        const GLchar *message,
+//                                        const void *userParam) {
+//     fprintf(stderr,
+//             "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
+//             (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type,
+//             severity, message);
+// }
+
 RenderFloat _ortho[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
 
 void ortho(RenderFloat x0, RenderFloat x1, RenderFloat y0, RenderFloat y1) {
@@ -154,24 +164,6 @@ static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
 
 Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-#ifndef __EMSCRIPTEN__
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
-                        SDL_GL_CONTEXT_PROFILE_CORE);
-#else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
-#endif
-    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
-#if KRIT_ENABLE_MULTISAMPLING
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
-#endif
 
     this->glContext = SDL_GL_CreateContext(window);
     if (!this->glContext) {
@@ -193,10 +185,10 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glDisable(GL_STENCIL_TEST);
     checkForGlErrors("stencil test");
 
-    #if KRIT_ENABLE_MULTISAMPLING
+#if KRIT_ENABLE_MULTISAMPLING
     glEnable(GL_MULTISAMPLE);
     checkForGlErrors("multisample");
-    #endif
+#endif
 
 #if KRIT_USE_GLEW
     glewExperimental = GL_TRUE;
@@ -206,6 +198,9 @@ Renderer::Renderer(Window &_window) : window(_window) {
     }
     checkForGlErrors("glew init");
 #endif
+
+    // glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    // glDebugMessageCallback(messageCallback, 0);
 
 #if KRIT_ENABLE_TOOLS
     ImGui::CreateContext();
@@ -281,18 +276,19 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
 template <>
 void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     RenderContext &ctx, SetRenderTargetArgs &args) {
-    // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
-    #if KRIT_ENABLE_MULTISAMPLING
-    // if (args.clear && args.target && args.target->resolvedTexture) {
-    //     glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
-    //     glDisable(GL_SCISSOR_TEST);
-    //     glClearColor(0, 0, 0, 0);
-    //     glClear(GL_COLOR_BUFFER_BIT);
-    //     glEnable(GL_SCISSOR_TEST);
-    //     glBindTexture(GL_TEXTURE_2D, 0);
-    // }
-    #endif
-    glBindFramebuffer(GL_FRAMEBUFFER, args.target ? args.target->frameBuffer : 0);
+// printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
+#if KRIT_ENABLE_MULTISAMPLING
+// if (args.clear && args.target && args.target->resolvedTexture) {
+//     glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
+//     glDisable(GL_SCISSOR_TEST);
+//     glClearColor(0, 0, 0, 0);
+//     glClear(GL_COLOR_BUFFER_BIT);
+//     glEnable(GL_SCISSOR_TEST);
+//     glBindTexture(GL_TEXTURE_2D, 0);
+// }
+#endif
+    glBindFramebuffer(GL_FRAMEBUFFER,
+                      args.target ? args.target->frameBuffer : 0);
     if (args.clear && args.target) {
         glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
         glDisable(GL_SCISSOR_TEST);
@@ -406,7 +402,6 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
     checkForGlErrors("bindBuffer");
 
-
     renderData.reserve(shader->shader.bytesPerVertex * 6);
     renderData.resize(renderData.capacity());
     shader->prepare(ctx, (RenderFloat *)renderData.data());
@@ -421,16 +416,15 @@ void Renderer::renderFrame(RenderContext &ctx) {
     this->currentRenderTarget = nullptr;
 
     setSize(ctx);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glEnable(GL_SCISSOR_TEST);
+    glScissor(0, 0, this->width, this->height);
     auto &bgColor = ctx.engine->bgColor;
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     this->triangleCount = 0;
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    checkForGlErrors("start frame");
 
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, this->width, this->height);
-    checkForGlErrors("start batch");
+    checkForGlErrors("start frame");
 
     size_t indices[DrawCommandTypeCount] = {0};
     for (auto commandType : this->drawCommandBuffer.buf.commandTypes) {

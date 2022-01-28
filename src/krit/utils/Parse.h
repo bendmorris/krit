@@ -21,6 +21,8 @@ struct Parse {
     template <typename T> static T parse(const std::string &s);
     static int parseInt(const std::string &s, int base = 10);
 
+    static void parseColor(const std::string &s, Color &into);
+
 private:
     static std::unordered_map<std::string, std::string> constants;
 
@@ -43,6 +45,10 @@ template <> const std::string &Parse::parse(const std::string &_s);
 template <> Measurement Parse::parse(const std::string &_s);
 template <> Color Parse::parse(const std::string &_s);
 template <> SmoothingMode Parse::parse(const std::string &_s);
+
+// template <typename T> void Parse::parse(const std::string &_s, T &into) {
+//     into = parse<T>(_s);
+// }
 
 }
 

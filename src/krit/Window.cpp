@@ -1,4 +1,5 @@
 #include "krit/Window.h"
+#include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -13,6 +14,25 @@ Window::Window(KritOptions &options)
     : fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight) {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     SDL_Init(SDL_INIT_VIDEO);
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+#ifndef __EMSCRIPTEN__
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
+#else
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+#endif
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+#if KRIT_ENABLE_MULTISAMPLING
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+#endif
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
 
     window =
         SDL_CreateWindow(options.title.c_str(), SDL_WINDOWPOS_UNDEFINED,

@@ -184,6 +184,7 @@ struct Text : public VisibleSprite, public TextOptions {
     std::vector<float> tabStops;
     Color baseColor = Color::white();
     std::string text;
+    std::string rawText;
     Dimensions textDimensions;
     bool allowPixelPerfect = true;
     bool border = false;
@@ -225,11 +226,14 @@ struct Text : public VisibleSprite, public TextOptions {
     void resize(float, float) override;
     void render(RenderContext &ctx) override;
 
+    void setTabStops(const std::string &stops);
+
 private:
     std::vector<TextOpcode> opcodes;
     hb_buffer_t *hbBuf = nullptr;
     bool rich = false;
     bool dirty = false;
+    Dimensions renderedSize;
     bool hasBorderTags = false;
     float lineHeight;
 

@@ -10,10 +10,23 @@
 
 namespace krit {
 
-Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {}
+Image::Image(std::shared_ptr<ImageData> img) : region(img) {
+    dimensions.setTo(region.rect.width, region.rect.height);
+}
+Image::Image(ImageRegion region) : region(region) {
+    dimensions.setTo(region.rect.width, region.rect.height);
+}
+
+Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {
+    dimensions.setTo(region.rect.width, region.rect.height);
+}
+
+void Image::update(UpdateContext &ctx) {
+    dimensions.setTo(region.rect.width * scale.x, region.rect.height * scale.y);
+}
 
 void Image::render(RenderContext &ctx) {
-    if (this->color.a <= 0) {
+    if (this->color.a <= 0 && !shader) {
         return;
     }
     // ctx.transform = (struct RenderTransform) {scroll: this->scroll};

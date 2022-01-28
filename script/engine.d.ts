@@ -8,6 +8,8 @@ interface Engine {
     camera: Camera;
     uiCamera: Camera;
     speed: number;
+
+    setCursor(c: string): void;
 }
 
 /**

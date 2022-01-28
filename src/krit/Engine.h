@@ -68,6 +68,8 @@ struct Engine {
     InputContext input;
     AssetCache assets;
     ScriptEngine script;
+    std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
+        cursors;
 
     std::vector<SpriteTree> trees;
 
@@ -77,6 +79,7 @@ struct Engine {
 
     Camera camera;
     Camera uiCamera;
+    std::string cursor;
 
     Engine(KritOptions &options);
 
@@ -89,6 +92,9 @@ struct Engine {
     Sprite *getRoot(int index) { return trees[index].root.get(); }
     void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
+
+    void addCursor(const std::string &cursorPath, const std::string &cursor, int resolution);
+    void setCursor(const std::string &cursor);
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
@@ -104,6 +110,10 @@ struct Engine {
     DECLARE_ASSET_GETTER(Music, MusicData)
     DECLARE_ASSET_GETTER(Text, std::string_view)
 #undef DECLARE_ASSET_GETTER
+
+    private:
+        void chooseCursor();
+        SDL_Cursor *_cursor = nullptr;
 };
 
 }

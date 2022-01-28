@@ -18,7 +18,7 @@ else()
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than -Wno-stringop-overflow -Wno-parentheses -Wno-unused-result -Werror -Wall -ffast-math -fno-exceptions")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE -g")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")

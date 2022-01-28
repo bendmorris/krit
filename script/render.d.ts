@@ -2,7 +2,7 @@
  * @namespace krit
  * @import krit/render/RenderContext.h
  */
- interface RenderContext extends UpdateContext {
+interface RenderContext extends UpdateContext {
     drawCommandBuffer: Pointer<DrawCommandBuffer>;
 
     width(): integer;
@@ -16,7 +16,7 @@
  * @import krit/render/SpriteShader.h
  */
 declare class SpriteShader {}
- 
+
 /**
  * @namespace krit
  * @import krit/render/FrameBuffer.h
@@ -44,4 +44,12 @@ declare class DrawCommandBuffer {
     setRenderTarget(fb: Pointer<FrameBuffer>, clear?: boolean): void;
     drawSceneShader(shader: Pointer<SceneShader>): void;
     clearColor(r: float, g: float, b: float, a: float): void;
+}
+
+/**
+ * @namespace krit
+ * @import krit/render/ImageRegion.h
+ */
+declare class ImageRegion {
+    rect: IntRectangle;
 }

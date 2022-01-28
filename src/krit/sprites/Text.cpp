@@ -1,16 +1,5 @@
 #include "krit/sprites/Text.h"
 
-#include <algorithm>
-#include <cassert>
-#include <iterator>
-#include <math.h>
-#include <memory>
-#include <stack>
-#include <stdio.h>
-#include <string>
-#include <string_view>
-#include <utility>
-
 #include "harfbuzz/hb.h"
 #include "krit/App.h"
 #include "krit/Camera.h"
@@ -23,6 +12,17 @@
 #include "krit/render/Renderer.h"
 #include "krit/render/SmoothingMode.h"
 #include "krit/utils/Utf8.h"
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <math.h>
+#include <memory>
+#include <sstream>
+#include <stack>
+#include <stdio.h>
+#include <string>
+#include <string_view>
+#include <utility>
 
 namespace krit {
 
@@ -77,6 +77,10 @@ struct TextRenderStack {
         clearStack(this->align);
         clearStack(this->custom);
     }
+};
+
+static std::unordered_map<hb_codepoint_t, int> charDelays = {
+    {'.', 10}, {',', 6}, {'!', 10}, {'?', 10}, {'-', 6}, {';', 4}, {':', 4},
 };
 
 void TextOpcode::debugPrint() {
@@ -199,7 +203,8 @@ struct TextParser {
                 tagLocations.emplace_back(i, 1);
             }
         }
-        std::string rawText;
+        auto &rawText = txt.rawText;
+        rawText.clear();
         std::vector<std::pair<size_t, std::string_view>> tags;
         size_t tagNameOffset = 0;
         if (tagLocations.size()) {
@@ -270,6 +275,7 @@ struct TextParser {
 
         size_t tagPointer = 0;
         Utf8Iterator it = rawText.begin();
+        int glyphCost = 0;
         for (size_t i = 0; i < glyphCount; ++i) {
             hb_glyph_info_t &_glyphInfo = glyphInfo[i];
             hb_glyph_position_t &_glyphPos = glyphPos[i];
@@ -284,6 +290,7 @@ struct TextParser {
                 ++it;
             }
             char32_t c = *it;
+            glyphCost += std::max(charDelays[c], 1);
             switch (c) {
                 case ' ': {
                     flushWord(txt);
@@ -327,11 +334,18 @@ struct TextParser {
         // }
         // puts("");
 
-        txt.maxChars = glyphCount;
+        txt.maxChars = glyphCost;
         for (auto it : txt.opcodes) {
             if (it.type == CharDelay) {
                 txt.maxChars += it.data.charDelay;
             }
+        }
+
+        if (txt.wordWrap) {
+            txt.renderedSize.setTo(txt.dimensions);
+            txt.dimensions.y = txt.textDimensions.y;
+        } else {
+            txt.dimensions.setTo(txt.textDimensions);
         }
     }
 
@@ -519,7 +533,7 @@ Text::~Text() {
 }
 
 Text &Text::refresh() {
-    if (this->dirty) {
+    if (this->dirty || (this->wordWrap && dimensions.x != renderedSize.x)) {
         // TODO: reuse static parser...
         TextParser parser;
         parser.parseText(*this, this->text, this->rich);
@@ -569,6 +583,8 @@ void Text::__render(RenderContext &ctx, bool border) {
     float size = this->size * cameraScale;
     float fontScale = std::round(size) / cameraScale / 64.0;
     bool pixelPerfect = allowPixelPerfect && fontScale < 20;
+
+    Utf8Iterator it = rawText.begin();
 
     for (TextOpcode &op : this->opcodes) {
         switch (op.type) {
@@ -651,6 +667,10 @@ void Text::__render(RenderContext &ctx, bool border) {
                     hb_glyph_position_t _pos = glyphPos[i];
                     GlyphData &glyph = ctx.engine->fonts.getGlyph(
                         font, _info.codepoint, std::round(size));
+                    size_t txtPointer = _info.cluster;
+                    while (it.index() < txtPointer) {
+                        ++it;
+                    }
 
                     GlyphRenderData renderData(
                         _info.codepoint, color,
@@ -714,8 +734,11 @@ void Text::__render(RenderContext &ctx, bool border) {
                     }
 
                     cursor.x += _pos.x_advance;
-                    if (charCount > -1 && --charCount <= 0) {
-                        return;
+                    if (charCount > -1) {
+                        charCount -= std::max(charDelays[*it], 1);
+                        if (charCount <= 0) {
+                            return;
+                        }
                     }
                 }
                 break;
@@ -752,4 +775,15 @@ Text &Text::setRichText(const std::string &text) {
     }
     return *this;
 }
+
+void Text::setTabStops(const std::string &stops) {
+    tabStops.clear();
+    std::stringstream stream(stops);
+    std::string token;
+    while (getline(stream, token, ',')) {
+        int stop = atoi(token.c_str());
+        tabStops.push_back(stop);
+    }
+}
+
 }

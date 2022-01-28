@@ -245,6 +245,7 @@ void SpineSprite::render(RenderContext &ctx) {
             regionAttachment->computeWorldVertices(slot->getBone(),
                                                    worldVertices, 0, 2);
             DrawKey key;
+            key.shader = this->shader;
             key.image = region->img;
             key.smooth = this->smooth;
             key.blend = blendMode;
@@ -273,6 +274,7 @@ void SpineSprite::render(RenderContext &ctx) {
             // before rendering via spSkeleton_updateWorldTransform
             meshAttachment->computeWorldVertices(*slot, worldVertices);
             DrawKey key;
+            key.shader = this->shader;
             key.image = region->img;
             key.smooth = this->smooth;
             key.blend = blendMode;

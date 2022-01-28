@@ -13,6 +13,8 @@ declare const console: {
 /** */ declare function dumpMemoryUsage(): void;
 /** */ declare function exit(): void;
 /** */ declare function readFile(path: string): string;
+/** */ declare function getImage(path: string): ImageRegion;
+/** */ declare function getAtlasRegion(path: string, region: string): ImageRegion;
 
 declare function __date_clock(): number;
 
@@ -30,13 +32,8 @@ declare class FileIo {
 
 /**
  * @namespace krit
- * @import krit/io/FileIo.h
+ * @import krit/utils/Parse.h
  */
-declare class Log {
-    static debug(s: cstring): void;
-    static info(s: cstring): void;
-    static warn(s: cstring): void;
-    static error(s: cstring): void;
-    static fatal(s: cstring): void;
-    static success(s: cstring): void;
+declare class Parse {
+    static parseColor(s: string, into: Reference<Color>): void;
 }

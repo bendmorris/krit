@@ -1,6 +1,8 @@
 #include "krit/App.h"
+#include "krit/asset/TextureAtlas.h"
 #include "krit/io/Io.h"
 #include "krit/script/ScriptBridge.h"
+#include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/utils/Log.h"
 #include "quickjs.h"
@@ -102,6 +104,25 @@ JS_FUNC(readFile) {
     auto rt = JS_NewStringLen(ctx, content, len);
     FileIo::free(content);
     return rt;
+}
+
+JS_FUNC(getImage) {
+    GET_ENGINE;
+    const char *s = JS_ToCString(ctx, argv[0]);
+    ImageRegion *img = new ImageRegion(App::ctx.engine->getImage(s));
+    JS_FreeCString(ctx, s);
+    return engine->createOwned(ScriptClassImageRegion, img);
+}
+
+JS_FUNC(getAtlasRegion) {
+    GET_ENGINE;
+    const char *s = JS_ToCString(ctx, argv[0]);
+    const char *s2 = JS_ToCString(ctx, argv[1]);
+    ImageRegion *img =
+        new ImageRegion(App::ctx.engine->getAtlas(s)->getRegion(s2));
+    JS_FreeCString(ctx, s2);
+    JS_FreeCString(ctx, s);
+    return engine->createOwned(ScriptClassImageRegion, img);
 }
 
 }

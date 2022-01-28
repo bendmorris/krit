@@ -176,7 +176,7 @@ AudioStream *AudioBackend::playMusic(std::shared_ptr<MusicData> music) {
         return nullptr;
     }
     alSourcef(stream.source->source, AL_PITCH, 1);
-    alSourcef(stream.source->source, AL_GAIN, 1.0f);
+    alSourcef(stream.source->source, AL_GAIN, stream.volume);
     alSource3f(stream.source->source, AL_POSITION, 0, 0, 0);
     alSource3f(stream.source->source, AL_VELOCITY, 0, 0, 0);
     alSourcei(stream.source->source, AL_LOOPING, AL_FALSE);

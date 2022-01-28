@@ -23,8 +23,8 @@ struct Image : public VisibleSprite {
     ImageRegion region;
 
     Image(const std::string &id);
-    Image(std::shared_ptr<ImageData> img) : region(img) {}
-    Image(ImageRegion region) : region(region) {}
+    Image(std::shared_ptr<ImageData> img);
+    Image(ImageRegion region);
 
     int &width() { return this->region.rect.width; }
     int &height() { return this->region.rect.height; }
@@ -41,6 +41,7 @@ struct Image : public VisibleSprite {
         this->scale.setTo(w / this->width(), h / this->height());
     }
 
+    void update(UpdateContext &ctx) override;
     void render(RenderContext &ctx) override;
 };
 

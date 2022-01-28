@@ -52,7 +52,7 @@ DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key, int zIndex) {
 void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
                                     const Triangle &t, const Triangle &uv,
                                     const Color &color, int zIndex) {
-    if (color.a > 0) {
+    if (color.a > 0 || key.shader) {
         DrawCall &call = this->getDrawCall(key, zIndex);
         addTriangle(call, t, uv, color);
     }
@@ -61,7 +61,7 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
 void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
                                 const IntRectangle &rect, const Matrix &matrix,
                                 const Color &color, int zIndex) {
-    if (color.a <= 0) {
+    if (color.a <= 0 && !key.shader) {
         return;
     }
 
