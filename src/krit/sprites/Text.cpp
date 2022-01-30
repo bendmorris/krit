@@ -28,23 +28,6 @@ namespace krit {
 
 static const int FONT_SCALE = 64;
 
-enum TextOpcodeType : int {
-    SetColor,
-    SetAlign,
-    SetCustom,
-    PopColor,
-    PopAlign,
-    PopCustom,
-    GlyphBlock,
-    NewLine,
-    RenderSprite,
-    Tab,
-    Whitespace,
-    CharDelay,
-    EnableBorder,
-    DisableBorder,
-};
-
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
     {"\n", TextFormatTagOptions().setNewline()},
     {"br", TextFormatTagOptions().setNewline()},
@@ -68,7 +51,7 @@ template <typename T> void clearStack(std::stack<T> &stack) {
 struct TextRenderStack {
     std::stack<Color> color;
     std::stack<AlignType> align;
-    std::stack<CustomTextRenderFunction *> custom;
+    std::stack<CustomTextRenderFunction> custom;
 
     TextRenderStack() {}
 
@@ -83,66 +66,66 @@ static std::unordered_map<hb_codepoint_t, int> charDelays = {
     {'.', 10}, {',', 6}, {'!', 10}, {'?', 10}, {'-', 6}, {';', 4}, {':', 4},
 };
 
-void TextOpcode::debugPrint() {
-    switch (this->type) {
-        case SetColor: {
-            printf("SetColor");
-            break;
-        }
-        case SetAlign: {
-            printf("SetAlign");
-            break;
-        }
-        case SetCustom: {
-            printf("SetCustom");
-            break;
-        }
-        case PopColor: {
-            printf("PopColor");
-            break;
-        }
-        case PopAlign: {
-            printf("PopAlign");
-            break;
-        }
-        case PopCustom: {
-            printf("PopCustom");
-            break;
-        }
-        case GlyphBlock: {
-            printf("GlyphBlock");
-            break;
-        }
-        case NewLine: {
-            printf("NewLine");
-            break;
-        }
-        case RenderSprite: {
-            printf("RenderSprite");
-            break;
-        }
-        case Tab: {
-            printf("Tab");
-            break;
-        }
-        case Whitespace: {
-            printf("Whitespace");
-            break;
-        }
-        case CharDelay: {
-            printf("CharDelay");
-            break;
-        }
-        case EnableBorder: {
-            printf("EnableBorder");
-            break;
-        }
-        case DisableBorder: {
-            printf("DisableBorder");
-            break;
-        }
-    }
-}
+// void TextOpcode::debugPrint() {
+//     switch (this->type) {
+//         case SetColor: {
+//             printf("SetColor");
+//             break;
+//         }
+//         case SetAlign: {
+//             printf("SetAlign");
+//             break;
+//         }
+//         case SetCustom: {
+//             printf("SetCustom");
+//             break;
+//         }
+//         case PopColor: {
+//             printf("PopColor");
+//             break;
+//         }
+//         case PopAlign: {
+//             printf("PopAlign");
+//             break;
+//         }
+//         case PopCustom: {
+//             printf("PopCustom");
+//             break;
+//         }
+//         case GlyphBlock: {
+//             printf("GlyphBlock");
+//             break;
+//         }
+//         case NewLine: {
+//             printf("NewLine");
+//             break;
+//         }
+//         case RenderSprite: {
+//             printf("RenderSprite");
+//             break;
+//         }
+//         case Tab: {
+//             printf("Tab");
+//             break;
+//         }
+//         case Whitespace: {
+//             printf("Whitespace");
+//             break;
+//         }
+//         case CharDelay: {
+//             printf("CharDelay");
+//             break;
+//         }
+//         case EnableBorder: {
+//             printf("EnableBorder");
+//             break;
+//         }
+//         case DisableBorder: {
+//             printf("DisableBorder");
+//             break;
+//         }
+//     }
+// }
 
 /**
  * Utility structure to parse format tags from a string of text and generate a
@@ -262,8 +245,8 @@ struct TextParser {
         st.align.push(this->currentAlign = txt.align);
         st.custom.push(nullptr);
         word.clear();
-        txt.opcodes.push_back(
-            TextOpcode(NewLine, TextOpcodeData(Dimensions(), txt.align)));
+        txt.opcodes.emplace_back(std::in_place_index_t<NewLine>(), Dimensions(),
+                                 txt.align);
         txt.maxChars = rawText.size();
         txt.hasBorderTags = false;
 
@@ -295,28 +278,29 @@ struct TextParser {
                 case ' ': {
                     flushWord(txt);
                     cursor.x += _glyphPos.x_advance;
-                    if (txt.opcodes.back().type == Whitespace) {
-                        txt.opcodes.back().data.number += _glyphPos.x_advance;
+                    if (txt.opcodes.back().index() == Whitespace) {
+                        std::get<Whitespace>(txt.opcodes.back()) +=
+                            _glyphPos.x_advance;
                     } else {
-                        txt.opcodes.push_back(TextOpcode(
-                            Whitespace,
-                            TextOpcodeData((float)_glyphPos.x_advance)));
+                        txt.opcodes.emplace_back(
+                            std::in_place_index_t<Whitespace>(),
+                            _glyphPos.x_advance);
                     }
                     break;
                 }
                 default: {
-                    if (!word.empty() && word.back().type == GlyphBlock &&
-                        word.back().data.glyphBlock.startIndex +
-                                word.back().data.glyphBlock.glyphs ==
+                    if (!word.empty() && word.back().index() == GlyphBlock &&
+                        std::get<GlyphBlock>(word.back()).startIndex +
+                                std::get<GlyphBlock>(word.back()).glyphs ==
                             i) {
                         auto &back = word.back();
                         // add this glyph to the existing opcode
-                        ++back.data.glyphBlock.glyphs;
+                        ++std::get<GlyphBlock>(back).glyphs;
                         wordLength += _glyphPos.x_advance;
                         // cursor.x += _glyphPos.x_advance;
                     } else {
-                        word.emplace_back(
-                            TextOpcode(GlyphBlock, TextOpcodeData(i, 1, 0)));
+                        word.emplace_back(std::in_place_index_t<GlyphBlock>(),
+                                          i, 1, 0);
                         wordLength += _glyphPos.x_advance;
                     }
                 }
@@ -336,8 +320,8 @@ struct TextParser {
 
         txt.maxChars = glyphCost;
         for (auto it : txt.opcodes) {
-            if (it.type == CharDelay) {
-                txt.maxChars += it.data.charDelay;
+            if (it.index() == CharDelay) {
+                txt.maxChars += std::get<CharDelay>(it);
             }
         }
 
@@ -375,46 +359,56 @@ struct TextParser {
             TextFormatTagOptions &tag = found->second;
             if (tag.color) {
                 if (close)
-                    this->addOp(txt, TextOpcode(PopColor));
+                    this->addOp(txt,
+                                TextOpcode(std::in_place_index_t<PopColor>()));
                 else
                     this->addOp(txt,
-                                TextOpcode(SetColor,
-                                           TextOpcodeData(tag.color.value())));
+                                TextOpcode(std::in_place_index_t<SetColor>(),
+                                           tag.color.value()));
             }
             if (tag.align) {
                 if (close)
-                    this->addOp(txt, TextOpcode(PopAlign));
+                    this->addOp(txt,
+                                TextOpcode(std::in_place_index_t<PopAlign>()));
                 else
                     this->addOp(txt,
-                                TextOpcode(SetAlign,
-                                           TextOpcodeData(tag.align.value())));
+                                TextOpcode(std::in_place_index_t<SetAlign>(),
+                                           tag.align.value()));
             }
             if (tag.custom != nullptr) {
                 if (close)
-                    this->addOp(txt, TextOpcode(PopCustom));
+                    this->addOp(txt,
+                                TextOpcode(std::in_place_index_t<PopCustom>()));
                 else
-                    this->addOp(
-                        txt, TextOpcode(SetCustom, TextOpcodeData(tag.custom)));
+                    this->addOp(txt,
+                                TextOpcode(std::in_place_index_t<SetCustom>(),
+                                           tag.custom));
             }
             if (tag.sprite) {
-                this->addOp(
-                    txt, TextOpcode(RenderSprite, TextOpcodeData(tag.sprite)));
+                this->addOp(txt,
+                            TextOpcode(std::in_place_index_t<RenderSprite>(),
+                                       (tag.sprite)));
             }
             if (tag.newline && !close) {
-                this->addOp(
-                    txt, TextOpcode(NewLine,
-                                    TextOpcodeData(Dimensions(), LeftAlign)));
+                this->addOp(txt, TextOpcode(std::in_place_index_t<NewLine>(),
+                                            Dimensions(), LeftAlign));
             }
             if (tag.tab && !close) {
-                this->addOp(txt, TextOpcode(Tab, TextOpcodeData()));
+                this->addOp(txt, TextOpcode(std::in_place_index_t<Tab>()));
             }
             if (tag.charDelay && !close) {
-                this->addOp(
-                    txt, TextOpcode(CharDelay, TextOpcodeData(tag.charDelay)));
+                this->addOp(txt, TextOpcode(std::in_place_index_t<CharDelay>(),
+                                            (tag.charDelay)));
             }
             if (tag.border) {
-                this->addOp(txt,
-                            TextOpcode(close ? DisableBorder : EnableBorder));
+                if (close) {
+                    this->addOp(
+                        txt,
+                        TextOpcode(std::in_place_index_t<DisableBorder>()));
+                } else {
+                    this->addOp(
+                        txt, TextOpcode(std::in_place_index_t<EnableBorder>()));
+                }
             }
         }
     }
@@ -423,19 +417,19 @@ struct TextParser {
         if (canBreak) {
             this->flushWord(txt);
         }
-        if (txt.opcodes[this->newLineIndex].type == NewLine) {
+        if (txt.opcodes[this->newLineIndex].index() == NewLine) {
             // std::pair<Dimensions, AlignType> &align =
             // txt.opcodes[this->newLineIndex].data.newLine; update the size of
             // the preceding line
             float add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
             this->cursor.y += txt.lineHeight + add;
-            txt.opcodes[this->newLineIndex].data.newLine.first.setTo(
-                this->cursor.x, txt.lineHeight + add);
-            txt.opcodes[this->newLineIndex].data.newLine.second =
+            std::get<NewLine>(txt.opcodes[this->newLineIndex])
+                .first.setTo(this->cursor.x, txt.lineHeight + add);
+            std::get<NewLine>(txt.opcodes[this->newLineIndex]).second =
                 this->currentAlign;
         }
-        txt.opcodes.push_back(TextOpcode(
-            NewLine, TextOpcodeData(Dimensions(), this->currentAlign)));
+        txt.opcodes.emplace_back(std::in_place_index_t<NewLine>(), Dimensions(),
+                                 this->currentAlign);
         this->newLineIndex = txt.opcodes.size() - 1;
         this->tabIndex = 0;
         txt.textDimensions.setTo(std::max(txt.textDimensions.width(),
@@ -445,29 +439,29 @@ struct TextParser {
     }
 
     void addOp(Text &txt, TextOpcode op) {
-        switch (op.type) {
+        switch (op.index()) {
             case SetColor: {
-                Color &v = op.data.color;
+                Color &v = std::get<SetColor>(op);
                 TextParser::stack.color.push(v);
                 word.push_back(op);
                 break;
             }
             case PopColor: {
                 TextParser::stack.color.pop();
-                word.push_back(TextOpcode(
-                    SetColor, TextOpcodeData(TextParser::stack.color.top())));
+                word.emplace_back(std::in_place_index_t<SetColor>(),
+                                  TextParser::stack.color.top());
                 break;
             }
             case SetCustom: {
-                CustomTextRenderFunction *f = op.data.custom;
+                CustomTextRenderFunction f = std::get<SetCustom>(op);
                 TextParser::stack.custom.push(f);
                 word.push_back(op);
                 break;
             }
             case PopCustom: {
                 TextParser::stack.custom.pop();
-                word.push_back(TextOpcode(
-                    SetCustom, TextOpcodeData(TextParser::stack.custom.top())));
+                word.emplace_back(std::in_place_index_t<SetCustom>(),
+                                  TextParser::stack.custom.top());
                 break;
             }
             case NewLine: {
@@ -475,7 +469,7 @@ struct TextParser {
                 break;
             }
             case SetAlign: {
-                AlignType &v = op.data.align;
+                AlignType &v = std::get<SetAlign>(op);
                 if (this->cursor.x + wordLength > 0) {
                     this->newLine(txt);
                 }
@@ -491,7 +485,7 @@ struct TextParser {
                 break;
             }
             case RenderSprite: {
-                auto sprite = op.data.sprite;
+                auto sprite = std::get<RenderSprite>(op);
                 auto size = sprite->getSize();
                 float imageWidth = size.width();
                 word.push_back(op);
@@ -573,7 +567,7 @@ void Text::__render(RenderContext &ctx, bool border) {
 
     Color color = this->color * this->baseColor;
     Point cursor;
-    CustomTextRenderFunction *custom = nullptr;
+    CustomTextRenderFunction custom = nullptr;
     float totalWidth = this->wordWrap ? this->dimensions.width()
                                       : this->textDimensions.width();
     int charCount = this->charCount;
@@ -587,20 +581,20 @@ void Text::__render(RenderContext &ctx, bool border) {
     Utf8Iterator it = rawText.begin();
 
     for (TextOpcode &op : this->opcodes) {
-        switch (op.type) {
+        switch (op.index()) {
             case SetColor: {
-                color = this->color * op.data.color;
+                color = this->color * std::get<SetColor>(op);
                 break;
             }
             case SetCustom: {
-                custom = op.data.custom;
+                custom = std::get<SetCustom>(op);
                 break;
             }
             case NewLine: {
                 tabIndex = 0;
-                Dimensions &dims = op.data.newLine.first;
+                Dimensions &dims = std::get<NewLine>(op).first;
                 float align;
-                switch (op.data.newLine.second) {
+                switch (std::get<NewLine>(op).second) {
                     case LeftAlign:
                         align = 0;
                         break;
@@ -617,7 +611,7 @@ void Text::__render(RenderContext &ctx, bool border) {
             }
             case RenderSprite: {
                 if (!border) {
-                    auto sprite = op.data.sprite;
+                    auto sprite = std::get<RenderSprite>(op);
                     GlyphRenderData renderData(cursor);
                     if (custom) {
                         custom(&ctx, this, &renderData);
@@ -638,7 +632,7 @@ void Text::__render(RenderContext &ctx, bool border) {
             }
             case CharDelay: {
                 if (charCount > -1) {
-                    charCount -= op.data.charDelay;
+                    charCount -= std::get<CharDelay>(op);
                     if (charCount <= 0) {
                         return;
                     }
@@ -659,14 +653,14 @@ void Text::__render(RenderContext &ctx, bool border) {
                     hb_buffer_get_glyph_infos(hbBuf, &glyphCount);
                 hb_glyph_position_t *glyphPos =
                     hb_buffer_get_glyph_positions(hbBuf, &glyphCount);
-                for (size_t i = op.data.glyphBlock.startIndex;
-                     i <
-                     op.data.glyphBlock.startIndex + op.data.glyphBlock.glyphs;
+                for (size_t i = std::get<GlyphBlock>(op).startIndex;
+                     i < std::get<GlyphBlock>(op).startIndex +
+                             std::get<GlyphBlock>(op).glyphs;
                      ++i) {
                     hb_glyph_info_t _info = glyphInfo[i];
                     hb_glyph_position_t _pos = glyphPos[i];
                     GlyphData &glyph = ctx.engine->fonts.getGlyph(
-                        font, _info.codepoint, std::round(size));
+                        font, _info.codepoint, std::round(size * glyphScale));
                     size_t txtPointer = _info.cluster;
                     while (it.index() < txtPointer) {
                         ++it;
@@ -688,13 +682,13 @@ void Text::__render(RenderContext &ctx, bool border) {
                         ctx.camera->transformMatrix(matrix);
                         matrix.tx = std::round(matrix.tx);
                         matrix.ty = std::round(matrix.ty);
-                        matrix.a = matrix.d = 1;
+                        matrix.a = matrix.d = 1.0 / glyphScale;
                         matrix.b = matrix.c = 0;
                         matrix.translate(
                             std::round(renderData.position.x * cameraScale),
                             std::round(renderData.position.y * cameraScale));
-                        matrix.translate(std::round(glyph.offset.x),
-                                         std::round(-glyph.offset.y));
+                        matrix.translate(std::round(glyph.offset.x / glyphScale),
+                                         std::round(-glyph.offset.y / glyphScale));
                     } else {
                         key.smooth = smooth == SmoothingMode::SmoothMipmap
                                          ? SmoothingMode::SmoothLinear
@@ -703,9 +697,9 @@ void Text::__render(RenderContext &ctx, bool border) {
                         matrix.translate(renderData.position.x,
                                          renderData.position.y);
                         ctx.camera->transformMatrix(matrix);
-                        matrix.a = matrix.d = 1;
+                        matrix.a = matrix.d = 1.0 / glyphScale;
                         matrix.b = matrix.c = 0;
-                        matrix.translate(glyph.offset.x, -glyph.offset.y);
+                        matrix.translate(glyph.offset.x / glyphScale, -glyph.offset.y / glyphScale);
                     }
                     key.image = glyph.region.img;
                     key.blend = blendMode;
@@ -744,7 +738,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                 break;
             }
             case Whitespace: {
-                cursor.x += op.data.number;
+                cursor.x += std::get<Whitespace>(op);
                 break;
             }
             case Tab: {

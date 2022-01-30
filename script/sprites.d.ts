@@ -73,8 +73,36 @@ declare class TextOptions {
  * @namespace krit
  * @import krit/sprites/Text.h
  */
+declare class GlyphRenderData {
+    c: integer;
+    color: Color;
+    scale: ScaleFactor;
+    position: Point;
+}
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Text.h
+ */
+declare class TextFormatTagOptions {
+    constructor();
+    setColor(c: integer): void;
+    // setAlign(/* @cast AlignType */ a: AlignType): void;
+    setNewline(): void;
+    setTab(): void;
+    // setCustom(f: (ctx: Pointer<RenderContext>, txt: Pointer<Text>, glyph: Pointer<GlyphRenderData>) => void): void;
+    setSprite(s: Pointer<VisibleSprite>): void;
+    setDelay(delay: integer): void;
+    setBorder(): void;
+}
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Text.h
+ */
 declare class Text extends VisibleSprite {
     static from(value: Sprite): Text;
+    static addFormatTag(name: string, options: TextFormatTagOptions): void;
 
     constructor(options: Reference<TextOptions>);
 
@@ -89,11 +117,13 @@ declare class Text extends VisibleSprite {
     border: boolean;
     borderThickness: integer;
     borderColor: Color;
+    glyphScale: float;
 
     refresh(): void;
     setText(s: string): void;
     setRichText(s: string): void;
     setTabStops(s: string): void;
+    setFontSize(s: integer): void;
 }
 
 /**

@@ -8,10 +8,12 @@
 #include "krit/math/ScaleFactor.h"
 #include "krit/utils/Color.h"
 #include <cassert>
+#include <functional>
+#include <optional>
 #include <stddef.h>
 #include <string>
-#include <optional>
 #include <unordered_map>
+#include <variant>
 #include <vector>
 
 struct hb_buffer_t;
@@ -48,8 +50,8 @@ struct GlyphRenderData {
         : c(c), color(color), scale(scale), position(position) {}
 };
 
-typedef void CustomTextRenderFunction(RenderContext *, Text *,
-                                      GlyphRenderData *);
+using CustomTextRenderFunction =
+    std::function<void(RenderContext *, Text *, GlyphRenderData *)>;
 
 struct TextOptions {
     Font *font = nullptr;
@@ -90,7 +92,7 @@ struct TextFormatTagOptions {
     bool tab = false;
     bool border = false;
     int charDelay = 0;
-    CustomTextRenderFunction *custom = nullptr;
+    CustomTextRenderFunction custom;
     VisibleSprite *sprite = nullptr;
 
     TextFormatTagOptions() = default;
@@ -111,7 +113,7 @@ struct TextFormatTagOptions {
         this->tab = true;
         return *this;
     }
-    TextFormatTagOptions &setCustom(CustomTextRenderFunction *c) {
+    TextFormatTagOptions &setCustom(CustomTextRenderFunction c) {
         this->custom = c;
         return *this;
     }
@@ -133,46 +135,33 @@ struct GlyphBlockData {
     size_t startIndex;
     size_t glyphs;
     float trailingWhitespace;
+
+    GlyphBlockData(size_t a, size_t b, float c)
+        : startIndex(a), glyphs(b), trailingWhitespace(c) {}
 };
 
-union TextOpcodeData {
-    bool present;
-    Color color;
-    float number;
-    int charDelay;
-    AlignType align;
-    CustomTextRenderFunction *custom = nullptr;
-    GlyphBlockData glyphBlock;
-    NewlineData newLine;
-    VisibleSprite *sprite;
-
-    TextOpcodeData() : present(false) {}
-    TextOpcodeData(Color color) : color(color) {}
-    TextOpcodeData(float number) : number(number) {}
-    TextOpcodeData(AlignType align) : align(align) {}
-    TextOpcodeData(CustomTextRenderFunction *custom) : custom(custom) {}
-    TextOpcodeData(size_t startIndex, size_t glyphs, float trailingWhitespace)
-        : glyphBlock{.startIndex = startIndex,
-                     .glyphs = glyphs,
-                     .trailingWhitespace = trailingWhitespace} {}
-    TextOpcodeData(Dimensions d, AlignType a) : newLine(d, a) {}
-    TextOpcodeData(VisibleSprite *sprite) : sprite(sprite) {}
-    TextOpcodeData(int delay) : charDelay(delay) {}
+enum TextOpcodeType : int {
+    SetColor,
+    SetAlign,
+    SetCustom,
+    PopColor,
+    PopAlign,
+    PopCustom,
+    GlyphBlock,
+    NewLine,
+    RenderSprite,
+    Tab,
+    Whitespace,
+    CharDelay,
+    EnableBorder,
+    DisableBorder,
 };
 
-enum TextOpcodeType : int;
-
-struct TextOpcode {
-    TextOpcodeType type;
-    TextOpcodeData data;
-
-    TextOpcode() = default;
-    TextOpcode(TextOpcodeType type, TextOpcodeData data)
-        : type(type), data(data) {}
-    TextOpcode(TextOpcodeType type) : type(type) {}
-
-    void debugPrint();
-};
+using TextOpcode =
+    std::variant<Color, AlignType, CustomTextRenderFunction, std::monostate,
+                 std::monostate, std::monostate, GlyphBlockData, NewlineData,
+                 VisibleSprite *, std::monostate, float, int, std::monostate,
+                 std::monostate>;
 
 struct Text : public VisibleSprite, public TextOptions {
     static std::unordered_map<std::string, TextFormatTagOptions> formatTags;
@@ -189,6 +178,7 @@ struct Text : public VisibleSprite, public TextOptions {
     bool allowPixelPerfect = true;
     bool border = false;
     int borderThickness = 0;
+    float glyphScale = 1;
     Color borderColor = Color::black();
 
     Text() = default;
@@ -222,6 +212,12 @@ struct Text : public VisibleSprite, public TextOptions {
     float height() {
         refresh();
         return textDimensions.height();
+    }
+    void setFontSize(int size) {
+        if (this->size != size) {
+            this->dirty = true;
+            this->size = size;
+        }
     }
     void resize(float, float) override;
     void render(RenderContext &ctx) override;
