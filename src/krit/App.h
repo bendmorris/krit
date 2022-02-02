@@ -33,9 +33,14 @@ struct App {
      */
     void quit() { running = false; }
 
+    /**
+     * Current time in milliseconds, as a float with microsecond precision.
+     */
+    float time();
+
 private:
     std::chrono::steady_clock clock;
-    std::chrono::steady_clock::time_point frameStart, frameFinish;
+    std::chrono::steady_clock::time_point appStart, frameStart, frameFinish;
     double accumulator = 0, elapsed;
     double frameDelta, frameDelta2;
     TaskManager *taskManager = nullptr;

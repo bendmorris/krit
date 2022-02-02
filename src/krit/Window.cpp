@@ -30,7 +30,7 @@ Window::Window(KritOptions &options)
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
 #if KRIT_ENABLE_MULTISAMPLING
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, GL_TRUE);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 #endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
 

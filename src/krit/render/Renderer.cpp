@@ -26,6 +26,9 @@
 #include <memory>
 #include <stdint.h>
 #include <utility>
+#if TRACY_ENABLE
+#include "krit/tracy/Tracy.hpp"
+#endif
 
 namespace krit {
 
@@ -182,7 +185,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
     checkForGlErrors("depth test");
-    glDisable(GL_STENCIL_TEST);
+    glEnable(GL_STENCIL_TEST);
     checkForGlErrors("stencil test");
 
 #if KRIT_ENABLE_MULTISAMPLING
@@ -250,6 +253,9 @@ Renderer::~Renderer() {
 template <>
 void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
                                                  Rectangle &clipRect) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<PushClipRect>");
+#endif
     clipStack.emplace_back();
     Rectangle &newClip = clipStack.back();
     if (clipStack.size() > 1) {
@@ -263,6 +269,9 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
 
 template <>
 void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<PopClipRect>");
+#endif
     clipStack.pop_back();
     if (clipStack.empty()) {
         glScissor(0, 0, this->width, this->height);
@@ -276,6 +285,9 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
 template <>
 void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     RenderContext &ctx, SetRenderTargetArgs &args) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<SetRenderTarget>");
+#endif
 // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
 #if KRIT_ENABLE_MULTISAMPLING
 // if (args.clear && args.target && args.target->resolvedTexture) {
@@ -302,6 +314,9 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
 
 template <>
 void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<ClearColor>");
+#endif
     glDisable(GL_SCISSOR_TEST);
     glClearColor(c.r, c.g, c.b, c.a);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -311,6 +326,9 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 template <>
 void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
                                                    ImDrawData *&drawData) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<RenderImGui>");
+#endif
 #if KRIT_ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
@@ -323,6 +341,9 @@ void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                                  DrawCall &drawCall) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<DrawTriangles>");
+#endif
     // puts("draw");
     checkForGlErrors("drawCall");
 
@@ -330,7 +351,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 
     if (drawCall.length() &&
         (!drawCall.key.image || drawCall.key.image->texture)) {
-        this->triangleCount += drawCall.length();
+        // this->triangleCount += drawCall.length();
 
         if (width > 0 && height > 0) {
             SpriteShader *shader = drawCall.key.shader;
@@ -389,6 +410,9 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
                                                         SceneShader *&shader) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<DrawSceneShader>");
+#endif
     setSize(ctx);
     setBlendMode(shader->blend);
     setSmoothingMode(SmoothLinear, nullptr);
@@ -413,19 +437,34 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 }
 
 void Renderer::renderFrame(RenderContext &ctx) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::renderFrame");
+#endif
     this->currentRenderTarget = nullptr;
 
     setSize(ctx);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(0, 0, this->width, this->height);
-    auto &bgColor = ctx.engine->bgColor;
-    glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-    glClear(GL_COLOR_BUFFER_BIT);
-    this->triangleCount = 0;
+
+    clear(ctx);
 
     checkForGlErrors("start frame");
 
+    dispatchCommands(ctx);
+    // printf("triangles: %i\n", this->triangleCount);
+}
+
+void Renderer::clear(RenderContext &ctx) {
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    auto &bgColor = ctx.engine->bgColor;
+    glScissor(0, 0, this->width, this->height);
+    glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+    glClear(GL_COLOR_BUFFER_BIT);
+    // this->triangleCount = 0;
+}
+
+void Renderer::dispatchCommands(RenderContext &ctx) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::dispatchCommands");
+#endif
     size_t indices[DrawCommandTypeCount] = {0};
     for (auto commandType : this->drawCommandBuffer.buf.commandTypes) {
         size_t index = indices[commandType]++;
@@ -445,20 +484,20 @@ void Renderer::renderFrame(RenderContext &ctx) {
             DISPATCH_COMMAND(RenderImGui)
         }
     }
-
 #undef DISPATCH_COMMAND
 
-    glDisable(GL_SCISSOR_TEST);
-
     this->drawCommandBuffer.clear();
-
-    SDL_GL_SwapWindow(ctx.window->window);
     this->currentRenderTarget = nullptr;
+}
 
-    // printf("triangles: %i\n", this->triangleCount);
+void Renderer::flip(RenderContext &ctx) {
+    SDL_GL_SwapWindow(ctx.window->window);
 }
 
 void Renderer::setSize(RenderContext &ctx) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::setSize");
+#endif
     auto &size =
         currentRenderTarget ? currentRenderTarget->size : ctx.window->size();
     ScaleFactor scale =

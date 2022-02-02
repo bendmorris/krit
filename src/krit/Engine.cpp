@@ -12,6 +12,9 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
+#if TRACY_ENABLE
+#include "krit/tracy/Tracy.hpp"
+#endif
 
 namespace krit {
 
@@ -20,6 +23,9 @@ Engine::Engine(KritOptions &options) : window(options), renderer(window) {
 }
 
 void Engine::fixedUpdate(UpdateContext &ctx) {
+    #if TRACY_ENABLE
+    ZoneScopedN("Engine::fixedUpdate");
+    #endif
     if (this->paused) {
         return;
     }
@@ -32,6 +38,9 @@ void Engine::fixedUpdate(UpdateContext &ctx) {
 }
 
 void Engine::update(UpdateContext &ctx) {
+    #if TRACY_ENABLE
+    ZoneScopedN("Engine::update");
+    #endif
     if (this->paused) {
         return;
     }
@@ -94,6 +103,9 @@ void Engine::update(UpdateContext &ctx) {
 }
 
 void Engine::render(RenderContext &ctx) {
+    #if TRACY_ENABLE
+    ZoneScopedN("Engine::render");
+    #endif
     checkForGlErrors("engine render");
 
     ctx.userData = userData;
@@ -118,7 +130,13 @@ void Engine::render(RenderContext &ctx) {
     checkForGlErrors("before render frame");
     renderer.renderFrame(ctx);
     checkForGlErrors("after render frame");
+}
 
+void Engine::flip(RenderContext &ctx) {
+    #if TRACY_ENABLE
+    ZoneScopedN("Engine::flip");
+    #endif
+    renderer.flip(ctx);
     fonts.flush();
     checkForGlErrors("flush fonts");
 }

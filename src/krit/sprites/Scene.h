@@ -54,6 +54,11 @@ struct ScriptScene : public Scene {
     void update(UpdateContext &ctx) override;
     void fixedUpdate(UpdateContext &ctx) override;
     void render(RenderContext &ctx) override;
+
+    private:
+        float lastUpdateTime = 0;
+        float lastFixedUpdateTime = 0;
+        float lastRenderTime = 0;
 };
 
 }

@@ -7,3 +7,6 @@
 [submodule "toolchain"]
 	path = toolchain
 	url = git@github.com:bendmorris/krit-toolchain.git
+[submodule "tracy"]
+	path = tracy
+	url = https://github.com/wolfpld/tracy

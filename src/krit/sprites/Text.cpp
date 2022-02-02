@@ -715,10 +715,10 @@ void Text::__render(RenderContext &ctx, bool border) {
                                               this->borderColor.b,
                                               this->borderColor.a * color.a);
                             GlyphData &borderGlyph = ctx.engine->fonts.getGlyph(
-                                font, _info.codepoint, std::round(size),
-                                std::round(thickness));
-                            matrix.tx += borderGlyph.offset.x - glyph.offset.x;
-                            matrix.ty -= borderGlyph.offset.y - glyph.offset.y;
+                                font, _info.codepoint, std::round(size * glyphScale),
+                                std::round(thickness * glyphScale));
+                            matrix.tx += (borderGlyph.offset.x - glyph.offset.x) / glyphScale;
+                            matrix.ty -= (borderGlyph.offset.y - glyph.offset.y) / glyphScale;
                             ctx.addRectRaw(key, borderGlyph.region.rect, matrix,
                                            borderColor, zIndex);
                         }

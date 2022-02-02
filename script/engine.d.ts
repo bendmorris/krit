@@ -9,6 +9,7 @@ interface Engine {
     uiCamera: Camera;
     speed: number;
     elapsed: number;
+    bgColor: Color;
 
     setCursor(c: string): void;
 }

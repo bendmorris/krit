@@ -23,13 +23,50 @@ struct DevTool {
     virtual void draw(krit::RenderContext &ctx) {}
 };
 
-typedef std::function<void(RenderContext &)> MetricGetter;
+typedef std::function<float(RenderContext &)> MetricGetter;
+
+struct MetricStats {
+    float min, max, avg;
+};
+
+struct Metric {
+    std::string name;
+    MetricGetter getter;
+    float buffer[60] = {0};
+    int index = 0;
+    bool wrapped = false;
+
+    Metric(const std::string &_name, MetricGetter _getter)
+        : name(_name), getter(_getter) {}
+
+    void poll(RenderContext &ctx) {
+        buffer[index++] = getter(ctx);
+        if (index >= 60) {
+            index %= 60;
+            wrapped = true;
+        }
+    }
+
+    MetricStats getStats() {
+        float total = 0;
+        float min = -1, max = -1;
+        for (int i = 0; i < 60; ++i) {
+            float v = buffer[i];
+            total += v;
+            if (min < 0 || v < min)
+                min = v;
+            if (max < 0 || v > max)
+                max = v;
+        }
+        return MetricStats{.min = min, .max = max, .avg = total / 60};
+    }
+};
 
 struct Overlay : public DevTool {
-    static std::vector<MetricGetter> metrics;
+    static std::vector<Metric> metrics;
 
-    static void addMetric(MetricGetter getter) {
-        metrics.emplace_back(std::move(getter));
+    static void addMetric(const std::string &name, MetricGetter getter) {
+        metrics.emplace_back(name, getter);
     };
 
     float fpsBuffer[60] = {0};

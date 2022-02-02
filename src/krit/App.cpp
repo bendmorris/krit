@@ -27,6 +27,9 @@
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
+#if TRACY_ENABLE
+#include "krit/tracy/Tracy.hpp"
+#endif
 
 namespace krit {
 struct UpdateContext;
@@ -49,6 +52,13 @@ App::App(KritOptions &options)
       framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
 }
 
+float App::time() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(clock.now() -
+                                                                 appStart)
+               .count() /
+           1000.0f;
+}
+
 void App::run() {
     if (ctx.app) {
         panic("can only have a single App running at once");
@@ -57,6 +67,8 @@ void App::run() {
 #ifndef __EMSCRIPTEN
     std::signal(SIGINT, sigintHandler);
 #endif
+
+    appStart = clock.now();
 
     // // SDL_Image
     // int flags = IMG_INIT_PNG;
@@ -158,6 +170,11 @@ bool App::doFrame() {
     frameStart = frameFinish;
 
     engine.render(ctx);
+    engine.flip(ctx);
+
+    #if TRACY_ENABLE
+    FrameMark;
+    #endif
 
     return true;
 }

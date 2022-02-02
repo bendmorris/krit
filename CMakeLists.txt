@@ -17,13 +17,18 @@ else()
     message(FATAL_ERROR "Unrecognized platform")
 endif()
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\"")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
+set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF} -DTRACY_ENABLE")
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-alloc-size-larger-than -Wno-stringop-overflow -Wno-parentheses -Wno-unused-result -Werror -Wall -ffast-math -fno-exceptions")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE")
-set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_PROF} ${CMAKE_CXX_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -DTRACY_ENABLE")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_ASAN} ${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize=undefined")
+set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_ASAN} -fsanitize=address -fsanitize=undefined")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
-set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_ASAN} ${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
+set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_DEBUG} ${CMAKE_LINKER_FLAGS_ASAN} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
+set(CMAKE_LINKER_FLAGS_PROF "${CMAKE_LINKER_FLAGS_RELEASE} ${CMAKE_LINKER_FLAGS_PROF}")
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 find_package(OpenGL REQUIRED)
@@ -50,6 +55,22 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
 file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
     CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
+)
+
+if(CMAKE_BUILD_TYPE MATCHES PROF)
+    message(STATUS "profiling enabled")
+    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
+endif()
+
+list(APPEND KRIT_SRC_FILES
+    ${KRIT_DIR}/quickjs/quickjs.h
+    ${KRIT_DIR}/quickjs/quickjs-libc.h
+    ${KRIT_DIR}/quickjs/quickjs.c
+    ${KRIT_DIR}/quickjs/libregexp.c
+    ${KRIT_DIR}/quickjs/libunicode.c
+    ${KRIT_DIR}/quickjs/libbf.c
+    ${KRIT_DIR}/quickjs/cutils.c
+    ${KRIT_DIR}/quickjs/quickjs-libc.c
 )
 
 add_library(${PROJECT_NAME} STATIC
@@ -84,7 +105,7 @@ message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FI
 find_library(EXPAT_LIB NAMES expat HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(FREETYPE_LIB NAMES freetype freetype-6 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(HARFBUZZ_LIB NAMES harfbuzz HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(QUICKJS_LIB NAMES quickjs HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+# find_library(QUICKJS_LIB NAMES quickjs HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(SDL_LIB NAMES SDL2 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(SNDFILE_LIB NAMES sndfile HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
@@ -123,10 +144,11 @@ target_link_libraries(${PROJECT_NAME}
     ${ZIP_LIB}
     ${Z_LIB}
     ${SNDFILE_LIB}
-    ${QUICKJS_LIB}
+    # ${QUICKJS_LIB}
     ${EXPAT_LIB}
     ${YAML_LIB}
     ${PTHREAD_LIB}
+    "-ldl"
     "-Wl,--gc-sections"
     "-static-libgcc"
 )

@@ -15,7 +15,14 @@
 
 namespace krit {
 
-std::vector<MetricGetter> Overlay::metrics;
+static std::vector<Metric> defaultMetrics() {
+    std::vector<Metric> v;
+    v.emplace_back("Frame time",
+                   [](RenderContext &ctx) { return ctx.elapsed * 1000; });
+    return v;
+}
+
+std::vector<Metric> Overlay::metrics = defaultMetrics();
 
 void Overlay::draw(krit::RenderContext &ctx) {
     ImVec2 window_pos = ImVec2(ctx.window->width() - 32, 32);
@@ -28,23 +35,16 @@ void Overlay::draw(krit::RenderContext &ctx) {
     if (ImGui::Begin("FPS", &pOpen,
                      ImGuiWindowFlags_NoDecoration |
                          ImGuiWindowFlags_AlwaysAutoResize)) {
-        int next = (index++) % 60;
-        index %= 60;
-        fpsBuffer[next] = ctx.elapsed;
-        double total = 0;
-        float min = -1, max = -1;
-        for (int i = 0; i < 60; ++i) {
-            float v = fpsBuffer[i];
-            total += v;
-            if (min < 0 || v < min) min = v;
-            if (max < 0 || v > max) max = v;
-        }
-        ImGui::Text("Frame time: %.2f (%.2f-%.2f)", total * 1000 / 60, min * 1000, max * 1000);
         ImGui::Text("Time: %.1f", elapsed);
         ImGui::Text("Memory: %.3f MB", getCurrentRss() / 1000000.0);
         ImGui::Text("Peak Mem: %.3f MB", getPeakRss() / 1000000.0);
-        for (auto &it : metrics) {
-            it(ctx);
+        for (auto &metric : metrics) {
+            metric.poll(ctx);
+            if (metric.wrapped) {
+                MetricStats stats = metric.getStats();
+                ImGui::Text("%s: %.2f (%.2f-%.2f)", metric.name.c_str(),
+                            stats.avg, stats.min, stats.max);
+            }
         }
         ImGui::Checkbox("Debug draw", &ctx.debugDraw);
         ImGui::Checkbox("Pause", &ctx.engine->paused);
@@ -90,6 +90,5 @@ void Editor::render(krit::RenderContext &ctx) {
             ImGui::GetDrawData());
     }
 }
-
 }
 #endif

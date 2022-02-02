@@ -27,6 +27,7 @@ struct Renderer {
     ~Renderer();
 
     void renderFrame(RenderContext &ctx);
+    void flip(RenderContext &ctx);
 
     SpriteShader *getDefaultTextureShader();
     SpriteShader *getDefaultColorShader();
@@ -50,6 +51,8 @@ private:
     void setSmoothingMode(SmoothingMode mode, ImageData *img);
     void setBlendMode(BlendMode mode);
     void setSize(RenderContext &ctx);
+    void clear(RenderContext &ctx);
+    void dispatchCommands(RenderContext &ctx);
 };
 
 }
