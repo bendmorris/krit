@@ -162,7 +162,7 @@ static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
 };
 
 static JSClassDef classDef{{wrapper.name}} = {
-    "{{ wrapper.name }}",
+    .class_name = "{{ wrapper.name }}",
     .finalizer = nullptr,
 };
 
@@ -182,7 +182,7 @@ static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
 }
 
 static JSClassDef classDef{{wrapper.name}}Finalizer = {
-    "{{ wrapper.name }}Finalizer",
+    .class_name = "{{ wrapper.name }}Finalizer",
     .finalizer = finalize{{wrapper.name}},
 };
 

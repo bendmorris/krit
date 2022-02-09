@@ -169,6 +169,7 @@ declare class Backdrop extends VisibleSprite {
  */
 declare class SpineSprite extends VisibleSprite {
     static from(value: Sprite): SpineSprite;
+    static setAtlasPath(path: string): void;
 
     rate: number;
 

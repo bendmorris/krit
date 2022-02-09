@@ -48,20 +48,28 @@ namespace krit {
 
 SpineTextureLoader SpineTextureLoader::instance;
 
+std::string SpineSprite::defaultAtlasPath;
+
 template <>
 std::shared_ptr<SpineData>
 AssetLoader<SpineData>::loadAsset(const AssetInfo &info) {
     auto data = std::make_shared<SpineData>();
     const spine::String &atlasName(
-        (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str());
+        SpineSprite::defaultAtlasPath.empty()
+            ? (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str()
+            : SpineSprite::defaultAtlasPath.c_str());
     data->atlas = std::unique_ptr<spine::Atlas>(
         new spine::Atlas(atlasName, &SpineTextureLoader::instance));
     data->binary = std::unique_ptr<spine::SkeletonBinary>(
         new spine::SkeletonBinary(data->atlas.get()));
+    // data->json = std::unique_ptr<spine::SkeletonJson>(
+    //     new spine::SkeletonJson(data->atlas.get()));
     int length;
     unsigned char *s = (unsigned char *)IoRead::read(info.path, &length);
     data->skeletonData = std::unique_ptr<spine::SkeletonData>(
         data->binary->readSkeletonData(s, length));
+    // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
+    //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
         Log::error("failed to load skeleton data: %s", info.path.c_str());
     }

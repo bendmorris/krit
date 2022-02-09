@@ -28,6 +28,7 @@
 #include <utility>
 #if TRACY_ENABLE
 #include "krit/tracy/Tracy.hpp"
+// #include "krit/tracy/TracyOpenGL.hpp"
 #endif
 
 namespace krit {
@@ -161,9 +162,12 @@ void ortho(RenderFloat x0, RenderFloat x1, RenderFloat y0, RenderFloat y1) {
     _ortho[13] = -(y0 + y1) * sy;
 }
 
-static RenderFloat _vertices[24] = {-1.0, -1.0, 0.0, 0.0, 1.0,  -1.0, 1.0, 0.0,
-                                    -1.0, 1.0,  0.0, 1.0, 1.0,  -1.0, 1.0, 0.0,
-                                    1.0,  1.0,  1.0, 1.0, -1.0, 1.0,  0.0, 1.0};
+static RenderFloat _vertices[] = {
+    -1.0, -1.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0,
+    0.0,  0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0, 0.0, 0.0,  0.0, 0.0,
+    1.0,  -1.0, 1.0, 0.0, 0.0,  0.0, 0.0, 0.0, 1.0, 1.0,  1.0, 1.0,
+    0.0,  0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0, 0.0, 0.0,  0.0, 0.0,
+};
 
 Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
@@ -174,12 +178,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     }
     SDL_GL_MakeCurrent(window, this->glContext);
     checkForGlErrors("context");
-    // try to get adaptive vsync
-    int result = SDL_GL_SetSwapInterval(-1);
-    // fall back to regular vsync
-    if (result == -1) {
-        SDL_GL_SetSwapInterval(1);
-    }
+    SDL_GL_SetSwapInterval(1);
     checkForGlErrors("swap interval");
     glEnable(GL_BLEND);
     checkForGlErrors("blend");
@@ -236,12 +235,21 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glGenVertexArrays(1, &this->vao);
     glBindVertexArray(this->vao);
 #endif
-    glGenBuffers(2, this->renderBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[24]), _vertices,
+    glGenBuffers(3, this->vertexBuffer);
+    glGenBuffers(1, &this->sceneShaderVertexBuffer);
+    glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[48]), _vertices,
                  GL_STATIC_DRAW);
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    drawCommandBuffer.defaultTextureShader = getDefaultTextureShader();
+    drawCommandBuffer.defaultColorShader = getDefaultColorShader();
+
     checkForGlErrors("renderer init");
+
+// #if TRACY_ENABLE
+//     TracyGpuContext;
+// #endif
 }
 
 Renderer::~Renderer() {
@@ -299,10 +307,12 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
 //     glBindTexture(GL_TEXTURE_2D, 0);
 // }
 #endif
+    if (args.target) {
+        args.target->_markDirty();
+    }
     glBindFramebuffer(GL_FRAMEBUFFER,
-                      args.target ? args.target->frameBuffer : 0);
+                      args.target ? args.target->getFramebuffer() : 0);
     if (args.clear && args.target) {
-        glBindTexture(GL_TEXTURE_2D, args.target->resolvedTexture);
         glDisable(GL_SCISSOR_TEST);
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -347,6 +357,8 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
     // puts("draw");
     checkForGlErrors("drawCall");
 
+    int index = App::ctx.tickId % 3;
+
     setSize(ctx);
 
     if (drawCall.length() &&
@@ -360,7 +372,11 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                             : getDefaultColorShader();
             }
 
+            glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
+            checkForGlErrors("bind buffer");
+
             shader->bind(ctx);
+            checkForGlErrors("bind shader");
 
             if (drawCall.key.image) {
                 glActiveTexture(GL_TEXTURE0);
@@ -377,25 +393,9 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             }
             setBlendMode(drawCall.key.blend);
 
-            int dataSize =
-                drawCall.length() * shader->shader.bytesPerVertex * 3;
-            renderData.reserve(dataSize);
-            renderData.resize(renderData.capacity());
-            glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[0]);
-            checkForGlErrors("bind buffer");
-            if ((RenderFloat *)this->renderData.data() != this->bufferPtr) {
-                glBufferData(GL_ARRAY_BUFFER, this->renderData.capacity(),
-                             (RenderFloat *)this->renderData.data(),
-                             GL_DYNAMIC_DRAW);
-                checkForGlErrors("buffer data");
-                this->bufferPtr = (RenderFloat *)this->renderData.data();
-            }
-            shader->prepare(ctx, &drawCall,
-                            (RenderFloat *)this->renderData.data());
-            checkForGlErrors("prepare");
-
-            glDrawArrays(GL_TRIANGLES, 0, drawCall.length() * 3);
-            checkForGlErrors("drawArrays");
+            glDrawElements(GL_TRIANGLES, drawCall.indices.size(),
+                           GL_UNSIGNED_INT, drawCall.indices.data());
+            checkForGlErrors("drawElements");
 
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -417,18 +417,15 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     setBlendMode(shader->blend);
     setSmoothingMode(SmoothLinear, nullptr);
 
+    glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
+    checkForGlErrors("bindBuffer");
+
     shader->bind(ctx);
     if (shader->matrixIndex > -1) {
         glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
     }
     checkForGlErrors("bind");
 
-    glBindBuffer(GL_ARRAY_BUFFER, this->renderBuffer[1]);
-    checkForGlErrors("bindBuffer");
-
-    renderData.reserve(shader->shader.bytesPerVertex * 6);
-    renderData.resize(renderData.capacity());
-    shader->prepare(ctx, (RenderFloat *)renderData.data());
     glDrawArrays(GL_TRIANGLES, 0, 6);
     checkForGlErrors("drawArrays");
 
@@ -440,6 +437,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::renderFrame");
 #endif
+    int index = App::ctx.tickId % 3;
     this->currentRenderTarget = nullptr;
 
     setSize(ctx);
@@ -447,6 +445,30 @@ void Renderer::renderFrame(RenderContext &ctx) {
     clear(ctx);
 
     checkForGlErrors("start frame");
+
+    // upload vertex data
+    glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
+    checkForGlErrors("glBindBuffer");
+
+    if (vertexCapacity < drawCommandBuffer.triangles.capacity()) {
+        glBufferData(GL_ARRAY_BUFFER,
+                     drawCommandBuffer.triangles.capacity() *
+                         sizeof(RenderFloat),
+                     drawCommandBuffer.triangles.data(), GL_DYNAMIC_DRAW);
+        vertexCapacity = drawCommandBuffer.triangles.capacity();
+        checkForGlErrors("glBufferData");
+    } else if (!drawCommandBuffer.triangles.empty()) {
+        glBufferData(GL_ARRAY_BUFFER,
+                     drawCommandBuffer.triangles.capacity() *
+                         sizeof(RenderFloat),
+                     nullptr, GL_DYNAMIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+                        drawCommandBuffer.triangles.size() *
+                            sizeof(RenderFloat),
+                        drawCommandBuffer.triangles.data());
+        checkForGlErrors("glBufferSubData");
+    }
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     dispatchCommands(ctx);
     // printf("triangles: %i\n", this->triangleCount);
@@ -492,6 +514,10 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 
 void Renderer::flip(RenderContext &ctx) {
     SDL_GL_SwapWindow(ctx.window->window);
+
+// #if TRACY_ENABLE
+//     TracyGpuCollect;
+// #endif
 }
 
 void Renderer::setSize(RenderContext &ctx) {

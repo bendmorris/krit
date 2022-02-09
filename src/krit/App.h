@@ -41,8 +41,10 @@ struct App {
 private:
     std::chrono::steady_clock clock;
     std::chrono::steady_clock::time_point appStart, frameStart, frameFinish;
-    double accumulator = 0, elapsed;
-    double frameDelta, frameDelta2;
+    // accumulator and total elapsed time, in microseconds
+    int32_t accumulator = 0, elapsed = 0;
+    // microseconds per frame, at framerate and framerate+2
+    int32_t frameDelta, frameDelta2;
     TaskManager *taskManager = nullptr;
 
     void handleEvents();

@@ -1,5 +1,4 @@
 #include "krit/sprites/Text.h"
-
 #include "harfbuzz/hb.h"
 #include "krit/App.h"
 #include "krit/Camera.h"
@@ -23,6 +22,9 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#if TRACY_ENABLE
+#include "krit/tracy/Tracy.hpp"
+#endif
 
 namespace krit {
 
@@ -146,6 +148,9 @@ struct TextParser {
     hb_buffer_t *hbBuf;
 
     void parseText(Text &txt, const std::string &s, bool rich) {
+#if TRACY_ENABLE
+        ZoneScopedN("TextParser::parseText");
+#endif
         txt.opcodes.clear();
         txt.textDimensions.setTo(0, 0);
         txt.maxChars = 0;
@@ -417,6 +422,10 @@ struct TextParser {
         if (canBreak) {
             this->flushWord(txt);
         }
+        float trailingWhitespace = 0;
+        if (txt.opcodes.back().index() == Whitespace) {
+            trailingWhitespace = std::get<Whitespace>(txt.opcodes.back());
+        }
         if (txt.opcodes[this->newLineIndex].index() == NewLine) {
             // std::pair<Dimensions, AlignType> &align =
             // txt.opcodes[this->newLineIndex].data.newLine; update the size of
@@ -424,7 +433,8 @@ struct TextParser {
             float add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
             this->cursor.y += txt.lineHeight + add;
             std::get<NewLine>(txt.opcodes[this->newLineIndex])
-                .first.setTo(this->cursor.x, txt.lineHeight + add);
+                .first.setTo(this->cursor.x - trailingWhitespace,
+                             txt.lineHeight + add);
             std::get<NewLine>(txt.opcodes[this->newLineIndex]).second =
                 this->currentAlign;
         }
@@ -432,9 +442,10 @@ struct TextParser {
                                  this->currentAlign);
         this->newLineIndex = txt.opcodes.size() - 1;
         this->tabIndex = 0;
-        txt.textDimensions.setTo(std::max(txt.textDimensions.width(),
-                                          cursor.x * txt.size / FONT_SCALE),
-                                 cursor.y * txt.size / FONT_SCALE);
+        txt.textDimensions.setTo(
+            std::max(txt.textDimensions.width(),
+                     (cursor.x - trailingWhitespace) * txt.size / FONT_SCALE),
+            cursor.y * txt.size / FONT_SCALE);
         cursor.x = 0;
     }
 
@@ -605,7 +616,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                         align = 1;
                         break;
                 }
-                cursor.setTo((totalWidth - dims.width()) * align,
+                cursor.setTo((totalWidth / fontScale - dims.width()) * align,
                              cursor.y + lineHeight);
                 break;
             }
@@ -687,8 +698,9 @@ void Text::__render(RenderContext &ctx, bool border) {
                         matrix.translate(
                             std::round(renderData.position.x * cameraScale),
                             std::round(renderData.position.y * cameraScale));
-                        matrix.translate(std::round(glyph.offset.x / glyphScale),
-                                         std::round(-glyph.offset.y / glyphScale));
+                        matrix.translate(
+                            std::round(glyph.offset.x / glyphScale),
+                            std::round(-glyph.offset.y / glyphScale));
                     } else {
                         key.smooth = smooth == SmoothingMode::SmoothMipmap
                                          ? SmoothingMode::SmoothLinear
@@ -699,7 +711,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                         ctx.camera->transformMatrix(matrix);
                         matrix.a = matrix.d = 1.0 / glyphScale;
                         matrix.b = matrix.c = 0;
-                        matrix.translate(glyph.offset.x / glyphScale, -glyph.offset.y / glyphScale);
+                        matrix.translate(glyph.offset.x / glyphScale,
+                                         -glyph.offset.y / glyphScale);
                     }
                     key.image = glyph.region.img;
                     key.blend = blendMode;
@@ -715,10 +728,15 @@ void Text::__render(RenderContext &ctx, bool border) {
                                               this->borderColor.b,
                                               this->borderColor.a * color.a);
                             GlyphData &borderGlyph = ctx.engine->fonts.getGlyph(
-                                font, _info.codepoint, std::round(size * glyphScale),
+                                font, _info.codepoint,
+                                std::round(size * glyphScale),
                                 std::round(thickness * glyphScale));
-                            matrix.tx += (borderGlyph.offset.x - glyph.offset.x) / glyphScale;
-                            matrix.ty -= (borderGlyph.offset.y - glyph.offset.y) / glyphScale;
+                            matrix.tx +=
+                                (borderGlyph.offset.x - glyph.offset.x) /
+                                glyphScale;
+                            matrix.ty -=
+                                (borderGlyph.offset.y - glyph.offset.y) /
+                                glyphScale;
                             ctx.addRectRaw(key, borderGlyph.region.rect, matrix,
                                            borderColor, zIndex);
                         }

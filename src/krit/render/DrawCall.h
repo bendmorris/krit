@@ -37,7 +37,7 @@ struct TriangleData {
 
 struct DrawCall {
     DrawKey key;
-    std::vector<unsigned int> indices;
+    std::vector<uint32_t> indices;
     int zIndex = 0;
 
     DrawCall() {}

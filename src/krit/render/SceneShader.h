@@ -17,7 +17,6 @@ struct SceneShader : public ShaderInstance {
 
     virtual void bind(RenderContext &ctx) override;
     virtual void unbind() override;
-    void prepare(RenderContext &ctx, RenderFloat *buffer);
 };
 
 }

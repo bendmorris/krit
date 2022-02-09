@@ -21,6 +21,7 @@
 #include "spine/Atlas.h"
 #include "spine/Skeleton.h"
 #include "spine/SkeletonBinary.h"
+// #include "spine/SkeletonJson.h"
 #include "spine/SkeletonData.h"
 #include "spine/Skin.h"
 #include "spine/SpineString.h"
@@ -48,13 +49,17 @@ struct SpineTextureLoader : public spine::TextureLoader {
 struct SpineData {
     std::unique_ptr<spine::Atlas> atlas;
     std::unique_ptr<spine::SkeletonBinary> binary;
+    // std::unique_ptr<spine::SkeletonJson> json;
     std::unique_ptr<spine::SkeletonData> skeletonData;
     std::unique_ptr<spine::AnimationStateData> animationStateData;
 };
 
 struct SpineSprite : public VisibleSprite {
     static float worldVertices[1024];
+    static std::string defaultAtlasPath;
     static spine::String _customSkin;
+
+    static void setAtlasPath(const std::string &s) { defaultAtlasPath = s; }
 
     float angle = 0;
     float rate = 1;

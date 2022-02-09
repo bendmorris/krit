@@ -24,7 +24,8 @@ DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key, int zIndex) {
                 if (drawCall.zIndex <= zIndex) {
                     if (fallingThrough) {
                         // not a higher z index; we can't fall through anymore
-                        auto &call = buf.emplace<DrawTriangles>(typeIndex + 1, drawCallIndex + 1);
+                        auto &call = buf.emplace<DrawTriangles>(
+                            typeIndex + 1, drawCallIndex + 1);
                         call.key = key;
                         call.zIndex = zIndex;
                         return call;
@@ -35,8 +36,10 @@ DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key, int zIndex) {
                 --drawCallIndex;
                 fallingThrough = true;
             } else {
-                // we can't fall through anymore, as there's a non-DrawTriangles command here
-                auto &call = buf.emplace<DrawTriangles>(typeIndex + 1, drawCallIndex + 1);
+                // we can't fall through anymore, as there's a non-DrawTriangles
+                // command here
+                auto &call = buf.emplace<DrawTriangles>(typeIndex + 1,
+                                                        drawCallIndex + 1);
                 call.key = key;
                 call.zIndex = zIndex;
                 return call;
@@ -56,44 +59,6 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
         DrawCall &call = this->getDrawCall(key, zIndex);
         addTriangle(call, t, uv, color);
     }
-}
-
-void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
-                                const IntRectangle &rect, const Matrix &matrix,
-                                const Color &color, int zIndex) {
-    if (color.a <= 0 && !key.shader) {
-        return;
-    }
-
-    DrawCall &call = this->getDrawCall(key, zIndex);
-
-    float uvx1;
-    float uvy1;
-    float uvx2;
-    float uvy2;
-    std::shared_ptr<ImageData> imageData = key.image;
-    if (!imageData) {
-        uvx1 = uvy1 = 0;
-        uvx2 = rect.width;
-        uvy2 = rect.height;
-    } else {
-        uvx1 = rect.x / static_cast<float>(imageData->width());
-        uvy1 = rect.y / static_cast<float>(imageData->height());
-        uvx2 = (rect.x + rect.width) / static_cast<float>(imageData->width());
-        uvy2 = (rect.y + rect.height) / static_cast<float>(imageData->height());
-    }
-
-    // matrix transformations
-    float xa = rect.width * matrix.a + matrix.tx;
-    float yb = rect.width * matrix.b + matrix.ty;
-    float xc = rect.height * matrix.c + matrix.tx;
-    float yd = rect.height * matrix.d + matrix.ty;
-
-    addTriangle(call, matrix.tx, matrix.ty, xa, yb, xc, yd, uvx1, uvy1, uvx2,
-                uvy1, uvx1, uvy2, color);
-    addTriangle(call, xc, yd, xa, yb, xa + rect.height * matrix.c,
-                yb + rect.height * matrix.d, uvx1, uvy2, uvx2, uvy1, uvx2, uvy2,
-                color);
 }
 
 }

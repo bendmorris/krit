@@ -9,49 +9,55 @@
 namespace krit {
 
 struct FrameBuffer {
-    GLuint frameBuffer = 0;
+    static const int BUFFER_COUNT = 2;
+
     ScaleFactor scale;
     IntDimensions size;
     bool multisample = false;
+    bool doubleBuffer = false;
 
     FrameBuffer(unsigned int width, unsigned int height,
                 bool multisample = false)
         : size(width, height), multisample(multisample) {}
 
     virtual ~FrameBuffer() {
-        if (texture) {
-            glDeleteTextures(1, &texture);
-        }
-        if (resolvedTexture) {
-            glDeleteTextures(1, &resolvedTexture);
-        }
-        if (frameBuffer) {
-            glDeleteFramebuffers(1, &frameBuffer);
-        }
-        if (resolvedFb) {
-            glDeleteFramebuffers(1, &resolvedFb);
+        for (int i = 0; i < BUFFER_COUNT; ++i) {
+            if (texture[i]) {
+                glDeleteTextures(1, &texture[i]);
+            }
+            if (resolvedTexture[i]) {
+                glDeleteTextures(1, &resolvedTexture[i]);
+            }
+            if (frameBuffer[i]) {
+                glDeleteFramebuffers(1, &frameBuffer[i]);
+            }
+            if (resolvedFb[i]) {
+                glDeleteFramebuffers(1, &resolvedFb[i]);
+            }
         }
     }
 
     void init();
     void resize(unsigned int width, unsigned int height);
+    int index();
 
     void createTextures(unsigned int width, unsigned int height);
+    GLuint getFramebuffer();
+    GLuint getTexture();
 
     friend struct Renderer;
     friend struct ShaderInstance;
 
 private:
-    GLuint texture = 0;
-    ImageData image;
-    IntDimensions _currentSize;
-    bool _cleared = false;
-    GLuint resolvedFb = 0;
-    GLuint resolvedTexture = 0;
-
-    ImageData &getTexture();
+    IntDimensions _currentSize[BUFFER_COUNT];
+    bool dirty[BUFFER_COUNT] = {0};
+    GLuint frameBuffer[BUFFER_COUNT] = {0};
+    GLuint texture[BUFFER_COUNT] = {0};
+    GLuint resolvedFb[BUFFER_COUNT] = {0};
+    GLuint resolvedTexture[BUFFER_COUNT] = {0};
 
     void _resize();
+    void _markDirty();
 };
 
 }

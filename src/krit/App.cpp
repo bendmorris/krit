@@ -77,8 +77,8 @@ void App::run() {
     //     panic("PNG support is required");
     // }
 
-    frameDelta = 1.0 / fixedFramerate;
-    frameDelta2 = 1.0 / (fixedFramerate + 1);
+    frameDelta = 1000000 / fixedFramerate;
+    frameDelta2 = 1000000 / (fixedFramerate + 2);
 
     // the RenderContext will be upcast to an UpdateContext during the update
     // phase
@@ -122,21 +122,22 @@ void App::cleanup() {
 
 bool App::doFrame() {
     UpdateContext *update = &ctx;
+    ++ctx.tickId;
+
     TaskManager::work(taskManager->mainQueue, *update);
     TaskManager::work(taskManager->renderQueue, ctx);
     // do {
     frameFinish = clock.now();
     elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
                   frameFinish - frameStart)
-                  .count() /
-              1000000.0 * engine.speed;
+                  .count() * engine.speed;
     // } while (lockFramerate && elapsed < frameDelta2);
     // if (1.0 / elapsed < 50) {
     //     printf("%.2f\n", 1.0 / elapsed);
     // }
     accumulator += elapsed;
     ctx.elapsed = ctx.frameCount = 0;
-    engine.elapsed += elapsed;
+    engine.elapsed += elapsed / 1000000.0;
 
     engine.input.startFrame();
     handleEvents();
@@ -154,14 +155,14 @@ bool App::doFrame() {
         }
         ++ctx.frameCount;
         ++ctx.frameId;
-        ctx.elapsed = frameDelta;
+        ctx.elapsed = frameDelta / 1000000.0;
         engine.fixedUpdate(ctx);
     }
     if (accumulator > frameDelta2) {
         accumulator = fmod(accumulator, frameDelta2);
     }
 
-    ctx.elapsed = elapsed;
+    ctx.elapsed = elapsed / 1000000.0;
     engine.update(ctx);
     if (engine.finished) {
         quit();

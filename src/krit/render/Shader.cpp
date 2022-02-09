@@ -105,29 +105,58 @@ void Shader::init() {
     }
 }
 
+static void *offset(int n) {
+    return (void*)(sizeof(RenderFloat)*n);
+}
+
 void Shader::bind(RenderContext &ctx) {
     this->init();
     checkForGlErrors("shader init");
     glUseProgram(this->program);
     checkForGlErrors("glUseProgram");
-    if (positionIndex > -1) {
-        glEnableVertexAttribArray(positionIndex);
-        checkForGlErrors("bind positionIndex");
-    }
-    if (texCoordIndex > -1) {
+
+    const size_t stride = 32;
+
+    bool hasTexCoord = texCoordIndex > -1;
+    bool hasColor = colorIndex > -1;
+
+    glEnableVertexAttribArray(positionIndex);
+    checkForGlErrors("glEnableVertexAttribArray");
+    if (hasTexCoord && hasColor) {
         glEnableVertexAttribArray(texCoordIndex);
-        checkForGlErrors("bind texCoordIndex");
-    }
-    if (colorIndex > -1) {
         glEnableVertexAttribArray(colorIndex);
-        checkForGlErrors("bind colorIndex");
+    checkForGlErrors("1");
+
+        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(0));
+    checkForGlErrors("2");
+        glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(2));
+    checkForGlErrors("2.5");
+        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
+                              offset(4));
+    checkForGlErrors("3");
+    } else if (hasColor) {
+        glEnableVertexAttribArray(colorIndex);
+        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(0));
+        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
+                              offset(2));
+    } else if (hasTexCoord) {
+        glEnableVertexAttribArray(texCoordIndex);
+        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(0));
+        glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(2));
+    } else {
+        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+                              offset(0));
     }
+    checkForGlErrors("attrib pointers");
 }
 
 void Shader::unbind() {
-    if (positionIndex > -1) {
-        glDisableVertexAttribArray(positionIndex);
-    }
+    glDisableVertexAttribArray(positionIndex);
     if (texCoordIndex > -1) {
         glDisableVertexAttribArray(texCoordIndex);
     }
@@ -222,9 +251,11 @@ void ShaderInstance::bind(RenderContext &ctx) {
             case UniformFbTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
                 glBindTexture(GL_TEXTURE_2D,
-                              uniform.fbPtrValue->getTexture().texture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+                              uniform.fbPtrValue->getTexture());
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                                GL_CLAMP_TO_EDGE);
+                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                                GL_CLAMP_TO_EDGE);
                 checkForGlErrors("glBindTexture");
                 glUniform1i(i, textureIndex++);
                 checkForGlErrors("glUniform1i %i", textureIndex - 1);

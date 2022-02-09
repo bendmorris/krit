@@ -1,25 +1,29 @@
 #include "krit/render/FrameBuffer.h"
+#include "krit/App.h"
 
 namespace krit {
 
+int FrameBuffer::index() {
+    return doubleBuffer ? (App::ctx.tickId % FrameBuffer::BUFFER_COUNT) : 0;
+}
+
 void FrameBuffer::init() {
     bool initialized = false;
-    if (!frameBuffer) {
-        glGenFramebuffers(1, &frameBuffer);
+    // multisample = false;
+    if (!frameBuffer[index()]) {
+        glGenFramebuffers(1, &frameBuffer[index()]);
         checkForGlErrors("create framebuffer");
         initialized = true;
     }
-    #if KRIT_ENABLE_MULTISAMPLING
-    if (multisample && !resolvedFb) {
-        glGenFramebuffers(1, &resolvedFb);
+#if KRIT_ENABLE_MULTISAMPLING
+    if (multisample && !resolvedFb[index()]) {
+        glGenFramebuffers(1, &resolvedFb[index()]);
         checkForGlErrors("create multisample framebuffer");
-        if (initialized) {
-            _currentSize.setTo(-1, -1);
-        }
         initialized = true;
     }
-    #endif
+#endif
     if (initialized) {
+        _currentSize[index()].setTo(-1, -1);
         this->resize(size.width(), size.height());
     }
 }
@@ -31,14 +35,13 @@ void FrameBuffer::resize(unsigned int width, unsigned int height) {
 
 void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
     glActiveTexture(GL_TEXTURE0);
-    glGenTextures(1, &texture);
+    glGenTextures(1, &texture[index()]);
+    checkForGlErrors("create framebuffer texture: %i %ix%i\n", texture[index()],
+                     width, height);
 
-    checkForGlErrors("create framebuffer texture: %i %ix%i\n", texture, width,
-                     height);
-
-    #if KRIT_ENABLE_MULTISAMPLING
+#if KRIT_ENABLE_MULTISAMPLING
     if (multisample) {
-        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture);
+        glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture[index()]);
         glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA, width,
                                 height, GL_TRUE);
         checkForGlErrors("glTexImage2DMultisample");
@@ -46,87 +49,103 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
         checkForGlErrors("glTexParameteri");
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-                            GL_TEXTURE_2D_MULTISAMPLE, texture, 0);
-        checkForGlErrors("glFrambufferTexture2D %i", texture);
+                               GL_TEXTURE_2D_MULTISAMPLE, texture[index()], 0);
+        checkForGlErrors("glFrambufferTexture2D %i", texture[index()]);
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
         checkForGlErrors("glBindTexture");
 
         {
-            GLuint &texture = resolvedTexture;
-            glBindFramebuffer(GL_FRAMEBUFFER, resolvedFb);
+            GLuint &texture = resolvedTexture[index()];
+            glBindFramebuffer(GL_FRAMEBUFFER, resolvedFb[index()]);
             glGenTextures(1, &texture);
 
             glBindTexture(GL_TEXTURE_2D, texture);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                        GL_UNSIGNED_BYTE, 0);
+                         GL_UNSIGNED_BYTE, 0);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                                texture, 0);
+            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                                   GL_TEXTURE_2D, texture, 0);
             glBindTexture(GL_TEXTURE_2D, 0);
-            image.texture = texture;
         }
     } else
-    #endif
+#endif
     {
+        GLuint &texture = this->texture[index()];
         glBindTexture(GL_TEXTURE_2D, texture);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                    GL_UNSIGNED_BYTE, 0);
+                     GL_UNSIGNED_BYTE, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-                            texture, 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+                               GL_TEXTURE_2D, texture, 0);
         glBindTexture(GL_TEXTURE_2D, 0);
-        image.texture = texture;
     }
 
-    image.dimensions.setTo(width, height);
     checkForGlErrors("FrameBuffer::createTextures");
-}
-
-ImageData &FrameBuffer::getTexture() {
-    #if KRIT_ENABLE_MULTISAMPLING
-    if (multisample) {
-        GLint drawFboId = 0;
-        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFb);
-        checkForGlErrors("glBindFramebuffer");
-        glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y,
-                        GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer, resolvedFb);
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
-    }
-    #endif
-    return image;
 }
 
 void FrameBuffer::_resize() {
     init();
     int width = size.width(), height = size.height();
-    if (_currentSize.width() != width || _currentSize.height() != height) {
-        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
+    if (_currentSize[index()].width() != width ||
+        _currentSize[index()].height() != height) {
+        GLint drawFboId = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
 
-        if (texture) {
-            glDeleteTextures(1, &texture);
+        if (texture[index()]) {
+            glDeleteTextures(1, &texture[index()]);
         }
-        if (resolvedTexture) {
-            glDeleteTextures(1, &resolvedTexture);
+        if (resolvedTexture[index()]) {
+            glDeleteTextures(1, &resolvedTexture[index()]);
         }
 
-        _currentSize.setTo(width, height);
+        _currentSize[index()].setTo(width, height);
         createTextures(width, height);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
     }
     checkForGlErrors("resize framebuffer");
+}
+
+GLuint FrameBuffer::getFramebuffer() {
+    init();
+    return frameBuffer[index()];
+}
+
+GLuint FrameBuffer::getTexture() {
+    init();
+#if KRIT_ENABLE_MULTISAMPLING
+    if (multisample && dirty[index()]) {
+        dirty[index()] = false;
+        GLint drawFboId = 0;
+        glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer[index()]);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFb[index()]);
+        checkForGlErrors("glBindFramebuffer");
+        glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y,
+                          GL_COLOR_BUFFER_BIT, GL_NEAREST);
+        checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer[index()],
+                         resolvedFb[index()]);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
+    }
+    if (multisample) {
+        return resolvedTexture[index()];
+    }
+#endif
+    return texture[index()];
+}
+
+void FrameBuffer::_markDirty() {
+    this->dirty[index()] = true;
 }
 
 }

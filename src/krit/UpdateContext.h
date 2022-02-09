@@ -14,8 +14,9 @@ struct Window;
 
 struct UpdateContext {
     float elapsed;
-    unsigned int frameCount;
-    unsigned int frameId;
+    unsigned int frameCount = 0;
+    unsigned int frameId = 0;
+    unsigned int tickId = 0;
     App *app = nullptr;
     Engine *engine = nullptr;
     Camera *camera = nullptr;

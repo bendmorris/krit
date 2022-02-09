@@ -34,12 +34,10 @@ struct Renderer {
     SpriteShader *getDefaultTextShader();
 
 private:
-    std::vector<char> renderData;
     GLuint vao;
-    GLuint renderBuffer[2];
-    GLuint materialBuffer;
-    RenderFloat *bufferPtr = nullptr;
-    unsigned int triangleCount;
+    GLuint sceneShaderVertexBuffer = 0;
+    GLuint vertexBuffer[3] = {0};
+    size_t vertexCapacity = 0;
     std::vector<Rectangle> clipStack;
     Window &window;
     FrameBuffer *currentRenderTarget = nullptr;
@@ -53,6 +51,8 @@ private:
     void setSize(RenderContext &ctx);
     void clear(RenderContext &ctx);
     void dispatchCommands(RenderContext &ctx);
+
+    int index();
 };
 
 }
