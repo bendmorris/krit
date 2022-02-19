@@ -123,7 +123,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(SDL_IMAGE_LIB "-lSDL2_image")
 else()
     find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-endif()
+    set(DL_LIB "-ldl")
+    endif()
 if(ENABLE_THREADS)
     set(PTHREAD_LIB "-lpthread")
 else()
@@ -148,7 +149,7 @@ target_link_libraries(${PROJECT_NAME}
     ${EXPAT_LIB}
     ${YAML_LIB}
     ${PTHREAD_LIB}
-    "-ldl"
+    ${DL_LIB}
     "-Wl,--gc-sections"
     "-static-libgcc"
 )

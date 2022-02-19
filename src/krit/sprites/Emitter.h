@@ -130,6 +130,11 @@ struct ParticleType {
         this->trail = trail;
         return *this;
     }
+
+    ParticleType &setZ(int z) {
+        this->image.zIndex = z;
+        return *this;
+    }
 };
 
 struct Particle {

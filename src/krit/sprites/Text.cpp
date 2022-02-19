@@ -560,10 +560,10 @@ void Text::resize(float w, float h) {
 }
 
 void Text::render(RenderContext &ctx) {
-    // if (borderThickness > 0 && borderColor.a > 0 && (this->border ||
-    // hasBorderTags)) {
-    __render(ctx, true);
-    // }
+    if (borderThickness > 0 && borderColor.a > 0 &&
+        (this->border || hasBorderTags)) {
+        __render(ctx, true);
+    }
     __render(ctx, false);
 }
 

@@ -27,8 +27,13 @@ struct RenderContext : public UpdateContext {
     int width() { return size().x; }
     int height() { return size().y; }
 
-    void pushClip(Rectangle rect);
+    void pushClip(Rectangle &rect);
+    void pushDynamicClip(Rectangle &rect);
     void popClip();
+
+    void pushBounds(Rectangle &rect);
+    void popBounds();
+
     void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color, int zIndex = 0);
     void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix,
                     Color color, int zIndex = 0);

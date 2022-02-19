@@ -17,12 +17,23 @@ IntDimensions RenderContext::size() {
     }
 }
 
-void RenderContext::pushClip(Rectangle rect) {
+void RenderContext::pushClip(Rectangle &rect) {
     this->transformRect(rect);
     this->drawCommandBuffer->pushClip(rect);
 }
 
+void RenderContext::pushDynamicClip(Rectangle &rect) {
+    this->transformRect(rect);
+    this->drawCommandBuffer->pushDynamicClip(rect);
+}
+
 void RenderContext::popClip() { this->drawCommandBuffer->popClip(); }
+
+void RenderContext::pushBounds(Rectangle &rect) {
+    this->drawCommandBuffer->pushBounds(rect);
+}
+
+void RenderContext::popBounds() { this->drawCommandBuffer->popBounds(); }
 
 void RenderContext::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix,
                             Color color, int zIndex) {

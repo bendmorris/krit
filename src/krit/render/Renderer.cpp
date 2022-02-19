@@ -247,9 +247,9 @@ Renderer::Renderer(Window &_window) : window(_window) {
 
     checkForGlErrors("renderer init");
 
-// #if TRACY_ENABLE
-//     TracyGpuContext;
-// #endif
+    // #if TRACY_ENABLE
+    //     TracyGpuContext;
+    // #endif
 }
 
 Renderer::~Renderer() {
@@ -270,6 +270,23 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
         newClip.setTo(clipRect.overlap(clipStack[clipStack.size() - 2]));
     } else {
         newClip.setTo(clipRect);
+    }
+    glScissor(newClip.x, this->height - newClip.y - newClip.height,
+              newClip.width, newClip.height);
+}
+
+template <>
+void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
+    RenderContext &ctx, Rectangle *&clipRect) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<PushClipRect>");
+#endif
+    clipStack.emplace_back();
+    Rectangle &newClip = clipStack.back();
+    if (clipStack.size() > 1) {
+        newClip.setTo(clipRect->overlap(clipStack[clipStack.size() - 2]));
+    } else {
+        newClip.setTo(*clipRect);
     }
     glScissor(newClip.x, this->height - newClip.y - newClip.height,
               newClip.width, newClip.height);
@@ -499,6 +516,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(PushClipRect)
+            DISPATCH_COMMAND(PushDynamicClipRect)
             DISPATCH_COMMAND(PopClipRect)
             DISPATCH_COMMAND(SetRenderTarget)
             DISPATCH_COMMAND(DrawSceneShader)
@@ -515,9 +533,9 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 void Renderer::flip(RenderContext &ctx) {
     SDL_GL_SwapWindow(ctx.window->window);
 
-// #if TRACY_ENABLE
-//     TracyGpuCollect;
-// #endif
+    // #if TRACY_ENABLE
+    //     TracyGpuCollect;
+    // #endif
 }
 
 void Renderer::setSize(RenderContext &ctx) {

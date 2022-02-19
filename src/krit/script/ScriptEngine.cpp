@@ -5,6 +5,7 @@
 #include <stdio.h>
 
 #include "krit/UpdateContext.h"
+#include "krit/script/ScriptAllocator.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptFinalizer.h"
@@ -72,8 +73,16 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
     }
 }
 
+static JSMallocFunctions allocFunctions{
+    .js_malloc = ScriptAllocator::alloc,
+    .js_free = ScriptAllocator::free,
+    .js_realloc = ScriptAllocator::realloc,
+};
+
 ScriptEngine::ScriptEngine() {
-    rt = JS_NewRuntime();
+    rt = JS_NewRuntime2(&allocFunctions, this);
+    // rt = JS_NewRuntime();
+    // JS_SetRuntimeOpaque(rt, this);
     JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
                                       NULL);
     initScriptClass<0>(*this);

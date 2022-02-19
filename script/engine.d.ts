@@ -46,6 +46,7 @@ interface Window extends IntDimensions {}
  */
 interface UpdateContext {
     /** @readonly */ elapsed: number;
+    /** @readonly */ frameId: number;
     camera: Pointer<Camera>;
     window: Pointer<Window>;
     engine: Pointer<Engine>;

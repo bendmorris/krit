@@ -120,6 +120,7 @@ declare class Text extends VisibleSprite {
     glyphScale: float;
 
     refresh(): void;
+    invalidate(): void;
     setText(s: string): void;
     setRichText(s: string): void;
     setTabStops(s: string): void;
@@ -172,6 +173,8 @@ declare class SpineSprite extends VisibleSprite {
     static setAtlasPath(path: string): void;
 
     rate: number;
+
+    constructor(path: string);
 
     setSkin(name: string): void;
     setAnimation(track: integer, name: string, loop: boolean, speed: number, mix: number): float;

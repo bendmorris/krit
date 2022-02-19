@@ -7,8 +7,11 @@ interface RenderContext extends UpdateContext {
 
     width(): integer;
     height(): integer;
-    pushClip(rect: Rectangle): void;
+    pushClip(rect: Reference<Rectangle>): void;
+    pushDynamicClip(rect: Reference<Rectangle>): void;
     popClip(): void;
+    pushBounds(rect: Reference<Rectangle>): void;
+    popBounds(): void;
 }
 
 /**

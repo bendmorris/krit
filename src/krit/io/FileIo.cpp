@@ -69,8 +69,12 @@ std::string FileIo::dataDir() {
 
 bool FileIo::mkdir(const std::string &path) {
     struct stat st = {0};
-    if (stat("/some/directory", &st) == -1) {
+    if (stat(path.c_str(), &st) == -1) {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+        return ::mkdir(path.c_str()) == 0;
+#else
         return ::mkdir(path.c_str(), 0700) == 0;
+#endif
     } else {
         return true;
     }

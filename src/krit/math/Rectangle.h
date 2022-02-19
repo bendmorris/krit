@@ -20,6 +20,10 @@ template <typename T, typename Self> struct BaseRectangle {
                this->width == other.width && this->height == other.height;
     }
 
+    bool operator!() {
+        return !(x || y || width || height);
+    }
+
     T top() const { return this->y; }
     T bottom() const { return this->y + this->height; }
     T left() const { return this->x; }
