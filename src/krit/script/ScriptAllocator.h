@@ -7,6 +7,9 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
+#if TRACY_ENABLE
+#include "krit/tracy/Tracy.hpp"
+#endif
 
 namespace krit {
 
@@ -34,7 +37,10 @@ struct OversizedCell {
         OversizedCell *o =
             (OversizedCell *)malloc(offsetof(OversizedCell, cell.data[size]));
         o->size = size;
-        o->cell.block = 7;
+        o->cell.block = 0xff;
+        #if TRACY_ENABLE
+        TracyAlloc(o->cell.getData(), size);
+        #endif
         return o;
     }
 
@@ -43,7 +49,7 @@ struct OversizedCell {
 };
 
 template <size_t SIZE> struct BlockAllocator {
-    static const size_t PAGE_SIZE = 0x40000;
+    static const size_t PAGE_SIZE = 0x100000;
 
     BlockAllocator(uint8_t id) {
         this->id = id;
@@ -85,10 +91,16 @@ template <size_t SIZE> struct BlockAllocator {
         next = next->next;
         allocatedCell->block = this->id;
         // printf("returning: %p\n", allocatedCell->getData());
+        #if TRACY_ENABLE
+        TracyAlloc(allocatedCell->getData(), SIZE);
+        #endif
         return allocatedCell->getData();
     }
 
     void free(Cell *cell) {
+        #if TRACY_ENABLE
+        TracyFree(cell->getData());
+        #endif
         assert(cell->block == id);
         cell->next = next;
         next = cell;
@@ -112,29 +124,20 @@ struct ScriptAllocator {
 
     static void *alloc(JSMallocState *s, size_t size) {
         // printf("alloc %zu\n", size);
-        printf("%zu\n", s->malloc_size);
+        // printf("%zu\n", s->malloc_size);
         s->malloc_count++;
-        if (size <= 8) {
-            s->malloc_size += a8.cellSize();
-            return a8.alloc();
-        } else if (size <= 16) {
-            s->malloc_size += a16.cellSize();
-            return a16.alloc();
-        } else if (size <= 32) {
-            s->malloc_size += a32.cellSize();
-            return a32.alloc();
-        } else if (size <= 64) {
-            s->malloc_size += a64.cellSize();
-            return a64.alloc();
-        } else if (size <= 128) {
-            s->malloc_size += a128.cellSize();
-            return a128.alloc();
-        } else if (size <= 256) {
-            s->malloc_size += a256.cellSize();
-            return a256.alloc();
-        } else if (size <= 512) {
-            s->malloc_size += a512.cellSize();
-            return a512.alloc();
+        if (size <= a1.cellSize()) {
+            s->malloc_size += a1.cellSize();
+            return a1.alloc();
+        } else if (size <= a2.cellSize()) {
+            s->malloc_size += a2.cellSize();
+            return a2.alloc();
+        } else if (size <= a3.cellSize()) {
+            s->malloc_size += a3.cellSize();
+            return a3.alloc();
+        } else if (size <= a4.cellSize()) {
+            s->malloc_size += a4.cellSize();
+            return a4.alloc();
         } else {
             OversizedCell *o = OversizedCell::alloc(size);
             // printf("returning oversized cell %p of size %zu\n", o, o->size);
@@ -152,43 +155,31 @@ struct ScriptAllocator {
         Cell *cell = getCell(p);
         switch (cell->block) {
             case 0: {
-                s->malloc_size -= a8.cellSize();
-                a8.free(cell);
+                s->malloc_size -= a1.cellSize();
+                a1.free(cell);
                 break;
             }
             case 1: {
-                s->malloc_size -= a16.cellSize();
-                a16.free(cell);
+                s->malloc_size -= a2.cellSize();
+                a2.free(cell);
                 break;
             }
             case 2: {
-                s->malloc_size -= a32.cellSize();
-                a32.free(cell);
+                s->malloc_size -= a3.cellSize();
+                a3.free(cell);
                 break;
             }
             case 3: {
-                s->malloc_size -= a64.cellSize();
-                a64.free(cell);
+                s->malloc_size -= a4.cellSize();
+                a4.free(cell);
                 break;
             }
-            case 4: {
-                s->malloc_size -= a128.cellSize();
-                a128.free(cell);
-                break;
-            }
-            case 5: {
-                s->malloc_size -= a256.cellSize();
-                a256.free(cell);
-                break;
-            }
-            case 6: {
-                s->malloc_size -= a512.cellSize();
-                a512.free(cell);
-                break;
-            }
-            case 7: {
+            case 0xff: {
                 OversizedCell *o = getOversized(cell);
                 s->malloc_size -= o->size;
+                #if TRACY_ENABLE
+                TracyFree(o->cell.getData());
+                #endif
                 ::free(o);
                 break;
             }
@@ -201,20 +192,14 @@ struct ScriptAllocator {
     static size_t cellSize(Cell *c) {
         switch (c->block) {
             case 0:
-                return a8.cellSize();
+                return a1.cellSize();
             case 1:
-                return a16.cellSize();
+                return a2.cellSize();
             case 2:
-                return a32.cellSize();
+                return a3.cellSize();
             case 3:
-                return a64.cellSize();
-            case 4:
-                return a128.cellSize();
-            case 5:
-                return a256.cellSize();
-            case 6:
-                return a512.cellSize();
-            case 7: {
+                return a4.cellSize();
+            case 0xff: {
                 OversizedCell *o = getOversized(c);
                 return o->size;
             }
@@ -234,12 +219,18 @@ struct ScriptAllocator {
         Cell *cell = getCell(ptr);
         size_t oldSize = cellSize(cell);
         // printf("%p size %zu -> %zu\n", cell, oldSize, size);
-        if (size > 512) {
+        if (size > a4.cellSize()) {
             // we're reallocating to an OversizedCell
-            if (oldSize > 512) {
+            if (oldSize > a4.cellSize()) {
                 OversizedCell *o = getOversized(cell);
+                #if TRACY_ENABLE
+                TracyFree(o->cell.getData());
+                #endif
                 o = (OversizedCell *)::realloc(
                     o, offsetof(OversizedCell, cell.data[size]));
+                #if TRACY_ENABLE
+                TracyAlloc(o->cell.getData(), size);
+                #endif
                 s->malloc_size += size - oldSize;
                 return o->cell.getData();
             } else {
@@ -262,13 +253,10 @@ struct ScriptAllocator {
         }
     }
 
-    static BlockAllocator<8> a8;
-    static BlockAllocator<16> a16;
-    static BlockAllocator<32> a32;
-    static BlockAllocator<64> a64;
-    static BlockAllocator<128> a128;
-    static BlockAllocator<256> a256;
-    static BlockAllocator<512> a512;
+    static BlockAllocator<16> a1;
+    static BlockAllocator<64> a2;
+    static BlockAllocator<256> a3;
+    static BlockAllocator<1024> a4;
 };
 
 }
