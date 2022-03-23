@@ -5,12 +5,11 @@
  */
 interface Engine {
     input: InputContext;
-    camera: Camera;
-    uiCamera: Camera;
     speed: number;
     elapsed: number;
     bgColor: Color;
 
+    cameras: Array<Camera>;
     setCursor(c: string): void;
 }
 
@@ -20,7 +19,16 @@ interface Engine {
  */
 interface InputContext {
     /** @readonly */ events: ActionEvent[];
+    mouse: MouseContext;
     state(a: integer): integer;
+}
+
+/**
+ * @namespace krit
+ * @import krit/input/InputContext.h
+ */
+interface MouseContext {
+    mousePos: Point;
 }
 
 /**
@@ -65,6 +73,7 @@ interface Camera {
     dimensions: Dimensions;
 
     center(): void;
+    update(ctx: Reference<RenderContext>): void;
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
     setLogicalSize(w: integer, h: integer): Reference<Camera>;

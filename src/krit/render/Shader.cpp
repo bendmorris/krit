@@ -266,6 +266,11 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 checkForGlErrors("glUniform1f");
                 break;
             }
+            case UniformFloatPtr: {
+                glUniform1f(i, *uniform.floatPtrValue);
+                checkForGlErrors("glUniform1f");
+                break;
+            }
             case UniformVec2: {
                 glUniform2f(i, uniform.vec2Value[0], uniform.vec2Value[1]);
                 checkForGlErrors("glUniform2f");

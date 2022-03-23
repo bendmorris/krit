@@ -15,6 +15,7 @@ struct FrameBuffer {
     IntDimensions size;
     bool multisample = false;
     bool doubleBuffer = false;
+    bool allowSmoothing = true;
 
     FrameBuffer(unsigned int width, unsigned int height,
                 bool multisample = false)
@@ -44,6 +45,8 @@ struct FrameBuffer {
     void createTextures(unsigned int width, unsigned int height);
     GLuint getFramebuffer();
     GLuint getTexture();
+
+    uint32_t readPixel(int x, int y);
 
     friend struct Renderer;
     friend struct ShaderInstance;

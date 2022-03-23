@@ -694,6 +694,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                         matrix.tx = std::round(matrix.tx);
                         matrix.ty = std::round(matrix.ty);
                         matrix.a = matrix.d = 1.0 / glyphScale;
+                        matrix.a *= ctx.camera->scale.x / ctx.camera->scale.y;
                         matrix.b = matrix.c = 0;
                         matrix.translate(
                             std::round(renderData.position.x * cameraScale),
@@ -710,6 +711,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                                          renderData.position.y);
                         ctx.camera->transformMatrix(matrix);
                         matrix.a = matrix.d = 1.0 / glyphScale;
+                        matrix.a *= ctx.camera->scale.x / ctx.camera->scale.y;
                         matrix.b = matrix.c = 0;
                         matrix.translate(glyph.offset.x / glyphScale,
                                          -glyph.offset.y / glyphScale);

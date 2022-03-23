@@ -1,6 +1,6 @@
 #include "krit/asset/AssetLoader.h"
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/asset/AssetType.h"
 #include "krit/io/Io.h"
 #include <cassert>

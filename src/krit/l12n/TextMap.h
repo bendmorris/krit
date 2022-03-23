@@ -1,7 +1,7 @@
 #ifndef KRIT_L12N_TEXTMAP
 #define KRIT_L12N_TEXTMAP
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include <memory>
 #include <string>
 #include <string_view>

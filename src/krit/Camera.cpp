@@ -1,8 +1,8 @@
 #include "krit/Camera.h"
 
-#include "krit/UpdateContext.h"
 #include "krit/Window.h"
 #include "krit/math/Matrix.h"
+#include "krit/render/RenderContext.h"
 
 namespace krit {
 
@@ -55,8 +55,8 @@ Matrix &Camera::transformMatrix(Matrix &m) {
         .scale(scale.x, scale.y);
 }
 
-void Camera::update(UpdateContext &context) {
-    auto &windowSize = context.window->size();
+void Camera::update(RenderContext &context) {
+    float width = context.width(), height = context.height();
     switch (scaleMode) {
         case NoScale: {
             // nothing to do
@@ -64,39 +64,33 @@ void Camera::update(UpdateContext &context) {
         }
         case Stretch: {
             // stretch to show the camera's logical size
-            scale.setTo(windowSize.width() / windowSize.width(),
-                        windowSize.height() / windowSize.height());
+            scale.setTo(1, 1);
             break;
         }
         case KeepWidth: {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleHeight =
-                windowSize.height() * dimensions.width() / windowSize.width();
+            int visibleHeight = height * dimensions.width() / width;
             if (min != 0 && visibleHeight < min) {
                 visibleHeight = min;
             } else if (max != 0 && visibleHeight > max) {
                 visibleHeight = max;
             }
-            scale.setTo(
-                static_cast<float>(windowSize.width()) / dimensions.width(),
-                static_cast<float>(windowSize.height()) / visibleHeight);
-            offset.y =
-                (windowSize.height() / scale.y - dimensions.height()) / 2;
+            scale.setTo(static_cast<float>(width) / dimensions.width(),
+                        static_cast<float>(height) / visibleHeight);
+            offset.y = (height / scale.y - dimensions.height()) / 2;
             break;
         }
         case KeepHeight: {
             int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleWidth =
-                windowSize.width() * dimensions.height() / windowSize.height();
+            int visibleWidth = width * dimensions.height() / height;
             if (min != 0 && visibleWidth < min) {
                 visibleWidth = min;
             } else if (max != 0 && visibleWidth > max) {
                 visibleWidth = max;
             }
-            scale.setTo(static_cast<float>(windowSize.width()) / visibleWidth,
-                        static_cast<float>(windowSize.height()) /
-                            dimensions.height());
-            offset.x = (windowSize.width() / scale.x - dimensions.width()) / 2;
+            scale.setTo(static_cast<float>(width) / visibleWidth,
+                        static_cast<float>(height) / dimensions.height());
+            offset.x = (width / scale.x - dimensions.width()) / 2;
             break;
         }
     }

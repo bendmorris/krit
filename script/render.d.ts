@@ -12,6 +12,7 @@ interface RenderContext extends UpdateContext {
     popClip(): void;
     pushBounds(rect: Reference<Rectangle>): void;
     popBounds(): void;
+    drawRect(x: integer, y: integer, w: integer, h: integer, c: number, a: float): void;
 }
 
 /**
@@ -26,10 +27,12 @@ declare class SpriteShader {}
  */
 declare class FrameBuffer {
     multisample: boolean;
+    allowSmoothing: boolean;
 
     constructor(width: integer, height: integer, multisample: boolean);
 
     resize(width: integer, height: integer): void;
+    readPixel(x: integer, y: integer): integer;
 }
 
 /**
@@ -47,6 +50,9 @@ declare class DrawCommandBuffer {
     setRenderTarget(fb: Pointer<FrameBuffer>, clear?: boolean): void;
     drawSceneShader(shader: Pointer<SceneShader>): void;
     clearColor(r: float, g: float, b: float, a: float): void;
+    pushClip(rect: Reference<Rectangle>): void;
+    pushDynamicClip(rect: Reference<Rectangle>): void;
+    popClip(): void;
 }
 
 /**

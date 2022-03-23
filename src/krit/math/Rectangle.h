@@ -1,9 +1,9 @@
 #ifndef KRIT_MATH_RECTANGLE
 #define KRIT_MATH_RECTANGLE
 
-#include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
 #include <algorithm>
+#include <cmath>
 #include <stdio.h>
 
 namespace krit {
@@ -64,8 +64,9 @@ template <typename T, typename Self> struct BaseRectangle {
     Self overlap(const Self &other) {
         T xi = std::max(x, other.x);
         T yi = std::max(y, other.y);
-        return Self(xi, yi, std::min(right(), other.right()) - xi,
-                    std::min(bottom(), other.bottom()) - yi);
+        T w = std::min(right(), other.right()) - xi;
+        T h = std::min(bottom(), other.bottom()) - yi;
+        return w > 0  && h > 0 ? Self(xi, yi, w, h) : Self();
     }
 
     template <typename U, typename V> bool contains(BasePoint<U, V> &p) {
@@ -90,7 +91,7 @@ template <typename T, typename Self> struct BaseRectangle {
         return static_cast<Self &>(*this);
     }
 
-    void debugPrint() { printf("%i,%i %ix%i\n", x, y, width, height); }
+    void debugPrint() { printf("%.2f,%.2f %.2fx%.2f\n", (float)x, (float)y, (float)width, (float)height); }
 };
 
 struct Rectangle : public BaseRectangle<float, Rectangle> {

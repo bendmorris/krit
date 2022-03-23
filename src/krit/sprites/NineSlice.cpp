@@ -65,6 +65,7 @@ void NineSlice::render(RenderContext &render) {
     key.image = this->ul.img;
     key.smooth = this->smooth;
     key.blend = this->blendMode;
+    key.shader = this->shader;
 
     auto renderSlice = [&](ImageRegion &_r, float _x, float _y, float _w, float _h) {
         if (w > 0 && h > 0) {

@@ -4,6 +4,7 @@
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
 #include "krit/math/ScaleFactor.h"
+#include "krit/utils/Signal.h"
 
 namespace krit {
 
@@ -28,6 +29,8 @@ struct Camera {
     Dimensions dimensions;
     ScaleFactor scale;
     ScaleMode scaleMode = NoScale;
+
+    RenderSignal render;
 
     union {
         struct {
@@ -68,7 +71,7 @@ struct Camera {
     Dimensions &unscaleDimensions(Dimensions &d);
     Matrix &transformMatrix(Matrix &m);
 
-    void update(UpdateContext &context);
+    void update(RenderContext &context);
 };
 
 }

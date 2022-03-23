@@ -1,5 +1,5 @@
-#ifndef KRIT_UTILS
-#define KRIT_UTILS
+#ifndef KRIT_MATH_RANDOM
+#define KRIT_MATH_RANDOM
 
 #include <cassert>
 #include <iterator>
@@ -11,42 +11,6 @@ namespace krit {
 
 extern std::random_device rd;
 extern std::mt19937 rng;
-
-template <typename T> T clamp(T v, T min, T max) {
-    assert(min <= max);
-    if (v < min)
-        return min;
-    if (v > max)
-        return max;
-    return v;
-}
-
-template <typename T> T lerp(T v1, T v2, T mix) {
-    if (mix <= 0)
-        return v1;
-    else if (mix >= 1)
-        return v2;
-    else
-        return (1 - mix) * v1 + mix * v2;
-}
-
-float maybeLerp(float t, float f(float));
-
-float noChange(float t);
-float easeInOut(float t);
-float easeOutBounce(float t);
-
-/**
- * Smooth, S-shaped interpolation between 0 and 1.
- *
- * Providing a template argument will apply the function to its result,
- * N times, creating an increasingly steep slope.
- */
-template <int N = 0> float smoothStep(float n) {
-    return smoothStep<0>(smoothStep<N - 1>(n));
-}
-
-template <> float smoothStep<0>(float n);
 
 template <typename T> using WeightedCollection = std::vector<std::pair<T, int>>;
 
@@ -94,9 +58,6 @@ T weightedChoice(WeightedCollection<T> weights, int fn(T, int, Args...),
     }
     return current;
 }
-
-size_t getPeakRss();
-size_t getCurrentRss();
 
 }
 

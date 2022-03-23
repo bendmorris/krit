@@ -1,7 +1,7 @@
 #ifndef KRIT_ASSET_ASSETCACHE
 #define KRIT_ASSET_ASSETCACHE
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 // TODO: make this more generic
 #include "krit/ecs/Utils.h"
@@ -15,7 +15,6 @@
 
 namespace krit {
 
-enum AssetId : int;
 struct SpineData;
 
 struct AssetRequest {

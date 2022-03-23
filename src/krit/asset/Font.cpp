@@ -1,6 +1,6 @@
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
@@ -116,7 +116,7 @@ Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
     int error = FT_New_Memory_Face(ftLibrary, (const FT_Byte *)fontData,
                                    fontDataLen, 0, (FT_Face *)&ftFace);
     if (error) {
-        panic("failed to initialize font");
+        panic("failed to initialize font: %s", path.c_str());
     }
 }
 

@@ -185,10 +185,10 @@ declare class SpineSprite extends VisibleSprite {
 
 /**
  * @namespace krit
- * @import krit/sprites/Emitter.h
+ * @import krit/sprites/Particles.h
  */
-declare class Emitter extends VisibleSprite {
-    static from(value: Sprite): Emitter;
-
+declare class ParticleSystem extends VisibleSprite {
+    static from(value: Sprite): ParticleSystem;
+    constructor();
     emit(name: string, count: number): void;
 }

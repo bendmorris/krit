@@ -40,9 +40,35 @@ if(ENABLE_TOOLS)
     file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/imgui/*.cpp)
     include_directories(${KRIT_DIR}/imgui)
 endif()
+if(KRIT_SCRIPT_BRIDGE)
+message(STATUS "scripting enabled")
+add_definitions(-DKRIT_ENABLE_SCRIPT)
+endif()
 
-file(GLOB_RECURSE KRIT_SRC_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/src/krit/*.cpp)
+file(GLOB KRIT_SRC_FILES CONFIGURE_DEPENDS
+    ${KRIT_DIR}/src/krit/*.cpp
+    ${KRIT_DIR}/src/krit/asset/*.cpp
+    ${KRIT_DIR}/src/krit/behavior/*.cpp
+    ${KRIT_DIR}/src/krit/data/*.cpp
+    ${KRIT_DIR}/src/krit/ecs/*.cpp
+    ${KRIT_DIR}/src/krit/input/*.cpp
+    ${KRIT_DIR}/src/krit/io/*.cpp
+    ${KRIT_DIR}/src/krit/l12n/*.cpp
+    ${KRIT_DIR}/src/krit/math/*.cpp
+    ${KRIT_DIR}/src/krit/render/*.cpp
+    ${KRIT_DIR}/src/krit/sound/*.cpp
+    ${KRIT_DIR}/src/krit/sprites/*.cpp
+    ${KRIT_DIR}/src/krit/state/*.cpp
+    ${KRIT_DIR}/src/krit/utils/*.cpp
+)
 file(GLOB_RECURSE KRIT_THIRDPARTY_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp)
+
+if(KRIT_SCRIPT_BRIDGE)
+    file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
+        ${KRIT_DIR}/src/krit/script/*.cpp
+    )
+    list(APPEND KRIT_SRC_FILES ${KRIT_SCRIPT_FILES})
+endif()
 
 include_directories(${KRIT_INCLUDE_PATHS})
 include_directories(${KRIT_DIR}/src)
@@ -52,10 +78,14 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
 
 # string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
-file(GLOB_RECURSE KRIT_GENERATED_SCRIPT_FILES
-    CONFIGURE_DEPENDS
-    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
-)
+if(KRIT_SCRIPT_BRIDGE)
+    file(GLOB_RECURSE KRIT_GENERATED_FILES
+        CONFIGURE_DEPENDS
+        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
+    )
+endif()
 
 if(CMAKE_BUILD_TYPE MATCHES PROF)
     message(STATUS "profiling enabled")
@@ -73,11 +103,8 @@ list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/quickjs-libc.c
 )
 
-add_library(${PROJECT_NAME} STATIC
-    ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp
-    ${KRIT_GENERATED_SCRIPT_FILES}
+add_library(${PROJECT_NAME} STATIC    
+    ${KRIT_GENERATED_FILES}
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
     ${TOOLS_FILES}
@@ -155,20 +182,22 @@ target_link_libraries(${PROJECT_NAME}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
-add_custom_target(
-    compile-assets ALL
-    COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${KRIT_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}/krit
-    BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.h ${CMAKE_CURRENT_BINARY_DIR}/krit/Assets.cpp
-)
-add_dependencies(${PROJECT_NAME} compile-assets)
-
-add_custom_target(
-    copy-assets ALL
-    COMMAND
-        ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR}
-    BYPRODUCTS assets.zip
-)
-add_dependencies(compile-assets copy-assets)
+if(KRIT_BUILD_ASSETS)
+    add_custom_target(
+        compile-assets ALL
+        COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${KRIT_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}/assets
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/assets.yaml
+    )
+    add_dependencies(${PROJECT_NAME} compile-assets)
+    
+    add_custom_target(
+        copy-assets ALL
+        COMMAND
+            ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${KRIT_DIR}
+        BYPRODUCTS assets.zip
+    )
+    add_dependencies(compile-assets copy-assets)
+endif()
 
 if(KRIT_SCRIPT_BRIDGE_PATH)
     add_custom_target(

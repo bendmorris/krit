@@ -4,7 +4,7 @@
  * License: Creative Commons Attribution 3.0 Unported License
  *          http://creativecommons.org/licenses/by/3.0/deed.en_US
  */
-#include "krit/Utils.h"
+#include "krit/utils/Memory.h"
 
 #if KRIT_ENABLE_TOOLS
 

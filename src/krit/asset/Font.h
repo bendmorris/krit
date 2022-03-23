@@ -1,7 +1,7 @@
 #ifndef KRIT_ASSET_FONT
 #define KRIT_ASSET_FONT
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"

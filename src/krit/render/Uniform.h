@@ -12,6 +12,7 @@ enum UniformValueType {
     UniformEmpty,
     UniformInt,
     UniformFloat,
+    UniformFloatPtr,
     UniformVec2,
     UniformVec3,
     UniformVec4,
@@ -34,11 +35,13 @@ struct UniformValue {
         float vec4Value[4];
         Slice<float> floatData;
         FrameBuffer *fbPtrValue;
+        float *floatPtrValue;
     };
 
     UniformValue() : type(UniformEmpty), intValue(0) {}
     UniformValue(int f) : type(UniformInt), intValue(f) {}
     UniformValue(float f) : type(UniformFloat), floatValue(f) {}
+    UniformValue(float *f) : type(UniformFloatPtr), floatPtrValue(f) {}
     UniformValue(float a, float b) : type(UniformVec2), vec2Value{a, b} {}
     UniformValue(float a, float b, float c)
         : type(UniformVec3), vec3Value{a, b, c} {}

@@ -2,11 +2,13 @@
  * @namespace krit
  * @import krit/utils/Color.h
  */
-interface Color {
-    r: float,
-    g: float,
-    b: float,
-    a: float,
+declare class Color {
+    r: float;
+    g: float;
+    b: float;
+    a: float;
+
+    constructor();
 
     setTo(c: integer): void;
     lerpInPlace(c: integer, mix: number): void;

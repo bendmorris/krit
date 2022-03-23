@@ -112,6 +112,12 @@ JSValue ScriptValue<std::string_view *>::valueToJs(JSContext *ctx,
                                                    std::string_view *const &s) {
     return !s ? JS_UNDEFINED : JS_NewStringLen(ctx, s->data(), s->length());
 }
+
+template <>
+void *ScriptValue<void *>::jsToValue(JSContext *ctx, JSValue val) {
+    return JS_GetOpaque2(ctx, val, 0);
+}
+
 // template <> std::string_view
 // ScriptValue<std::string_view>::jsToValue(JSContext *ctx, JSValue val) {
 //     size_t len;

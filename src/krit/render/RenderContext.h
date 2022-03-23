@@ -34,11 +34,11 @@ struct RenderContext : public UpdateContext {
     void pushBounds(Rectangle &rect);
     void popBounds();
 
-    void addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color, int zIndex = 0);
-    void addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix,
+    void addRect(const DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color, int zIndex = 0);
+    void addRectRaw(const DrawKey &key, IntRectangle &rect, Matrix &matrix,
                     Color color, int zIndex = 0);
-    void addTriangle(DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
-    void addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
+    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
+    void addTriangleRaw(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
 
     Point &transformPoint(Point &point) {
         if (this->camera) {
@@ -98,6 +98,8 @@ struct RenderContext : public UpdateContext {
         }
         return d;
     }
+
+    void drawRect(int x, int y, int w, int h, Color c = Color::white(), float alpha = 1);
 };
 
 }

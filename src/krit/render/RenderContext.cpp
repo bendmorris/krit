@@ -35,26 +35,33 @@ void RenderContext::pushBounds(Rectangle &rect) {
 
 void RenderContext::popBounds() { this->drawCommandBuffer->popBounds(); }
 
-void RenderContext::addRect(DrawKey &key, IntRectangle &rect, Matrix &matrix,
+void RenderContext::addRect(const DrawKey &key, IntRectangle &rect, Matrix &matrix,
                             Color color, int zIndex) {
     this->transformMatrix(matrix);
     this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
 }
 
-void RenderContext::addRectRaw(DrawKey &key, IntRectangle &rect, Matrix &matrix,
+void RenderContext::addRectRaw(const DrawKey &key, IntRectangle &rect, Matrix &matrix,
                                Color color, int zIndex) {
     this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
 }
 
-void RenderContext::addTriangle(DrawKey &key, Triangle &t, Triangle &uv,
+void RenderContext::addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
                                 Color color, int zIndex) {
     this->transformTriangle(t);
     this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
 }
 
-void RenderContext::addTriangleRaw(DrawKey &key, Triangle &t, Triangle &uv,
+void RenderContext::addTriangleRaw(const DrawKey &key, Triangle &t, Triangle &uv,
                                    Color color, int zIndex) {
     this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
+}
+
+void RenderContext::drawRect(int x, int y, int w, int h, Color c, float alpha) {
+    c.a = alpha;
+    IntRectangle r(0, 0, w, h);
+    Matrix m(1, 0, 0, 1, x, y);
+    addRect(DrawKey(), r, m, c);
 }
 
 }

@@ -1,0 +1,10 @@
+{% for root in roots: %}{% for asset in root.assets: %}{% if asset %}
+- type: {{ asset.type }}
+  paths: {% for path in asset.paths %}
+  - {{ path }}{% endfor %}{% if asset.type == 'Image': %}
+  width: {{ asset.width }}
+  height: {{ asset.height }}
+  realWidth: {{ asset.realWidth }}
+  realHeight: {{ asset.realHeight }}
+  scale: {{ asset.scale }}
+  {% endif %}{% endif %}{% endfor %}{% endfor %}

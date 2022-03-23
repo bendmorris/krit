@@ -1,7 +1,7 @@
 #include "krit/sprites/SpineSprite.h"
 #include "krit/App.h"
 #include "krit/UpdateContext.h"
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/math/ScaleFactor.h"

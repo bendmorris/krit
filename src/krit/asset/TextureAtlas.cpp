@@ -7,7 +7,7 @@
 
 #include "krit/App.h"
 #include "krit/Engine.h"
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/math/Rectangle.h"

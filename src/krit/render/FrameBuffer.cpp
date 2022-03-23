@@ -144,8 +144,14 @@ GLuint FrameBuffer::getTexture() {
     return texture[index()];
 }
 
-void FrameBuffer::_markDirty() {
-    this->dirty[index()] = true;
+void FrameBuffer::_markDirty() { this->dirty[index()] = true; }
+
+uint32_t FrameBuffer::readPixel(int x, int y) {
+    uint32_t pixelData;
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
+    glReadPixels(x, size.y - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, (void *)&pixelData);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    return pixelData;
 }
 
 }

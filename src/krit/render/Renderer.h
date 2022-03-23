@@ -26,6 +26,7 @@ struct Renderer {
     Renderer(Window &window);
     ~Renderer();
 
+    void startFrame(RenderContext &ctx);
     void renderFrame(RenderContext &ctx);
     void flip(RenderContext &ctx);
 

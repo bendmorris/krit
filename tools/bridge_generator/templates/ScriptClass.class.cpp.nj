@@ -25,6 +25,7 @@ static JSValue js_{{wrapper.name}}_get_internal_id(JSContext *ctx, JSValueConst 
 }
 
 {% for prop in wrapper.props %}
+{% if not prop.tags.writeonly %}
 static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
     krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
@@ -43,6 +44,7 @@ static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueCo
     {% endif %}
     return ScriptValue<{{ prop.cppType.type }}>::valueToJs(ctx, v);
 }
+{% endif %}
 
 {% if not prop.tags.readonly %}
 static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
@@ -150,7 +152,7 @@ namespace krit {
 static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
     JS_CGETSET_DEF("__id", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_internal_id, nullptr),
     {% for prop in wrapper.props %}
-    JS_CGETSET_DEF("{{ prop.name }}", {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
+    JS_CGETSET_DEF("{{ prop.name }}", {% if prop.tags.writeonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_get_{{ prop.name }} {% endif %}, {% if prop.tags.readonly %} nullptr {% else %} {{ wrapper.namespace }}::js_{{wrapper.name}}_set_{{ prop.name }} {% endif %}),
     {% endfor %}
     JS_CFUNC_DEF("toString", 0, {{ wrapper.namespace }}::js_{{ wrapper.name }}_toString),
     {% if wrapper.constructor %}

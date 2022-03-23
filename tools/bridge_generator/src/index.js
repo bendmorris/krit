@@ -19,6 +19,7 @@ const typeMap = new Map(
         string_view: { type: 'std::string_view', pointer: 0 },
         string: { type: 'std::string', pointer: 0 },
         any: { type: 'JSValue', pointer: 0 },
+        'Pointer<void>': { type: 'void', pointer: 1 },
     }),
 );
 
@@ -95,7 +96,7 @@ function cppType(t) {
         }
         case 'SharedPtr': {
             const { type, pointer } = cppType(t.aliasTypeArguments[0]);
-            assert(!pointer, "SharedPtr<Pointer<...>> is not supported");
+            assert(!pointer, 'SharedPtr<Pointer<...>> is not supported');
             return { type: `std::shared_ptr<${type}>` };
         }
         case 'StringMap': {

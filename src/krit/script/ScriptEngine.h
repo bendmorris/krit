@@ -1,7 +1,6 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
-#include "krit/UpdateContext.h"
 #include "krit/script/ScriptFinalizer.h"
 #include "krit/script/ScriptValue.h"
 #include "quickjs.h"
@@ -16,7 +15,6 @@
 
 namespace krit {
 
-struct UpdateContext;
 enum ScriptClass : int;
 
 template <class T, std::size_t = sizeof(T)>
@@ -196,8 +194,8 @@ struct ScriptEngine {
         this->callVoid<ArgTypes...>(functionName.c_str(), args...);
     }
 
-    void update(UpdateContext &ctx);
     void update();
+    void handleDelays(float elapsed);
     void checkForErrors();
     void checkForErrors(JSValue);
 

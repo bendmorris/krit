@@ -1,7 +1,7 @@
 #ifndef KRIT_BACKEND
 #define KRIT_BACKEND
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
 #include <AL/al.h>

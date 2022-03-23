@@ -85,7 +85,7 @@ void App::run() {
     ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &engine.window;
-    ctx.camera = &engine.camera;
+    ctx.camera = nullptr;
     ctx.drawCommandBuffer = &engine.renderer.drawCommandBuffer;
     ctx.audio = &engine.audio;
     ctx.userData = engine.userData;
@@ -102,6 +102,7 @@ void App::run() {
     // invalid initial mouse position
 
     invoke(engine.onBegin, update);
+    engine.onBegin = nullptr;
 
     running = true;
 #ifndef __EMSCRIPTEN__

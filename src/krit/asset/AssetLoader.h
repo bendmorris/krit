@@ -1,7 +1,7 @@
 #ifndef KRIT_ASSET_ASSET_LOADER
 #define KRIT_ASSET_ASSET_LOADER
 
-#include "krit/asset/AssetInfo.h"
+#include "krit/asset/Assets.h"
 #include <memory>
 #include <string_view>
 

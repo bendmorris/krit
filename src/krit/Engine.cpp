@@ -19,28 +19,25 @@
 namespace krit {
 
 Engine::Engine(KritOptions &options) : window(options), renderer(window) {
+    #if KRIT_ENABLE_SCRIPT
     script.userData = this;
+    #endif
 }
 
 void Engine::fixedUpdate(UpdateContext &ctx) {
-    #if TRACY_ENABLE
+#if TRACY_ENABLE
     ZoneScopedN("Engine::fixedUpdate");
-    #endif
+#endif
     if (this->paused) {
         return;
     }
-    for (auto &tree : trees) {
-        if (tree.root) {
-            ctx.camera = tree.camera;
-            tree.root->fixedUpdate(ctx);
-        }
-    }
+    invoke(onFixedUpdate, &ctx);
 }
 
 void Engine::update(UpdateContext &ctx) {
-    #if TRACY_ENABLE
+#if TRACY_ENABLE
     ZoneScopedN("Engine::update");
-    #endif
+#endif
     if (this->paused) {
         return;
     }
@@ -88,54 +85,47 @@ void Engine::update(UpdateContext &ctx) {
 
     // actual update cycle
     invoke(onUpdate, &ctx);
-    camera.update(ctx);
-    uiCamera.update(ctx);
+    #if KRIT_ENABLE_SCRIPT
     script.update();
-    for (auto &tree : trees) {
-        if (tree.root) {
-            ctx.camera = tree.camera;
-            tree.root->update(ctx);
-        }
-    }
-    camera.update(ctx);
-    uiCamera.update(ctx);
+    #endif
     invoke(postUpdate, &ctx);
 }
 
 void Engine::render(RenderContext &ctx) {
-    #if TRACY_ENABLE
+#if TRACY_ENABLE
     ZoneScopedN("Engine::render");
-    #endif
+#endif
     checkForGlErrors("engine render");
 
     ctx.userData = userData;
 
     fonts.commit();
 
+    renderer.startFrame(ctx);
+
     if (ctx.window->skipFrames > 0) {
         --ctx.window->skipFrames;
     } else {
         invoke(onRender, &ctx);
 
-        for (auto &tree : trees) {
-            if (tree.root) {
-                ctx.camera = tree.camera;
-                tree.root->render(ctx);
-            }
+        for (auto &camera : cameras) {
+            ctx.camera = &camera;
+            camera.update(ctx);
+            invoke(camera.render, &ctx);
+            renderer.renderFrame(ctx);
         }
 
         invoke(this->postRender, &ctx);
     }
 
     checkForGlErrors("before render frame");
-    renderer.renderFrame(ctx);
     checkForGlErrors("after render frame");
 }
 
 void Engine::flip(RenderContext &ctx) {
-    #if TRACY_ENABLE
+#if TRACY_ENABLE
     ZoneScopedN("Engine::flip");
-    #endif
+#endif
     renderer.flip(ctx);
     fonts.flush();
     checkForGlErrors("flush fonts");
@@ -159,17 +149,6 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
     if (!inserted) {
         this->events.emplace_back(delay, interval, s, userData);
     }
-}
-
-void Engine::addTree(Sprite *root, Camera *camera) {
-    if (!camera) {
-        camera = &this->camera;
-    }
-    trees.emplace_back(root, camera);
-}
-
-void Engine::setRoot(int index, Sprite *root) {
-    trees[index].root = std::unique_ptr<Sprite>(root);
 }
 
 void Engine::addCursor(const std::string &cursorPath,

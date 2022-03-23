@@ -2,13 +2,14 @@
 #define KRIT_ENGINE
 
 #include "krit/Camera.h"
-#include "krit/Sprite.h"
 #include "krit/Window.h"
 #include "krit/asset/AssetCache.h"
 #include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/Renderer.h"
+#if KRIT_ENABLE_SCRIPT
 #include "krit/script/ScriptEngine.h"
+#endif
 #include "krit/sound/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
@@ -39,13 +40,6 @@ struct SoundData;
 struct SpineData;
 struct MusicData;
 
-struct SpriteTree {
-    std::unique_ptr<Sprite> root;
-    Camera *camera;
-
-    SpriteTree(Sprite *root, Camera *camera) : root(root), camera(camera) {}
-};
-
 struct Engine {
     bool paused = false;
     bool fixedFrameRate = false;
@@ -56,6 +50,7 @@ struct Engine {
     UpdateSignal onBegin = nullptr;
     UpdateSignal onEnd = nullptr;
     UpdateSignal onUpdate = nullptr;
+    UpdateSignal onFixedUpdate = nullptr;
     UpdateSignal postUpdate = nullptr;
     RenderSignal onRender = nullptr;
     RenderSignal postRender = nullptr;
@@ -67,18 +62,18 @@ struct Engine {
     AudioBackend audio;
     InputContext input;
     AssetCache assets;
+    #if KRIT_ENABLE_SCRIPT
     ScriptEngine script;
+    #endif
     std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
         cursors;
-
-    std::vector<SpriteTree> trees;
 
     Color bgColor = Color::black();
 
     void *userData = nullptr;
 
-    Camera camera;
-    Camera uiCamera;
+    std::vector<Camera> cameras;
+
     std::string cursor;
 
     Engine(KritOptions &options);
@@ -89,13 +84,15 @@ struct Engine {
     void flip(RenderContext &ctx);
 
     void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
-    void addTree(Sprite *root, Camera *camera = nullptr);
-    Sprite *getRoot(int index) { return trees[index].root.get(); }
-    void setRoot(int index, Sprite *root);
     void quit() { finished = true; }
 
     void addCursor(const std::string &cursorPath, const std::string &cursor, int resolution);
     void setCursor(const std::string &cursor);
+
+    Camera &addCamera() {
+        cameras.emplace_back();
+        return cameras.back();
+    }
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 

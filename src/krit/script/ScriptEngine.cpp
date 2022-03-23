@@ -1,14 +1,11 @@
 #include "krit/script/ScriptEngine.h"
-
-#include <cstring>
-#include <memory>
-#include <stdio.h>
-
-#include "krit/UpdateContext.h"
 #include "krit/script/ScriptAllocator.h"
 #include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptFinalizer.h"
+#include <cstring>
+#include <memory>
+#include <stdio.h>
 
 namespace krit {
 
@@ -207,9 +204,9 @@ JSValue ScriptEngine::delay(float duration) {
     return promise;
 }
 
-void ScriptEngine::update(UpdateContext &ctx) {
+void ScriptEngine::handleDelays(float elapsed) {
     if (!this->delayPromises.empty()) {
-        this->delayPromises.front().duration -= ctx.elapsed;
+        this->delayPromises.front().duration -= elapsed;
         while (!this->delayPromises.empty() &&
                this->delayPromises.back().duration <= 0) {
             // complete this delay

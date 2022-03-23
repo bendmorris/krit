@@ -42,6 +42,9 @@ SpriteShader *defaultTextSpriteShader;
 }
 
 void Renderer::setSmoothingMode(SmoothingMode mode, ImageData *img) {
+    if (currentRenderTarget && !currentRenderTarget->allowSmoothing) {
+        mode = SmoothNearest;
+    }
     switch (mode) {
         case SmoothNearest: {
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -271,8 +274,13 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
     } else {
         newClip.setTo(clipRect);
     }
+    if (clipStack.size() == 1) {
+        glEnable(GL_SCISSOR_TEST);
+        checkForGlErrors("enable scissor test");
+    }
     glScissor(newClip.x, this->height - newClip.y - newClip.height,
               newClip.width, newClip.height);
+    checkForGlErrors("push clip rect");
 }
 
 template <>
@@ -288,8 +296,12 @@ void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
     } else {
         newClip.setTo(*clipRect);
     }
+    if (clipStack.size() == 1) {
+        glEnable(GL_SCISSOR_TEST);
+    }
     glScissor(newClip.x, this->height - newClip.y - newClip.height,
               newClip.width, newClip.height);
+    checkForGlErrors("push dynamic clip rect");
 }
 
 template <>
@@ -299,12 +311,13 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
 #endif
     clipStack.pop_back();
     if (clipStack.empty()) {
-        glScissor(0, 0, this->width, this->height);
+        glDisable(GL_SCISSOR_TEST);
     } else {
         Rectangle &newClip = clipStack.back();
         glScissor(newClip.x, this->height - newClip.y - newClip.height,
                   newClip.width, newClip.height);
     }
+    checkForGlErrors("pop clip rect");
 }
 
 template <>
@@ -329,14 +342,21 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     }
     glBindFramebuffer(GL_FRAMEBUFFER,
                       args.target ? args.target->getFramebuffer() : 0);
+    checkForGlErrors("bind framebuffer");
     if (args.clear && args.target) {
-        glDisable(GL_SCISSOR_TEST);
+        if (!clipStack.empty()) {
+            glDisable(GL_SCISSOR_TEST);
+        }
         glClearColor(0, 0, 0, 0);
         glClear(GL_COLOR_BUFFER_BIT);
-        glEnable(GL_SCISSOR_TEST);
+        if (!clipStack.empty()) {
+            glEnable(GL_SCISSOR_TEST);
+        }
+        checkForGlErrors("clear");
     }
     currentRenderTarget = args.target;
-    checkForGlErrors("bind framebuffer");
+    this->setSize(ctx);
+    checkForGlErrors("set size");
 }
 
 template <>
@@ -344,10 +364,14 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::drawCall<ClearColor>");
 #endif
-    glDisable(GL_SCISSOR_TEST);
+    if (!clipStack.empty()) {
+        glDisable(GL_SCISSOR_TEST);
+    }
     glClearColor(c.r, c.g, c.b, c.a);
     glClear(GL_COLOR_BUFFER_BIT);
-    glEnable(GL_SCISSOR_TEST);
+    if (!clipStack.empty()) {
+        glEnable(GL_SCISSOR_TEST);
+    }
 }
 
 template <>
@@ -450,18 +474,22 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     shader->unbind();
 }
 
+void Renderer::startFrame(RenderContext &ctx) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::startFrame");
+#endif
+    this->currentRenderTarget = nullptr;
+    clear(ctx);
+    checkForGlErrors("start frame");
+}
+
 void Renderer::renderFrame(RenderContext &ctx) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::renderFrame");
 #endif
-    int index = App::ctx.tickId % 3;
-    this->currentRenderTarget = nullptr;
 
     setSize(ctx);
-
-    clear(ctx);
-
-    checkForGlErrors("start frame");
+    int index = App::ctx.tickId % 3;
 
     // upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);

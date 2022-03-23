@@ -53,6 +53,15 @@ struct Color {
         return Color(this->r * other.r, this->g * other.g, this->b * other.b,
                      this->a * other.a);
     }
+    Color operator*(float t) {
+        return Color(r * t, g * t, b * t, a * t);
+    }
+    Color operator+(const Color &other) {
+        return Color(r + other.r, g + other.g, b + other.b, a + other.a);
+    }
+    Color operator-(const Color &other) {
+        return Color(r - other.r, g - other.g, b - other.b, a - other.a);
+    }
 
     void lerpInPlace(const Color &other, float mix) {
         *this = this->lerp(other, mix);
