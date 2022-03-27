@@ -1,12 +1,10 @@
+#include "krit/sound/SoundData.h"
+#include "krit/asset/AssetLoader.h"
+#include "krit/io/Io.h"
+#include "krit/utils/Log.h"
 #include <cstdint>
 #include <memory.h>
 #include <sndfile.h>
-
-#include "krit/asset/Assets.h"
-#include "krit/asset/AssetLoader.h"
-#include "krit/io/Io.h"
-#include "krit/sound/SoundData.h"
-#include "krit/utils/Log.h"
 
 namespace krit {
 

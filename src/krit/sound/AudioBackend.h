@@ -1,7 +1,6 @@
 #ifndef KRIT_BACKEND
 #define KRIT_BACKEND
 
-#include "krit/asset/Assets.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
 #include <AL/al.h>
@@ -43,7 +42,6 @@ struct AudioStream {
     float currentPlayTime();
 
     void onLoop(const std::string &name);
-    void onLoop(const AssetInfo &info);
     void onLoop(std::shared_ptr<MusicData> music);
 
     void clear() {
@@ -91,11 +89,9 @@ struct AudioBackend {
     ~AudioBackend();
 
     void playSound(const std::string &name);
-    void playSound(const AssetInfo &info);
     void playSound(SoundData *sound);
 
     AudioStream *playMusic(const std::string &name);
-    AudioStream *playMusic(const AssetInfo &info);
     AudioStream *playMusic(std::shared_ptr<MusicData> music);
 
     AudioSource *getSource();

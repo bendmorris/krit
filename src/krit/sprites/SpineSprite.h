@@ -36,7 +36,6 @@ class AnimationState;
 
 namespace krit {
 
-struct AssetInfo;
 struct UpdateContext;
 
 struct SpineTextureLoader : public spine::TextureLoader {
@@ -75,7 +74,6 @@ struct SpineSprite : public VisibleSprite {
     }
 
     SpineSprite(const std::string &id);
-    SpineSprite(const AssetInfo &info);
     virtual ~SpineSprite() {}
 
     float setAnimation(size_t track, const std::string &name, bool loop = true,

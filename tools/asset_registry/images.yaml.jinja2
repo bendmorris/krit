@@ -1,0 +1,6 @@
+{% for image in images: %}- path: {{ image.path }}
+{% if image.width %}  width: {{ image.width }}
+{% endif %}{% if image.height %}  height: {{ image.height }}
+{% endif %}{% if image.sizes %}  sizes: {% for size in image.sizes %}
+    {{ size.size }}: {{ size.path }}
+{% endfor %}{% endif %}{% endfor %}

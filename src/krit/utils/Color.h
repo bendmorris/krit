@@ -37,6 +37,11 @@ struct Color {
 
     void setTo(const Color &c) { *this = c; }
     void setTo(unsigned c) { *this = c; }
+    void setTo(float r, float g, float b) {
+        this->r = r;
+        this->g = g;
+        this->b = b;
+    }
     void setTo(float r, float g, float b, float a) {
         this->r = r;
         this->g = g;
@@ -53,9 +58,7 @@ struct Color {
         return Color(this->r * other.r, this->g * other.g, this->b * other.b,
                      this->a * other.a);
     }
-    Color operator*(float t) {
-        return Color(r * t, g * t, b * t, a * t);
-    }
+    Color operator*(float t) { return Color(r * t, g * t, b * t, a * t); }
     Color operator+(const Color &other) {
         return Color(r + other.r, g + other.g, b + other.b, a + other.a);
     }

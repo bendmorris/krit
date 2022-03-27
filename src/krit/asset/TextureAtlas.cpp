@@ -7,7 +7,6 @@
 
 #include "krit/App.h"
 #include "krit/Engine.h"
-#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/math/Rectangle.h"
@@ -50,8 +49,7 @@ TextureAtlas::TextureAtlas(const std::string &path) {
         std::string s = (lastSlash == std::string::npos)
                             ? pageName
                             : (path.substr(0, lastSlash) + "/" + pageName);
-        std::shared_ptr<ImageData> image =
-            App::ctx.engine->getImage(Assets::byPath(s));
+        std::shared_ptr<ImageData> image = App::ctx.engine->getImage(s);
 
         while (std::getline(input, line) &&
                line.find(':') != std::string::npos) {
@@ -79,6 +77,7 @@ TextureAtlas::TextureAtlas(const std::string &path) {
                 }
             }
             ImageRegion region(image, rect);
+            region.name = regionName;
             this->regions.insert(std::make_pair(regionName, region));
         }
     }
@@ -86,8 +85,8 @@ TextureAtlas::TextureAtlas(const std::string &path) {
 
 template <>
 std::shared_ptr<TextureAtlas>
-AssetLoader<TextureAtlas>::loadAsset(const AssetInfo &info) {
-    return std::make_shared<TextureAtlas>(info.path);
+AssetLoader<TextureAtlas>::loadAsset(const std::string &path) {
+    return std::make_shared<TextureAtlas>(path);
 }
 
 template <> bool AssetLoader<TextureAtlas>::assetIsReady(TextureAtlas *img) {

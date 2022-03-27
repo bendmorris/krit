@@ -1,7 +1,6 @@
 #ifndef KRIT_ASSET_FONT
 #define KRIT_ASSET_FONT
 
-#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/math/Point.h"
 #include "krit/render/ImageRegion.h"
@@ -91,7 +90,6 @@ struct FontManager {
     void commit();
     void flush();
     void registerFont(const std::string &name, const std::string &path);
-    void registerFont(const std::string &name, AssetId id);
 
     Font *getFont(const std::string &name) {
         Font *font = fontRegistry[name].get();

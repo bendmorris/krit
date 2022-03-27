@@ -1,5 +1,4 @@
 #include "krit/sound/MusicData.h"
-#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/utils/Log.h"

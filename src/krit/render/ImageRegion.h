@@ -10,6 +10,7 @@ namespace krit {
 struct ImageRegion {
     std::shared_ptr<ImageData> img;
     IntRectangle rect;
+    std::string name;
 
     ImageRegion() : img(nullptr) {}
     ImageRegion(std::shared_ptr<ImageData> img, IntRectangle rect)

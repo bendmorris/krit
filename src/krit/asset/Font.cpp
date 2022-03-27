@@ -1,6 +1,5 @@
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
-#include "krit/asset/Assets.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
@@ -29,11 +28,11 @@ static const int BYTES_PER_PIXEL = 4;
 static FT_Stroker stroker;
 
 template <>
-std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const AssetInfo &info) {
+std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const std::string &path) {
     int length;
-    char *content = IoRead::read(info.path, &length);
+    char *content = IoRead::read(path, &length);
     // FIXME: do we leak content here, or does FT free it?
-    return std::make_shared<Font>(info.path, content, length);
+    return std::make_shared<Font>(path, content, length);
 }
 
 template <> AssetType AssetLoader<Font>::type() { return FontAsset; }
@@ -71,17 +70,11 @@ void FontManager::flush() {
     }
 }
 
-void FontManager::registerFont(const std::string &name, AssetId id) {
-    fontRegistry.emplace(
-        std::piecewise_construct, std::forward_as_tuple(name),
-        std::forward_as_tuple(AssetLoader<Font>::loadAsset(Assets::byId(id))));
-}
-
 void FontManager::registerFont(const std::string &name,
                                const std::string &path) {
-    fontRegistry.emplace(std::piecewise_construct, std::forward_as_tuple(name),
-                         std::forward_as_tuple(AssetLoader<Font>::loadAsset(
-                             Assets::byPath(path))));
+    fontRegistry.emplace(
+        std::piecewise_construct, std::forward_as_tuple(name),
+        std::forward_as_tuple(AssetLoader<Font>::loadAsset(path)));
 }
 
 GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,

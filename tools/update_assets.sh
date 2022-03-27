@@ -8,14 +8,14 @@ echo "running rsync command:" ${RSYNC_CMD}
 RSYNC_OUTPUT=$(${RSYNC_CMD} | grep ">")
 
 echo "building asset manifest"
-python3 $3/tools/asset_registry/asset_registry.py --input $1/assets.yaml --output-dir $2/assets
+python3 $3/tools/asset_registry/asset_registry.py --input $1/images.yaml --output-dir $2/assets
 
 if [ -n "${RSYNC_OUTPUT}" ] || (( EXISTS != 0 )); then
     # need to rebuild or update
     FILES=$(echo "${RSYNC_OUTPUT}" | cut -d ' ' -f 2)
     if (( EXISTS == 0 )); then
         echo "updating existing assets.zip in place"
-        for i in $FILES assets/assets.yaml; do
+        for i in $FILES assets/images.yaml; do
             echo "updating $i"
             cd $2 && zip -r $ASSET_FILE $i
         done

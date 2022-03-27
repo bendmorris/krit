@@ -187,8 +187,6 @@ Renderer::Renderer(Window &_window) : window(_window) {
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
     checkForGlErrors("depth test");
-    glEnable(GL_STENCIL_TEST);
-    checkForGlErrors("stencil test");
 
 #if KRIT_ENABLE_MULTISAMPLING
     glEnable(GL_MULTISAMPLE);
@@ -229,6 +227,8 @@ Renderer::Renderer(Window &_window) : window(_window) {
                  GL_UNSIGNED_BYTE, pixels);
     checkForGlErrors("imgui texImage2D");
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    // ImGui::StyleColorsClassic();
 
     io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
     Editor::imguiInitialized = true;

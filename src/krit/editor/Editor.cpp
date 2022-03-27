@@ -6,11 +6,11 @@
 #include "krit/Camera.h"
 #include "krit/Engine.h"
 #include "krit/UpdateContext.h"
-#include "krit/Utils.h"
 #include "krit/math/Dimensions.h"
 #include "krit/render/CommandBuffer.h"
 #include "krit/render/DrawCommand.h"
 #include "krit/render/RenderContext.h"
+#include "krit/utils/Memory.h"
 #include <algorithm>
 
 namespace krit {
@@ -25,9 +25,7 @@ static std::vector<Metric> defaultMetrics() {
 std::vector<Metric> Overlay::metrics = defaultMetrics();
 
 void Overlay::draw(krit::RenderContext &ctx) {
-    ImVec2 window_pos = ImVec2(ctx.window->width() - 32, 32);
-    ImVec2 window_pos_pivot = ImVec2(1, 0);
-    ImGui::SetNextWindowPos(window_pos, ImGuiCond_Always, window_pos_pivot);
+    ImGui::SetNextWindowPos(ImVec2(ctx.window->width() - 32, 32), ImGuiCond_Always, ImVec2(1, 0));
     bool pOpen;
     if (!ctx.engine->paused) {
         elapsed += ctx.elapsed;
@@ -71,8 +69,8 @@ void Editor::render(krit::RenderContext &ctx) {
     if (imguiInitialized) {
         auto &io = ImGui::GetIO();
         io.DeltaTime = ctx.elapsed;
-        io.FontGlobalScale =
-            std::max(1.0, ctx.window->height() * 2.5 / ctx.camera->height());
+        // io.FontGlobalScale =
+        //     std::max(1.0, ctx.window->height() * 1.0 / ctx.height());
         io.DisplaySize.x = ctx.window->width();
         io.DisplaySize.y = ctx.window->height();
 
@@ -85,7 +83,6 @@ void Editor::render(krit::RenderContext &ctx) {
         ImGui::Render();
 
         // frame will be finished in the render thread
-        window = ctx.window->window;
         ctx.drawCommandBuffer->buf.emplace_back<RenderImGui>(
             ImGui::GetDrawData());
     }

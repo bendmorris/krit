@@ -11,6 +11,7 @@ enum AssetType {
     SpineSkeletonAsset,
     SoundAsset,
     MusicAsset,
+    ParticleAsset,
     AssetTypeCount,
 };
 

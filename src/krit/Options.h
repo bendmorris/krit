@@ -30,6 +30,10 @@ struct KritOptions {
         this->title = t;
         return *this;
     }
+    KritOptions &setFrameRate(int rate) {
+        this->framerate = this->fixedFramerate = rate;
+        return *this;
+    }
     KritOptions &setFrameRate(int free, int fixed) {
         this->framerate = free;
         this->fixedFramerate = fixed;

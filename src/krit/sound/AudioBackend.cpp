@@ -65,10 +65,6 @@ void AudioBackend::playSound(const std::string &name) {
     playSound(App::ctx.engine->getSound(name).get());
 }
 
-void AudioBackend::playSound(const AssetInfo &info) {
-    playSound(App::ctx.engine->getSound(info).get());
-}
-
 void AudioBackend::playSound(SoundData *sound) {
     if (enabled) {
         ALuint buffer = sound->buffer;
@@ -147,9 +143,6 @@ void AudioBackend::update() {
 
 AudioStream *AudioBackend::playMusic(const std::string &name) {
     return playMusic(App::ctx.engine->getMusic(name));
-}
-AudioStream *AudioBackend::playMusic(const AssetInfo &info) {
-    return playMusic(App::ctx.engine->getMusic(info));
 }
 AudioStream *AudioBackend::playMusic(std::shared_ptr<MusicData> music) {
     int streamIndex = -1;
@@ -277,9 +270,6 @@ float AudioStream::currentPlayTime() {
 
 void AudioStream::onLoop(const std::string &name) {
     onLoop(App::ctx.engine->getMusic(name));
-}
-void AudioStream::onLoop(const AssetInfo &info) {
-    onLoop(App::ctx.engine->getMusic(info));
 }
 void AudioStream::onLoop(std::shared_ptr<MusicData> music) {
     onLoopData = music;

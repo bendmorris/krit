@@ -1,13 +1,12 @@
-#include <cstdint>
-#include <memory.h>
-#include <sndfile.h>
-
-#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
+#include "krit/asset/AssetType.h"
 #include "krit/io/Io.h"
 #include "krit/sound/MusicData.h"
 #include "krit/sound/SoundData.h"
 #include "krit/utils/Log.h"
+#include <cstdint>
+#include <memory.h>
+#include <sndfile.h>
 
 namespace krit {
 
@@ -57,13 +56,13 @@ static SF_VIRTUAL_IO vio = (SF_VIRTUAL_IO){
     .tell = sf_vio_tell,
 };
 
-static SNDFILE *loadSoundFile(VirtualIo &io, const AssetInfo &info,
+static SNDFILE *loadSoundFile(VirtualIo &io, const std::string &path,
                               SF_INFO &sfInfo, char **data) {
-    *data = IoRead::read(info.path, &io.length);
+    *data = IoRead::read(path, &io.length);
     io.data = *data;
     SNDFILE *sndFile = sf_open_virtual(&vio, SFM_READ, &sfInfo, &io);
     if (!sndFile) {
-        Log::error("error loading sound asset %s: %s\n", info.path.c_str(),
+        Log::error("error loading sound asset %s: %s\n", path.c_str(),
                    sf_strerror(nullptr));
         IoRead::free(*data);
         *data = io.data = nullptr;
@@ -85,12 +84,12 @@ static ALenum soundFormat(SF_INFO &sfInfo) {
 
 template <>
 std::shared_ptr<SoundData>
-AssetLoader<SoundData>::loadAsset(const AssetInfo &info) {
+AssetLoader<SoundData>::loadAsset(const std::string &path) {
     VirtualIo io;
     std::shared_ptr<SoundData> s = std::make_shared<SoundData>();
     SF_INFO sfInfo;
     char *fileData;
-    SNDFILE *sndFile = loadSoundFile(io, info, sfInfo, &fileData);
+    SNDFILE *sndFile = loadSoundFile(io, path, sfInfo, &fileData);
     if (!sndFile) {
         return nullptr;
     }
@@ -127,11 +126,11 @@ template <> AssetType AssetLoader<SoundData>::type() { return SoundAsset; }
 
 template <>
 std::shared_ptr<MusicData>
-AssetLoader<MusicData>::loadAsset(const AssetInfo &info) {
+AssetLoader<MusicData>::loadAsset(const std::string &path) {
     std::shared_ptr<MusicData> s = std::make_shared<MusicData>();
     SF_INFO sfInfo = {0};
     char *data = nullptr;
-    SNDFILE *sndFile = loadSoundFile(s->io, info, sfInfo, &data);
+    SNDFILE *sndFile = loadSoundFile(s->io, path, sfInfo, &data);
     if (!sndFile) {
         return nullptr;
     }

@@ -39,6 +39,8 @@ template <typename T> struct ParamRange {
     ParamRange(T v) : start(v), end(v) {}
     ParamRange(T a, T b) : start(a), end(b) {}
     ParamRange(T a, T b, T c, T d) : start(a, b), end(c, d) {}
+    ParamRange(T a, T b, T c, T d, bool relative)
+        : start(a, b), end(c, d), relative(relative) {}
 
     void realize(ParticleParam<T> &param) {
         param.start = start.random();
@@ -46,12 +48,11 @@ template <typename T> struct ParamRange {
         if (relative) {
             param.end = param.start + param.end;
         }
+        param.lerp = lerp;
     }
 };
 
-struct ParticleType {
-    int index;
-    Image image;
+struct ParticleEmitter {
     ParamRange<Color> color;
     ParamRange<float> alpha;
     ParamRange<float> scale;
@@ -60,16 +61,30 @@ struct ParticleType {
     ParamRange<float> rotation;
     ParamRange<float> xOffset;
     ParamRange<float> yOffset;
-    Range<float> duration;
+    Range<float> lifetime;
+    std::string region;
+    BlendMode blend = Alpha;
+    int count = 1;
+    float start = 0;
+    float duration = 0;
 
-    ParticleType(int id, ImageRegion region, BlendMode blend = Alpha);
+    std::unique_ptr<Image> image;
+
+    ParticleEmitter();
+
+    int countAt(float t) {
+        if (t <= start) {
+            return 0;
+        } else if (t >= start + duration) {
+            return count;
+        } else {
+            return 1 + (count - 1) * (t - start) / duration;
+        }
+    }
 };
 
 struct Particle {
-    float decay = 0;
-    float duration;
-    ParticleType *type;
-    Point origin;
+    ParticleEmitter *emitter;
     ParticleParam<Color> color;
     ParticleParam<float> alpha;
     ParticleParam<float> scale;
@@ -78,38 +93,38 @@ struct Particle {
     ParticleParam<float> rotation;
     ParticleParam<float> xOffset;
     ParticleParam<float> yOffset;
-
-    Particle(ParticleType &type) : type(&type) {}
-};
-
-struct ParticleEmitter {
-    ParticleType type;
-    Point offset;
-    int count;
-    float start;
+    float decay = 0;
     float duration;
+    Point origin;
 
-    int countAt(float t) {
-        if (t <= start) {
-            return 0;
-        } else if (t >= start + duration) {
-            return count;
-        } else {
-            return count * (t - start) / duration;
-        }
-    }
+    Particle(ParticleEmitter &emitter) : emitter(&emitter) {}
 };
 
 struct ParticleEffect {
+    static std::shared_ptr<ParticleEffect> load(const std::string &path);
+
     std::string name;
-    float duration;
     std::vector<ParticleEmitter> emitters;
+    float duration() {
+        float dur = 0;
+        for (auto &e : emitters) {
+            if (e.start + e.duration > dur) {
+                dur = e.start + e.duration;
+            }
+        }
+        return dur;
+    }
 };
 
 struct EffectInstance {
-    ParticleEffect *effect;
+    std::shared_ptr<ParticleEffect> effect;
+    Point origin;
     bool loop = false;
     float time = 0;
+
+    EffectInstance(std::shared_ptr<ParticleEffect> effect, const Point &at,
+                   bool loop = false)
+        : effect(effect), origin(at), loop(loop) {}
 };
 
 struct ParticleSystem : public VisibleSprite {
@@ -117,8 +132,18 @@ struct ParticleSystem : public VisibleSprite {
 
     std::size_t particleCount() { return _particles.size(); }
 
+    void loadAtlas(std::shared_ptr<TextureAtlas> atlas) { this->atlas = atlas; }
+
     void loadEffect(const std::string &);
-    void emit(const std::string &, int count);
+    void registerEffect(std::shared_ptr<ParticleEffect> effect) {
+        effects[effect->name] = effect;
+        for (auto &emitter : effect->emitters) {
+            emitter.image = std::unique_ptr<Image>(new Image(atlas->getRegion(emitter.region.c_str())));
+            emitter.image->centerOrigin();
+            emitter.image->blendMode = emitter.blend;
+        }
+    }
+    void emit(const std::string &, const Point &at, bool loop = false);
     void clear() {
         _effects.clear();
         _particles.clear();
@@ -128,6 +153,7 @@ struct ParticleSystem : public VisibleSprite {
     void render(RenderContext &ctx) override;
 
 private:
+    std::shared_ptr<TextureAtlas> atlas;
     std::vector<EffectInstance> _effects;
     std::vector<Particle> _particles;
     std::unordered_map<std::string, std::shared_ptr<ParticleEffect>> effects;

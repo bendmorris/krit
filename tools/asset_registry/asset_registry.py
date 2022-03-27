@@ -8,56 +8,49 @@ def pascalCase(path):
     return ''.join(filter(lambda s: s.isalpha() or s.isdigit(), list(''.join(s.title() for s in path.split('/')))))
 
 def run(inputPath, outputDir):
-    nextAssetId = 0
-    assetIds = {}
+    imagePaths = {}
+    images = []
+    def getImage(path):
+        if path not in imagePaths:
+            img = { 'path': path, 'width': 0, 'height': 0, 'sizes': [] }
+            images.append(img)
+            imagePaths[path] = img
+            return img
+        return imagePaths[path]
+
     if os.path.exists(inputPath):
         with open(inputPath) as inputFile:
             spec = yaml.safe_load(inputFile)
         assetRoot = spec.get('root', 'assets')
-        variants = spec.get('variants', [])
-
-        assets = []
-        mtime = 0
-        roots = [{'id': 'AssetRootBase', 'path': assetRoot, 'assets': [], 'resolution': 2160 }]
-        roots.extend([{'id': 'AssetRoot' + pascalCase(str(v.get('path', ''))), '_id': v.get('path'), 'resolution': v.get('resolution'), 'path': os.path.join(assetRoot, str(v.get('path', ''))), 'scale': v.get('scale', 1), 'assets': []} for v in variants])
-
         for item in spec['patterns']:
-            for n, root in enumerate(roots):
-                matches = glob(os.path.join(root['path'], item['pattern']), recursive=True)
+            if item.get('type') == 'Image':
+                matches = glob(os.path.join(assetRoot, item['pattern']), recursive=True)
                 for matchPath in matches:
-                    match = matchPath[len(root['path'])+1:]
-                    assetId = assetIds.get(match)
-                    name = pascalCase(match)
-                    if assetId is None:
-                        assetId = nextAssetId
-                        nextAssetId += 1
-                        assetIds[match] = assetId
-                        for _root in roots:
-                            _root['assets'].append(None)
-                        assets.append({ 'id': name, 'path': match })
-                    mtime = max(mtime, os.path.getmtime(matchPath))
-                    asset = {k: v for (k, v) in item.items()}
-                    asset['id'] = name
-                    asset['path'] = matchPath
-                    asset['lookupPath1'] = match
-                    asset['lookupPath2'] = os.path.join(assetRoot, match)
-                    asset['paths'] = [matchPath, match, os.path.join(assetRoot, match)]
-                    t = asset['type']
-                    if t == 'Image':
-                        # get the image dimensions
+                    basePath = os.path.join(os.path.dirname(matchPath), os.path.basename(matchPath).split('.')[0]) + '.png'
+                    extension = os.path.basename(matchPath).split('.')[1:]
+
+                    if extension == ['png'] or extension == ['4k', 'png']:
+                        size = 2160
+                    elif extension[0].isdigit():
+                        size = int(extension[0])
+                    else:
+                        raise Exception("Unrecognized image extension: {}".format(matchPath))
+
+                    base = getImage(basePath)
+                    if size == 2160:
                         im = Image.open(matchPath)
                         w, h = im.size
-                        asset['width'] = asset['realWidth'] = w
-                        asset['height'] = asset['realHeight'] = h
-                        scale = root.get('resolution') / 2160.0
-                        asset['width'] /= scale
-                        asset['height'] /= scale
-                        asset['scale'] = scale
-                    root['assets'][assetId] = asset
-    else:
-        assets = []
-        roots = {}
-    for artifact in ('assets.yaml',):
+                        base['width'] = w
+                        base['height'] = h
+                    else:
+                        child = getImage(matchPath)
+                        im = Image.open(matchPath)
+                        w, h = im.size
+                        child['width'] = w
+                        child['height'] = h
+                        base['sizes'].append({ 'size': size, 'path': matchPath })
+
+    for artifact in ('images.yaml',):
         outPath = os.path.join(outputDir, artifact)
         existing = None
         if os.path.exists(outPath):
@@ -65,7 +58,7 @@ def run(inputPath, outputDir):
                 existing = existingFile.read()
         with open(os.path.join(os.path.dirname(__file__), artifact + '.jinja2')) as templateFile:
             template = Template(templateFile.read())
-        newContent = template.render(assets=assets, roots=roots)
+        newContent = template.render(images=images)
         if not existing or newContent != existing:
             with open(outPath, 'w') as outFile:
                 outFile.write(newContent)

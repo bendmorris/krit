@@ -1,11 +1,12 @@
 project(krit)
 cmake_policy (SET CMP0072 NEW)
+cmake_policy (SET CMP0077 NEW)
 
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
-option(ENABLE_TOOLS "Cross-compile for Windows using mingw-w64" OFF)
-option(ENABLE_THREADS "Whether task managers should use multiple threads" ON)
-option(ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
-option(USE_GLEW "Whether to use glew instead of direct GL" ON)
+option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
+option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
+option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
+option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
 
 if(BUILD_WINDOWS)
     include(${KRIT_DIR}/toolchain/windows.cmake)
@@ -34,7 +35,7 @@ if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
 find_package(OpenGL REQUIRED)
 endif()
 
-if(ENABLE_TOOLS)
+if(KRIT_ENABLE_TOOLS)
     message(STATUS "tools enabled")
     add_definitions(-DKRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/imgui/*.cpp)
@@ -70,11 +71,18 @@ if(KRIT_SCRIPT_BRIDGE)
     list(APPEND KRIT_SRC_FILES ${KRIT_SCRIPT_FILES})
 endif()
 
+if(KRIT_ENABLE_TOOLS)
+    file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
+        ${KRIT_DIR}/src/krit/editor/*.cpp
+    )
+    list(APPEND KRIT_SRC_FILES ${KRIT_EDITOR_FILES})
+endif()
+
 include_directories(${KRIT_INCLUDE_PATHS})
 include_directories(${KRIT_DIR}/src)
 include_directories(${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/include)
 include_directories(${KRIT_DIR}/quickjs)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/../)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/..)
 
 # string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
 
@@ -110,13 +118,13 @@ add_library(${PROJECT_NAME} STATIC
     ${TOOLS_FILES}
 )
 
-if(ENABLE_THREADS)
+if(KRIT_ENABLE_THREADS)
     add_definitions(-DKRIT_ENABLE_THREADS)
 endif()
-if(USE_GLEW)
+if(KRIT_USE_GLEW)
     add_definitions(-DKRIT_USE_GLEW)
 endif()
-if(ENABLE_MULTISAMPLING)
+if(KRIT_ENABLE_MULTISAMPLING)
     add_definitions(-DKRIT_ENABLE_MULTISAMPLING)
 endif()
 
@@ -132,51 +140,54 @@ message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FI
 find_library(EXPAT_LIB NAMES expat HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(FREETYPE_LIB NAMES freetype freetype-6 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(HARFBUZZ_LIB NAMES harfbuzz HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-# find_library(QUICKJS_LIB NAMES quickjs HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(SDL_LIB NAMES SDL2 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(SNDFILE_LIB NAMES sndfile HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(Z_LIB NAMES z HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
 find_library(ZIP_LIB NAMES zip HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+
+list(APPEND KRIT_LIBS)
+list(APPEND KRIT_STATIC_LIBS
+    ${EXPAT_LIB}
+    ${FREETYPE_LIB}
+    ${HARFBUZZ_LIB}
+    ${SDL_LIB}
+    ${SNDFILE_LIB}
+    ${YAML_LIB}
+    ${Z_LIB}
+    ${ZIP_LIB}
+)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    set(OPENAL_LIB "-lopenal")
-    set(GLEW_LIB "")
-    set(OPENGL_LIBRARIES "-lGLEW -lGLU -lm -lGL")
+    list(APPEND KRIT_LIBS "-lopenal -lGLEW -lGLU -lm -lGL")
 else()
     find_library(GLEW_LIB NAMES GLEW glew32 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+    list(APPEND KRIT_LIBS ${GLEW_LIB} ${OPENAL_LIB} ${OPENGL_LIBRARIES})
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set(SDL_IMAGE_LIB "-lSDL2_image")
+    list(APPEND KRIT_LIBS "-lSDL2_image")
 else()
     find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-    set(DL_LIB "-ldl")
-    endif()
-if(ENABLE_THREADS)
-    set(PTHREAD_LIB "-lpthread")
-else()
-    set(PTHREAD_LIB "")
+    list(APPEND KRIT_LIBS ${SDL_IMAGE_LIB} "-ldl")
+endif()
+if(KRIT_ENABLE_THREADS)
+    list(APPEND KRIT_STATIC_LIBS "-lpthread")
+endif()
+if(KRIT_ENABLE_TOOLS)
+    find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
+    list(APPEND KRIT_STATIC_LIBS ${NFD_LIB})
+    list(APPEND KRIT_LIBS ${GTK3_LIBRARIES})
 endif()
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-    ${OPENGL_LIBRARIES}
-    ${OPENAL_LIB}
-    ${SDL_LIB}
-    ${SDL_IMAGE_LIB}
-    ${HARFBUZZ_LIB}
-    ${GLEW_LIB}
-    ${FREETYPE_LIB}
+    ${KRIT_LIBS}
 
     ${STATIC}
-    ${ZIP_LIB}
-    ${Z_LIB}
-    ${SNDFILE_LIB}
-    # ${QUICKJS_LIB}
-    ${EXPAT_LIB}
-    ${YAML_LIB}
-    ${PTHREAD_LIB}
-    ${DL_LIB}
+    ${KRIT_STATIC_LIBS}
     "-Wl,--gc-sections"
     "-static-libgcc"
 )
@@ -186,7 +197,7 @@ if(KRIT_BUILD_ASSETS)
     add_custom_target(
         compile-assets ALL
         COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${KRIT_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}/assets
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/assets.yaml
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/images.yaml
     )
     add_dependencies(${PROJECT_NAME} compile-assets)
     

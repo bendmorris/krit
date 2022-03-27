@@ -6,13 +6,13 @@
 
 namespace krit {
 
-void TextMap::registerLocale(const std::string &key, const AssetInfo &asset) {
-    locales[key] = &asset;
+void TextMap::registerLocale(const std::string &key, const std::string &path) {
+    locales[key] = path;
 }
 
 void TextMap::setLocale(const std::string &key) {
     locale = key;
-    loaded = AssetLoader<std::string_view>::loadAsset(*locales[key]);
+    loaded = AssetLoader<std::string_view>::loadAsset(locales[key]);
     const char *current = loaded->data();
     size_t remaining = loaded->length();
     const char *nextNewline, *nextTab;

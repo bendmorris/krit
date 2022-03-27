@@ -35,6 +35,7 @@ struct UpdateContext;
 struct ImageData;
 struct TextureAtlas;
 struct Font;
+struct ParticleEffect;
 struct SkeletonBinaryData;
 struct SoundData;
 struct SpineData;
@@ -62,9 +63,9 @@ struct Engine {
     AudioBackend audio;
     InputContext input;
     AssetCache assets;
-    #if KRIT_ENABLE_SCRIPT
+#if KRIT_ENABLE_SCRIPT
     ScriptEngine script;
-    #endif
+#endif
     std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
         cursors;
 
@@ -86,7 +87,8 @@ struct Engine {
     void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
     void quit() { finished = true; }
 
-    void addCursor(const std::string &cursorPath, const std::string &cursor, int resolution);
+    void addCursor(const std::string &cursorPath, const std::string &cursor,
+                   int resolution);
     void setCursor(const std::string &cursor);
 
     Camera &addCamera() {
@@ -107,11 +109,12 @@ struct Engine {
     DECLARE_ASSET_GETTER(Sound, SoundData)
     DECLARE_ASSET_GETTER(Music, MusicData)
     DECLARE_ASSET_GETTER(Text, std::string_view)
+    DECLARE_ASSET_GETTER(Particle, ParticleEffect)
 #undef DECLARE_ASSET_GETTER
 
-    private:
-        void chooseCursor();
-        SDL_Cursor *_cursor = nullptr;
+private:
+    void chooseCursor();
+    SDL_Cursor *_cursor = nullptr;
 };
 
 }

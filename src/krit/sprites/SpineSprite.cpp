@@ -1,7 +1,6 @@
 #include "krit/sprites/SpineSprite.h"
 #include "krit/App.h"
 #include "krit/UpdateContext.h"
-#include "krit/asset/Assets.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/math/ScaleFactor.h"
@@ -52,11 +51,11 @@ std::string SpineSprite::defaultAtlasPath;
 
 template <>
 std::shared_ptr<SpineData>
-AssetLoader<SpineData>::loadAsset(const AssetInfo &info) {
+AssetLoader<SpineData>::loadAsset(const std::string &path) {
     auto data = std::make_shared<SpineData>();
     const spine::String &atlasName(
         SpineSprite::defaultAtlasPath.empty()
-            ? (info.path.substr(0, info.path.length() - 5) + ".atlas").c_str()
+            ? (path.substr(0, path.length() - 5) + ".atlas").c_str()
             : SpineSprite::defaultAtlasPath.c_str());
     data->atlas = std::unique_ptr<spine::Atlas>(
         new spine::Atlas(atlasName, &SpineTextureLoader::instance));
@@ -65,13 +64,13 @@ AssetLoader<SpineData>::loadAsset(const AssetInfo &info) {
     // data->json = std::unique_ptr<spine::SkeletonJson>(
     //     new spine::SkeletonJson(data->atlas.get()));
     int length;
-    unsigned char *s = (unsigned char *)IoRead::read(info.path, &length);
+    unsigned char *s = (unsigned char *)IoRead::read(path, &length);
     data->skeletonData = std::unique_ptr<spine::SkeletonData>(
         data->binary->readSkeletonData(s, length));
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
     //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
-        Log::error("failed to load skeleton data: %s", info.path.c_str());
+        Log::error("failed to load skeleton data: %s", path.c_str());
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
@@ -104,15 +103,12 @@ void SpineTextureLoader::unload(void *texture) {
     delete region;
 }
 
-SpineSprite::SpineSprite(const std::string &id)
-    : SpineSprite(Assets::byPath(id)) {}
-
-SpineSprite::SpineSprite(const AssetInfo &info) {
+SpineSprite::SpineSprite(const std::string &id) {
     spine::Bone::setYDown(true);
 
     // load skeleton/animation data
     this->smooth = SmoothMipmap;
-    this->data = App::ctx.engine->getSpine(info);
+    this->data = App::ctx.engine->getSpine(id);
     this->skeleton = std::unique_ptr<spine::Skeleton>(
         new spine::Skeleton(&this->skeletonData()));
     this->animationState = std::unique_ptr<spine::AnimationState>(
