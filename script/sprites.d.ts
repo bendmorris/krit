@@ -189,6 +189,10 @@ declare class SpineSprite extends VisibleSprite {
  */
 declare class ParticleSystem extends VisibleSprite {
     static from(value: Sprite): ParticleSystem;
+    static clone(value: ParticleSystem): ParticleSystem;
     constructor();
-    emit(name: string, count: number): void;
+    loadAtlas(path: string): void;
+    loadEffect(path: string): void;
+    emit(name: string, x: number, y: number, loop: boolean): void;
+    clear(): void;
 }

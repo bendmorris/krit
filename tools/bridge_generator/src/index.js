@@ -204,6 +204,7 @@ for (const sourceFile of program.getSourceFiles()) {
                 import: [],
                 constructor: undefined,
                 from: false,
+                clone: false,
             };
             for (const doc of node.jsDoc) {
                 for (const tag of doc.tags) {
@@ -218,6 +219,9 @@ for (const sourceFile of program.getSourceFiles()) {
             const type = checker.getTypeAtLocation(node);
             if (type.symbol.exports && type.symbol.exports.has('from')) {
                 options.from = true;
+            }
+            if (type.symbol.exports && type.symbol.exports.has('clone')) {
+                options.clone = true;
             }
             if (ts.isClassDeclaration(node) && type.symbol.members && type.symbol.members.has('__constructor')) {
                 const symbol = checker.getSymbolAtLocation(node.name);
@@ -243,7 +247,7 @@ for (const sourceFile of program.getSourceFiles()) {
             }
             const staticProperties = checker
                 .getPropertiesOfType(checker.getTypeOfSymbolAtLocation(node.symbol, node))
-                .filter((x) => ['prototype', 'from'].indexOf(x.escapedName) === -1);
+                .filter((x) => ['prototype', 'from', 'clone'].indexOf(x.escapedName) === -1);
             const properties = checker.getPropertiesOfType(type);
             for (const collection of [
                 { methods: options.staticMethods, props: options.staticProps, defined: staticProperties },

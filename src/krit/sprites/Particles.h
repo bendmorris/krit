@@ -64,9 +64,11 @@ struct ParticleEmitter {
     Range<float> lifetime;
     std::string region;
     BlendMode blend = Alpha;
+    bool aligned = true;
     int count = 1;
     float start = 0;
     float duration = 0;
+    int zIndex = 0;
 
     std::unique_ptr<Image> image;
 
@@ -129,21 +131,29 @@ struct EffectInstance {
 
 struct ParticleSystem : public VisibleSprite {
     ParticleSystem() {}
+    ParticleSystem(const ParticleSystem &other) = default;
+
+    std::function<void(Particle&, Image&)> transformer = nullptr;
 
     std::size_t particleCount() { return _particles.size(); }
 
+    void loadAtlas(const std::string &path);
     void loadAtlas(std::shared_ptr<TextureAtlas> atlas) { this->atlas = atlas; }
 
-    void loadEffect(const std::string &);
+    void loadEffect(const std::string &path);
     void registerEffect(std::shared_ptr<ParticleEffect> effect) {
         effects[effect->name] = effect;
         for (auto &emitter : effect->emitters) {
-            emitter.image = std::unique_ptr<Image>(new Image(atlas->getRegion(emitter.region.c_str())));
+            emitter.image = std::unique_ptr<Image>(
+                new Image(atlas->getRegion(emitter.region.c_str())));
             emitter.image->centerOrigin();
             emitter.image->blendMode = emitter.blend;
         }
     }
     void emit(const std::string &, const Point &at, bool loop = false);
+    void emit(const std::string &id, float x, float y, bool loop = false) {
+        emit(id, Point(x, y), loop);
+    }
     void clear() {
         _effects.clear();
         _particles.clear();

@@ -16,6 +16,7 @@
 #include "krit/utils/Signal.h"
 #include "nfd.h"
 #include <algorithm>
+#include <filesystem>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -46,8 +47,10 @@ struct ParticleEditor : public DevTool {
     ParticleSystem *particleSystem;
     bool dirty = false;
     std::string fileName;
+    std::string dirName;
     int selectedImage = -1;
     bool showDirtyNewFilePopup = false;
+    Color backgroundColor;
 
     ParticleEditor(ParticleSystem *p) : particleSystem(p) {
         newEffect();
@@ -96,9 +99,17 @@ struct ParticleEditor : public DevTool {
                 default: {
                 }
             }
+            if (!emitter.aligned) {
+                fprintf(f, "  aligned: false\n");
+            }
             fprintf(f, "  count: %i\n", emitter.count);
+            if (emitter.zIndex) {
+                fprintf(f, "  z: %i\n", emitter.zIndex);
+            }
             fprintf(f, "  start: %f\n", emitter.start);
             fprintf(f, "  duration: %f\n", emitter.duration);
+            fprintf(f, "  lifetime: [%f,%f]\n", emitter.lifetime.start,
+                    emitter.lifetime.end);
             fwriteParam(f, "color", emitter.color);
             fwriteParam(f, "alpha", emitter.alpha);
             if (emitter.scale.start.start != 1 ||
@@ -147,6 +158,7 @@ struct ParticleEditor : public DevTool {
                 fprintf(f, "    ease: %s\n", current);
             }
         }
+        fprintf(f, "    relative: %s\n", param.relative ? "true" : "false");
     }
 
     template <typename T> void fwriteValue(FILE *f, T &value) {}
@@ -169,6 +181,11 @@ struct ParticleEditor : public DevTool {
         particleSystem->loadAtlas(atlas);
     }
 
+    void setFileName(const std::string &s) {
+        fileName = s;
+        dirName = std::filesystem::path(s).parent_path();
+    }
+
     void draw(krit::RenderContext &ctx) override {
         if (!atlas) {
             loadAtlas("/home/ben/Dev/march/assets/graphics/particles.atlas");
@@ -184,21 +201,25 @@ struct ParticleEditor : public DevTool {
                 }
                 if (ImGui::MenuItem("Open", "CTRL+O")) {
                     // TODO: prompt if dirty
-                    nfdchar_t *outPath = NULL;
-                    NFD_OpenDialog("ped", NULL, &outPath);
+                    nfdchar_t *outPath = nullptr;
+                    NFD_OpenDialog("ped",
+                                   dirName.empty() ? nullptr : dirName.c_str(),
+                                   &outPath);
                     if (outPath) {
                         Log::info("loading particle effect: %s", outPath);
                         effect = ParticleEffect::load(outPath);
-                        fileName = outPath;
+                        setFileName(outPath);
                         dirty = false;
                     }
                 }
                 if (ImGui::MenuItem("Save", "CTRL+S")) {
                     if (fileName.empty()) {
-                        nfdchar_t *outPath = NULL;
-                        NFD_SaveDialog("ped", nullptr, &outPath);
+                        nfdchar_t *outPath = nullptr;
+                        NFD_SaveDialog(
+                            "ped", dirName.empty() ? nullptr : dirName.c_str(),
+                            &outPath);
                         if (outPath) {
-                            fileName = outPath;
+                            setFileName(outPath);
                             save();
                         }
                     } else {
@@ -206,14 +227,17 @@ struct ParticleEditor : public DevTool {
                     }
                 }
                 if (ImGui::MenuItem("Save As...", "CTRL+A")) {
-                    nfdchar_t *outPath = NULL;
-                    NFD_SaveDialog("ped", nullptr, &outPath);
+                    nfdchar_t *outPath = nullptr;
+                    NFD_SaveDialog("ped",
+                                   dirName.empty() ? nullptr : dirName.c_str(),
+                                   &outPath);
                     if (outPath) {
-                        fileName = outPath;
+                        setFileName(outPath);
                         save();
                     }
                 }
                 if (ImGui::MenuItem("Quit", "CTRL+Q")) {
+                    // TODO: warn if dirty
                     app->quit();
                 }
                 ImGui::EndMenu();
@@ -227,7 +251,6 @@ struct ParticleEditor : public DevTool {
         }
         if (ImGui::BeginPopupModal("Continue without saving?", nullptr,
                                    ImGuiWindowFlags_AlwaysAutoResize)) {
-            puts("hi popup");
             ImGui::Text("Effect <%s> has unsaved changes. Are you sure "
                         "you want to create a new effect?",
                         effect->name.c_str());
@@ -247,20 +270,15 @@ struct ParticleEditor : public DevTool {
 
         ImGui::SetNextWindowPos(ImVec2(32, 32), ImGuiCond_Always, ImVec2(0, 0));
         ImGui::SetNextWindowSize(ImVec2(360, ctx.window->height() - 64));
-        bool pOpen;
         std::string title = "Particle Editor (";
         title += (fileName.empty() ? "untitled" : fileName);
         title += ")";
         if (dirty)
             title += "*";
-        if (ImGui::Begin(title.c_str(), &pOpen,
-                         ImGuiWindowFlags_AlwaysAutoResize)) {
-            // effect attributes
-            if (ImGui::TreeNodeEx("Effect", ImGuiTreeNodeFlags_DefaultOpen)) {
-                if (ImGui::InputText("Name", &effect->name)) {
-                    dirty = true;
-                }
-                ImGui::Text("Duration (s): %.2f", effect->duration());
+        if (ImGui::Begin(title.c_str())) {
+            if (ImGui::TreeNodeEx("Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::Text("Background color");
+                paramControl(this->backgroundColor);
                 ImGui::TreePop();
             }
 
@@ -293,13 +311,33 @@ struct ParticleEditor : public DevTool {
                 ImGui::TreePop();
             }
 
+            // effect attributes
+            if (ImGui::TreeNodeEx("Effect", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (ImGui::InputText("Name", &effect->name)) {
+                    dirty = true;
+                }
+                ImGui::Text("Duration (s): %.2f", effect->duration());
+                ImGui::TreePop();
+            }
+
             // emitters
             if (ImGui::TreeNodeEx("Emitters", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ParticleEmitter *dup = nullptr;
+                int rem = -1;
                 int i = 0;
                 for (auto &emitter : effect->emitters) {
-                    ImGui::PushID(std::to_string(i++).c_str());
+                    ImGui::PushID(&emitter);
                     if (ImGui::TreeNodeEx(emitter.region.c_str(),
                                           ImGuiTreeNodeFlags_DefaultOpen)) {
+
+                        if (ImGui::Button("+Duplicate")) {
+                            dup = &emitter;
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("-Remove")) {
+                            rem = i;
+                        }
+                        ++i;
 
                         float step = 0.1;
 
@@ -324,6 +362,8 @@ struct ParticleEditor : public DevTool {
                             ImGui::EndCombo();
                         }
 
+                        ImGui::Checkbox("aligned", &emitter.aligned);
+
                         ImGui::Text("start (s)");
                         ImGui::PushID("start");
                         if (ImGui::InputScalar("", ImGuiDataType_Float,
@@ -345,6 +385,13 @@ struct ParticleEditor : public DevTool {
                         ImGui::Text("particle count");
                         ImGui::PushID("count");
                         if (ImGui::InputInt("", &emitter.count)) {
+                            dirty = true;
+                        }
+                        ImGui::PopID();
+
+                        ImGui::Text("Z index");
+                        ImGui::PushID("z");
+                        if (ImGui::InputInt("", &emitter.zIndex)) {
                             dirty = true;
                         }
                         ImGui::PopID();
@@ -381,6 +428,32 @@ struct ParticleEditor : public DevTool {
                     }
                     ImGui::PopID();
                 }
+                if (dup) {
+                    ParticleEmitter e;
+                    e.color = dup->color;
+                    e.alpha = dup->alpha;
+                    e.scale = dup->scale;
+                    e.distance = dup->distance;
+                    e.angle = dup->angle;
+                    e.rotation = dup->rotation;
+                    e.xOffset = dup->xOffset;
+                    e.yOffset = dup->yOffset;
+                    e.lifetime = dup->lifetime;
+                    printf("%s -> %s\n", e.region.c_str(), dup->region.c_str());
+                    e.region = dup->region;
+                    printf("%s -> %s\n", e.region.c_str(), dup->region.c_str());
+                    e.blend = dup->blend;
+                    e.aligned = dup->aligned;
+                    e.count = dup->count;
+                    e.start = dup->start;
+                    e.duration = dup->duration;
+                    e.zIndex = dup->zIndex;
+                    effect->emitters.emplace_back(std::move(e));
+                    dirty = true;
+                }
+                if (rem > -1) {
+                    effect->emitters.erase(effect->emitters.begin() + rem);
+                }
                 ImGui::TreePop();
             }
         }
@@ -392,7 +465,7 @@ struct ParticleEditor : public DevTool {
     template <typename T>
     void paramRange(const std::string &label, ParamRange<T> &value,
                     float min = 0) {
-        ImGui::PushID(label.c_str());
+        ImGui::PushID(&value);
 
         if (ImGui::TreeNode(label.c_str())) {
             ImGui::PushID("a");
@@ -426,6 +499,7 @@ struct ParticleEditor : public DevTool {
 
     template <typename T> void paramControl(T &value, bool second = false) {}
     template <> void paramControl(float &value, bool second) {
+        ImGui::PushID(&value);
         float step = 0.1;
         ImGui::SetNextItemWidth(100);
         if (second) {
@@ -435,6 +509,7 @@ struct ParticleEditor : public DevTool {
                                "%.3f")) {
             dirty = true;
         }
+        ImGui::PopID();
     }
 
     template <> void paramControl(Color &color, bool second) {
@@ -508,7 +583,13 @@ void appMain() {
     {
         auto &mainCamera = engine.addCamera();
         mainCamera.setLogicalSize(3840, 2160).keepHeight(2160, 2160);
-        mainCamera.render = [&](RenderContext *ctx) { p->render(*ctx); };
+        mainCamera.render = [&](RenderContext *ctx) {
+            if (ped->backgroundColor.r + ped->backgroundColor.g +
+                ped->backgroundColor.b) {
+                ctx->drawRect(0, 0, 3840, 2160, ped->backgroundColor, 1);
+            }
+            p->render(*ctx);
+        };
     }
     {
         auto &uiCamera = engine.addCamera();

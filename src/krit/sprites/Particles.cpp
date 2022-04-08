@@ -1,4 +1,5 @@
 #include "krit/sprites/Particles.h"
+#include "krit/App.h"
 #include "krit/Math.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
@@ -62,10 +63,10 @@ void ParticleSystem::update(UpdateContext &ctx) {
                 instance.time = 0;
             } else {
                 if (this->_effects.size() > 1) {
-                    std::iter_swap(this->_effects.begin() + i,
-                                   this->_effects.end() - 1);
+                    std::swap(this->_effects[i], this->_effects.back());
                 }
                 this->_effects.pop_back();
+                --i;
             }
         }
         ++i;
@@ -79,17 +80,29 @@ void ParticleSystem::render(RenderContext &ctx) {
         image->position.setTo(particle.origin);
         image->position.add(particle.xOffset.eval(t), particle.yOffset.eval(t));
         float distance = particle.distance.eval(t);
+        float angle = particle.angle.eval(t);
         if (distance) {
-            float angle = particle.angle.eval(t);
-            Point m(cos(angle) * distance, -sin(angle) * distance);
-            image->position.add(m);
+            image->position.add(cos(angle) * distance, -sin(angle) * distance);
         }
         image->color = particle.color.eval(t);
         image->color.a = particle.alpha.eval(t);
         image->scale.setTo(particle.scale.eval(t));
-        image->angle = particle.rotation.eval(t);
+        image->angle =
+            particle.rotation.eval(t) - (particle.emitter->aligned ? angle : 0);
+        image->zIndex = particle.emitter->zIndex;
+        if (transformer) {
+            transformer(particle, *image.get());
+        }
         image->render(ctx);
     }
+}
+
+void ParticleSystem::loadAtlas(const std::string &path) {
+    loadAtlas(App::ctx.engine->getAtlas(path));
+}
+
+void ParticleSystem::loadEffect(const std::string &path) {
+    registerEffect(App::ctx.engine->getParticle(path));
 }
 
 static char *yamlStr(yaml_node_t *node) {
@@ -140,6 +153,8 @@ static void parseParam(yaml_document_t *doc, yaml_node_t *node,
         } else if (!strcmp(key, "ease")) {
             const char *ease = yamlStr(valueNode);
             param.lerp = interpolationFunctions[ease];
+        } else if (!strcmp(key, "relative")) {
+            param.relative = !strcmp(yamlStr(valueNode), "true");
         }
     }
 }
@@ -152,11 +167,11 @@ std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
     yaml_parser_set_input_string(&parser, (unsigned char *)manifest, len);
     yaml_document_t doc;
     if (!yaml_parser_load(&parser, &doc)) {
-        panic("failed to parse asset manifest");
+        panic("failed to parse particle spec");
     }
     yaml_node_t *root = yaml_document_get_root_node(&doc);
     if (root->type != YAML_MAPPING_NODE) {
-        panic("asset manifest didn't contain a top-level list");
+        panic("failed to parse particle spec");
     }
 
     std::shared_ptr<ParticleEffect> effect = std::make_shared<ParticleEffect>();
@@ -183,12 +198,36 @@ std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
                     const char *key = yamlStr(keyNode);
                     if (!strcmp(key, "region")) {
                         emitter.region = yamlStr(valueNode);
+                    } else if (!strcmp(key, "blend")) {
+                        const char *blend = yamlStr(valueNode);
+                        if (!strcmp(blend, "add")) {
+                            emitter.blend = Add;
+                        } else if (!strcmp(blend, "subtract")) {
+                            emitter.blend = Subtract;
+                        } else if (!strcmp(blend, "multiply")) {
+                            emitter.blend = Multiply;
+                        } else if (!strcmp(blend, "screen")) {
+                            emitter.blend = BlendScreen;
+                        }
+                    } else if (!strcmp(key, "aligned")) {
+                        emitter.aligned = !strcmp(yamlStr(valueNode), "true");
                     } else if (!strcmp(key, "count")) {
                         emitter.count = atoi(yamlStr(valueNode));
+                    } else if (!strcmp(key, "z")) {
+                        emitter.zIndex = atoi(yamlStr(valueNode));
                     } else if (!strcmp(key, "start")) {
                         emitter.start = atof(yamlStr(valueNode));
                     } else if (!strcmp(key, "duration")) {
                         emitter.duration = atof(yamlStr(valueNode));
+                    } else if (!strcmp(key, "lifetime")) {
+                        emitter.lifetime.start =
+                            atof(yamlStr(yaml_document_get_node(
+                                &doc,
+                                valueNode->data.sequence.items.start[0])));
+                        emitter.lifetime.end =
+                            atof(yamlStr(yaml_document_get_node(
+                                &doc,
+                                valueNode->data.sequence.items.start[1])));
                     } else if (!strcmp(key, "color")) {
                         parseParam(&doc, valueNode, emitter.color);
                     } else if (!strcmp(key, "alpha")) {
@@ -222,6 +261,10 @@ template <>
 std::shared_ptr<ParticleEffect>
 AssetLoader<ParticleEffect>::loadAsset(const std::string &path) {
     return ParticleEffect::load(path);
+}
+
+template <> size_t AssetLoader<ParticleEffect>::cost(ParticleEffect *effect) {
+    return 1;
 }
 
 }

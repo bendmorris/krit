@@ -39,7 +39,7 @@ void Image::render(RenderContext &ctx) {
     key.image = this->region.img;
     key.smooth = this->smooth;
     key.blend = this->blendMode;
-    ctx.addRect(key, this->region.rect, matrix, this->color);
+    ctx.addRect(key, this->region.rect, matrix, this->color, zIndex);
 }
 
 }
