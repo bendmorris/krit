@@ -232,7 +232,7 @@ for (const sourceFile of program.getSourceFiles()) {
                     );
                 }
                 const functionType = constructorType.getConstructSignatures()[0];
-                options.constructor = { params: [] };
+                options.constructor = { params: [], optionalArgs: 0 };
                 for (const param of functionType.getParameters()) {
                     const spec = {
                         name: param.name,
@@ -243,6 +243,10 @@ for (const sourceFile of program.getSourceFiles()) {
                         spec.tags[tag.tagName.text] = tagify(tag.comment);
                     }
                     options.constructor.params.push(spec);
+
+                    if (checker.isOptionalParameter(param.valueDeclaration)) {
+                        ++options.constructor.optionalArgs;
+                    }
                 }
             }
             const staticProperties = checker
@@ -270,6 +274,7 @@ for (const sourceFile of program.getSourceFiles()) {
                             returnCppType: cppType(functionType.getReturnType()),
                             params: [],
                             tags,
+                            optionalArgs: 0,
                         };
                         for (const param of functionType.getParameters()) {
                             const spec = {
@@ -277,6 +282,9 @@ for (const sourceFile of program.getSourceFiles()) {
                                 cppType: cppType(checker.getTypeOfSymbolAtLocation(param, node)),
                                 tags: {},
                             };
+                            if (checker.isOptionalParameter(param.valueDeclaration)) {
+                                ++method.optionalArgs;
+                            }
                             for (const tag of ts.getJSDocTags(param.valueDeclaration)) {
                                 spec.tags[tag.tagName.text] = tagify(tag.comment);
                             }
@@ -368,6 +376,37 @@ env.addFilter('repeat', function (str, count) {
 });
 env.addFilter('escapeName', function (str) {
     return str.replace('$', '__dollar__');
+});
+env.addFilter('argc', function (str, optionalArgs) {
+    if (!optionalArgs) {
+        return str;
+    } else {
+        const s = '';
+    }
+});
+function call(prefix, params) {
+    return `${prefix}(${params
+        .map(
+            (param, i) =>
+                `${param.tags.cast ? `(${param.tags.cast})` : ''}${param.cppType.reference ? '*' : ''}ScriptValue<${
+                    param.cppType.type
+                }${'*'.repeat(param.cppType.pointer)}${
+                    param.cppType.reference ? '*' : ''
+                }>::jsToValue(ctx, argv[${i}])`,
+        )
+        .join(', ')})`;
+}
+env.addFilter('call', function (prefix, method) {
+    let s = '';
+    if (method.optionalArgs > 0) {
+        for (let i = 0; i < method.optionalArgs; ++i) {
+            s += `(argc < ${method.params.length - method.optionalArgs + i + 1}) ? (${call(
+                prefix,
+                method.params.slice(0, method.params.length - method.optionalArgs + i),
+            )}) : `;
+        }
+    }
+    return s + call(prefix, method.params);
 });
 
 function replaceIfDifferent(path, content) {

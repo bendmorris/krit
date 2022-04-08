@@ -125,13 +125,7 @@ static JS_FUNC({{wrapper.name}}___clone__) {
 {% if wrapper.constructor %}
 static JS_FUNC({{wrapper.name}}___constructor__) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    return engine->createOwned(ScriptClass{{wrapper.name}},
-                               new {{wrapper.name}}(
-                                {% set comma = joiner() %}
-                                {% for param in wrapper.constructor.params %}
-                                {{ comma() }}{% if param.tags.cast %}({{ param.tags.cast }}){% endif %}{% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
-                                {% endfor %}
-                               ));
+    return engine->createOwned(ScriptClass{{ wrapper.name }}, {{ ("new " + wrapper.name) | call(wrapper.constructor) }});
 }
 {% endif %}
 
@@ -156,11 +150,7 @@ static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
     {% set comma = joiner() %}
-    {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}p->{{method.name}}(
-        {% for param in method.params %}
-        {{ comma() }}{% if param.tags.cast %}({{ param.tags.cast }}){% endif %}{% if param.cppType.reference %}*{% endif %}ScriptValue<{{ param.cppType.type }}{{ '*' | repeat(param.cppType.pointer) }}{% if param.cppType.reference %}*{% endif %}>::jsToValue(ctx, argv[{{ loop.index - 1 }}])
-        {% endfor %}
-    );
+    {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}{{ ("p->" + method.name) | call(method) }};
     {% if method.returnCppType %}
     return ScriptValue<{{ method.returnCppType.type }}{{ '*' | repeat(method.returnCppType.pointer) }}>::valueToJs(ctx, rt);
     {% else %}
