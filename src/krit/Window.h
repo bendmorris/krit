@@ -16,9 +16,9 @@ struct Renderer;
 
 struct Window : public IntDimensions {
     IntDimensions &size() {
-        int _x = x, _y = y;
-        getWindowSize(&x, &y);
-        if (x != _x || y != _y) {
+        int _x = x(), _y = y();
+        getWindowSize(&x(), &y());
+        if (x() != _x || y() != _y) {
             skipFrames = 3;
         }
         return *this;

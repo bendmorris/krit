@@ -34,6 +34,7 @@ struct UniformValue {
         float vec3Value[3];
         float vec4Value[4];
         Slice<float> floatData;
+        ImageData *imgPtrValue;
         FrameBuffer *fbPtrValue;
         float *floatPtrValue;
     };
@@ -50,8 +51,8 @@ struct UniformValue {
     UniformValue(size_t N, size_t c, float *v)
         : type(static_cast<UniformValueType>(UniformFloat1v + N - 1)),
           floatData(v, c) {}
-    UniformValue(const ImageData &img)
-        : type(UniformTexture), intValue(img.texture) {}
+    UniformValue(ImageData &img)
+        : type(UniformTexture), imgPtrValue(&img) {}
     UniformValue(FrameBuffer &fb)
         : type(UniformFbTexture), fbPtrValue(&fb) {}
     UniformValue(const Color &c)

@@ -207,11 +207,11 @@ struct Text : public VisibleSprite, public TextOptions {
     }
     float width() {
         refresh();
-        return textDimensions.width();
+        return textDimensions.x();
     }
     float height() {
         refresh();
-        return textDimensions.height();
+        return textDimensions.y();
     }
     void setFontSize(int size) {
         if (this->size != size) {

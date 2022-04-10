@@ -46,7 +46,7 @@ void ParticleSystem::update(UpdateContext &ctx) {
             for (int i = oldParticles; i < curParticles; ++i) {
                 this->_particles.emplace_back(emitter);
                 auto &particle = this->_particles.back();
-                particle.origin.setTo(instance.origin);
+                particle.origin = instance.origin;
                 emitter.color.realize(particle.color);
                 emitter.alpha.realize(particle.alpha);
                 emitter.scale.realize(particle.scale);
@@ -77,16 +77,17 @@ void ParticleSystem::render(RenderContext &ctx) {
     for (auto &particle : this->_particles) {
         auto &image = particle.emitter->image;
         float t = particle.decay;
-        image->position.setTo(particle.origin);
-        image->position.add(particle.xOffset.eval(t), particle.yOffset.eval(t));
+        image->position = particle.origin;
+        image->position += Vec3f(particle.xOffset.eval(t), particle.yOffset.eval(t));
         float distance = particle.distance.eval(t);
         float angle = particle.angle.eval(t);
         if (distance) {
-            image->position.add(cos(angle) * distance, -sin(angle) * distance);
+            image->position += Vec3f(cos(angle) * distance, -sin(angle) * distance);
         }
         image->color = particle.color.eval(t);
         image->color.a = particle.alpha.eval(t);
-        image->scale.setTo(particle.scale.eval(t));
+        float scale = particle.scale.eval(t);
+        image->scale = ScaleFactor(scale, scale);
         image->angle =
             particle.rotation.eval(t) - (particle.emitter->aligned ? angle : 0);
         image->zIndex = particle.emitter->zIndex;

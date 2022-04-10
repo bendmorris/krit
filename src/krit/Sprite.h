@@ -31,8 +31,8 @@ struct SpriteStyle {
 
     SpriteStyle lerp(const SpriteStyle &other, float mix) {
         return SpriteStyle(
-            ScaleFactor(this->scale.x * (1 - mix) + other.scale.x * mix,
-                        this->scale.y * (1 - mix) + other.scale.y * mix),
+            ScaleFactor(this->scale.x() * (1 - mix) + other.scale.x() * mix,
+                        this->scale.y() * (1 - mix) + other.scale.y() * mix),
             this->color.lerp(other.color, mix));
     }
 };
@@ -48,18 +48,18 @@ struct VisibleSprite : public Sprite, public SpriteStyle {
     VisibleSprite() {}
     virtual ~VisibleSprite() = default;
 
-    float &width() { return this->dimensions.width(); }
-    float &height() { return this->dimensions.height(); }
+    float &width() { return this->dimensions.x(); }
+    float &height() { return this->dimensions.y(); }
 
     virtual Point getPosition() { return this->position; }
     virtual Dimensions getSize() {
-        return Dimensions(this->width() * this->scale.x,
-                          this->height() * this->scale.y);
+        return Dimensions(this->width() * this->scale.x(),
+                          this->height() * this->scale.y());
     }
     Rectangle getBounds() {
         auto p = getPosition();
         auto d = getSize();
-        return Rectangle(p.x, p.y, d.x, d.y);
+        return Rectangle(p.x(), p.y(), d.x(), d.y());
     }
     virtual void move(float x, float y) { this->position.setTo(x, y); }
     virtual void resize(float w, float h) {
@@ -67,7 +67,7 @@ struct VisibleSprite : public Sprite, public SpriteStyle {
     }
 
     void applyStyle(const SpriteStyle &style) {
-        this->scale.setTo(style.scale.x, style.scale.y);
+        this->scale.setTo(style.scale.x(), style.scale.y());
         this->color = style.color;
     }
 };

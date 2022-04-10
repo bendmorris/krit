@@ -36,7 +36,7 @@ declare class VisibleSprite extends Sprite {
     static from(value: Sprite): VisibleSprite;
 
     /** @readonly */ position: Point;
-    /** @readonly */ dimensions: Dimensions;
+    /** @readonly */ dimensions: Vec2f;
     /** @readonly */ scale: ScaleFactor;
     zIndex: integer;
     /** @readonly */ color: Color;
@@ -112,7 +112,7 @@ declare class Text extends VisibleSprite {
     /** @readonly */ maxChars: integer;
     /** @readonly */ text: string;
     baseColor: Color;
-    /** @readonly */ textDimensions: Dimensions;
+    /** @readonly */ textDimensions: Vec2f;
     allowPixelPerfect: boolean;
     border: boolean;
     borderThickness: integer;
@@ -140,6 +140,7 @@ declare class Image extends VisibleSprite {
     /** @readonly @getter width */ width: integer;
     /** @readonly @getter height */ height: integer;
     angle: float;
+    pitch: float;
     centerOrigin(): void;
 }
 
@@ -173,6 +174,8 @@ declare class SpineSprite extends VisibleSprite {
     static setAtlasPath(path: string): void;
 
     rate: number;
+    angle: float;
+    pitch: float;
 
     constructor(path: string);
 

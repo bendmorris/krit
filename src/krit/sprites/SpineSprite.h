@@ -61,6 +61,7 @@ struct SpineSprite : public VisibleSprite {
     static void setAtlasPath(const std::string &s) { defaultAtlasPath = s; }
 
     float angle = 0;
+    float pitch = 0;
     float rate = 1;
 
     std::shared_ptr<SpineData> data;

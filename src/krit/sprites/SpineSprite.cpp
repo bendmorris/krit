@@ -205,6 +205,14 @@ void SpineSprite::render(RenderContext &ctx) {
     spine::Skeleton &skeleton = *this->skeleton;
     spine::Vector<spine::Slot *> &drawOrder = skeleton.getDrawOrder();
     size_t size = drawOrder.size();
+
+    Matrix4 m;
+    m.identity();
+    m.scale(scale.x(), scale.y());
+    m.rotate(angle);
+    m.pitch(pitch);
+    m.translate(position.x(), position.y(), position.z());
+
     for (size_t i = 0; i < size; ++i) {
         spine::Slot *slot = drawOrder[i];
         Color color;
@@ -258,12 +266,10 @@ void SpineSprite::render(RenderContext &ctx) {
                         worldVertices[3], worldVertices[4], worldVertices[5]);
             Triangle t2(worldVertices[4], worldVertices[5], worldVertices[6],
                         worldVertices[7], worldVertices[0], worldVertices[1]);
-            t1.scale(this->scale.x, this->scale.y);
-            t1.translate(this->position);
-            t2.scale(this->scale.x, this->scale.y);
-            t2.translate(this->position);
             Triangle uvt1(uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], uvs[5]);
             Triangle uvt2(uvs[4], uvs[5], uvs[6], uvs[7], uvs[0], uvs[1]);
+            t1 = m * t1;
+            t2 = m * t2;
             ctx.addTriangle(key, t1, uvt1, color);
             ctx.addTriangle(key, t2, uvt2, color);
         } else if (attachment->getRTTI().isExactly(
@@ -291,10 +297,9 @@ void SpineSprite::render(RenderContext &ctx) {
                 Triangle t(worldVertices[i0], worldVertices[i0 + 1],
                            worldVertices[i1], worldVertices[i1 + 1],
                            worldVertices[i2], worldVertices[i2 + 1]);
-                t.scale(this->scale.x, this->scale.y);
-                t.translate(this->position);
                 Triangle uvt(uvs[i0], uvs[i0 + 1], uvs[i1], uvs[i1 + 1],
                              uvs[i2], uvs[i2 + 1]);
+                t = m * t;
                 ctx.addTriangle(key, t, uvt, color);
             }
         }

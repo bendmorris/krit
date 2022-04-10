@@ -154,22 +154,16 @@ SpriteShader *Renderer::getDefaultTextShader() {
 //             severity, message);
 // }
 
-RenderFloat _ortho[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-
-void ortho(RenderFloat x0, RenderFloat x1, RenderFloat y0, RenderFloat y1) {
-    RenderFloat sx = 1.0 / (x1 - x0);
-    RenderFloat sy = 1.0 / (y1 - y0);
-    _ortho[0] = 2.0 * sx;
-    _ortho[5] = 2.0 * sy;
-    _ortho[12] = -(x0 + x1) * sx;
-    _ortho[13] = -(y0 + y1) * sy;
-}
+Matrix4 _ortho;
 
 static RenderFloat _vertices[] = {
-    -1.0, -1.0, 0.0, 0.0, 0.0,  0.0, 0.0, 0.0, 1.0, -1.0, 1.0, 0.0,
-    0.0,  0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0, 0.0, 0.0,  0.0, 0.0,
-    1.0,  -1.0, 1.0, 0.0, 0.0,  0.0, 0.0, 0.0, 1.0, 1.0,  1.0, 1.0,
-    0.0,  0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0, 0.0, 0.0,  0.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,
+    0.0,  0.0,  1.0, -1.0, 0.0,  1.0, 1.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,
+    0.0,  0.0,  0.0, 0.0,  -1.0, 1.0, 0.0, 1.0,  0.0, 1.0, 0.0,  0.0, 0.0, 0.0,
+    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 1.0, -1.0, 0.0, 1.0, 1.0,  0.0, 0.0, 0.0,
+    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  1.0, 1.0, 0.0,  1.0, 1.0, 1.0,
+    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0,
+    0.0,  1.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0,
 };
 
 Renderer::Renderer(Window &_window) : window(_window) {
@@ -241,7 +235,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glGenBuffers(3, this->vertexBuffer);
     glGenBuffers(1, &this->sceneShaderVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[48]), _vertices,
+    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[96]), _vertices,
                  GL_STATIC_DRAW);
     // glBindBuffer(GL_ARRAY_BUFFER, 0);
 
@@ -270,9 +264,9 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
     clipStack.emplace_back();
     Rectangle &newClip = clipStack.back();
     if (clipStack.size() > 1) {
-        newClip.setTo(clipRect.overlap(clipStack[clipStack.size() - 2]));
+        newClip.copyFrom(clipRect.overlap(clipStack[clipStack.size() - 2]));
     } else {
-        newClip.setTo(clipRect);
+        newClip.copyFrom(clipRect);
     }
     if (clipStack.size() == 1) {
         glEnable(GL_SCISSOR_TEST);
@@ -289,16 +283,46 @@ void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::drawCall<PushClipRect>");
 #endif
+    Vec4f ul = Vec4f(clipRect->x, clipRect->y, 0, 1);
+    Vec4f ur = Vec4f(clipRect->x + clipRect->height, clipRect->y, 0, 1);
+    Vec4f ll = Vec4f(clipRect->x, clipRect->y + clipRect->height, 0, 1);
+    Vec4f lr = Vec4f(clipRect->x + clipRect->width,
+                     clipRect->y + clipRect->height, 0, 1);
+    Matrix4 m;
+    m.identity();
+    ctx.camera->getTransformationMatrix(m, width, height);
+    ul = m * ul;
+    ur = m * ur;
+    ll = m * ll;
+    lr = m * lr;
+    ul.x() = (ul.x() / ul.w() + 1.0) / 2.0 * width;
+    ul.y() = (1.0 - ul.y() / ul.w()) / 2.0 * height;
+    ur.x() = (ur.x() / ur.w() + 1.0) / 2.0 * width;
+    ur.y() = (1.0 - ur.y() / ur.w()) / 2.0 * height;
+    ll.x() = (ll.x() / ll.w() + 1.0) / 2.0 * width;
+    ll.y() = (1.0 - ll.y() / ll.w()) / 2.0 * height;
+    lr.x() = (lr.x() / lr.w() + 1.0) / 2.0 * width;
+    lr.y() = (1.0 - lr.y() / lr.w()) / 2.0 * height;
+
+    float left = std::min({ul.x(), ur.x(), ll.x(), lr.x()});
+    float width = std::max({ul.x(), ur.x(), ll.x(), lr.x()}) - left;
+    float top = std::min({ul.y(), ur.y(), ll.y(), lr.y()});
+    float height = std::max({ul.y(), ur.y(), ll.y(), lr.y()}) - top;
+
+    Rectangle clip(left, top, width, height);
     clipStack.emplace_back();
     Rectangle &newClip = clipStack.back();
     if (clipStack.size() > 1) {
-        newClip.setTo(clipRect->overlap(clipStack[clipStack.size() - 2]));
+        newClip.copyFrom(clip.overlap(clipStack[clipStack.size() - 2]));
     } else {
-        newClip.setTo(*clipRect);
+        newClip.copyFrom(clip);
     }
+    newClip.width = std::max(newClip.width, 0.0f);
+    newClip.height = std::max(newClip.height, 0.0f);
     if (clipStack.size() == 1) {
         glEnable(GL_SCISSOR_TEST);
     }
+    checkForGlErrors("WTF");
     glScissor(newClip.x, this->height - newClip.y - newClip.height,
               newClip.width, newClip.height);
     checkForGlErrors("push dynamic clip rect");
@@ -430,7 +454,8 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             }
             setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
             if (shader->matrixIndex > -1) {
-                glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
+                glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE,
+                                   _ortho.data());
             }
             setBlendMode(drawCall.key.blend);
 
@@ -454,7 +479,7 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::drawCall<DrawSceneShader>");
 #endif
-    setSize(ctx);
+    setSize(ctx, true);
     setBlendMode(shader->blend);
     setSmoothingMode(SmoothLinear, nullptr);
 
@@ -463,7 +488,7 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 
     shader->bind(ctx);
     if (shader->matrixIndex > -1) {
-        glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho);
+        glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho.data());
     }
     checkForGlErrors("bind");
 
@@ -566,7 +591,7 @@ void Renderer::flip(RenderContext &ctx) {
     // #endif
 }
 
-void Renderer::setSize(RenderContext &ctx) {
+void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::setSize");
 #endif
@@ -574,10 +599,44 @@ void Renderer::setSize(RenderContext &ctx) {
         currentRenderTarget ? currentRenderTarget->size : ctx.window->size();
     ScaleFactor scale =
         currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
-    width = size.x * scale.x;
-    height = size.y * scale.y;
-    ortho(0, width, height, 0);
-    glViewport(0, 0, width / scale.x, height / scale.y);
+    width = size.x() * scale.x();
+    height = size.y() * scale.y();
+
+    _ortho.identity();
+    if (!sceneShader) {
+        ctx.camera->getTransformationMatrix(_ortho, width, height);
+    } else {
+        _ortho.translate(-width / 2.0, -height / 2.0);
+        _ortho.scale(2.0 / width, -2.0 / height, 2.0 / 10000);
+        Matrix4 M;
+        M.identity();
+        M[11] = 1.0;
+        _ortho *= M;
+    }
+
+    glViewport(0, 0, width / scale.x(), height / scale.y());
+
+    // float near = 0, far = 10, left = 0, right = width, top = 0,
+    //       bottom = height;
+    // memset(_ortho, 0, 64);
+    // auto &M = _ortho;
+    // M[0] = 2 * near / (right - left);
+    // M[1] = 0;
+    // M[2] = 0;
+    // M[3] = 0;
+    // M[4] = 0;
+    // M[5] = 2 * near / (top - bottom);
+    // M[6] = 0;
+    // M[7] = 0;
+    // M[8] = 0;
+    // M[9] = 0;
+    // M[10] = -(far + near) / (far - near);
+    // M[11] = -1;
+    // M[12] = -near * (left + right) / (right - left);
+    // M[13] = -near * (bottom + top) / (top - bottom);
+    // M[14] = 2 * near * far / (near - far);
+    // M[15] = 0;
+    // glViewport(left, top, right - left, bottom - top);
 }
 
 }

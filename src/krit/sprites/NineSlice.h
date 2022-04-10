@@ -43,7 +43,7 @@ struct NineSlice : public VisibleSprite {
     }
 
     void resize(float w, float h) override {
-        this->dimensions.setTo(w / this->scale.x, h / this->scale.y);
+        this->dimensions.setTo(w / this->scale.x(), h / this->scale.y());
     }
 
     void render(RenderContext &ctx) override;

@@ -1,71 +1,61 @@
 /**
  * @namespace krit
- * @import krit/math/Point.h
+ * @import krit/math/Vec.h
+ * @noForwardDeclare
  */
-declare class Point {
-    x: number;
-    y: number;
+declare class Vec2f {
+    /** @getter x */ x: float;
+    /** @getter y */ y: float;
 
-    constructor(x: number, y: number);
+    constructor(x?: float, y?: float);
 
-    setTo(x: number, y: number): void;
-    distance(p: Reference<Point>): number;
-    squaredDistance(p: Reference<Point>): number;
+    copyFrom(other: Reference<Vec2f>): void;
+    setTo(x: float, y: float): void;
+    distance(p: Reference<Vec2f>): number;
+    squaredDistance(p: Reference<Vec2f>): number;
 }
 
 /**
  * @namespace krit
- * @import krit/math/Point.h
+ * @import krit/math/Vec.h
+ * @noForwardDeclare
  */
-declare class IntPoint {
-    x: integer;
-    y: integer;
+declare class Vec3f {
+    /** @getter x */ x: float;
+    /** @getter y */ y: float;
+    /** @getter z */ z: float;
 
-    constructor(x: integer, y: integer);
+    constructor(x?: float, y?: float, z?: float);
 
+    copyFrom(other: Reference<Vec3f>): void;
+    setTo(x: number, y: number): void;
+    distance(p: Reference<Vec3f>): number;
+    squaredDistance(p: Reference<Vec3f>): number;
+}
+
+/**
+ * @namespace krit
+ * @import krit/math/Vec.h
+ * @noForwardDeclare
+ */
+declare class Vec2i {
+    /** @getter x */ x: integer;
+    /** @getter y */ y: integer;
+
+    constructor(x?: integer, y?: integer);
+
+    copyFrom(other: Reference<Vec2i>): void;
     setTo(x: integer, y: integer): void;
-}
-
-/**
- * @namespace krit
- * @import krit/math/Dimensions.h
- */
-declare class Dimensions {
-    x: number;
-    y: number;
-
-    constructor(x: number, y: number);
-
-    width(): Reference<number>;
-    height(): Reference<number>;
-    setTo(x: number, y: number): void;
-}
-
-/**
- * @namespace krit
- * @import krit/math/Dimensions.h
- */
-declare class IntDimensions {
-    x: integer;
-    y: integer;
-
-    constructor(x: integer, y: integer);
-
-    width(): Reference<integer>;
-    height(): Reference<integer>;
+    distance(p: Reference<Vec2i>): number;
+    squaredDistance(p: Reference<Vec2i>): number;
 }
 
 /**
  * @namespace krit
  * @import krit/math/ScaleFactor.h
  */
-declare class ScaleFactor {
-    x: number;
-    y: number;
-
-    constructor(x: number, y: number);
-
-    setTo(x: number, y: number): void;
+declare class ScaleFactor extends Vec2f {
+    setTo(x: float, y?: float): void;
 }
 
 /**
@@ -109,6 +99,7 @@ declare class Rectangle {
     constructor(x: number, y: number, width: number, height: number);
 
     contains(x: number, y: number): boolean;
+    copyFrom(other: Reference<Rectangle>): void;
     setTo(x: number, y: number, width: number, height: number): void;
 }
 
@@ -125,6 +116,7 @@ declare class IntRectangle {
     constructor(x: integer, y: integer, width: integer, height: integer);
 
     contains(x: integer, y: integer): boolean;
+    copyFrom(other: Reference<IntRectangle>): void;
     setTo(x: integer, y: integer, width: integer, height: integer): void;
 }
 
@@ -133,7 +125,12 @@ declare class IntRectangle {
  * @import krit/math/Triangle.h
  */
 interface Triangle {
-    p1: Point;
-    p2: Point;
-    p3: Point;
+    p1: Vec3f;
+    p2: Vec3f;
+    p3: Vec3f;
 }
+
+type Point = Vec3f;
+type IntPoint = Vec2i;
+type Dimensions = Vec2f;
+type IntDimensions = Vec2i;

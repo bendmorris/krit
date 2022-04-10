@@ -70,7 +70,9 @@ interface Camera {
     offset: Point;
     anchor: Point;
     scale: ScaleFactor;
-    dimensions: Dimensions;
+    dimensions: Vec2f;
+    rotation: float;
+    pitch: float;
 
     center(): void;
     update(ctx: Reference<RenderContext>): void;
@@ -79,4 +81,6 @@ interface Camera {
     setLogicalSize(w: integer, h: integer): Reference<Camera>;
     keepWidth(minHeight: integer, maxHeight: integer): Reference<Camera>;
     keepHeight(minWidth: integer, maxWidth: integer): Reference<Camera>;
+
+    screenToWorldCoords(p: Reference<Point>): void;
 }

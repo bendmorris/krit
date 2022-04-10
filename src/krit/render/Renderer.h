@@ -49,7 +49,7 @@ private:
     template <size_t, typename T> void drawCall(RenderContext &ctx, T &);
     void setSmoothingMode(SmoothingMode mode, ImageData *img);
     void setBlendMode(BlendMode mode);
-    void setSize(RenderContext &ctx);
+    void setSize(RenderContext &ctx, bool sceneShader = false);
     void clear(RenderContext &ctx);
     void dispatchCommands(RenderContext &ctx);
 

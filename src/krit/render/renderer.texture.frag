@@ -1,4 +1,5 @@
 R"(#version 330
+// renderer.texture.frag
 #ifdef GL_ES
 precision mediump float;
 #endif

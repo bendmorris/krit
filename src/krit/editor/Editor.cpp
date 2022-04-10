@@ -25,7 +25,7 @@ static std::vector<Metric> defaultMetrics() {
 std::vector<Metric> Overlay::metrics = defaultMetrics();
 
 void Overlay::draw(krit::RenderContext &ctx) {
-    ImGui::SetNextWindowPos(ImVec2(ctx.window->width() - 32, 32), ImGuiCond_Always, ImVec2(1, 0));
+    ImGui::SetNextWindowPos(ImVec2(ctx.window->x() - 32, 32), ImGuiCond_Always, ImVec2(1, 0));
     bool pOpen;
     if (!ctx.engine->paused) {
         elapsed += ctx.elapsed;
@@ -71,8 +71,8 @@ void Editor::render(krit::RenderContext &ctx) {
         io.DeltaTime = ctx.elapsed;
         // io.FontGlobalScale =
         //     std::max(1.0, ctx.window->height() * 1.0 / ctx.height());
-        io.DisplaySize.x = ctx.window->width();
-        io.DisplaySize.y = ctx.window->height();
+        io.DisplaySize.x = ctx.window->x();
+        io.DisplaySize.y = ctx.window->y();
 
         ImGui::NewFrame();
 

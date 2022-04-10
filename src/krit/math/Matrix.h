@@ -1,60 +1,69 @@
 #ifndef KRIT_MATH_MATRIX
 #define KRIT_MATH_MATRIX
 
+#include "krit/math/Triangle.h"
+#include "krit/math/Vec.h"
+#include <array>
 #include <cmath>
 
 namespace krit {
 
-struct Matrix {
-    float a = 1, b = 0, c = 0, d = 1, tx = 0, ty = 0;
+/**
+ * [
+ *   0  4  8 12
+ *   1  5  9 13
+ *   2  6 10 14
+ *   3  7 11 15
+ * ]
+ */
+struct Matrix4 {
+    std::array<float, 16> v{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    Matrix() {}
-    Matrix(float a, float b, float c, float d, float tx, float ty)
-        : a(a), b(b), c(c), d(d), tx(tx), ty(ty) {}
+    float *data() { return &v[0]; }
 
-    Matrix &setTo(float a, float b, float c, float d, float tx, float ty) {
-        this->a = a;
-        this->b = b;
-        this->c = c;
-        this->d = d;
-        this->tx = tx;
-        this->ty = ty;
-        return *this;
-    }
+    void operator*=(const Matrix4 &other);
+    Matrix4 operator*(const Matrix4 &other) const;
+    Vec3f operator*(const Vec3f &vec) const;
+    Vec4f operator*(const Vec4f &vec) const;
+    Triangle operator*(const Triangle &vec) const;
 
-    Matrix &rotate(float rads) {
-        float rcos = std::cos(rads);
-        float rsin = std::sin(rads);
-        float a0 = this->a * rcos - this->b * rsin;
-        this->b = this->a * rsin + this->b * rcos;
-        this->a = a0;
+    float &operator[](size_t i) { return v[i]; }
+    const float &operator[](size_t i) const { return v[i]; }
 
-        float c0 = this->c * rcos - this->d * rsin;
-        this->d = this->c * rsin + this->d * rcos;
-        this->c = c0;
+    void clear() { v = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; }
+    void identity() { v = {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1}; }
+    void invert();
 
-        float t0 = this->tx * rcos - this->ty * rsin;
-        this->ty = this->tx * rsin + this->ty * rcos;
-        this->tx = t0;
+    /**
+     * Rotate counterclockwise around the z-axis
+     */
+    void rotate(float angle);
 
-        return *this;
-    }
+    /**
+     * Rotate around x-axis, away from screen.
+     */
+    void pitch(float angle);
 
-    Matrix &scale(float sx, float sy) {
-        this->a *= sx;
-        this->b *= sy;
-        this->c *= sx;
-        this->d *= sy;
-        this->tx *= sx;
-        this->ty *= sy;
-        return *this;
-    }
+    void translate(float x, float y, float z = 0);
 
-    Matrix &translate(float tx, float ty) {
-        this->tx += tx;
-        this->ty += ty;
-        return *this;
-    }
+    void scale(float sx = 1, float sy = 1, float sz = 1);
+
+    float &a() { return v[0]; }
+    const float &a() const { return v[0]; }
+    float &b() { return v[1]; }
+    const float &b() const { return v[1]; }
+    float &c() { return v[4]; }
+    const float &c() const { return v[4]; }
+    float &d() { return v[5]; }
+    const float &d() const { return v[5]; }
+    float &tx() { return v[12]; }
+    const float &tx() const { return v[12]; }
+    float &ty() { return v[13]; }
+    const float &ty() const { return v[13]; }
+    float &tz() { return v[14]; }
+    const float &tz() const { return v[14]; }
+
+    void debugPrint();
 };
 
 }

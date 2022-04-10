@@ -27,27 +27,25 @@ void Backdrop::render(RenderContext &ctx) {
     // ctx.transform = &transform;
 
     Dimensions scaledDimensions(this->width(), this->height());
-    ctx.transformDimensions(
-        scaledDimensions.multiply(this->scale.x, this->scale.y));
-    Point scaledPosition = this->position;
-    ctx.transformPoint(scaledPosition);
+    scaledDimensions *= this->scale;
+    Point pos = this->position;
     int xi = 1, yi = 1;
     if (this->repeatX) {
-        scaledPosition.x = fmod(scaledPosition.x, scaledDimensions.width());
-        if (scaledPosition.x > 0) {
-            scaledPosition.x -= scaledDimensions.width();
+        pos.x() = fmod(pos.x(), scaledDimensions.x());
+        if (pos.x() > 0) {
+            pos.x() -= scaledDimensions.x();
         }
-        xi = static_cast<int>(ceil(ctx.window->width() - scaledPosition.x) /
-                                  scaledDimensions.width() +
+        xi = static_cast<int>(ceil(ctx.window->x() - pos.x()) /
+                                  scaledDimensions.x() +
                               1);
     }
     if (this->repeatY) {
-        scaledPosition.y = fmod(scaledPosition.y, scaledDimensions.height());
-        if (scaledPosition.y > 0) {
-            scaledPosition.y -= scaledDimensions.height();
+        pos.y() = fmod(pos.y(), scaledDimensions.y());
+        if (pos.y() > 0) {
+            pos.y() -= scaledDimensions.y();
         }
-        yi = static_cast<int>(ceil(ctx.window->height() - scaledPosition.y) /
-                                  scaledDimensions.height() +
+        yi = static_cast<int>(ceil(ctx.window->y() - pos.y()) /
+                                  scaledDimensions.y() +
                               1);
     }
     DrawKey key;
@@ -55,14 +53,15 @@ void Backdrop::render(RenderContext &ctx) {
     key.smooth = this->smooth;
     key.blend = this->blendMode;
     key.shader = this->shader;
-    Matrix m(static_cast<float>(scaledDimensions.width()) / this->width(), 0, 0,
-             static_cast<float>(scaledDimensions.height()) / this->height(), 0,
-             0);
+    Matrix4 m;
+    m.identity();
+    m.a() = static_cast<float>(scaledDimensions.x()) / this->width();
+    m.d() = static_cast<float>(scaledDimensions.y()) / this->height();
     for (int y = 0; y < yi; ++y) {
         for (int x = 0; x < xi; ++x) {
-            m.tx = scaledPosition.x + scaledDimensions.width() * x;
-            m.ty = scaledPosition.y + scaledDimensions.height() * y;
-            ctx.addRectRaw(key, this->region.rect, m, this->color);
+            m.tx() = pos.x() + scaledDimensions.x() * x;
+            m.ty() = pos.y() + scaledDimensions.y() * y;
+            ctx.addRect(key, this->region.rect, m, this->color);
         }
     }
 

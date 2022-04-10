@@ -24,8 +24,8 @@ struct RenderContext : public UpdateContext {
 
     IntDimensions size();
 
-    int width() { return size().x; }
-    int height() { return size().y; }
+    int width() { return size().x(); }
+    int height() { return size().y(); }
 
     void pushClip(Rectangle &rect);
     void pushDynamicClip(Rectangle &rect);
@@ -34,11 +34,8 @@ struct RenderContext : public UpdateContext {
     void pushBounds(Rectangle &rect);
     void popBounds();
 
-    void addRect(const DrawKey &key, IntRectangle &rect, Matrix &matrix, Color color, int zIndex = 0);
-    void addRectRaw(const DrawKey &key, IntRectangle &rect, Matrix &matrix,
-                    Color color, int zIndex = 0);
+    void addRect(const DrawKey &key, IntRectangle &rect, Matrix4 &matrix, Color color, int zIndex = 0);
     void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
-    void addTriangleRaw(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
 
     Point &transformPoint(Point &point) {
         if (this->camera) {
@@ -60,7 +57,7 @@ struct RenderContext : public UpdateContext {
             Dimensions d(rect.width, rect.height);
             this->transformPoint(p);
             this->transformDimensions(d);
-            rect.setTo(p.x, p.y, d.width(), d.height());
+            rect.setTo(p.x(), p.y(), d.x(), d.y());
         }
         return rect;
     }
@@ -73,17 +70,6 @@ struct RenderContext : public UpdateContext {
         this->transformPoint(t.p3);
         return t;
     }
-
-    // TODO: untransformTriangle
-
-    Matrix &transformMatrix(Matrix &m) {
-        if (this->camera) {
-            this->camera->transformMatrix(m);
-        }
-        return m;
-    }
-
-    // TODO: untransformMatrix
 
     Dimensions &transformDimensions(Dimensions &d) {
         if (this->camera) {

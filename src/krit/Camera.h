@@ -2,6 +2,7 @@
 #define KRIT_CAMERA
 
 #include "krit/math/Dimensions.h"
+#include "krit/math/Matrix.h"
 #include "krit/math/Point.h"
 #include "krit/math/ScaleFactor.h"
 #include "krit/utils/Signal.h"
@@ -39,8 +40,11 @@ struct Camera {
         } minMax;
     } scaleData;
 
-    float &width() { return this->dimensions.width(); }
-    float &height() { return this->dimensions.height(); }
+    float &width() { return this->dimensions.x(); }
+    float &height() { return this->dimensions.y(); }
+
+    float rotation = 0;
+    float pitch = 0;
 
     Camera &center() {
         this->anchor.setTo(0.5, 0.5);
@@ -65,13 +69,16 @@ struct Camera {
     Camera &keepWidth(int minHeight = 0, int maxHeight = 0);
     Camera &keepHeight(int minWidth = 0, int maxWidth = 0);
     Camera &move(float x, float y);
-    Point &transformPoint(Point &p);
-    Point &untransformPoint(Point &p);
-    Dimensions &scaleDimensions(Dimensions &d);
-    Dimensions &unscaleDimensions(Dimensions &d);
-    Matrix &transformMatrix(Matrix &m);
+    void transformPoint(Point &p);
+    void untransformPoint(Point &p);
+    void scaleDimensions(Dimensions &d);
+    void unscaleDimensions(Dimensions &d);
+
+    void getTransformationMatrix(Matrix4 &m, int width, int height);
 
     void update(RenderContext &context);
+
+    void screenToWorldCoords(Vec3f &screenCoords);
 };
 
 }

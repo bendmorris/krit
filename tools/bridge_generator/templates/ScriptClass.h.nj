@@ -4,9 +4,15 @@
 #include "krit/script/ScriptValue.h"
 
 {% for wrapper in wrappers %}
+{% if wrapper.noForwardDeclare %}
+{% for import in wrapper.import %}
+#include "{{ import }}"
+{% endfor %}
+{% else %}
 namespace {{ wrapper.namespace }} {
     struct {{ wrapper.name }};
 }
+{% endif %}
 {% endfor %}
 
 namespace krit {

@@ -105,9 +105,7 @@ void Shader::init() {
     }
 }
 
-static void *offset(int n) {
-    return (void*)(sizeof(RenderFloat)*n);
-}
+static void *offset(int n) { return (void *)(sizeof(RenderFloat) * n); }
 
 void Shader::bind(RenderContext &ctx) {
     this->init();
@@ -115,7 +113,7 @@ void Shader::bind(RenderContext &ctx) {
     glUseProgram(this->program);
     checkForGlErrors("glUseProgram");
 
-    const size_t stride = 32;
+    const size_t stride = 64;
 
     bool hasTexCoord = texCoordIndex > -1;
     bool hasColor = colorIndex > -1;
@@ -125,31 +123,30 @@ void Shader::bind(RenderContext &ctx) {
     if (hasTexCoord && hasColor) {
         glEnableVertexAttribArray(texCoordIndex);
         glEnableVertexAttribArray(colorIndex);
-    checkForGlErrors("1");
-
-        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+        checkForGlErrors("1");
+        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
                               offset(0));
-    checkForGlErrors("2");
+        checkForGlErrors("2");
         glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
-                              offset(2));
-    checkForGlErrors("2.5");
-        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
                               offset(4));
-    checkForGlErrors("3");
+        checkForGlErrors("2.5");
+        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
+                              offset(6));
+        checkForGlErrors("3");
     } else if (hasColor) {
         glEnableVertexAttribArray(colorIndex);
-        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
                               offset(0));
         glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(2));
+                              offset(4));
     } else if (hasTexCoord) {
         glEnableVertexAttribArray(texCoordIndex);
-        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
                               offset(0));
         glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
-                              offset(2));
+                              offset(4));
     } else {
-        glVertexAttribPointer(positionIndex, 2, GL_FLOAT, GL_FALSE, stride,
+        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
                               offset(0));
     }
     checkForGlErrors("attrib pointers");
@@ -216,15 +213,15 @@ void ShaderInstance::bind(RenderContext &ctx) {
                     checkForGlErrors("glUniform1f");
                 } else if (uniformName == "uResolution") {
                     IntDimensions size = ctx.window->size();
-                    glUniform2f(i, size.x, size.y);
+                    glUniform2f(i, size.x(), size.y());
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uSize") {
                     IntDimensions size = ctx.size();
-                    glUniform2f(i, size.x, size.y);
+                    glUniform2f(i, size.x(), size.y());
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uScale") {
                     ScaleFactor &scale = ctx.camera->scale;
-                    glUniform2f(i, scale.x, scale.y);
+                    glUniform2f(i, scale.x(), scale.y());
                     checkForGlErrors("glUniform2f");
                 }
                 break;
@@ -236,7 +233,7 @@ void ShaderInstance::bind(RenderContext &ctx) {
             }
             case UniformTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
-                glBindTexture(GL_TEXTURE_2D, uniform.intValue);
+                glBindTexture(GL_TEXTURE_2D, uniform.imgPtrValue->texture);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
@@ -250,8 +247,7 @@ void ShaderInstance::bind(RenderContext &ctx) {
             }
             case UniformFbTexture: {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
-                glBindTexture(GL_TEXTURE_2D,
-                              uniform.fbPtrValue->getTexture());
+                glBindTexture(GL_TEXTURE_2D, uniform.fbPtrValue->getTexture());
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
                                 GL_CLAMP_TO_EDGE);
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,

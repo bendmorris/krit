@@ -48,10 +48,10 @@ void NineSlice::render(RenderContext &render) {
     float bh = this->bl.rect.height;
 
     if (scaleBorder) {
-        lw *= render.camera->scale.x;
-        rw *= render.camera->scale.x;
-        bh *= render.camera->scale.y;
-        uh *= render.camera->scale.y;
+        lw *= render.camera->scale.x();
+        rw *= render.camera->scale.x();
+        bh *= render.camera->scale.y();
+        uh *= render.camera->scale.y();
     }
 
     float cx = lw;
@@ -69,11 +69,12 @@ void NineSlice::render(RenderContext &render) {
 
     auto renderSlice = [&](ImageRegion &_r, float _x, float _y, float _w, float _h) {
         if (w > 0 && h > 0) {
-            Matrix m;
-            m.scale(_w / _r.width(), _h / _r.height())
-                .translate(_x - this->origin.x, _y - this->origin.y)
-                .scale(this->scale.x, this->scale.y)
-                .translate(this->position.x, this->position.y);
+            Matrix4 m;
+            m.identity();
+            m.scale(_w / _r.width(), _h / _r.height());
+            m.translate(_x - this->origin.x(), _y - this->origin.y());
+            m.scale(this->scale.x(), this->scale.y());
+            m.translate(this->position.x(), this->position.y());
             render.addRect(key, _r.rect, m, this->color);
         }
     };

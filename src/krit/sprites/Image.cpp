@@ -22,7 +22,8 @@ Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {
 }
 
 void Image::update(UpdateContext &ctx) {
-    dimensions.setTo(region.rect.width * scale.x, region.rect.height * scale.y);
+    dimensions.setTo(region.rect.width * scale.x(),
+                     region.rect.height * scale.y());
 }
 
 void Image::render(RenderContext &ctx) {
@@ -30,10 +31,17 @@ void Image::render(RenderContext &ctx) {
         return;
     }
     // ctx.transform = (struct RenderTransform) {scroll: this->scroll};
-    Matrix matrix(1, 0, 0, 1, -this->origin.x, -this->origin.y);
-    matrix.rotate(this->angle)
-        .scale(this->scale.x, this->scale.y)
-        .translate(this->position.x, this->position.y);
+    Matrix4 matrix;
+    matrix.identity();
+    matrix.translate(-this->origin.x(), -this->origin.y());
+    if (this->angle) {
+        matrix.rotate(this->angle);
+    }
+    if (this->pitch) {
+        matrix.pitch(this->pitch);
+    }
+    matrix.scale(this->scale.x(), this->scale.y());
+    matrix.translate(this->position.x(), this->position.y());
     DrawKey key;
     key.shader = this->shader;
     key.image = this->region.img;

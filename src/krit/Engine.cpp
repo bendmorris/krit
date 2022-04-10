@@ -44,10 +44,10 @@ void Engine::update(UpdateContext &ctx) {
 
     audio.update();
     // refresh window size
-    int height = window.height();
+    int height = window.y();
     window.size();
 
-    if (!cursor.empty() && (height != window.height() || !_cursor)) {
+    if (!cursor.empty() && (height != window.y() || !_cursor)) {
         chooseCursor();
     }
 
@@ -184,7 +184,7 @@ void Engine::chooseCursor() {
     int candidateY = -1;
     for (size_t i = 0; i < list.size(); ++i) {
         if (list[i].second &&
-            (list[i].first <= window.height() && list[i].first > candidateY)) {
+            (list[i].first <= window.y() && list[i].first > candidateY)) {
             candidate = list[i].second;
             candidateY = list[i].first;
         }

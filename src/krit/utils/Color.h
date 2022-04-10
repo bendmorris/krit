@@ -2,8 +2,19 @@
 #define KRIT_UTILS_COLOR
 
 #include <cstdint>
+#include "krit/math/Vec.h"
 
 namespace krit {
+
+    // struct Color : public Vec4 {
+//     float &r() { return (*this)[0]; }
+//     float &g() { return (*this)[1]; }
+//     float &b() { return (*this)[2]; }
+//     float &a() { return (*this)[3]; }
+
+//     setTo(float r, float g, float b, float a);
+//     setToHex(uint32_t i);
+// };
 
 struct Color {
     static Color black(float alpha = 1.0) {

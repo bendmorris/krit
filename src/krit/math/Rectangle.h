@@ -69,9 +69,9 @@ template <typename T, typename Self> struct BaseRectangle {
         return w > 0  && h > 0 ? Self(xi, yi, w, h) : Self();
     }
 
-    template <typename U, typename V> bool contains(BasePoint<U, V> &p) {
-        return p.x >= this->x && p.x <= (this->x + this->width) &&
-               p.y >= this->y && p.y <= (this->y + this->height);
+    template <typename U> bool contains(Vec<U, 2> &p) {
+        return p[0] >= this->x && p[0] <= (this->x + this->width) &&
+               p[1] >= this->y && p[1] <= (this->y + this->height);
     }
 
     bool contains(T x, T y) {
@@ -79,7 +79,7 @@ template <typename T, typename Self> struct BaseRectangle {
                y >= this->y && y <= (this->y + this->height);
     }
 
-    Self &setTo(const Self &other) {
+    Self &copyFrom(const Self &other) {
         return this->setTo(other.x, other.y, other.width, other.height);
     }
 
@@ -99,8 +99,8 @@ struct Rectangle : public BaseRectangle<float, Rectangle> {
     Rectangle(float x, float y, float width, float height)
         : BaseRectangle<float, Rectangle>(x, y, width, height) {}
     template <typename T, typename U>
-    Rectangle(BasePoint<float, T> p, BasePoint<float, U> d)
-        : Rectangle(p.x, p.y, d.x, d.y) {}
+    Rectangle(Vec2f &p, Vec2f &d)
+        : Rectangle(p.x(), p.y(), d.x(), d.y()) {}
 };
 
 struct IntRectangle : public BaseRectangle<int, IntRectangle> {

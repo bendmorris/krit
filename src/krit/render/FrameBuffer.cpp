@@ -24,7 +24,7 @@ void FrameBuffer::init() {
 #endif
     if (initialized) {
         _currentSize[index()].setTo(-1, -1);
-        this->resize(size.width(), size.height());
+        this->resize(size.x(), size.y());
     }
 }
 
@@ -95,9 +95,9 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
 
 void FrameBuffer::_resize() {
     init();
-    int width = size.width(), height = size.height();
-    if (_currentSize[index()].width() != width ||
-        _currentSize[index()].height() != height) {
+    int width = size.x(), height = size.y();
+    if (_currentSize[index()].x() != width ||
+        _currentSize[index()].y() != height) {
         GLint drawFboId = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
         glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
@@ -131,7 +131,7 @@ GLuint FrameBuffer::getTexture() {
         glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer[index()]);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFb[index()]);
         checkForGlErrors("glBindFramebuffer");
-        glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y,
+        glBlitFramebuffer(0, 0, size.x(), size.y(), 0, 0, size.x(), size.y(),
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
         checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer[index()],
                          resolvedFb[index()]);
@@ -149,7 +149,8 @@ void FrameBuffer::_markDirty() { this->dirty[index()] = true; }
 uint32_t FrameBuffer::readPixel(int x, int y) {
     uint32_t pixelData;
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
-    glReadPixels(x, size.y - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8, (void *)&pixelData);
+    glReadPixels(x, size.y() - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8,
+                 (void *)&pixelData);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return pixelData;
 }

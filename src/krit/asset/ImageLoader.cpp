@@ -118,7 +118,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
     } else {
         auto &info = mfst->second;
         int best, bestResolution;
-        if (info.dimensions.x > 0 && info.dimensions.y > 0) {
+        if (info.dimensions.x() > 0 && info.dimensions.y() > 0) {
             best = -1;
             bestResolution = 2160;
         } else {
@@ -127,7 +127,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
         }
         for (size_t i = 0; i < info.sizes.size(); ++i) {
             auto &size = info.sizes[i];
-            if (size.resolution >= App::ctx.window->height() &&
+            if (size.resolution >= App::ctx.window->y() &&
                 size.resolution < bestResolution) {
                 best = i;
                 bestResolution = size.resolution;
@@ -135,8 +135,8 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
         }
         if (best < 0) {
             pathToLoad = path;
-            width = info.dimensions.x;
-            height = info.dimensions.y;
+            width = info.dimensions.x();
+            height = info.dimensions.y();
         } else {
             pathToLoad = info.sizes[best].path;
             scale = static_cast<float>(bestResolution) / 2160.0;
@@ -144,8 +144,8 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
             if (resolvedInfo == imageManifest.end()) {
                 panic("resolved image %s missing from manifest", pathToLoad.c_str());
             } else {
-                width = resolvedInfo->second.dimensions.x / scale;
-                height = resolvedInfo->second.dimensions.y / scale;
+                width = resolvedInfo->second.dimensions.x() / scale;
+                height = resolvedInfo->second.dimensions.y() / scale;
             }
         }
     }
@@ -207,7 +207,7 @@ template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
 }
 
 template <> size_t AssetLoader<ImageData>::cost(ImageData *img) {
-    return img->dimensions.x * img->dimensions.y;
+    return img->dimensions.x() * img->dimensions.y();
 }
 
 template <> AssetType AssetLoader<ImageData>::type() { return ImageAsset; }

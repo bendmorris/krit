@@ -20,6 +20,7 @@ struct Image : public VisibleSprite {
     Point origin;
     Point scroll;
     float angle = 0;
+    float pitch = 0;
     ImageRegion region;
 
     Image(const std::string &id);
@@ -34,8 +35,8 @@ struct Image : public VisibleSprite {
     }
 
     Dimensions getSize() override {
-        return Dimensions(this->width() * this->scale.x,
-                          this->height() * this->scale.y);
+        return Dimensions(this->width() * this->scale.x(),
+                          this->height() * this->scale.y());
     }
     void resize(float w, float h) override {
         this->scale.setTo(w / this->width(), h / this->height());
