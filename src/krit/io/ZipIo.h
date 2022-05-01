@@ -20,7 +20,9 @@ struct ZipIo {
 
     static char *read(const std::string &path, int *length = nullptr);
     static void *alloc(size_t size);
-    static void free(char *buf);
+    static void *calloc(size_t size);
+    static void *realloc(void *p, size_t size);
+    static void free(void *p);
     static bool exists(const std::string &path);
 
 private:

@@ -5,6 +5,8 @@
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include <cstddef>
+#include <memory>
+
 
 namespace krit {
 
@@ -16,6 +18,7 @@ struct FrameBuffer {
     bool multisample = false;
     bool doubleBuffer = false;
     bool allowSmoothing = true;
+    bool cameraTransform = true;
 
     FrameBuffer(unsigned int width, unsigned int height,
                 bool multisample = false)
@@ -48,6 +51,8 @@ struct FrameBuffer {
 
     uint32_t readPixel(int x, int y);
 
+    std::shared_ptr<ImageData> imageData();
+
     friend struct Renderer;
     friend struct ShaderInstance;
 
@@ -58,6 +63,8 @@ private:
     GLuint texture[BUFFER_COUNT] = {0};
     GLuint resolvedFb[BUFFER_COUNT] = {0};
     GLuint resolvedTexture[BUFFER_COUNT] = {0};
+
+    std::shared_ptr<ImageData> i;
 
     void _resize();
     void _markDirty();

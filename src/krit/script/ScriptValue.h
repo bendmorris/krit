@@ -20,30 +20,42 @@ template <>
 JSValue ScriptValue<JSValue *>::valueToJs(JSContext *ctx, JSValue *const &val);
 template <>
 JSValue ScriptValue<JSValue>::jsToValue(JSContext *ctx, JSValue val);
+
 template <>
 JSValue ScriptValue<bool>::valueToJs(JSContext *ctx, const bool &val);
 template <>
 JSValue ScriptValue<bool *>::valueToJs(JSContext *ctx, bool *const &val);
 template <> bool ScriptValue<bool>::jsToValue(JSContext *ctx, JSValue val);
+
 template <> JSValue ScriptValue<int>::valueToJs(JSContext *ctx, const int &val);
 template <>
 JSValue ScriptValue<int *>::valueToJs(JSContext *ctx, int *const &val);
 template <> int ScriptValue<int>::jsToValue(JSContext *ctx, JSValue val);
+
+template <> JSValue ScriptValue<size_t>::valueToJs(JSContext *ctx, const size_t &val);
+template <>
+JSValue ScriptValue<size_t *>::valueToJs(JSContext *ctx, size_t *const &val);
+template <> size_t ScriptValue<size_t>::jsToValue(JSContext *ctx, JSValue val);
+
+
 template <>
 JSValue ScriptValue<float>::valueToJs(JSContext *ctx, const float &val);
 template <>
 JSValue ScriptValue<float *>::valueToJs(JSContext *ctx, float *const &val);
 template <> float ScriptValue<float>::jsToValue(JSContext *ctx, JSValue val);
+
 template <>
 JSValue ScriptValue<double>::valueToJs(JSContext *ctx, const double &val);
 template <>
 JSValue ScriptValue<double *>::valueToJs(JSContext *ctx, double *const &val);
 template <> double ScriptValue<double>::jsToValue(JSContext *ctx, JSValue val);
+
 template <>
 JSValue ScriptValue<const char *>::valueToJs(JSContext *ctx,
                                              const char *const &val);
 template <>
 const char *ScriptValue<const char *>::jsToValue(JSContext *ctx, JSValue val);
+
 template <>
 JSValue ScriptValue<std::string>::valueToJs(JSContext *ctx,
                                             const std::string &val);

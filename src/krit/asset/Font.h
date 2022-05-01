@@ -89,7 +89,7 @@ struct FontManager {
 
     void commit();
     void flush();
-    void registerFont(const std::string &name, const std::string &path);
+    std::shared_ptr<Font> registerFont(const std::string &name, const std::string &path);
 
     Font *getFont(const std::string &name) {
         Font *font = fontRegistry[name].get();
@@ -118,6 +118,8 @@ struct Font {
         other.ftFace = nullptr;
         other.fontData = nullptr;
     }
+
+    bool ligatures = true;
 
     std::string path;
     void shape(hb_buffer_t *buf, size_t pointSize);

@@ -7,6 +7,9 @@
 #include "krit/render/SceneShader.h"
 #include "krit/utils/Color.h"
 #include <algorithm>
+#include <cfloat>
+#include <cmath>
+#include <utility>
 #include <vector>
 
 struct ImDrawData;
@@ -23,7 +26,6 @@ struct Triangle;
 enum DrawCommandType {
     DrawTriangles,
     PushClipRect,
-    PushDynamicClipRect,
     PopClipRect,
     SetRenderTarget,
     DrawSceneShader,
@@ -42,11 +44,20 @@ struct SetRenderTargetArgs {
         : target(target), clear(clear) {}
 };
 
+struct AutoClipBounds {
+    std::pair<float, float> xRange{NAN, NAN};
+    std::pair<float, float> yRange{NAN, NAN};
+    std::pair<float, float> zRange{NAN, NAN};
+    float xBuffer;
+    float yBuffer;
+    size_t clipIndex;
+};
+
 struct DrawCommandBuffer {
     std::vector<float> triangles;
-    std::vector<Rectangle *> boundsStack;
-    CommandBuffer<DrawCall, Rectangle, Rectangle *, char, SetRenderTargetArgs,
-                  SceneShader *, Color, ImDrawData *>
+    std::vector<AutoClipBounds> boundsStack;
+    CommandBuffer<DrawCall, Rectangle, char, SetRenderTargetArgs, SceneShader *,
+                  Color, ImDrawData *>
         buf;
     FrameBuffer *currentRenderTarget = nullptr;
     SpriteShader *defaultTextureShader = nullptr;
@@ -56,7 +67,6 @@ struct DrawCommandBuffer {
         triangles.reserve(0x20000);
         buf.get<DrawTriangles>().reserve(0x80);
         buf.get<PushClipRect>().reserve(0x10);
-        buf.get<PushDynamicClipRect>().reserve(0x10);
         buf.get<PopClipRect>().reserve(0x10);
         buf.get<SetRenderTarget>().reserve(0x10);
         buf.get<DrawSceneShader>().reserve(0x10);
@@ -77,16 +87,10 @@ struct DrawCommandBuffer {
                      const Triangle &uv, const Color &color, int zIndex = 0);
 
     void pushClip(Rectangle &clip) { buf.emplace_back<PushClipRect>(clip); }
-
-    void pushDynamicClip(Rectangle &clip) {
-        buf.emplace_back<PushDynamicClipRect>(&clip);
-    }
-
     void popClip() { buf.emplace_back<PopClipRect>(); }
 
-    void pushBounds(Rectangle &r) { boundsStack.emplace_back(&r); }
-
-    void popBounds() { boundsStack.pop_back(); }
+    void startAutoClip(float xBuffer = 0, float yBuffer = 0);
+    bool endAutoClip(RenderContext &ctx);
 
     void setRenderTarget(FrameBuffer *fb = nullptr, bool clear = false) {
         buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb, clear);
@@ -114,7 +118,7 @@ struct DrawCommandBuffer {
                  const IntRectangle &rect, const Matrix4 &matrix,
                  const Color &color, int zIndex = 0);
 
-    void updateBounds(Rectangle &bounds, float x1, float y1, float x2,
+    void updateBounds(AutoClipBounds &bounds, float x1, float y1, float x2,
                       float y2, float z1, float z2);
 };
 

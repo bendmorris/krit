@@ -28,7 +28,7 @@ declare class Vec3f {
     constructor(x?: float, y?: float, z?: float);
 
     copyFrom(other: Reference<Vec3f>): void;
-    setTo(x: number, y: number): void;
+    setTo(x: number, y: number, z?: number): void;
     distance(p: Reference<Vec3f>): number;
     squaredDistance(p: Reference<Vec3f>): number;
 }

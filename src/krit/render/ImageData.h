@@ -21,6 +21,7 @@ struct ImageData {
     float scale = 1.0;
     IntDimensions dimensions;
     WrapMode wrap = WrapClampEdge;
+    bool owned = true;
 
     ImageData(GLuint texture, IntDimensions dimensions)
         : texture(texture), dimensions(dimensions) {}

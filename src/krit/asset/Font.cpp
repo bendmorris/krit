@@ -70,11 +70,12 @@ void FontManager::flush() {
     }
 }
 
-void FontManager::registerFont(const std::string &name,
-                               const std::string &path) {
-    fontRegistry.emplace(
-        std::piecewise_construct, std::forward_as_tuple(name),
-        std::forward_as_tuple(AssetLoader<Font>::loadAsset(path)));
+std::shared_ptr<Font> FontManager::registerFont(const std::string &name,
+                                                const std::string &path) {
+    auto font = AssetLoader<Font>::loadAsset(path);
+    fontRegistry.emplace(std::piecewise_construct, std::forward_as_tuple(name),
+                         std::forward_as_tuple(font));
+    return font;
 }
 
 GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,
@@ -133,7 +134,12 @@ Font::~Font() {
 
 void Font::shape(hb_buffer_t *buf, size_t pointSize) {
     hb_font_set_ppem(font, pointSize, pointSize);
-    hb_shape(font, buf, nullptr, 0);
+    hb_feature_t userfeatures[1];
+    userfeatures[0].tag = HB_TAG('l', 'i', 'g', 'a');
+    userfeatures[0].value = ligatures ? 1 : 0;
+    userfeatures[0].start = HB_FEATURE_GLOBAL_START;
+    userfeatures[0].end = HB_FEATURE_GLOBAL_END;
+    hb_shape(font, buf, userfeatures, 1);
 }
 
 GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,

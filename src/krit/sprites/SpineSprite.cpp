@@ -34,8 +34,19 @@ struct KritSpineExtension : public spine::DefaultSpineExtension {
         return krit::IoRead::alloc(size);
     }
 
+    void *_calloc(size_t size, const char *file, int line) override {
+        if (!size) {
+            return nullptr;
+        }
+        return krit::IoRead::alloc(size);
+    }
+
+    void *_realloc(void *ptr, size_t size, const char *file, int line) override {
+        return krit::IoRead::realloc(ptr, size);
+    }
+
     void _free(void *mem, const char *_1, int _2) override {
-        krit::IoRead::free((char *)mem);
+        krit::IoRead::free(mem);
     }
 };
 

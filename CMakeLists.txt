@@ -195,19 +195,11 @@ target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
 if(KRIT_BUILD_ASSETS)
     add_custom_target(
-        compile-assets ALL
-        COMMAND cd ${CMAKE_BINARY_DIR} && python3 ${KRIT_DIR}/tools/asset_registry/asset_registry.py --input ${CMAKE_SOURCE_DIR}/assets.yaml --output-dir ${CMAKE_CURRENT_BINARY_DIR}/assets
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/images.yaml
-    )
-    add_dependencies(${PROJECT_NAME} compile-assets)
-    
-    add_custom_target(
         copy-assets ALL
         COMMAND
             ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${KRIT_DIR}
-        BYPRODUCTS assets.zip
+        BYPRODUCTS assets.zip ${CMAKE_CURRENT_BINARY_DIR}/images.yaml
     )
-    add_dependencies(compile-assets copy-assets)
 endif()
 
 if(KRIT_SCRIPT_BRIDGE_PATH)

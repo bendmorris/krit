@@ -277,56 +277,56 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
     checkForGlErrors("push clip rect");
 }
 
-template <>
-void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
-    RenderContext &ctx, Rectangle *&clipRect) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<PushClipRect>");
-#endif
-    Vec4f ul = Vec4f(clipRect->x, clipRect->y, 0, 1);
-    Vec4f ur = Vec4f(clipRect->x + clipRect->height, clipRect->y, 0, 1);
-    Vec4f ll = Vec4f(clipRect->x, clipRect->y + clipRect->height, 0, 1);
-    Vec4f lr = Vec4f(clipRect->x + clipRect->width,
-                     clipRect->y + clipRect->height, 0, 1);
-    Matrix4 m;
-    m.identity();
-    ctx.camera->getTransformationMatrix(m, width, height);
-    ul = m * ul;
-    ur = m * ur;
-    ll = m * ll;
-    lr = m * lr;
-    ul.x() = (ul.x() / ul.w() + 1.0) / 2.0 * width;
-    ul.y() = (1.0 - ul.y() / ul.w()) / 2.0 * height;
-    ur.x() = (ur.x() / ur.w() + 1.0) / 2.0 * width;
-    ur.y() = (1.0 - ur.y() / ur.w()) / 2.0 * height;
-    ll.x() = (ll.x() / ll.w() + 1.0) / 2.0 * width;
-    ll.y() = (1.0 - ll.y() / ll.w()) / 2.0 * height;
-    lr.x() = (lr.x() / lr.w() + 1.0) / 2.0 * width;
-    lr.y() = (1.0 - lr.y() / lr.w()) / 2.0 * height;
+// template <>
+// void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
+//     RenderContext &ctx, Rectangle *&clipRect) {
+// #if TRACY_ENABLE
+//     ZoneScopedN("Renderer::drawCall<PushClipRect>");
+// #endif
+//     Vec4f ul = Vec4f(clipRect->x, clipRect->y, 0, 1);
+//     Vec4f ur = Vec4f(clipRect->x + clipRect->height, clipRect->y, 0, 1);
+//     Vec4f ll = Vec4f(clipRect->x, clipRect->y + clipRect->height, 0, 1);
+//     Vec4f lr = Vec4f(clipRect->x + clipRect->width,
+//                      clipRect->y + clipRect->height, 0, 1);
+//     Matrix4 m;
+//     m.identity();
+//     ctx.camera->getTransformationMatrix(m, width, height);
+//     ul = m * ul;
+//     ur = m * ur;
+//     ll = m * ll;
+//     lr = m * lr;
+//     ul.x() = (ul.x() / ul.w() + 1.0) / 2.0 * width;
+//     ul.y() = (1.0 - ul.y() / ul.w()) / 2.0 * height;
+//     ur.x() = (ur.x() / ur.w() + 1.0) / 2.0 * width;
+//     ur.y() = (1.0 - ur.y() / ur.w()) / 2.0 * height;
+//     ll.x() = (ll.x() / ll.w() + 1.0) / 2.0 * width;
+//     ll.y() = (1.0 - ll.y() / ll.w()) / 2.0 * height;
+//     lr.x() = (lr.x() / lr.w() + 1.0) / 2.0 * width;
+//     lr.y() = (1.0 - lr.y() / lr.w()) / 2.0 * height;
 
-    float left = std::min({ul.x(), ur.x(), ll.x(), lr.x()});
-    float width = std::max({ul.x(), ur.x(), ll.x(), lr.x()}) - left;
-    float top = std::min({ul.y(), ur.y(), ll.y(), lr.y()});
-    float height = std::max({ul.y(), ur.y(), ll.y(), lr.y()}) - top;
+//     float left = std::min({ul.x(), ur.x(), ll.x(), lr.x()});
+//     float width = std::max({ul.x(), ur.x(), ll.x(), lr.x()}) - left;
+//     float top = std::min({ul.y(), ur.y(), ll.y(), lr.y()});
+//     float height = std::max({ul.y(), ur.y(), ll.y(), lr.y()}) - top;
 
-    Rectangle clip(left, top, width, height);
-    clipStack.emplace_back();
-    Rectangle &newClip = clipStack.back();
-    if (clipStack.size() > 1) {
-        newClip.copyFrom(clip.overlap(clipStack[clipStack.size() - 2]));
-    } else {
-        newClip.copyFrom(clip);
-    }
-    newClip.width = std::max(newClip.width, 0.0f);
-    newClip.height = std::max(newClip.height, 0.0f);
-    if (clipStack.size() == 1) {
-        glEnable(GL_SCISSOR_TEST);
-    }
-    checkForGlErrors("WTF");
-    glScissor(newClip.x, this->height - newClip.y - newClip.height,
-              newClip.width, newClip.height);
-    checkForGlErrors("push dynamic clip rect");
-}
+//     Rectangle clip(left, top, width, height);
+//     clipStack.emplace_back();
+//     Rectangle &newClip = clipStack.back();
+//     if (clipStack.size() > 1) {
+//         newClip.copyFrom(clip.overlap(clipStack[clipStack.size() - 2]));
+//     } else {
+//         newClip.copyFrom(clip);
+//     }
+//     newClip.width = std::max(newClip.width, 0.0f);
+//     newClip.height = std::max(newClip.height, 0.0f);
+//     if (clipStack.size() == 1) {
+//         glEnable(GL_SCISSOR_TEST);
+//     }
+//     checkForGlErrors("WTF");
+//     glScissor(newClip.x, this->height - newClip.y - newClip.height,
+//               newClip.width, newClip.height);
+//     checkForGlErrors("push dynamic clip rect");
+// }
 
 template <>
 void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
@@ -569,7 +569,6 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(PushClipRect)
-            DISPATCH_COMMAND(PushDynamicClipRect)
             DISPATCH_COMMAND(PopClipRect)
             DISPATCH_COMMAND(SetRenderTarget)
             DISPATCH_COMMAND(DrawSceneShader)
@@ -603,11 +602,19 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
     height = size.y() * scale.y();
 
     _ortho.identity();
-    if (!sceneShader) {
+    if (!sceneShader &&
+        (!currentRenderTarget || currentRenderTarget->cameraTransform)) {
         ctx.camera->getTransformationMatrix(_ortho, width, height);
+    } else if (currentRenderTarget && !currentRenderTarget->cameraTransform) {
+        _ortho.translate(-width / 2.0, -height / 2.0);
+        _ortho.scale(2.0 / width, 2.0 / height, 1.0 / 2000);
+        Matrix4 M;
+        M.identity();
+        M[11] = 1.0;
+        _ortho *= M;
     } else {
         _ortho.translate(-width / 2.0, -height / 2.0);
-        _ortho.scale(2.0 / width, -2.0 / height, 2.0 / 10000);
+        _ortho.scale(2.0 / width, -2.0 / height, 1.0 / 2000);
         Matrix4 M;
         M.identity();
         M[11] = 1.0;

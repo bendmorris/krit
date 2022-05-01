@@ -85,8 +85,8 @@ void DrawCommandBuffer::addTriangle(DrawCall &draw, const Triangle &t,
         float y2 = std::max({t.p1.y(), t.p2.y(), t.p3.y()});
         float z1 = std::min({t.p1.z(), t.p2.z(), t.p3.z()});
         float z2 = std::max({t.p1.z(), t.p2.z(), t.p3.z()});
-        for (auto b : boundsStack) {
-            updateBounds(*b, x1, y1, x2, y2, z1, z2);
+        for (auto &b : boundsStack) {
+            updateBounds(b, x1, y1, x2, y2, z1, z2);
         }
     }
 }
@@ -113,11 +113,11 @@ void DrawCommandBuffer::addTriangle(DrawCall &draw, float x1, float y1,
         float xmax = std::max({x1, x2, x3});
         float ymin = std::min({y1, y2, y3});
         float ymax = std::max({y1, y2, y3});
-        float zmin = std::min({y1, y2, y3});
-        float zmax = std::max({y1, y2, y3});
-        for (auto b : boundsStack) {
+        float zmin = std::min({z1, z2, z3});
+        float zmax = std::max({z1, z2, z3});
+        for (auto &b : boundsStack) {
             // TODO: account for z here
-            updateBounds(*b, xmin, ymin, xmax, ymax, zmin, zmax);
+            updateBounds(b, xmin, ymin, xmax, ymax, zmin, zmax);
         }
     }
 }
@@ -160,7 +160,6 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
     SpriteShader *s = draw.key.shader ? draw.key.shader
                                       : draw.key.image ? defaultTextureShader
                                                        : defaultColorShader;
-    // FIXME: z
     s->prepareVertex(triangles.data() + i, ul.x(), ul.y(), ul.z(), uvx1, uvy1,
                      color);
     s->prepareVertex(triangles.data() + i + 16, ur.x(), ur.y(), ur.z(), uvx2,
@@ -183,21 +182,107 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
         float y2 = std::max({ll.y(), lr.y(), ul.y(), ur.y()});
         float z1 = std::min({ll.z(), lr.z(), ul.z(), ur.z()});
         float z2 = std::max({ll.z(), lr.z(), ul.z(), ur.z()});
-        for (auto b : boundsStack) {
-            updateBounds(*b, x1, y1, x2, y2, z1, z2);
+        for (auto &b : boundsStack) {
+            updateBounds(b, x1, y1, x2, y2, z1, z2);
         }
     }
 }
 
-void DrawCommandBuffer::updateBounds(Rectangle &bounds, float x1, float y1,
+void DrawCommandBuffer::updateBounds(AutoClipBounds &bounds, float x1, float y1,
                                      float x2, float y2, float z1, float z2) {
-    if (!!bounds) {
-        x1 = std::min(bounds.x, x1);
-        x2 = std::max(bounds.right(), x2);
-        y1 = std::min(bounds.y, y1);
-        y2 = std::max(bounds.bottom(), y2);
+    if (std::isnan(bounds.xRange.first) || bounds.xRange.first > x1) {
+        bounds.xRange.first = x1;
     }
-    bounds.setTo(x1, y1, x2 - x1, y2 - y1);
+    if (std::isnan(bounds.xRange.second) || bounds.xRange.second < x2) {
+        bounds.xRange.second = x2;
+    }
+    if (std::isnan(bounds.yRange.first) || bounds.yRange.first > y1) {
+        bounds.yRange.first = y1;
+    }
+    if (std::isnan(bounds.yRange.second) || bounds.yRange.second < y2) {
+        bounds.yRange.second = y2;
+    }
+    if (std::isnan(bounds.zRange.first) || bounds.zRange.first > z1) {
+        bounds.zRange.first = z1;
+    }
+    if (std::isnan(bounds.zRange.second) || bounds.zRange.second < z2) {
+        bounds.zRange.second = z2;
+    }
+}
+
+void DrawCommandBuffer::startAutoClip(float xBuffer, float yBuffer) {
+    buf.emplace_back<PushClipRect>();
+    boundsStack.emplace_back();
+    auto &clip = boundsStack.back();
+    clip.clipIndex = buf.get<PushClipRect>().size() - 1;
+    clip.xBuffer = xBuffer;
+    clip.yBuffer = yBuffer;
+}
+
+bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
+    auto &clip = boundsStack.back();
+    float x1 = NAN, x2 = NAN, y1 = NAN, y2 = NAN;
+    Matrix4 m;
+    m.identity();
+    ctx.camera->getTransformationMatrix(m, ctx.window->x(), ctx.window->y());
+    for (int x = 0; x < 2; ++x) {
+        float xi;
+        if (x == 0) {
+            xi = clip.xRange.first;
+        } else if (clip.xRange.first == clip.xRange.second) {
+            continue;
+        } else {
+            xi = clip.xRange.second;
+        }
+        for (int y = 0; y < 2; ++y) {
+            float yi;
+            if (y == 0) {
+                yi = clip.yRange.first;
+            } else if (clip.yRange.first == clip.yRange.second) {
+                continue;
+            } else {
+                yi = clip.yRange.second;
+            }
+            for (int z = 0; z < 2; ++z) {
+                float zi;
+                if (z == 0) {
+                    zi = clip.zRange.first;
+                } else if (clip.zRange.first == clip.zRange.second) {
+                    continue;
+                } else {
+                    zi = clip.zRange.second;
+                }
+                Vec4f v(xi, yi, zi, 1);
+                v = m * v;
+                float px = v.x() / v.w(), py = v.y() / v.w();
+                if (std::isnan(x1) || px < x1) {
+                    x1 = px;
+                }
+                if (std::isnan(x2) || px > x2) {
+                    x2 = px;
+                }
+                if (std::isnan(y1) || py < y1) {
+                    y1 = py;
+                }
+                if (std::isnan(y2) || py > y2) {
+                    y2 = py;
+                }
+            }
+        }
+    }
+    if (std::isnan(x1)) {
+        x1 = x2 = y1 = y2 = 0;
+    }
+    x1 = ((x1 + 1) / 2) * ctx.window->x() - clip.xBuffer;
+    x2 = ((x2 + 1) / 2) * ctx.window->x() + clip.xBuffer;
+    y1 = ((-y1 + 1) / 2) * ctx.window->y() + clip.yBuffer;
+    y2 = ((-y2 + 1) / 2) * ctx.window->y() - clip.yBuffer;
+    Rectangle &r = buf.get<PushClipRect>()[clip.clipIndex];
+    r.setTo(x1, y2, x2 - x1, y1 - y2);
+    boundsStack.pop_back();
+
+    return r.width > 0 && r.height > 0 && r.x <= ctx.window->x() &&
+           r.right() >= 0 && r.y <= ctx.window->y() && r.bottom() >= 0;
 }
 
 }

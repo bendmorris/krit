@@ -103,21 +103,8 @@ static JS_FUNC({{wrapper.name}}___clone__) {
     }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
     void *p = JS_GetOpaque2(ctx, argv[0], 0);
-    JSValue finalizerSymbol = engine->finalizerSymbol;
-    JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
-    bool owned = false;
-    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
-        // if this was owned, we'll transfer ownership to the return value
-        //Log::debug("transfer finalizer: {{wrapper.name}}");
-        owned = true;
-        JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
-        JS_SetOpaque(finalizer, nullptr);
-        JS_DeleteProperty(ctx, argv[0], atom, 0);
-        JS_FreeValue(ctx, finalizer);
-    }
-    JS_FreeValue(ctx, finalizerSymbol);
     {{wrapper.name}} *cloned = new {{wrapper.name}}(*static_cast<{{ wrapper.name }}*>(p));
-    JSValue val = owned ? engine->createOwned(ScriptClass{{ wrapper.name }}, cloned) : engine->create(ScriptClass{{ wrapper.name }}, cloned);
+    JSValue val = engine->createOwned(ScriptClass{{ wrapper.name }}, cloned);
     return val;
 }
 {% endif %}

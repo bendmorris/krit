@@ -668,8 +668,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                      i < std::get<GlyphBlock>(op).startIndex +
                              std::get<GlyphBlock>(op).glyphs;
                      ++i) {
-                    hb_glyph_info_t _info = glyphInfo[i];
-                    hb_glyph_position_t _pos = glyphPos[i];
+                    hb_glyph_info_t &_info = glyphInfo[i];
+                    hb_glyph_position_t &_pos = glyphPos[i];
                     GlyphData &glyph = ctx.engine->fonts.getGlyph(
                         font, _info.codepoint, std::round(size * glyphScale));
                     size_t txtPointer = _info.cluster;

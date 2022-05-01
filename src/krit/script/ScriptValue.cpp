@@ -47,6 +47,20 @@ template <> int ScriptValue<int>::jsToValue(JSContext *ctx, JSValue val) {
 }
 
 template <>
+JSValue ScriptValue<size_t>::valueToJs(JSContext *ctx, const size_t &val) {
+    return JS_NewUint32(ctx, val);
+}
+template <>
+JSValue ScriptValue<size_t *>::valueToJs(JSContext *ctx, size_t *const &val) {
+    return !val ? JS_UNDEFINED : JS_NewUint32(ctx, *val);
+}
+template <> size_t ScriptValue<size_t>::jsToValue(JSContext *ctx, JSValue val) {
+    uint32_t dest;
+    JS_ToUint32(ctx, &dest, val);
+    return dest;
+}
+
+template <>
 JSValue ScriptValue<float>::valueToJs(JSContext *ctx, const float &val) {
     return JS_NewFloat64(ctx, val);
 }

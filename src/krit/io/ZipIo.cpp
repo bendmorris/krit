@@ -59,7 +59,9 @@ char *ZipIo::read(const std::string &path, int *length) {
     return buffer;
 }
 
-void *ZipIo::alloc(size_t size) { return malloc(size); }
-void ZipIo::free(char *buf) { std::free(buf); }
+void *ZipIo::alloc(size_t size) { return ::malloc(size); }
+void *ZipIo::calloc(size_t size) { return ::calloc(size, 1); }
+void *ZipIo::realloc(void *p, size_t size) { return ::realloc(p, size); }
+void ZipIo::free(void *p) { ::free(p); }
 
 }

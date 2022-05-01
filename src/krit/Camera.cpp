@@ -102,7 +102,7 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
                 (offset.y() + anchor.y() * dimensions.y()) * scale.y());
 
     // screen size
-    m.scale(2.0 / width, -2.0 / height, 2.0 / 10000);
+    m.scale(2.0 / width, -2.0 / height, 1.0 / 2000);
     m.translate(-1, 1);
 
     // perspective

@@ -260,7 +260,7 @@ for (const sourceFile of program.getSourceFiles()) {
                 for (const prop of collection.defined) {
                     const propType = checker.getTypeOfSymbolAtLocation(prop, node);
                     const tags = {};
-                    for (tag of ts.getJSDocTags(prop.valueDeclaration)) {
+                    for (const tag of ts.getJSDocTags(prop.valueDeclaration)) {
                         tags[tag.tagName.text] = tagify(tag.comment);
                     }
                     if (tags.skip) {

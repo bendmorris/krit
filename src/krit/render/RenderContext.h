@@ -28,11 +28,9 @@ struct RenderContext : public UpdateContext {
     int height() { return size().y(); }
 
     void pushClip(Rectangle &rect);
-    void pushDynamicClip(Rectangle &rect);
     void popClip();
-
-    void pushBounds(Rectangle &rect);
-    void popBounds();
+    void startAutoClip(float xBuffer = 0, float yBuffer = 0);
+    bool endAutoClip();
 
     void addRect(const DrawKey &key, IntRectangle &rect, Matrix4 &matrix, Color color, int zIndex = 0);
     void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);

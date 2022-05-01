@@ -1,5 +1,6 @@
 #include "krit/render/FrameBuffer.h"
 #include "krit/App.h"
+#include <cassert>
 
 namespace krit {
 
@@ -153,6 +154,19 @@ uint32_t FrameBuffer::readPixel(int x, int y) {
                  (void *)&pixelData);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     return pixelData;
+}
+
+std::shared_ptr<ImageData> FrameBuffer::imageData() {
+    assert(!doubleBuffer);
+    GLuint t = getTexture();
+    if (i) {
+        i->texture = t;
+        i->dimensions.setTo(size.x(), size.y());
+    } else {
+        i = std::make_shared<ImageData>(t, size);
+        i->owned = false;
+    }
+    return i;
 }
 
 }

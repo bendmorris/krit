@@ -22,17 +22,15 @@ void RenderContext::pushClip(Rectangle &rect) {
     this->drawCommandBuffer->pushClip(rect);
 }
 
-void RenderContext::pushDynamicClip(Rectangle &rect) {
-    this->drawCommandBuffer->pushDynamicClip(rect);
+void RenderContext::startAutoClip(float xBuffer, float yBuffer) {
+    this->drawCommandBuffer->startAutoClip(xBuffer, yBuffer);
+}
+
+bool RenderContext::endAutoClip() {
+    return this->drawCommandBuffer->endAutoClip(*this);
 }
 
 void RenderContext::popClip() { this->drawCommandBuffer->popClip(); }
-
-void RenderContext::pushBounds(Rectangle &rect) {
-    this->drawCommandBuffer->pushBounds(rect);
-}
-
-void RenderContext::popBounds() { this->drawCommandBuffer->popBounds(); }
 
 void RenderContext::addRect(const DrawKey &key, IntRectangle &rect,
                             Matrix4 &matrix, Color color, int zIndex) {

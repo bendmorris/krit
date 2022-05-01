@@ -8,10 +8,9 @@ interface RenderContext extends UpdateContext {
     width(): integer;
     height(): integer;
     pushClip(rect: Reference<Rectangle>): void;
-    pushDynamicClip(rect: Reference<Rectangle>): void;
     popClip(): void;
-    pushBounds(rect: Reference<Rectangle>): void;
-    popBounds(): void;
+    startAutoClip(): void;
+    endAutoClip(): void;
     drawRect(x: integer, y: integer, w: integer, h: integer, c: number, a: float): void;
 }
 
@@ -51,7 +50,6 @@ declare class DrawCommandBuffer {
     drawSceneShader(shader: Pointer<SceneShader>): void;
     clearColor(r: float, g: float, b: float, a: float): void;
     pushClip(rect: Reference<Rectangle>): void;
-    pushDynamicClip(rect: Reference<Rectangle>): void;
     popClip(): void;
 }
 
