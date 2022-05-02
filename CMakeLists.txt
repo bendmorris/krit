@@ -90,7 +90,7 @@ if(KRIT_SCRIPT_BRIDGE)
     file(GLOB_RECURSE KRIT_GENERATED_FILES
         CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp
+        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.cpp
         ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
     )
 endif()
@@ -207,7 +207,7 @@ if(KRIT_SCRIPT_BRIDGE_PATH)
         generate-bridge ALL
         mkdir -p "${CMAKE_CURRENT_BINARY_DIR}/krit"
         COMMAND cd ${KRIT_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} "${CMAKE_CURRENT_BINARY_DIR}/krit"
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
+        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
     )
     add_dependencies(${PROJECT_NAME} generate-bridge)
 endif()

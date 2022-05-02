@@ -48,18 +48,6 @@ static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
     fprintf(stderr, "%s\n", err.c_str());
 }
 
-template <int N> void initScriptClass(ScriptEngine &engine) {
-    if (N == 0) {
-        engine.classIds.resize(ScriptClassCount);
-    }
-    JSClassDef *classDef = scriptClassDef<N>();
-    JS_NewClassID(&engine.classIds[N]);
-    JS_NewClass(engine.rt, engine.classIds[N], classDef);
-    initScriptClass<N + 1>(engine);
-}
-
-template <> void initScriptClass<ScriptClassCount>(ScriptEngine &engine) {}
-
 static void js_std_promise_rejection_tracker(JSContext *ctx,
                                              JSValueConst promise,
                                              JSValueConst reason,
@@ -82,7 +70,7 @@ ScriptEngine::ScriptEngine() {
     // JS_SetRuntimeOpaque(rt, this);
     JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
                                       NULL);
-    initScriptClass<0>(*this);
+    // initScriptClass<0>(*this);
 
     JS_SetMaxStackSize(rt, 4 * 1024 * 1024);
     JS_SetRuntimeOpaque(rt, this);
@@ -96,7 +84,7 @@ ScriptEngine::ScriptEngine() {
     JS_FreeValue(ctx, globalObj);
 
     ScriptFinalizer::init(this);
-    registerScriptClass<0>(this);
+    // registerScriptClass<0>(this);
     initScriptBridge(*this);
 }
 
@@ -153,7 +141,7 @@ JSValue ScriptEngine::create(ScriptClass e, void *data) {
     if (!data) {
         return JS_NULL;
     }
-    JSValue val = JS_NewObjectClass(ctx, classIds[e]);
+    JSValue val = JS_NewObjectClass(ctx, classId(e));
     JS_SetOpaque(val, data);
     return val;
 }
@@ -162,7 +150,7 @@ JSValue ScriptEngine::createOwned(ScriptClass e, void *data) {
     if (!data) {
         return JS_NULL;
     }
-    JSValue val = JS_NewObjectClass(ctx, classIds[e]);
+    JSValue val = JS_NewObjectClass(ctx, classId(e));
     JS_SetOpaque(val, data);
     addFinalizer(val, e);
     return val;

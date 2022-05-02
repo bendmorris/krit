@@ -2,7 +2,7 @@
  * @namespace krit
  * @import krit/render/RenderContext.h
  */
-interface RenderContext extends UpdateContext {
+declare class RenderContext extends UpdateContext {
     drawCommandBuffer: Pointer<DrawCommandBuffer>;
 
     width(): integer;

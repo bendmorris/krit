@@ -7,8 +7,6 @@
 
 namespace krit {
 
-enum ScriptClass : int;
-
 void ScriptFinalizer::init(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;
 
@@ -25,13 +23,15 @@ void ScriptFinalizer::init(ScriptEngine *engine) {
     engine->finalizerSymbol = finalizerSymbol;
 }
 
-void ScriptEngine::addFinalizer(JSValue obj, ScriptClass classId) {
-    JSValue finalizer = JS_NewObjectClass(ctx, classIds[classId + 1]);
-    void *opaque = JS_GetOpaque(obj, classIds[classId]);
+void ScriptEngine::addFinalizer(JSValue obj, ScriptClass cls) {
+    JSClassID clsId = classId(cls);
+    JSClassID finalizerId = finalizerIds[cls];
+    JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
+    void *opaque = JS_GetOpaque(obj, clsId);
     if (!opaque) {
         panic("error: trying to create finalizer for null pointer; possible "
               "invalid class ID (%i)\n",
-              (int)classId);
+              (int)clsId);
     }
     JS_SetOpaque(finalizer, opaque);
     JS_SetProperty(ctx, obj, JS_ValueToAtom(ctx, finalizerSymbol), finalizer);

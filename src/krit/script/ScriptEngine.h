@@ -1,6 +1,7 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
+#include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptFinalizer.h"
 #include "krit/script/ScriptValue.h"
 #include "quickjs.h"
@@ -14,8 +15,6 @@
 #include <vector>
 
 namespace krit {
-
-enum ScriptClass : int;
 
 template <class T, std::size_t = sizeof(T)>
 std::true_type is_complete_impl(T *);
@@ -73,7 +72,19 @@ struct ScriptEngine {
     ScriptEngine();
     ~ScriptEngine();
 
-    std::vector<JSClassID> classIds;
+    JSClassID classId(ScriptClass cls) {
+        auto found = classIds.find(cls);
+        if (found == classIds.end()) {
+            JSClassID id = 0;
+            JS_NewClassID(&id);
+            JS_NewClass(rt, id, cls->classDef);
+            classIds[cls] = id;
+            cls->registerClass(this);
+            return id;
+        } else {
+            return found->second;
+        }
+    }
 
     void eval(const std::string &scriptName, const std::string &src) {
         this->eval(scriptName.c_str(), src.c_str(), src.length());
@@ -211,6 +222,8 @@ struct ScriptEngine {
 
 private:
     std::vector<DelayRequest> delayPromises;
+    std::unordered_map<ScriptClass, JSClassID> classIds;
+    std::unordered_map<ScriptClass, JSClassID> finalizerIds;
 };
 
 }

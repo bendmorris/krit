@@ -52,7 +52,7 @@ interface Window extends IntDimensions {}
  * @namespace krit
  * @import krit/UpdateContext.h
  */
-interface UpdateContext {
+declare class UpdateContext {
     /** @readonly */ elapsed: number;
     /** @readonly */ frameId: number;
     camera: Pointer<Camera>;
@@ -65,7 +65,7 @@ interface UpdateContext {
  * @namespace krit
  * @import krit/Camera.h
  */
-interface Camera {
+declare class Camera {
     position: Point;
     offset: Point;
     anchor: Point;

@@ -6,6 +6,7 @@
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptValue.h"
+#include "krit/script/ScriptClassGenerated.h"
 #include "krit/utils/Log.h"
 #include "quickjs.h"
 
@@ -16,8 +17,7 @@
 namespace {{wrapper.namespace}} {
 
 static JSValue js_{{wrapper.name}}_get_internal_id(JSContext *ctx, JSValueConst this_val) {
-    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
-    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, 0));
     if (!p) {
         return JS_UNDEFINED;
     }
@@ -27,8 +27,7 @@ static JSValue js_{{wrapper.name}}_get_internal_id(JSContext *ctx, JSValueConst 
 {% for prop in wrapper.props %}
 {% if not prop.tags.writeonly %}
 static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
-    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
-    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, 0));
     if (!p) {
         return JS_EXCEPTION;
     }
@@ -48,8 +47,7 @@ static JSValue js_{{wrapper.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueCo
 
 {% if not prop.tags.readonly %}
 static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
-    krit::ScriptEngine *engine = static_cast<krit::ScriptEngine*>(JS_GetContextOpaque(ctx));
-    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, 0));
     if (!p) {
         return JS_EXCEPTION;
     }
@@ -65,8 +63,7 @@ static JSValue js_{{wrapper.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueCo
 {% endfor %}
 
 static JS_FUNC({{wrapper.name}}_toString) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    void *p = JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    void *p = JS_GetOpaque2(ctx, this_val, 0);
     std::string s = "<{{wrapper.name}}@" + n2hexstr((int64_t)p) + ">";
     return JS_NewString(ctx, s.c_str());
 }
@@ -134,8 +131,7 @@ static JS_FUNC({{wrapper.name}}_{{method.name}}) {
 
 {% for method in wrapper.methods %}
 static JS_FUNC({{wrapper.name}}_{{ method.name }}) {
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, engine->classIds[ScriptClass{{ wrapper.name }}]));
+    {{ wrapper.name }} *p = static_cast<{{ wrapper.name }}*>(JS_GetOpaque2(ctx, this_val, 0));
     {% set comma = joiner() %}
     {% if method.returnCppType %}auto {% if method.returnCppType.reference %}&{% endif %}rt = {% endif %}{{ ("p->" + method.name) | call(method) }};
     {% if method.returnCppType %}
@@ -166,19 +162,14 @@ static const JSCFunctionListEntry protoFuncs{{ wrapper.name }}[] = {
     {% endfor %}
 };
 
-static JSClassDef classDef{{wrapper.name}} = {
+static JSClassDef classDef = {
     .class_name = "{{ wrapper.name }}",
     .finalizer = nullptr,
 };
 
-template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}>() {
-    return &classDef{{ wrapper.name }};
-}
-
 // finalizer definition
 
 static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
-    // ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetRuntimeOpaque(rt));
     {{ wrapper.namespace }}::{{ wrapper.name }} *p = static_cast<{{ wrapper.namespace }}::{{ wrapper.name }}*>(JS_GetOpaque(val, 0));
     if (p) {
         //puts("deleted {{wrapper.name}}");
@@ -186,20 +177,16 @@ static void finalize{{wrapper.name}}(JSRuntime *rt, JSValue val) {
     }
 }
 
-static JSClassDef classDef{{wrapper.name}}Finalizer = {
+static JSClassDef classDefFinalizer = {
     .class_name = "{{ wrapper.name }}Finalizer",
     .finalizer = finalize{{wrapper.name}},
 };
-
-template <> JSClassDef *scriptClassDef<ScriptClass{{ wrapper.name }}Finalizer>() {
-    return &classDef{{ wrapper.name }}Finalizer;
-}
 
 // conversions
 
 template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}>::valueToJs(JSContext *ctx, {{ wrapper.namespace }}::{{ wrapper.name }} const &arg) {
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    JSValue val = JS_NewObjectClass(ctx, engine->classId(ScriptClass{{ wrapper.name }}));
     JS_SetOpaque(val, (void*)&arg);
     return val;
 }
@@ -213,7 +200,7 @@ template <> JSValue ScriptValue<{{ wrapper.namespace }}::{{ wrapper.name }}*>::v
         return JS_NULL;
     }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    JSValue val = JS_NewObjectClass(ctx, engine->classIds[ScriptClass{{ wrapper.name }}]);
+    JSValue val = JS_NewObjectClass(ctx, engine->classId(ScriptClass{{ wrapper.name }}));
     JS_SetOpaque(val, (void*)arg);
     return val;
 }
@@ -226,12 +213,20 @@ template <> {{ wrapper.namespace }}::{{ wrapper.name }} *ScriptValue<{{ wrapper.
 
 // registration
 
-template <> void registerScriptClass<ScriptClass{{ wrapper.name }}>(ScriptEngine *engine) {
+static void registerClass(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;
     auto funcs = protoFuncs{{ wrapper.name }};
     JSValue proto = JS_NewObject(ctx);
+    JSClassID clsId = engine->classId(ScriptClass{{ wrapper.name }});
     JS_SetPropertyFunctionList(ctx, proto, funcs, countof(protoFuncs{{ wrapper.name }}));
-    JS_SetClassProto(ctx, engine->classIds[ScriptClass{{ wrapper.name }}], proto);
+    JS_SetClassProto(ctx, clsId, proto);
+    {% if wrapper.parent %}
+    {
+        JSValue parentProto = JS_GetClassProto(ctx, engine->classId(ScriptClass{{ wrapper.parent }}));
+        JS_SetPrototype(ctx, proto, parentProto);
+        JS_FreeValue(ctx, parentProto);
+    }
+    {% endif %}
     JSValue globalObj = JS_GetGlobalObject(ctx);
     // bind prototype/constructor to global object
     {% if wrapper.constructor %}
@@ -263,15 +258,29 @@ template <> void registerScriptClass<ScriptClass{{ wrapper.name }}>(ScriptEngine
     {% endfor %}
     JS_FreeValue(ctx, globalObj);
 
-    registerScriptClass<ScriptClass{{ wrapper.name }} + 1>(engine);
+    // register finalizer
+    engine->classId(ScriptClass{{ wrapper.name }}Finalizer);
 }
 
-template <> void registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer>(ScriptEngine *engine) {
+static void registerFinalizer(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;
     JSValue proto = JS_NewObject(ctx);
     JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
-    JS_SetClassProto(ctx, engine->classIds[ScriptClass{{ wrapper.name }}Finalizer], proto);
-    registerScriptClass<ScriptClass{{ wrapper.name }}Finalizer + 1>(engine);
+    JS_SetClassProto(ctx, engine->classId(ScriptClass{{ wrapper.name }}Finalizer), proto);
 }
+
+static ScriptClassDef _cls = {
+    .registerClass = registerClass,
+    .classDef = &classDef,
+};
+
+ScriptClass ScriptClass{{ wrapper.name }} = &_cls;
+
+static ScriptClassDef _finalizer = {
+    .registerClass = registerFinalizer,
+    .classDef = &classDefFinalizer,
+};
+
+ScriptClass ScriptClass{{ wrapper.name }}Finalizer = &_finalizer;
 
 }

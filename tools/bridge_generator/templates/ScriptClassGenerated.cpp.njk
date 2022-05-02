@@ -1,4 +1,4 @@
-#include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptClassGenerated.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptValue.h"
 
@@ -10,7 +10,7 @@
 
 namespace krit {
 
-template <> void registerScriptClass<ScriptClassCount>(ScriptEngine *engine) {
+void initScriptClasses(ScriptEngine *engine) {
     // register enums
     JSContext *ctx = engine->ctx;
     JSValue globalObj = JS_GetGlobalObject(ctx);
@@ -24,6 +24,11 @@ template <> void registerScriptClass<ScriptClassCount>(ScriptEngine *engine) {
     }
     {% endfor %}
     JS_FreeValue(ctx, globalObj);
+
+    // initialize all types
+    {% for wrapper in wrappers %}
+    engine->classId(ScriptClass{{ wrapper.name }});
+    {% endfor %}
 }
 
 }

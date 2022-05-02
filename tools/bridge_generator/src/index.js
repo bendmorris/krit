@@ -249,10 +249,22 @@ for (const sourceFile of program.getSourceFiles()) {
                     }
                 }
             }
+            if (ts.isClassDeclaration(node) && node.heritageClauses) {
+                // look for `extends`
+                for (const clause of node.heritageClauses) {
+                    if (clause.token === ts.SyntaxKind.ExtendsKeyword) {
+                        options.parent = checker.getSymbolAtLocation(clause.types[0].expression).name;
+                    }
+                }
+            }
             const staticProperties = checker
                 .getPropertiesOfType(checker.getTypeOfSymbolAtLocation(node.symbol, node))
                 .filter((x) => ['prototype', 'from', 'clone'].indexOf(x.escapedName) === -1);
-            const properties = checker.getPropertiesOfType(type);
+            let properties = type.getProperties();
+            if (ts.isClassDeclaration(node)) {
+                // for classes, we'll use extension so filter to own properties only
+                properties = properties.filter((prop) => prop.declarations.some((x) => x.parent == node));
+            }
             for (const collection of [
                 { methods: options.staticMethods, props: options.staticProps, defined: staticProperties },
                 { methods: options.methods, props: options.props, defined: properties },
@@ -423,7 +435,7 @@ function replaceIfDifferent(path, content) {
 // generate native function declarations
 replaceIfDifferent(
     path.join(scriptDir, 'ScriptBridge.h'),
-    env.render('templates/ScriptBridge.h.nj', {
+    env.render('templates/ScriptBridge.h.njk', {
         bridgeFuncs: functions,
     }),
 );
@@ -431,7 +443,7 @@ replaceIfDifferent(
 // generate script engine init function implementation to define all bridges
 replaceIfDifferent(
     path.join(scriptDir, 'ScriptBridge.cpp'),
-    env.render('templates/ScriptBridge.cpp.nj', {
+    env.render('templates/ScriptBridge.cpp.njk', {
         bridgeFuncs: functions,
         bridges,
     }),
@@ -439,15 +451,16 @@ replaceIfDifferent(
 
 // generate ScriptClass declaration
 replaceIfDifferent(
-    path.join(scriptDir, 'ScriptClass.h'),
-    env.render('templates/ScriptClass.h.nj', {
+    path.join(scriptDir, 'ScriptClassGenerated.h'),
+    env.render('templates/ScriptClassGenerated.h.njk', {
         wrappers,
     }),
 );
 
 replaceIfDifferent(
-    path.join(scriptDir, 'ScriptClass.cpp'),
-    env.render('templates/ScriptClass.cpp.nj', {
+    path.join(scriptDir, 'ScriptClassGenerated.cpp'),
+    env.render('templates/ScriptClassGenerated.cpp.njk', {
+        wrappers,
         enums,
     }),
 );
@@ -457,7 +470,7 @@ replaceIfDifferent(
 for (const wrapper of wrappers) {
     replaceIfDifferent(
         path.join(scriptDir, `ScriptClass.${wrapper.namespace.replace('::', '.')}.${wrapper.name}.cpp`),
-        env.render('templates/ScriptClass.class.cpp.nj', {
+        env.render('templates/ScriptClass.class.cpp.njk', {
             wrapper,
         }),
     );
