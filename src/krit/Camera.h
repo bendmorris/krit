@@ -9,42 +9,34 @@
 
 namespace krit {
 
+struct FrameBuffer;
 struct Matrix;
 struct UpdateContext;
 
-struct CameraTransform {
-    Point scroll;
-};
-
 struct Camera {
-    enum ScaleMode {
-        NoScale,
-        Stretch,
-        KeepWidth,
-        KeepHeight,
-    };
-
     Point position;
-    Point offset;
+    IntPoint offset;
     Point anchor;
     Dimensions dimensions;
+    Dimensions currentDimensions;
     ScaleFactor scale;
-    ScaleMode scaleMode = NoScale;
+    double minRatio = 16.0 / 9;
+    double maxRatio = 16.0 / 9;
+    FrameBuffer *fb = nullptr;
 
     RenderSignal render;
-
-    union {
-        struct {
-            int min;
-            int max;
-        } minMax;
-    } scaleData;
 
     float &width() { return this->dimensions.x(); }
     float &height() { return this->dimensions.y(); }
 
+    int viewportWidth() { return round(this->currentDimensions.x() * scale.x()); }
+    int viewportHeight() { return round(this->currentDimensions.y() * scale.y()); }
+
     float rotation = 0;
     float pitch = 0;
+
+    Camera(): dimensions(3840, 2160), currentDimensions(3840, 2160) {}
+    virtual ~Camera();
 
     Camera &center() {
         this->anchor.setTo(0.5, 0.5);
@@ -56,18 +48,6 @@ struct Camera {
         return *this;
     }
 
-    Camera &noScale() {
-        this->scaleMode = NoScale;
-        return *this;
-    }
-
-    Camera &stretch() {
-        this->scaleMode = Stretch;
-        return *this;
-    }
-
-    Camera &keepWidth(int minHeight = 0, int maxHeight = 0);
-    Camera &keepHeight(int minWidth = 0, int maxWidth = 0);
     Camera &move(float x, float y);
     void transformPoint(Point &p);
     void untransformPoint(Point &p);

@@ -68,6 +68,7 @@ struct SpineSprite : public VisibleSprite {
     std::unique_ptr<spine::Skeleton> skeleton;
     std::unique_ptr<spine::AnimationState> animationState;
     std::unique_ptr<spine::Skin> skin;
+    std::unordered_map<spine::Attachment *, std::unique_ptr<ImageRegion>> customAttachments;
 
     spine::SkeletonData &skeletonData() { return *data->skeletonData; }
     spine::AnimationStateData &animationStateData() {

@@ -3,22 +3,16 @@
 #include "krit/App.h"
 #include "krit/Window.h"
 #include "krit/math/Matrix.h"
+#include "krit/render/FrameBuffer.h"
 #include "krit/render/RenderContext.h"
 
 namespace krit {
 
-Camera &Camera::keepWidth(int minHeight, int maxHeight) {
-    scaleMode = KeepWidth;
-    scaleData.minMax.min = minHeight;
-    scaleData.minMax.max = maxHeight;
-    return *this;
-}
-
-Camera &Camera::keepHeight(int minWidth, int maxWidth) {
-    scaleMode = KeepHeight;
-    scaleData.minMax.min = minWidth;
-    scaleData.minMax.max = maxWidth;
-    return *this;
+Camera::~Camera() {
+    if (fb) {
+        delete fb;
+        fb = nullptr;
+    }
 }
 
 Camera &Camera::move(float x, float y) {
@@ -28,7 +22,7 @@ Camera &Camera::move(float x, float y) {
 
 void Camera::transformPoint(Point &p) {
     Point position = this->position;
-    p += Vec3f(-position.x() + offset.x(), -position.y() + offset.y());
+    p += Vec3f(-position.x(), -position.y());
     p += Vec3f(anchor.x() * dimensions.x(), anchor.y() * dimensions.y());
     p *= Vec3f(scale.x(), scale.y(), 1.0);
 }
@@ -37,7 +31,7 @@ void Camera::untransformPoint(Point &p) {
     Point position = this->position;
     p /= Vec3f(scale.x(), scale.y(), 1.0);
     p -= Vec3f(anchor.x() * dimensions.x(), anchor.y() * dimensions.y());
-    p -= Vec3f(-position.x() + offset.x(), -position.y() + offset.y());
+    p -= Vec3f(-position.x(), -position.y());
 }
 
 void Camera::scaleDimensions(Dimensions &d) {
@@ -49,44 +43,31 @@ void Camera::unscaleDimensions(Dimensions &d) {
 }
 
 void Camera::update(RenderContext &context) {
-    float width = context.width(), height = context.height();
-    switch (scaleMode) {
-        case NoScale: {
-            // nothing to do
-            break;
-        }
-        case Stretch: {
-            // stretch to show the camera's logical size
-            scale.setTo(1, 1);
-            break;
-        }
-        case KeepWidth: {
-            int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleHeight = height * dimensions.x() / width;
-            if (min != 0 && visibleHeight < min) {
-                visibleHeight = min;
-            } else if (max != 0 && visibleHeight > max) {
-                visibleHeight = max;
-            }
-            scale.setTo(static_cast<float>(width) / dimensions.x(),
-                        static_cast<float>(height) / visibleHeight);
-            offset.y() = (height / scale.y() - dimensions.y()) / 2;
-            break;
-        }
-        case KeepHeight: {
-            int min = scaleData.minMax.min, max = scaleData.minMax.max;
-            int visibleWidth = width * dimensions.y() / height;
-            if (min != 0 && visibleWidth < min) {
-                visibleWidth = min;
-            } else if (max != 0 && visibleWidth > max) {
-                visibleWidth = max;
-            }
-            scale.setTo(static_cast<float>(width) / visibleWidth,
-                        static_cast<float>(height) / dimensions.y());
-            offset.x() = (width / scale.x() - dimensions.x()) / 2;
-            break;
-        }
+    double width = context.window->x(), height = context.window->y();
+    double ratio = width / height;
+    if (ratio < minRatio) {
+        // too narrow; top and bottom letterboxing
+        float s = width / minRatio / dimensions.y();
+        ratio = minRatio;
+        offset.x() = 0;
+        offset.y() = (height - (width / minRatio)) / 2;
+        // printf("narrow: %.2f, %.2f, %i\n", s, ratio, offset.y());
+        scale.setTo(s, s);
+    } else if (ratio > maxRatio) {
+        // too wide; left and right letterboxing
+        float s = height / dimensions.y();
+        ratio = maxRatio;
+        offset.x() = (width - (height * maxRatio)) / 2;
+        offset.y() = 0;
+        // if (maxRatio > 1.8) {
+            // printf("wide: %.2f, %.2f, %i,%i\n", s, ratio, offset.x(), offset.y());
+        // }
+        scale.setTo(s, s);
+    } else {
+        offset.setTo(0, 0);
+        scale.setTo(height / dimensions.y());
     }
+    currentDimensions.setTo(ratio * dimensions.y(), dimensions.y());
 }
 
 void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
@@ -98,8 +79,8 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
         m.pitch(pitch);
     }
     m.scale(scale.x(), scale.y(), 1.0);
-    m.translate((offset.x() + anchor.x() * dimensions.x()) * scale.x(),
-                (offset.y() + anchor.y() * dimensions.y()) * scale.y());
+    m.translate((anchor.x() * currentDimensions.x()) * scale.x(),
+                (anchor.y() * currentDimensions.y()) * scale.y());
 
     // screen size
     m.scale(2.0 / width, -2.0 / height, 1.0 / 2000);
@@ -114,6 +95,11 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
 
 void Camera::screenToWorldCoords(Vec3f &screenCoords) {
     auto w = App::ctx.window;
+    // printf("%i, %i, %i\n", offset.x(), viewportWidth(), w->x());
+    screenCoords.x() -= offset.x();
+    screenCoords.y() -= offset.y();
+    screenCoords.x() /= static_cast<double>(viewportWidth()) / w->x();
+    screenCoords.y() /= static_cast<double>(viewportHeight()) / w->y();
     screenCoords.x() = (screenCoords.x() / w->x()) * 2.0 - 1.0;
     screenCoords.y() = 1.0 - (screenCoords.y() / w->y()) * 2.0;
 
@@ -124,7 +110,7 @@ void Camera::screenToWorldCoords(Vec3f &screenCoords) {
     // FIXME: don't need to recompute this each time
     Matrix4 inverseMatrix;
     inverseMatrix.identity();
-    getTransformationMatrix(inverseMatrix, w->x(), w->y());
+    getTransformationMatrix(inverseMatrix, viewportWidth(), viewportHeight());
     inverseMatrix.invert();
 
     p1 = inverseMatrix * p1;

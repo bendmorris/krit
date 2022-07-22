@@ -60,3 +60,26 @@ declare class DrawCommandBuffer {
 declare class ImageRegion {
     rect: IntRectangle;
 }
+
+/**
+ * @namespace krit
+ * @import krit/render/DrawContext.h
+ */
+declare class DrawContext {
+    /** @cast BlendMode */ blend: BlendMode;
+    /** @cast SmoothingMode */ smooth: SmoothingMode;
+    color: Color;
+    alpha: float;
+    lineThickness: float;
+    zIndex: integer;
+
+    constructor(ctx: Reference<RenderContext>);
+
+    line(p1: Vec2f, p2: Vec2f): void;
+    // polyline()
+    rect(r: Reference<Rectangle>): void;
+    rectFilled(r: Reference<Rectangle>): void;
+    circle(center: Reference<Vec2f>, radius: float, segments: size_t): void;
+    circleFilled(center: Reference<Vec2f>, radius: float, segments: size_t): void;
+    arc(center: Reference<Vec2f>, radius: float, startRads: float, angleRads: float, segments: size_t): void;
+}

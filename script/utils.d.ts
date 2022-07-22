@@ -12,6 +12,7 @@ declare class Color {
 
     setTo(c: integer): void;
     lerpInPlace(c: integer, mix: number): void;
+    rgb(): number;
 }
 
 /**
@@ -35,4 +36,9 @@ declare const Log: {
     error(msg: string): void;
     fatal(msg: string): void;
     success(msg: string): void;
+};
+
+/** @namespace krit @import krit/utils/Browser.h */
+declare class Browser {
+    static openUrl(url: string): void;
 }

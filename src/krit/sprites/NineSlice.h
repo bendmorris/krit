@@ -14,6 +14,7 @@ struct RenderContext;
 
 struct NineSlice : public VisibleSprite {
     Point origin;
+    float pitch = 0;
 
     ImageRegion ul;
     ImageRegion uc;

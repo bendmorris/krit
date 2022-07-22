@@ -131,6 +131,21 @@ template <typename T, size_t N> struct Vec {
         return dist;
     }
 
+    void invert() {
+        for (size_t i = 0; i < N; ++i) {
+            v[i] = -v[i];
+        }
+    }
+
+    float length() { return distance(Vec<T, N>()); }
+
+    void normalize(float size) {
+        float normal = size / length();
+        for (size_t i = 0; i < N; ++i) {
+            v[i] *= normal;
+        }
+    }
+
     std::array<T, N> v;
 };
 
@@ -140,6 +155,13 @@ template <typename T> struct Vec2 : public Vec<T, 2> {
     T &y() { return (*this)[1]; }
     const T &x() const { return (*this)[0]; }
     const T &y() const { return (*this)[1]; }
+    Vec2<T> perpendicular() { return Vec2<T>(-y(), x()); }
+    float zcross(const Vec2<T> &other) {
+        return (x() * other.y()) - (y() * other.x());
+    }
+    float dot(const Vec2<T> &other) {
+        return (x() * other.x()) + (y() * other.y());
+    }
     void setTo(T x = 0, T y = 0) {
         this->x() = x;
         this->y() = y;

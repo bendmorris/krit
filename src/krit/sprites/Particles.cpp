@@ -15,9 +15,10 @@ ParticleEmitter::ParticleEmitter()
       rotation(M_PI * -2, M_PI * 2, -M_PI, M_PI, true), lifetime(1), count(5),
       start(0), duration(0) {}
 
-void ParticleSystem::emit(const std::string &name, const Point &at, bool loop) {
+EffectInstance &ParticleSystem::emit(const std::string &name, const Point &at, bool loop) {
     auto &effect = effects[name];
     _effects.emplace_back(effect, at, loop);
+    return _effects.back();
 }
 
 void ParticleSystem::update(UpdateContext &ctx) {
@@ -52,6 +53,8 @@ void ParticleSystem::update(UpdateContext &ctx) {
                 emitter.scale.realize(particle.scale);
                 emitter.distance.realize(particle.distance);
                 emitter.angle.realize(particle.angle);
+                particle.angle.start += instance.angle;
+                particle.angle.end += instance.angle;
                 emitter.rotation.realize(particle.rotation);
                 emitter.xOffset.realize(particle.xOffset);
                 emitter.yOffset.realize(particle.yOffset);

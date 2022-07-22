@@ -15,38 +15,14 @@ interface Engine {
 
 /**
  * @namespace krit
- * @import krit/input/InputContext.h
- */
-interface InputContext {
-    /** @readonly */ events: ActionEvent[];
-    mouse: MouseContext;
-    state(a: integer): integer;
-}
-
-/**
- * @namespace krit
- * @import krit/input/InputContext.h
- */
-interface MouseContext {
-    mousePos: Point;
-}
-
-/**
- * @namespace krit
- * @import krit/input/InputContext.h
- */
-interface ActionEvent {
-    action: integer;
-    state: integer;
-    prevState: integer;
-}
-
-/**
- * @namespace krit
  * @import krit/Window.h
  * @pointerOnly
  */
-interface Window extends IntDimensions {}
+interface Window extends IntDimensions {
+    isFullScreen(): boolean;
+    setFullScreen(full: boolean): void;
+    setWindowSize(width: integer, height: integer): void;
+}
 
 /**
  * @namespace krit
@@ -67,20 +43,23 @@ declare class UpdateContext {
  */
 declare class Camera {
     position: Point;
-    offset: Point;
+    offset: IntPoint;
     anchor: Point;
     scale: ScaleFactor;
     dimensions: Vec2f;
+    currentDimensions: Vec2f;
     rotation: float;
     pitch: float;
+    minRatio: number;
+    maxRatio: number;
 
     center(): void;
     update(ctx: Reference<RenderContext>): void;
     transformPoint(p: Reference<Point>): void;
     untransformPoint(p: Reference<Point>): void;
     setLogicalSize(w: integer, h: integer): Reference<Camera>;
-    keepWidth(minHeight: integer, maxHeight: integer): Reference<Camera>;
-    keepHeight(minWidth: integer, maxWidth: integer): Reference<Camera>;
+    viewportWidth(): integer;
+    viewportHeight(): integer;
 
     screenToWorldCoords(p: Reference<Point>): void;
 }

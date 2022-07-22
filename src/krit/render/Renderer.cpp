@@ -242,6 +242,8 @@ Renderer::Renderer(Window &_window) : window(_window) {
     drawCommandBuffer.defaultTextureShader = getDefaultTextureShader();
     drawCommandBuffer.defaultColorShader = getDefaultColorShader();
 
+    glDepthRange(-1000, 1000);
+
     checkForGlErrors("renderer init");
 
     // #if TRACY_ENABLE
@@ -272,9 +274,8 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
         glEnable(GL_SCISSOR_TEST);
         checkForGlErrors("enable scissor test");
     }
-    glScissor(newClip.x, this->height - newClip.y - newClip.height,
-              newClip.width, newClip.height);
-    checkForGlErrors("push clip rect");
+    updateClip(ctx);
+    checkForGlErrors("push clip rect: %i,%i %ix%i", clipRect.x, clipRect.y, clipRect.width, clipRect.height);
 }
 
 // template <>
@@ -337,9 +338,7 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
     if (clipStack.empty()) {
         glDisable(GL_SCISSOR_TEST);
     } else {
-        Rectangle &newClip = clipStack.back();
-        glScissor(newClip.x, this->height - newClip.y - newClip.height,
-                  newClip.width, newClip.height);
+        updateClip(ctx);
     }
     checkForGlErrors("pop clip rect");
 }
@@ -380,6 +379,7 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     }
     currentRenderTarget = args.target;
     this->setSize(ctx);
+    updateClip(ctx);
     checkForGlErrors("set size");
 }
 
@@ -503,7 +503,6 @@ void Renderer::startFrame(RenderContext &ctx) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::startFrame");
 #endif
-    this->currentRenderTarget = nullptr;
     clear(ctx);
     checkForGlErrors("start frame");
 }
@@ -542,12 +541,16 @@ void Renderer::renderFrame(RenderContext &ctx) {
 
     dispatchCommands(ctx);
     // printf("triangles: %i\n", this->triangleCount);
+
+    if (ctx.camera->currentDimensions != ctx.camera->dimensions) {
+        // TODO
+    }
 }
 
 void Renderer::clear(RenderContext &ctx) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     auto &bgColor = ctx.engine->bgColor;
-    glScissor(0, 0, this->width, this->height);
+    glScissor(0, 0, ctx.window->x(), ctx.window->y());
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     // this->triangleCount = 0;
@@ -579,7 +582,6 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 #undef DISPATCH_COMMAND
 
     this->drawCommandBuffer.clear();
-    this->currentRenderTarget = nullptr;
 }
 
 void Renderer::flip(RenderContext &ctx) {
@@ -594,8 +596,8 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::setSize");
 #endif
-    auto &size =
-        currentRenderTarget ? currentRenderTarget->size : ctx.window->size();
+    IntDimensions size =
+        currentRenderTarget ? currentRenderTarget->size : ctx.size();
     ScaleFactor scale =
         currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
     width = size.x() * scale.x();
@@ -606,6 +608,7 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
         (!currentRenderTarget || currentRenderTarget->cameraTransform)) {
         ctx.camera->getTransformationMatrix(_ortho, width, height);
     } else if (currentRenderTarget && !currentRenderTarget->cameraTransform) {
+        // framebuffer, no camera transform
         _ortho.translate(-width / 2.0, -height / 2.0);
         _ortho.scale(2.0 / width, 2.0 / height, 1.0 / 2000);
         Matrix4 M;
@@ -613,6 +616,7 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
         M[11] = 1.0;
         _ortho *= M;
     } else {
+        // scene shader
         _ortho.translate(-width / 2.0, -height / 2.0);
         _ortho.scale(2.0 / width, -2.0 / height, 1.0 / 2000);
         Matrix4 M;
@@ -621,29 +625,30 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
         _ortho *= M;
     }
 
-    glViewport(0, 0, width / scale.x(), height / scale.y());
+    if (currentRenderTarget) {
+        glViewport(0, 0, width / scale.x(), height / scale.y());
+    } else {
+        glViewport(ctx.camera->offset.x(), ctx.camera->offset.y(), width,
+                   height);
+    }
 
-    // float near = 0, far = 10, left = 0, right = width, top = 0,
-    //       bottom = height;
-    // memset(_ortho, 0, 64);
-    // auto &M = _ortho;
-    // M[0] = 2 * near / (right - left);
-    // M[1] = 0;
-    // M[2] = 0;
-    // M[3] = 0;
-    // M[4] = 0;
-    // M[5] = 2 * near / (top - bottom);
-    // M[6] = 0;
-    // M[7] = 0;
-    // M[8] = 0;
-    // M[9] = 0;
-    // M[10] = -(far + near) / (far - near);
-    // M[11] = -1;
-    // M[12] = -near * (left + right) / (right - left);
-    // M[13] = -near * (bottom + top) / (top - bottom);
-    // M[14] = 2 * near * far / (near - far);
-    // M[15] = 0;
-    // glViewport(left, top, right - left, bottom - top);
+    // _ortho.translate(1.0, 1.0);
+    // _ortho.scale(width / w, height / h);
+    // _ortho.translate(-1.0, -1.0);
+}
+
+void Renderer::updateClip(RenderContext &ctx) {
+    if (clipStack.empty()) {
+        return;
+    }
+    auto &newClip = clipStack.back();
+    int ox = 0, oy = 0;
+    if (!currentRenderTarget) {
+        ox = ctx.camera->offset.x();
+        oy = ctx.camera->offset.y();
+    }
+    glScissor(newClip.x + ox, this->height - newClip.y - newClip.height + oy,
+              newClip.width, newClip.height);
 }
 
 }

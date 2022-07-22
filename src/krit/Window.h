@@ -42,6 +42,10 @@ struct Window : public IntDimensions {
         SDL_GetWindowSize(this->window, w, h);
     }
 
+    void setWindowSize(int w, int h) {
+        SDL_SetWindowSize(this->window, w, h);
+    }
+
 private:
     SDL_Window *window = nullptr;
     SDL_Surface *surface = nullptr;

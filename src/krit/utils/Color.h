@@ -1,12 +1,12 @@
 #ifndef KRIT_UTILS_COLOR
 #define KRIT_UTILS_COLOR
 
-#include <cstdint>
 #include "krit/math/Vec.h"
+#include <cstdint>
 
 namespace krit {
 
-    // struct Color : public Vec4 {
+// struct Color : public Vec4 {
 //     float &r() { return (*this)[0]; }
 //     float &g() { return (*this)[1]; }
 //     float &b() { return (*this)[2]; }
@@ -99,6 +99,12 @@ struct Color {
     }
 
     Color withAlpha(float alpha) { return Color(r, g, b, alpha); }
+
+    uint32_t rgb() {
+        return (static_cast<uint32_t>(r * 0xff) << 16) |
+               (static_cast<uint32_t>(g * 0xff) << 8) |
+               static_cast<uint32_t>(b * 0xff);
+    }
 
     uint32_t bgra() {
         return (static_cast<uint32_t>(b * 0xff) << 24) |

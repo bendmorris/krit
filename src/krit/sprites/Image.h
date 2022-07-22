@@ -35,8 +35,8 @@ struct Image : public VisibleSprite {
     }
 
     Dimensions getSize() override {
-        return Dimensions(this->width() * this->scale.x(),
-                          this->height() * this->scale.y());
+        return Dimensions(this->width() * abs(this->scale.x()),
+                          this->height() * abs(this->scale.y()));
     }
     void resize(float w, float h) override {
         this->scale.setTo(w / this->width(), h / this->height());

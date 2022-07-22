@@ -114,6 +114,7 @@ declare class Text extends VisibleSprite {
     baseColor: Color;
     /** @readonly */ textDimensions: Vec2f;
     allowPixelPerfect: boolean;
+    dynamicSize: boolean;
     border: boolean;
     borderThickness: integer;
     borderColor: Color;
@@ -196,6 +197,16 @@ declare class ParticleSystem extends VisibleSprite {
     constructor();
     loadAtlas(path: string): void;
     loadEffect(path: string): void;
-    emit(name: string, x: number, y: number, loop: boolean): void;
+    emit(name: string, x: number, y: number, loop?: boolean): Reference<EffectInstance>;
     clear(): void;
+    hasParticles(): boolean;
+}
+
+/**
+ * @namespace krit
+ * @import krit/sprites/Particles.h
+ */
+declare class EffectInstance {
+    origin: Point;
+    angle: float;
 }

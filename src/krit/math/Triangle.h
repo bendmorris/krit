@@ -22,6 +22,8 @@ struct Triangle {
 
     Triangle() {}
     Triangle(const Triangle &) = default;
+    Triangle(Vec2f &p1, Vec2f &p2, Vec2f &p3)
+        : p1(p1.x(), p1.y()), p2(p2.x(), p2.y()), p3(p3.x(), p3.y()) {}
     Triangle(Vec3f &p1, Vec3f &p2, Vec3f &p3) : p1(p1), p2(p2), p3(p3) {}
     Triangle(float a, float b, float c, float d, float e, float f)
         : p1(a, b, 0), p2(c, d, 0), p3(e, f, 0) {}

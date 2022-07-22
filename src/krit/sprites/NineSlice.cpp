@@ -73,6 +73,9 @@ void NineSlice::render(RenderContext &render) {
             m.identity();
             m.scale(_w / _r.width(), _h / _r.height());
             m.translate(_x - this->origin.x(), _y - this->origin.y());
+            if (pitch) {
+                m.pitch(pitch);
+            }
             m.scale(this->scale.x(), this->scale.y());
             m.translate(this->position.x(), this->position.y());
             render.addRect(key, _r.rect, m, this->color);

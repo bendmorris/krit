@@ -1,3 +1,14 @@
+/// <reference path="builtin.d.ts" />
+/// <reference path="data.d.ts" />
+/// <reference path="engine.d.ts" />
+/// <reference path="input.d.ts" />
+/// <reference path="l12n.d.ts" />
+/// <reference path="math.d.ts" />
+/// <reference path="render.d.ts" />
+/// <reference path="sound.d.ts" />
+/// <reference path="sprites.d.ts" />
+/// <reference path="utils.d.ts" />
+
 type Reference<T> = T & { __ref?: undefined };
 type Pointer<T> = T & { __ptr?: undefined };
 type SharedPtr<T> = T & { __sh?: undefined };

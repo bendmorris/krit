@@ -2,13 +2,14 @@
  * @namespace krit
  * @import krit/data/DataModel.h
  */
-interface DataItem {
+declare class DataItem {
     id: string;
 }
 
 // DataModel must be extended, and the child must be exposed separately.
 
 interface DataModel<T> {
+    get(index: size_t): Reference<T>;
     getById(id: string): Reference<T>;
     all(): Reference<Array<T>>;
     count(): number;

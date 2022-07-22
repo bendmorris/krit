@@ -22,8 +22,8 @@ Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {
 }
 
 void Image::update(UpdateContext &ctx) {
-    dimensions.setTo(region.rect.width * scale.x(),
-                     region.rect.height * scale.y());
+    dimensions.setTo(region.rect.width * abs(scale.x()),
+                     region.rect.height * abs(scale.y()));
 }
 
 void Image::render(RenderContext &ctx) {

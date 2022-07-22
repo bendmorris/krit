@@ -25,6 +25,10 @@ template <typename ModelType> struct DataModel {
         return this->data[it->second];
     }
 
+    ModelType &get(size_t index) {
+        return this->data[index];
+    }
+
     bool has(const std::string &id) {
         return this->idMap.find(id) != this->idMap.end();
     }

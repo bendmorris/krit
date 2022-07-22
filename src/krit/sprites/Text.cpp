@@ -584,7 +584,9 @@ void Text::__render(RenderContext &ctx, bool border) {
     int charCount = this->charCount;
     size_t tabIndex = 0;
 
-    float cameraScale = std::max(ctx.camera->scale.x(), ctx.camera->scale.y());
+    float cameraScale =
+        dynamicSize ? std::max(ctx.camera->scale.x(), ctx.camera->scale.y())
+                    : 1;
     float size = this->size * cameraScale;
     float fontScale = std::round(size) / cameraScale / 64.0;
     bool pixelPerfect = allowPixelPerfect && fontScale < 20;
@@ -695,7 +697,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                             std::round(matrix.tx() * cameraScale) / cameraScale;
                         matrix.ty() =
                             std::round(matrix.ty() * cameraScale) / cameraScale;
-                        matrix.a() = matrix.d() = 1.0 / glyphScale / cameraScale;
+                        matrix.a() = matrix.d() =
+                            1.0 / glyphScale / cameraScale;
                         matrix.a() *=
                             ctx.camera->scale.x() / ctx.camera->scale.y();
                         matrix.b() = matrix.c() = 0;
@@ -716,7 +719,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                         matrix.translate(position.x(), position.y());
                         matrix.translate(renderData.position.x(),
                                          renderData.position.y());
-                        matrix.a() = matrix.d() = 1.0 / glyphScale / cameraScale;
+                        matrix.a() = matrix.d() =
+                            1.0 / glyphScale / cameraScale;
                         matrix.a() *=
                             ctx.camera->scale.x() / ctx.camera->scale.y();
                         matrix.b() = matrix.c() = 0;
@@ -747,10 +751,16 @@ void Text::__render(RenderContext &ctx, bool border) {
                             matrix.ty() -=
                                 (borderGlyph.offset.y() - glyph.offset.y()) /
                                 glyphScale / cameraScale;
+                            if (pitch) {
+                                matrix.pitch(pitch);
+                            }
                             ctx.addRect(key, borderGlyph.region.rect, matrix,
                                         borderColor, zIndex);
                         }
                     } else {
+                        if (pitch) {
+                            matrix.pitch(pitch);
+                        }
                         ctx.addRect(key, glyph.region.rect, matrix,
                                     renderData.color, zIndex);
                     }

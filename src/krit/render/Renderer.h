@@ -51,6 +51,7 @@ private:
     void setBlendMode(BlendMode mode);
     void setSize(RenderContext &ctx, bool sceneShader = false);
     void clear(RenderContext &ctx);
+    void updateClip(RenderContext &ctx);
     void dispatchCommands(RenderContext &ctx);
 
     int index();

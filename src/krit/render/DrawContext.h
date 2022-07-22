@@ -1,311 +1,243 @@
-// #ifndef KRIT_RENDER_DRAWCONTEXT
-// #define KRIT_RENDER_DRAWCONTEXT
+#ifndef KRIT_RENDER_DRAWCONTEXT
+#define KRIT_RENDER_DRAWCONTEXT
 
-// #include "krit/render/BlendMode.h"
-// #include "krit/render/RenderContext.h"
-// #include "krit/utils/Color.h"
-// #include "krit/Math.h"
+#include "krit/Math.h"
+#include "krit/render/BlendMode.h"
+#include "krit/render/DrawKey.h"
+#include "krit/render/RenderContext.h"
+#include "krit/utils/Color.h"
 
-// namespace krit {
+namespace krit {
 
-// struct DrawContext {
-//     RenderContext *render;
-//     BlendMode blend;
-//     bool smooth;
-//     Color color;
-//     float alpha;
-//     double lineThickness = 1;
+struct DrawContext {
+    RenderContext *context;
+    BlendMode blend = BlendMode::Alpha;
+    SmoothingMode smooth = SmoothingMode::SmoothLinear;
+    Color color;
+    float alpha = 1;
+    float lineThickness = 1;
+    int zIndex = 0;
 
-//     DrawContext &setColor(Color color, float alpha = 1) {
-//         this->color = color;
-//         this->alpha = alpha;
-//         return *this;
-//     }
+    DrawContext(RenderContext &ctx) : context(&ctx) {}
 
-//     void line(Point p1, Point p2) {
-//         // create perpendicular delta vector
-//         var a = struct Point {x: p2.x - p1.x, y: p2.y - p1.y};
-//         a.normalize(this.lineThickness / 2);
-//         var b = a.copy();
-//         b.perpendicular();
+    void line(Vec2f p1, Vec2f p2) {
+        // create perpendicular delta vector
+        Vec2f a(p2.x() - p1.x(), p2.y() - p1.y());
+        a.normalize(this->lineThickness / 2);
+        Vec2f b = a.perpendicular();
+        this->drawQuad(p1.x() + b.x() - a.x(), p1.y() + b.y() - a.y(),
+                       p1.x() - b.x() - a.x(), p1.y() - b.y() - a.y(),
+                       p2.x() - b.x() + a.x(), p2.y() - b.y() + a.y(),
+                       p2.x() + b.x() + a.x(), p2.y() + b.y() + a.y());
+    }
 
-//         this.drawQuad(
-//             p1.x + b.x - a.x, p1.y + b.y - a.y,
-//             p1.x - b.x - a.x, p1.y - b.y - a.y,
-//             p2.x - b.x + a.x, p2.y - b.y + a.y,
-//             p2.x + b.x + a.x, p2.y + b.y + a.y
-//         );
-//     }
+    void polyline(const Vec2f *points, size_t pointsLength, bool miterJoint) {
+        if (pointsLength < 2) {
+            return;
+        }
 
-//     public function polyline(points: Slice[Point], miterJoint: Bool) {
-//         if points.length < 2 {
-//             return;
-//         }
+        float halfThick = this->lineThickness / 2;
+        Vec2f a;
+        Vec2f b;
+        Vec2f pos = points[0];
+        Vec2f prev(pos.x() - points[1].x(), pos.y() - points[1].y());
+        Vec2f inner;
+        Vec2f outer;
+        Vec2f nextPrev;
 
-//         var halfThick = this.lineThickness / 2;
-//         var a        = P();
-//         var b        = P();
-//         var pos      = points[0];
-//         var prev     = P(pos.x - points[1].x, pos.y - points[1].y); //
-//         direction var next     = P(prev.x, prev.y); var inner    = P(); var
-//         outer    = P(); var nextPrev = P();
+        a.copyFrom(pos);
+        b.copyFrom(pos);
 
-//         a.copyFrom(pos);
-//         b.copyFrom(pos);
+        // calculate first cap
+        Vec2f next = prev.perpendicular();
+        next.normalize(halfThick);
+        a += next;
+        b -= next;
 
-//         // calculate first cap
-//         next.perpendicular();
-//         next.normalize(halfThick);
-//         a.add(next);
-//         b.subtract(next);
+        prev.normalize(1); // unit length
 
-//         prev.normalize(1); // unit length
+        bool over180 = false;
+        float angle = 0;
+        size_t index = 0;
 
-//         var over180: Bool = false;
-//         var angle: Float = 0;
-//         var index: Int = 0;
+        for (size_t i = 1; i < pointsLength; ++i) {
+            index = i * 2;
 
-//         for i in 1 ... points.length {
-//             index = i * 2;
+            pos.copyFrom(points[index]);
 
-//             pos.copyFrom(points[index]);
+            // vector v (difference between current and next)
+            next.copyFrom(pos);
+            next -= points[index + 1];
+            next.normalize(1); // unit length
+            nextPrev =
+                next; // we clobber the "next" value so it needs to be saved
+            over180 = prev.zcross(next) > 0;
+            // calculate half angle from two vectors
+            // normally this would require knowing the vector lengths but
+            // because they both should be unit vectors we can ignore dividing
+            // by length
+            angle = acos(prev.dot(next)) / 2;
 
-//             // vector v (difference between current and next)
-//             next.copyFrom(pos).subtract(points[index + 1]);
-//             next.normalize(1); // unit length
-//             nextPrev.copyFrom(next); // we clobber the "next" value so it
-//             needs to be saved
+            inner.copyFrom(prev);
+            inner += next;
+            inner.perpendicular();
+            if (over180) {
+                inner.invert();
+            }
+            inner.normalize(halfThick / cos(angle));
+            if (miterJoint) {
+                outer.copyFrom(pos);
+                outer -= inner;
+            }
+            inner += pos;
 
-//             over180 = prev.zcross(next) > 0;
-//             // calculate half angle from two vectors
-//             // normally this would require knowing the vector lengths but
-//             because
-//             // they both should be unit vectors we can ignore dividing by
-//             length angle = acos(prev.dot(next)) / 2;
+            // calculate joint points
+            prev.perpendicular();
+            prev.normalize(halfThick);
 
-//             inner.copyFrom(prev);
-//             inner.add(next);
-//             inner.perpendicular();
-//             if over180 {
-//                 inner.invert();
-//             }
-//             inner.normalize(halfThick / cos(angle));
-//             if miterJoint {
-//                 outer.copyFrom(pos);
-//                 outer.subtract(inner);
-//             }
-//             inner.add(pos);
+            next.perpendicular();
+            next.normalize(halfThick);
 
-//             // calculate joint points
-//             prev.perpendicular();
-//             prev.normalize(halfThick);
+            if (over180) {
+                prev.invert();
+                next.invert();
+            }
 
-//             next.perpendicular();
-//             next.normalize(halfThick);
+            prev += pos;
+            next += pos;
 
-//             if !over180 {
-//                 prev.invert();
-//                 next.invert();
-//             }
+            // draw line connection
+            if (over180) {
+                this->drawTriangle(a, b, prev);
+            } else {
+                this->drawTriangle(a, b, inner);
+            }
+            this->drawTriangle(b, prev, inner);
+            // draw bevel joint
+            this->drawTriangle(next, prev, inner);
+            if (miterJoint) {
+                this->drawTriangle(next, prev, outer);
+            }
 
-//             prev.add(pos);
-//             next.add(pos);
+            if (over180) {
+                a = next;
+                b = inner;
+            } else {
+                a = inner;
+                b = next;
+            }
 
-//             // draw line connection
-//             if over180 {
-//                 this.drawTriangle(a, b, prev);
-//             } else {
-//                 this.drawTriangle(a, b, inner);
-//             }
-//             this.drawTriangle(b, prev, inner);
-//             // draw bevel joint
-//             this.drawTriangle(next, prev, inner);
-//             if miterJoint {
-//                 this.drawTriangle(next, prev, outer);
-//             }
+            prev = nextPrev;
+        }
 
-//             if over180 {
-//                 a.copyFrom(next);
-//                 b.copyFrom(inner);
-//             } else {
-//                 a.copyFrom(inner);
-//                 b.copyFrom(next);
-//             }
+        // end cap
+        next.copyFrom(points[pointsLength - 1]);
+        pos -= next;
+        pos.perpendicular();
+        pos.normalize(halfThick);
+        prev.copyFrom(next);
+        prev += pos;
+        next -= pos;
 
-//             prev.copyFrom(nextPrev);
-//         }
+        // draw final line
+        this->drawTriangle(a, b, prev);
+        this->drawTriangle(b, prev, next);
+    }
 
-//         // end cap
-//         next.copyFrom(points[points.length - 1]);
-//         pos.subtract(next);
-//         pos.perpendicular();
-//         pos.normalize(halfThick);
-//         prev.copyFrom(next);
-//         prev.add(pos);
-//         next.subtract(pos);
+    void rect(const Rectangle &r) {
+        float t = this->lineThickness;
+        float x = r.left();
+        float y = r.top();
+        float x2 = r.right();
+        float y2 = r.bottom();
+        // top
+        this->line(Vec2f(x, y), Vec2f(x2, y));
+        // bottom
+        this->line(Vec2f(x, y2), Vec2f(x2, y2));
+        // left
+        this->line(Vec2f(x, y + t), Vec2f(x, y2 - t));
+        // right
+        this->line(Vec2f(x2, y + t), Vec2f(x2, y2 - t));
+    }
 
-//         // draw final line
-//         this.drawTriangle(a, b, prev);
-//         this.drawTriangle(b, prev, next);
-//     }
+    void rectFilled(const Rectangle &r) {
+        this->drawQuad(r.left(), r.top(), r.right(), r.top(), r.right(),
+                       r.bottom(), r.left(), r.bottom());
+    }
 
-//     public function rect(r: Ptr[Rectangle[Float]]) {
-//         var t = this.lineThickness;
-//         var x = r.left;
-//         var y = r.top;
-//         var x2 = r.right;
-//         var y2 = r.bottom;
-//         this.line(struct Point {x: x, y}, struct Point {x: x2, y} ); // top
-//         this.line(struct Point {x: x, y: y2}, struct Point {x: x2, y: y2});
-//         // bottom this.line(struct Point {x, y: y + t}, struct Point {x, y:
-//         y2 - t}); // left this.line(struct Point {x: x2, y: y + t}, struct
-//         Point {x: x2, y: y2 - t}); // right
-//     }
+    void circle(const Vec2f &center, float radius, size_t segments) {
+        arc(center, radius, 0, M_PI * 2, segments);
+    }
 
-//     public function rectFilled(r: Ptr[Rectangle[Float]]) {
-//         this.drawQuad(
-//             r.x, r.y,
-//             r.right, r.y,
-//             r.right, r.bottom,
-//             r.x, r.bottom
-//         );
-//     }
+    void circleFilled(const Vec2f &center, float radius, size_t segments) {
+        float x = center.x();
+        float y = center.y();
+        float radians = (2 * M_PI) / segments;
+        float x1 = x;
+        float y1 = y + radius;
+        auto c = this->color.withAlpha(this->alpha);
+        for (size_t segment = 1; segment < segments + 1; ++segment) {
+            float theta = segment * radians;
+            float x2 = x + sin(theta) * radius;
+            float y2 = y + cos(theta) * radius;
+            this->addTriangle(x, y, x1, y1, x2, y2, c);
+            x1 = x2;
+            y1 = y2;
+        }
+    }
 
-//     public function circle(center: Ptr[Point], radius: Float, segments: Int =
-//     16) {
-//         const x = center.x;
-//         const y = center.y;
-//         const radians = 2 * PI / segments;
-//         const halfThick = this.lineThickness / 2;
-//         const innerRadius = radius - halfThick;
-//         const outerRadius = radius + halfThick;
-//         var inner = struct Point;
-//         var outer = struct Point;
-//         var lastOuter = struct Point;
-//         var lastInner = struct Point;
+    void arc(const Vec2f &center, float radius, float startRads,
+             float angleRads, size_t segments = 16) {
+        float x = center.x();
+        float y = center.y();
+        float radians = angleRads / segments;
+        float halfThick = this->lineThickness / 2;
+        float innerRadius = radius - halfThick;
+        float outerRadius = radius + halfThick;
+        Vec2f inner;
+        Vec2f outer;
+        Vec2f lastOuter;
+        Vec2f lastInner;
 
-//         for segment in 0 ... segments + 1 {
-//             const theta = segment * radians;
-//             const sinv = sin(theta);
-//             const cosv = cos(theta);
-//             inner.setTo(x + sinv * innerRadius, y + cosv * innerRadius);
-//             outer.setTo(x + sinv * outerRadius, y + cosv * outerRadius);
+        for (size_t segment = 0; segment < segments + 1; ++segment) {
+            float theta = startRads + segment * radians;
+            float sinv = sin(theta);
+            float cosv = cos(theta);
+            inner.setTo(x + cosv * innerRadius, y - sinv * innerRadius);
+            outer.setTo(x + cosv * outerRadius, y - sinv * outerRadius);
 
-//             if segment != 0 {
-//                 this.drawTriangle(lastInner, lastOuter, outer);
-//                 this.drawTriangle(lastInner, outer, inner);
-//             }
+            if (segment != 0) {
+                this->drawTriangle(lastInner, lastOuter, outer);
+                this->drawTriangle(lastInner, outer, inner);
+            }
 
-//             lastOuter.copyFrom(outer);
-//             lastInner.copyFrom(inner);
-//         }
-//     }
+            lastOuter = outer;
+            lastInner = inner;
+        }
+    }
 
-//     public function circleFilled(center: Ptr[Point], radius: Float, segments:
-//     Int = 16) {
-//         var x = center.x;
-//         var y = center.y;
-//         const radians = (2 * PI) / segments;
-//         var x1 = x;
-//         var y1 = y + radius;
-//         for segment in 1 ... segments+1 {
-//             var theta = segment * radians;
-//             var x2 = x + sin(theta) * radius;
-//             var y2 = y + cos(theta) * radius;
-//             this.addTriangle(x, y, x1, y1, x2, y2,
-//             this.color.withAlpha(this.alpha)); x1 = x2; y1 = y2;
-//         }
-//     }
+    void drawTriangle(const Vec2f &v1, const Vec2f &v2, const Vec2f v3) {
+        this->addTriangle(v1.x(), v1.y(), v2.x(), v2.y(), v3.x(), v3.y(),
+                          this->color.withAlpha(this->alpha));
+    }
 
-//     var points: Vector[Point] = Vector.new(64);
-//     public function arc(center: Point, radius: Float, startRads: Float,
-//     angleRads: Float, segments: Int = 16) {
-//         var radians = angleRads / segments;
-//         this.points.clear();
-//         this.points.ensureSize(segments + 1);
-//         for segment in 0 ... segments + 1 {
-//             var theta = segment * radians + startRads;
-//             this.points.push(P(center.x + cos(theta) * radius, center.y -
-//             sin(theta) * radius));
-//         }
-//         this.polyline(this.points.slice(), false);
-//     }
+    void drawQuad(float x1, float y1, float x2, float y2, float x3, float y3,
+                  float x4, float y4) {
+        auto c = this->color.withAlpha(this->alpha);
+        this->addTriangle(x1, y1, x2, y2, x3, y3, c);
+        this->addTriangle(x1, y1, x3, y3, x4, y4, c);
+    }
 
-//     // /**
-//     //  * Draws a quadratic curve.
-//     //  * @param    x1            X start.
-//     //  * @param    y1            Y start.
-//     //  * @param    x2            X control point, used to determine the
-//     curve.
-//     //  * @param    y2            Y control point, used to determine the
-//     curve.
-//     //  * @param    x3            X finish.
-//     //  * @param    y3            Y finish.
-//     //  * @param    segments    Increasing will smooth the curve but takes
-//     longer to render. Must be a value greater than zero.
-//     //  */
-//     // public function curve(x1:Int, y1:Int, x2:Int, y2:Int, x3:Int, y3:Int,
-//     segments:Int = 25)
-//     // {
-//     //     var points:Array<Float> = [];
-//     //     points.push(x1);
-//     //     points.push(y1);
+    void addTriangle(float tx1, float ty1, float tx2, float ty2, float tx3,
+                     float ty3, Color color) {
+        DrawKey key;
+        key.smooth = this->smooth;
+        key.blend = this->blend;
+        Triangle t(tx1, ty1, tx2, ty2, tx3, ty3);
+        Triangle uv;
+        this->context->addTriangle(key, t, uv, color, this->zIndex);
+    }
+};
+}
 
-//     //     var deltaT: Float = 1 / segments;
-
-//     //     for (segment in 1...segments)
-//     //     {
-//     //         var t: Float = segment * deltaT;
-//     //         var x: Float = (1 - t) * (1 - t) * x1 + 2 * t * (1 - t) * x2 +
-//     t * t * x3;
-//     //         var y: Float = (1 - t) * (1 - t) * y1 + 2 * t * (1 - t) * y2 +
-//     t * t * y3;
-//     //         points.push(x);
-//     //         points.push(y);
-//     //     }
-
-//     //     points.push(x3);
-//     //     points.push(y3);
-
-//     //     polyline(points);
-//     // }
-
-//     function drawTriangle(v1: Point, v2: Point, v3: Point): Void {
-//         this.addTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y,
-//         this.color.withAlpha(this.alpha));
-//     }
-
-//     function drawQuad(x1: Float, y1: Float, x2: Float, y2: Float, x3: Float,
-//     y3: Float, x4: Float, y4: Float) {
-//         var c = this.color.withAlpha(this.alpha);
-//         this.addTriangle(x1, y1, x2, y2, x3, y3, c);
-//         this.addTriangle(x1, y1, x3, y3, x4, y4, c);
-//     }
-
-//     function addTriangle(
-//         tx1: Float, ty1: Float,
-//         tx2: Float, ty2: Float,
-//         tx3: Float, ty3: Float,
-//         color: ColorWithAlpha
-//     ) {
-//         var key = struct DrawKey {
-//             smooth: this.smooth,
-//             blend: this.blend,
-//         };
-//         this.context.addTriangle(
-//             key,
-//             struct Triangle {
-//                 p1: struct Point {x: tx1, y: ty1},
-//                 p2: struct Point {x: tx2, y: ty2},
-//                 p3: struct Point {x: tx3, y: ty3},
-//             },
-//             struct Triangle,
-//             color,
-//             false
-//         );
-//     }
-// };
-
-// }
-
-// #endif
+#endif

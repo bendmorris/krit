@@ -176,10 +176,12 @@ struct Text : public VisibleSprite, public TextOptions {
     std::string rawText;
     Dimensions textDimensions;
     bool allowPixelPerfect = true;
+    bool dynamicSize = true;
     bool border = false;
     int borderThickness = 0;
     float glyphScale = 1;
     Color borderColor = Color::black();
+    float pitch = 0;
 
     Text() = default;
     Text(const TextOptions &options);

@@ -123,6 +123,7 @@ struct EffectInstance {
     Point origin;
     bool loop = false;
     float time = 0;
+    float angle = 0;
 
     EffectInstance(std::shared_ptr<ParticleEffect> effect, const Point &at,
                    bool loop = false)
@@ -150,13 +151,17 @@ struct ParticleSystem : public VisibleSprite {
             emitter.image->blendMode = emitter.blend;
         }
     }
-    void emit(const std::string &, const Point &at, bool loop = false);
-    void emit(const std::string &id, float x, float y, bool loop = false) {
-        emit(id, Point(x, y), loop);
+    EffectInstance &emit(const std::string &, const Point &at, bool loop = false);
+    EffectInstance &emit(const std::string &id, float x, float y, bool loop = false) {
+        return emit(id, Point(x, y), loop);
     }
     void clear() {
         _effects.clear();
         _particles.clear();
+    }
+
+    bool hasParticles() {
+        return _particles.size() > 0;
     }
 
     void update(UpdateContext &ctx) override;

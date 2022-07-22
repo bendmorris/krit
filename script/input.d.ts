@@ -1,5 +1,47 @@
 /**
  * @namespace krit
+ * @import krit/input/InputContext.h
+ */
+interface InputContext {
+    /** @readonly */ events: ActionEvent[];
+    mouse: MouseContext;
+    key: KeyContext;
+    state(a: integer): integer;
+
+    bindKey(/** @cast Key */ key: Key, action: integer): void;
+    bindMouse(/** @cast MouseButton */ button: MouseButton, action: integer): void;
+}
+
+/**
+ * @namespace krit
+ * @import krit/input/InputContext.h
+ */
+interface KeyContext {
+    define(/** @cast Key */ key: Key, action: integer): void;
+    undefine(/** @cast Key */ key: Key): void;
+    keyName(/** @cast Key */ key: Key): string;
+}
+
+/**
+ * @namespace krit
+ * @import krit/input/InputContext.h
+ */
+interface MouseContext {
+    mousePos: Point;
+}
+
+/**
+ * @namespace krit
+ * @import krit/input/InputContext.h
+ */
+interface ActionEvent {
+    action: integer;
+    state: integer;
+    prevState: integer;
+}
+
+/**
+ * @namespace krit
  * @import krit/input/Mouse.h
  */
 declare enum MouseButton {

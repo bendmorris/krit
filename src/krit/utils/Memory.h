@@ -1,5 +1,5 @@
-#ifndef KRIT_UTILS
-#define KRIT_UTILS
+#ifndef KRIT_UTILS_MEMORY
+#define KRIT_UTILS_MEMORY
 
 #include <cstddef>
 

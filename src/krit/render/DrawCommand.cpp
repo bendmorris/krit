@@ -222,9 +222,10 @@ void DrawCommandBuffer::startAutoClip(float xBuffer, float yBuffer) {
 bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
     auto &clip = boundsStack.back();
     float x1 = NAN, x2 = NAN, y1 = NAN, y2 = NAN;
+    int w = ctx.camera->viewportWidth(), h = ctx.camera->viewportHeight();
     Matrix4 m;
     m.identity();
-    ctx.camera->getTransformationMatrix(m, ctx.window->x(), ctx.window->y());
+    ctx.camera->getTransformationMatrix(m, w, h);
     for (int x = 0; x < 2; ++x) {
         float xi;
         if (x == 0) {
@@ -273,16 +274,16 @@ bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
     if (std::isnan(x1)) {
         x1 = x2 = y1 = y2 = 0;
     }
-    x1 = ((x1 + 1) / 2) * ctx.window->x() - clip.xBuffer;
-    x2 = ((x2 + 1) / 2) * ctx.window->x() + clip.xBuffer;
-    y1 = ((-y1 + 1) / 2) * ctx.window->y() + clip.yBuffer;
-    y2 = ((-y2 + 1) / 2) * ctx.window->y() - clip.yBuffer;
+    x1 = ((x1 + 1) / 2) * w - clip.xBuffer;
+    x2 = ((x2 + 1) / 2) * w + clip.xBuffer;
+    y1 = ((-y1 + 1) / 2) * h + clip.yBuffer;
+    y2 = ((-y2 + 1) / 2) * h - clip.yBuffer;
     Rectangle &r = buf.get<PushClipRect>()[clip.clipIndex];
     r.setTo(x1, y2, x2 - x1, y1 - y2);
     boundsStack.pop_back();
 
-    return r.width > 0 && r.height > 0 && r.x <= ctx.window->x() &&
-           r.right() >= 0 && r.y <= ctx.window->y() && r.bottom() >= 0;
+    return r.width > 0 && r.height > 0 && r.x <= w &&
+           r.right() >= 0 && r.y <= h && r.bottom() >= 0;
 }
 
 }

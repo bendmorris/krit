@@ -23,6 +23,7 @@ struct InputContext;
 
 struct KeyContext {
     std::unordered_map<int, Action> keyMappings;
+    std::unordered_map<int, std::string> keyNames;
 
     KeyContext() {}
 
@@ -31,6 +32,16 @@ struct KeyContext {
     }
     void undefine(Key keyCode) { this->keyMappings.erase(keyCode); }
     void registerKeyState(InputContext *ctx, Key keyCode, int state);
+
+    const std::string &keyName(Key keyCode) {
+        auto it = keyNames.find(keyCode);
+        if (it == keyNames.end()) {
+            auto x = keyNames.emplace(
+                std::make_pair(keyCode, SDL_GetScancodeName((SDL_Scancode)keyCode)));
+            return x.first->second;
+        }
+        return it->second;
+    }
 };
 
 struct MouseContext {

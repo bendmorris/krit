@@ -12,6 +12,8 @@ IntDimensions RenderContext::size() {
         d.x() *= drawCommandBuffer->currentRenderTarget->scale.x();
         d.y() *= drawCommandBuffer->currentRenderTarget->scale.y();
         return d;
+    } else if (camera) {
+        return IntDimensions(camera->viewportWidth(), camera->viewportHeight());
     } else {
         return window->size();
     }

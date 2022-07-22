@@ -19,9 +19,9 @@
 namespace krit {
 
 Engine::Engine(KritOptions &options) : window(options), renderer(window) {
-    #if KRIT_ENABLE_SCRIPT
+#if KRIT_ENABLE_SCRIPT
     script.userData = this;
-    #endif
+#endif
 }
 
 void Engine::fixedUpdate(UpdateContext &ctx) {
@@ -85,9 +85,9 @@ void Engine::update(UpdateContext &ctx) {
 
     // actual update cycle
     invoke(onUpdate, &ctx);
-    #if KRIT_ENABLE_SCRIPT
+#if KRIT_ENABLE_SCRIPT
     script.update();
-    #endif
+#endif
     invoke(postUpdate, &ctx);
 }
 
@@ -111,6 +111,9 @@ void Engine::render(RenderContext &ctx) {
         for (auto &camera : cameras) {
             ctx.camera = &camera;
             camera.update(ctx);
+            if (!(camera.dimensions.x() || camera.dimensions.y())) {
+                continue;
+            }
             invoke(camera.render, &ctx);
             renderer.renderFrame(ctx);
         }

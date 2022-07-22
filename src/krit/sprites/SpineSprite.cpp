@@ -41,7 +41,8 @@ struct KritSpineExtension : public spine::DefaultSpineExtension {
         return krit::IoRead::alloc(size);
     }
 
-    void *_realloc(void *ptr, size_t size, const char *file, int line) override {
+    void *_realloc(void *ptr, size_t size, const char *file,
+                   int line) override {
         return krit::IoRead::realloc(ptr, size);
     }
 
@@ -137,8 +138,7 @@ float SpineSprite::worldVertices[1024] = {0};
 
 float SpineSprite::setAnimation(size_t track, const std::string &name,
                                 bool loop, float speed, float mix) {
-    // printf("set animation: %s %.2f %.2f %s\n", name.c_str(), speed, mix, loop
-    // ? "loop" : "");
+    // printf("set animation: %s\n", name.c_str());
     auto trackEntry = this->animationState->setAnimation(
         track, spine::String(name.c_str()), loop);
     if (speed != 1) {
@@ -261,10 +261,37 @@ void SpineSprite::render(RenderContext &ctx) {
             float *worldVertices = SpineSprite::worldVertices;
             spine::RegionAttachment *regionAttachment =
                 static_cast<spine::RegionAttachment *>(attachment);
-            ImageRegion *region = static_cast<ImageRegion *>(
-                (static_cast<spine::AtlasRegion *>(
-                     regionAttachment->getRendererObject()))
-                    ->page->getRendererObject());
+            auto overridden = customAttachments.find(attachment);
+            ImageRegion *region;
+            Triangle uvt1;
+            Triangle uvt2;
+            if (overridden == customAttachments.end()) {
+                region = static_cast<ImageRegion *>(
+                    (static_cast<spine::AtlasRegion *>(
+                         regionAttachment->getRendererObject()))
+                        ->page->getRendererObject());
+                spine::Vector<float> &uvs = regionAttachment->getUVs();
+                uvt1.p1.setTo(uvs[0], uvs[1]);
+                uvt1.p2.setTo(uvs[2], uvs[3]);
+                uvt1.p3.setTo(uvs[4], uvs[5]);
+                uvt2.p1.setTo(uvs[4], uvs[5]);
+                uvt2.p2.setTo(uvs[6], uvs[7]);
+                uvt2.p3.setTo(uvs[0], uvs[1]);
+            } else {
+                region = overridden->second.get();
+                auto &imageData = region->img;
+                auto &rect = region->rect;
+                float uvx1 = rect.x / static_cast<float>(imageData->width());
+                float uvy1 = rect.y / static_cast<float>(imageData->height());
+                float uvx2 = (rect.x + rect.width) / static_cast<float>(imageData->width());
+                float uvy2 = (rect.y + rect.height) / static_cast<float>(imageData->height());
+                uvt2.p1.setTo(uvx1, uvy1);
+                uvt2.p2.setTo(uvx2, uvy1);
+                uvt2.p3.setTo(uvx2, uvy2);
+                uvt1.p1.setTo(uvx2, uvy2);
+                uvt1.p2.setTo(uvx1, uvy2);
+                uvt1.p3.setTo(uvx1, uvy1);
+            }
             regionAttachment->computeWorldVertices(slot->getBone(),
                                                    worldVertices, 0, 2);
             DrawKey key;
@@ -272,13 +299,11 @@ void SpineSprite::render(RenderContext &ctx) {
             key.image = region->img;
             key.smooth = this->smooth;
             key.blend = blendMode;
-            spine::Vector<float> &uvs = regionAttachment->getUVs();
             Triangle t1(worldVertices[0], worldVertices[1], worldVertices[2],
                         worldVertices[3], worldVertices[4], worldVertices[5]);
             Triangle t2(worldVertices[4], worldVertices[5], worldVertices[6],
                         worldVertices[7], worldVertices[0], worldVertices[1]);
-            Triangle uvt1(uvs[0], uvs[1], uvs[2], uvs[3], uvs[4], uvs[5]);
-            Triangle uvt2(uvs[4], uvs[5], uvs[6], uvs[7], uvs[0], uvs[1]);
+            
             t1 = m * t1;
             t2 = m * t2;
             ctx.addTriangle(key, t1, uvt1, color);

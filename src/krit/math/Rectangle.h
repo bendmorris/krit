@@ -9,7 +9,7 @@
 namespace krit {
 
 template <typename T, typename Self> struct BaseRectangle {
-    T x, y, width, height;
+    T x = 0, y = 0, width = 0, height = 0;
 
     BaseRectangle<T, Self>() {}
     BaseRectangle<T, Self>(T x, T y, T width, T height)
@@ -20,9 +20,7 @@ template <typename T, typename Self> struct BaseRectangle {
                this->width == other.width && this->height == other.height;
     }
 
-    bool operator!() {
-        return !(x || y || width || height);
-    }
+    bool operator!() { return !(x || y || width || height); }
 
     T top() const { return this->y; }
     T bottom() const { return this->y + this->height; }
@@ -66,7 +64,7 @@ template <typename T, typename Self> struct BaseRectangle {
         T yi = std::max(y, other.y);
         T w = std::min(right(), other.right()) - xi;
         T h = std::min(bottom(), other.bottom()) - yi;
-        return w > 0  && h > 0 ? Self(xi, yi, w, h) : Self();
+        return w > 0 && h > 0 ? Self(xi, yi, w, h) : Self();
     }
 
     template <typename U> bool contains(Vec<U, 2> &p) {
@@ -75,8 +73,8 @@ template <typename T, typename Self> struct BaseRectangle {
     }
 
     bool contains(T x, T y) {
-        return x >= this->x && x <= (this->x + this->width) &&
-               y >= this->y && y <= (this->y + this->height);
+        return x >= this->x && x <= (this->x + this->width) && y >= this->y &&
+               y <= (this->y + this->height);
     }
 
     Self &copyFrom(const Self &other) {
@@ -91,7 +89,10 @@ template <typename T, typename Self> struct BaseRectangle {
         return static_cast<Self &>(*this);
     }
 
-    void debugPrint() { printf("%.2f,%.2f %.2fx%.2f\n", (float)x, (float)y, (float)width, (float)height); }
+    void debugPrint() {
+        printf("%.2f,%.2f %.2fx%.2f\n", (float)x, (float)y, (float)width,
+               (float)height);
+    }
 };
 
 struct Rectangle : public BaseRectangle<float, Rectangle> {
@@ -99,8 +100,7 @@ struct Rectangle : public BaseRectangle<float, Rectangle> {
     Rectangle(float x, float y, float width, float height)
         : BaseRectangle<float, Rectangle>(x, y, width, height) {}
     template <typename T, typename U>
-    Rectangle(Vec2f &p, Vec2f &d)
-        : Rectangle(p.x(), p.y(), d.x(), d.y()) {}
+    Rectangle(Vec2f &p, Vec2f &d) : Rectangle(p.x(), p.y(), d.x(), d.y()) {}
 };
 
 struct IntRectangle : public BaseRectangle<int, IntRectangle> {
