@@ -1,0 +1,23 @@
+declare namespace console {
+    /** @jsfunc */ function log(..._: any[]): void;
+}
+
+// declare function setTimeout(f: () => void, t: number): void;
+
+/** @jsfunc */ declare function __id(x: any): number;
+/** @jsfunc */ declare function timeout(t: number): Promise<void>;
+/** @jsfunc */ declare function gc(): void;
+/** @jsfunc */ declare function dumpMemoryUsage(): void;
+/** @jsfunc */ declare function exit(): void;
+/** @jsfunc */ declare function readFile(path: string): string;
+/** @skip */ declare function __date_clock(): number;
+
+declare namespace Log {
+    /** @jsfunc */ function setLogLevel(level: LogLevel): void;
+    /** @jsfunc */ function debug(msg: string): void;
+    /** @jsfunc */ function info(msg: string): void;
+    /** @jsfunc */ function warn(msg: string): void;
+    /** @jsfunc */ function error(msg: string): void;
+    /** @jsfunc */ function fatal(msg: string): void;
+    /** @jsfunc */ function success(msg: string): void;
+}

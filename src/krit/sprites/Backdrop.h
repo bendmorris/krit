@@ -7,7 +7,6 @@
 #include "krit/Sprite.h"
 #include "krit/math/Point.h"
 #include "krit/math/Rectangle.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
@@ -16,6 +15,8 @@ namespace krit {
 struct RenderContext;
 
 struct Backdrop : public VisibleSprite {
+    static Backdrop *create(const std::string &id) { return new Backdrop(id); }
+
     float angle = 0;
     ImageRegion region;
     Point scroll;

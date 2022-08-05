@@ -3,7 +3,6 @@
 #include "krit/UpdateContext.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/math/Triangle.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/DrawKey.h"

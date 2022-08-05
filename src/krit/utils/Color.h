@@ -17,6 +17,7 @@ namespace krit {
 // };
 
 struct Color {
+    static Color *create() { return new Color(); }
     static Color black(float alpha = 1.0) {
         return Color(0.0, 0.0, 0.0, alpha);
     }
@@ -46,19 +47,18 @@ struct Color {
         return *this;
     }
 
-    void setTo(const Color &c) { *this = c; }
     void setTo(unsigned c) { *this = c; }
-    void setTo(float r, float g, float b) {
-        this->r = r;
-        this->g = g;
-        this->b = b;
-    }
-    void setTo(float r, float g, float b, float a) {
-        this->r = r;
-        this->g = g;
-        this->b = b;
-        this->a = a;
-    }
+    // void setTo(float r, float g, float b) {
+    //     this->r = r;
+    //     this->g = g;
+    //     this->b = b;
+    // }
+    // void setTo(float r, float g, float b, float a) {
+    //     this->r = r;
+    //     this->g = g;
+    //     this->b = b;
+    //     this->a = a;
+    // }
 
     bool operator==(const Color &other) {
         return r == other.r && g == other.g && b == other.b && a == other.a;
@@ -77,10 +77,18 @@ struct Color {
         return Color(r - other.r, g - other.g, b - other.b, a - other.a);
     }
 
-    void lerpInPlace(const Color &other, float mix) {
-        *this = this->lerp(other, mix);
-    }
+    // void lerpInPlace(const Color &other, float mix) {
+    //     *this = this->lerp(other, mix);
+    // }
     void lerpInPlace(unsigned c, float mix) { *this = this->lerp(c, mix); }
+
+    void zero() {
+        r = g = b = 0;
+    }
+
+    void one() {
+        r = g = b = 1;
+    }
 
     Color lerp(const Color &other, float mix) {
         if (mix <= 0) {

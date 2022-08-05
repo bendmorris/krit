@@ -41,7 +41,7 @@ struct AudioStream {
     int sampleRate();
     float currentPlayTime();
 
-    void onLoop(const std::string &name);
+    // void onLoop(const std::string &name);
     void onLoop(std::shared_ptr<MusicData> music);
 
     void clear() {
@@ -89,10 +89,10 @@ struct AudioBackend {
     ~AudioBackend();
 
     void playSound(const std::string &name);
-    void playSound(SoundData *sound);
+    void playSoundAsset(SoundData *sound);
 
     AudioStream *playMusic(const std::string &name);
-    AudioStream *playMusic(std::shared_ptr<MusicData> music);
+    AudioStream *playMusicAsset(std::shared_ptr<MusicData> music);
 
     AudioSource *getSource();
     void recycleSource(AudioSource *source);

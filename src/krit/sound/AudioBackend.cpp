@@ -3,8 +3,8 @@
 #include "krit/sound/MusicData.h"
 #include "krit/sound/SoundData.h"
 #include "krit/utils/Log.h"
-#include <sndfile.h>
 #include <AL/alext.h>
+#include <sndfile.h>
 
 namespace krit {
 
@@ -62,10 +62,10 @@ AudioBackend::~AudioBackend() {
 }
 
 void AudioBackend::playSound(const std::string &name) {
-    playSound(App::ctx.engine->getSound(name).get());
+    playSoundAsset(App::ctx.engine->getSound(name).get());
 }
 
-void AudioBackend::playSound(SoundData *sound) {
+void AudioBackend::playSoundAsset(SoundData *sound) {
     if (enabled) {
         ALuint buffer = sound->buffer;
         AudioSource *source = getSource();
@@ -142,9 +142,9 @@ void AudioBackend::update() {
 }
 
 AudioStream *AudioBackend::playMusic(const std::string &name) {
-    return playMusic(App::ctx.engine->getMusic(name));
+    return playMusicAsset(App::ctx.engine->getMusic(name));
 }
-AudioStream *AudioBackend::playMusic(std::shared_ptr<MusicData> music) {
+AudioStream *AudioBackend::playMusicAsset(std::shared_ptr<MusicData> music) {
     int streamIndex = -1;
     for (int i = 0; i < MAX_STREAMS; ++i) {
         if (!_streams[i].data) {
@@ -268,9 +268,9 @@ float AudioStream::currentPlayTime() {
     return static_cast<float>(samplesPlayed + sampleOffset) / data->sampleRate;
 }
 
-void AudioStream::onLoop(const std::string &name) {
-    onLoop(App::ctx.engine->getMusic(name));
-}
+// void AudioStream::onLoop(const std::string &name) {
+//     onLoop(App::ctx.engine->getMusic(name));
+// }
 void AudioStream::onLoop(std::shared_ptr<MusicData> music) {
     onLoopData = music;
 }

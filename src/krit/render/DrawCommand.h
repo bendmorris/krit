@@ -86,7 +86,7 @@ struct DrawCommandBuffer {
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
                      const Triangle &uv, const Color &color, int zIndex = 0);
 
-    void pushClip(Rectangle &clip) { buf.emplace_back<PushClipRect>(clip); }
+    void pushClip(Rectangle clip) { buf.emplace_back<PushClipRect>(clip); }
     void popClip() { buf.emplace_back<PopClipRect>(); }
 
     void startAutoClip(float xBuffer = 0, float yBuffer = 0);
@@ -96,11 +96,7 @@ struct DrawCommandBuffer {
         buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb, clear);
     }
 
-    void clearColor() { buf.emplace_back<ClearColor>(Color(0, 0, 0, 0)); }
-    void clearColor(const Color &color) { buf.emplace_back<ClearColor>(color); }
-    void clearColor(float r, float g, float b, float a) {
-        buf.emplace_back<ClearColor>(Color(r, g, b, a));
-    }
+    void clearColor(Color color = Color::black()) { buf.emplace_back<ClearColor>(color); }
 
     void drawSceneShader(SceneShader *shader) {
         buf.emplace_back<DrawSceneShader>(shader);

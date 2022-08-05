@@ -10,6 +10,8 @@
 namespace krit {
 
 struct DrawContext {
+    static DrawContext *create(RenderContext &ctx) { return new DrawContext(ctx); }
+
     RenderContext *context;
     BlendMode blend = BlendMode::Alpha;
     SmoothingMode smooth = SmoothingMode::SmoothLinear;

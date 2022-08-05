@@ -60,6 +60,10 @@ struct SpineSprite : public VisibleSprite {
 
     static void setAtlasPath(const std::string &s) { defaultAtlasPath = s; }
 
+    static SpineSprite *create(const std::string &id) {
+        return new SpineSprite(id);
+    }
+
     float angle = 0;
     float pitch = 0;
     float rate = 1;
@@ -68,7 +72,8 @@ struct SpineSprite : public VisibleSprite {
     std::unique_ptr<spine::Skeleton> skeleton;
     std::unique_ptr<spine::AnimationState> animationState;
     std::unique_ptr<spine::Skin> skin;
-    std::unordered_map<spine::Attachment *, std::unique_ptr<ImageRegion>> customAttachments;
+    std::unordered_map<spine::Attachment *, std::unique_ptr<ImageRegion>>
+        customAttachments;
 
     spine::SkeletonData &skeletonData() { return *data->skeletonData; }
     spine::AnimationStateData &animationStateData() {

@@ -7,7 +7,6 @@
 #include "krit/math/Point.h"
 #include "krit/math/Range.h"
 #include "krit/math/Rectangle.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/math/Triangle.h"
 
 namespace krit {

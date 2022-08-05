@@ -1,6 +1,6 @@
 project(krit)
-cmake_policy (SET CMP0072 NEW)
-cmake_policy (SET CMP0077 NEW)
+cmake_policy(SET CMP0072 NEW)
+cmake_policy(SET CMP0077 NEW)
 
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
 option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
@@ -10,10 +10,13 @@ option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
 
 if(BUILD_WINDOWS)
     include(${KRIT_DIR}/toolchain/windows.cmake)
+    add_definitions(-DKRIT_WINDOWS)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     include(${KRIT_DIR}/toolchain/emscripten.cmake)
+    add_definitions(-DKRIT_EMSCRIPTEN)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     include(${KRIT_DIR}/toolchain/linux.cmake)
+    add_definitions(-DKRIT_LINUX)
 else()
     message(FATAL_ERROR "Unrecognized platform")
 endif()
@@ -22,7 +25,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF} -DTRACY_ENABLE")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c99-designator -Wno-parentheses -Wno-unused-result -Werror -Wall -ffast-math -fno-exceptions")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c99-designator -Wno-parentheses -Wno-unused-result -Werror -Wall -fno-exceptions")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -DTRACY_ENABLE -Wno-sometimes-uninitialized")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -32,7 +35,7 @@ set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_DEBUG} ${CMAKE_LINKER_FLAGS_AS
 set(CMAKE_LINKER_FLAGS_PROF "${CMAKE_LINKER_FLAGS_RELEASE} ${CMAKE_LINKER_FLAGS_PROF}")
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-find_package(OpenGL REQUIRED)
+    find_package(OpenGL REQUIRED)
 endif()
 
 if(KRIT_ENABLE_TOOLS)
@@ -41,9 +44,10 @@ if(KRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/imgui/*.cpp)
     include_directories(${KRIT_DIR}/imgui)
 endif()
+
 if(KRIT_SCRIPT_BRIDGE)
-message(STATUS "scripting enabled")
-add_definitions(-DKRIT_ENABLE_SCRIPT)
+    message(STATUS "scripting enabled")
+    add_definitions(-DKRIT_ENABLE_SCRIPT)
 endif()
 
 file(GLOB KRIT_SRC_FILES CONFIGURE_DEPENDS
@@ -85,7 +89,6 @@ include_directories(${KRIT_DIR}/quickjs)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/..)
 
 # string(STRIP ${SDL2_LIBRARIES} SDL2_LIBRARIES)
-
 if(KRIT_SCRIPT_BRIDGE)
     file(GLOB_RECURSE KRIT_GENERATED_FILES
         CONFIGURE_DEPENDS
@@ -111,7 +114,7 @@ list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/quickjs-libc.c
 )
 
-add_library(${PROJECT_NAME} STATIC    
+add_library(${PROJECT_NAME} OBJECT
     ${KRIT_GENERATED_FILES}
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
@@ -121,9 +124,11 @@ add_library(${PROJECT_NAME} STATIC
 if(KRIT_ENABLE_THREADS)
     add_definitions(-DKRIT_ENABLE_THREADS)
 endif()
+
 if(KRIT_USE_GLEW)
     add_definitions(-DKRIT_USE_GLEW)
 endif()
+
 if(KRIT_ENABLE_MULTISAMPLING)
     add_definitions(-DKRIT_ENABLE_MULTISAMPLING)
 endif()
@@ -154,8 +159,8 @@ list(APPEND KRIT_STATIC_LIBS
     ${SDL_LIB}
     ${SNDFILE_LIB}
     ${YAML_LIB}
-    ${Z_LIB}
     ${ZIP_LIB}
+    ${Z_LIB}
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
@@ -165,15 +170,18 @@ else()
     find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     list(APPEND KRIT_LIBS ${GLEW_LIB} ${OPENAL_LIB} ${OPENGL_LIBRARIES})
 endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     list(APPEND KRIT_LIBS "-lSDL2_image")
 else()
     find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     list(APPEND KRIT_LIBS ${SDL_IMAGE_LIB} "-ldl")
 endif()
+
 if(KRIT_ENABLE_THREADS)
     list(APPEND KRIT_STATIC_LIBS "-lpthread")
 endif()
+
 if(KRIT_ENABLE_TOOLS)
     find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     find_package(PkgConfig REQUIRED)
@@ -185,7 +193,6 @@ endif()
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
     ${KRIT_LIBS}
-
     ${STATIC}
     ${KRIT_STATIC_LIBS}
     "-Wl,--gc-sections"
@@ -197,17 +204,46 @@ if(KRIT_BUILD_ASSETS)
     add_custom_target(
         copy-assets ALL
         COMMAND
-            ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${KRIT_DIR}
+        ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${KRIT_DIR}
         BYPRODUCTS assets.zip ${CMAKE_CURRENT_BINARY_DIR}/images.yaml
     )
 endif()
 
-if(KRIT_SCRIPT_BRIDGE_PATH)
-    add_custom_target(
-        generate-bridge ALL
-        mkdir -p "${CMAKE_CURRENT_BINARY_DIR}/krit"
-        COMMAND cd ${KRIT_DIR}/tools/bridge_generator && node src/index.js ${KRIT_SCRIPT_BRIDGE_PATH} "${CMAKE_CURRENT_BINARY_DIR}/krit"
-        BYPRODUCTS ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.cpp ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.h ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
+file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
+    ${KRIT_DIR}/tools/tsbindgen/src/*.ts
+)
+
+add_custom_command(
+    OUTPUT ${KRIT_DIR}/tools/tsbindgen/dist/index.js
+    DEPENDS ${BINDGEN_SRC_FILES}
+    COMMAND cd ${KRIT_DIR}/tools/tsbindgen && npm install && npm run build
+)
+
+function(tsbindgen BRIDGE_SRC_DIR PREFIX NAMESPACE)
+    message("tsbindgen: ${BRIDGE_SRC_DIR}")
+    file(GLOB_RECURSE BRIDGE_TYPE_DEFS CONFIGURE_DEPENDS ${BRIDGE_SRC_DIR}/*.d.ts)
+    set(BRIDGE_OUTPUTS "")
+
+    foreach(BRIDGE ${BRIDGE_TYPE_DEFS})
+        file(RELATIVE_PATH BRIDGE_RELATIVE ${BRIDGE_SRC_DIR} ${BRIDGE})
+        list(APPEND BRIDGE_OUTPUTS "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/${BRIDGE_RELATIVE}.ScriptClass.cpp")
+    endforeach()
+
+    get_property(CURRENT_BRIDGE_NAMESPACES GLOBAL PROPERTY BRIDGE_NAMESPACES)
+    message("cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
+    add_custom_command(
+        # OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/ts
+        OUTPUT ${BRIDGE_OUTPUTS}
+        # BYPRODUCTS ${BRIDGE_OUTPUTS}
+        DEPENDS ${BRIDGE_TYPE_DEFS} ${KRIT_DIR}/tools/tsbindgen/dist/index.js ${KRIT_DIR}/tools/tsbindgen/templates/ScriptClass.cpp.njk
+        COMMAND cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}" && touch ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/ts
     )
-    add_dependencies(${PROJECT_NAME} generate-bridge)
+
+    target_sources(${PROJECT_NAME} PRIVATE ${BRIDGE_OUTPUTS})
+
+    set_property(GLOBAL PROPERTY BRIDGE_NAMESPACES "${CURRENT_BRIDGE_NAMESPACES}" "-n" "${NAMESPACE}:${BRIDGE_SRC_DIR}")
+endfunction()
+
+if(KRIT_SCRIPT_BRIDGE)
+    tsbindgen(${KRIT_DIR}/src generated/krit krit)
 endif()

@@ -30,6 +30,7 @@ void FrameBuffer::init() {
 }
 
 void FrameBuffer::resize(unsigned int width, unsigned int height) {
+    assert(width && height);
     size.setTo(width, height);
     this->_resize();
 }

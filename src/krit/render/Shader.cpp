@@ -220,7 +220,7 @@ void ShaderInstance::bind(RenderContext &ctx) {
                     glUniform2f(i, size.x(), size.y());
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uScale") {
-                    ScaleFactor &scale = ctx.camera->scale;
+                    Vec2f &scale = ctx.camera->scale;
                     glUniform2f(i, scale.x(), scale.y());
                     checkForGlErrors("glUniform2f");
                 }

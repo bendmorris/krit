@@ -99,9 +99,7 @@ struct Engine {
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
 #define DECLARE_ASSET_GETTER(N, T)                                             \
-    template <typename Arg> std::shared_ptr<T> get##N(const Arg &arg) {        \
-        return assets.get<T>(arg);                                             \
-    }
+    std::shared_ptr<T> get##N(const std::string &s) { return assets.get<T>(s); }
     DECLARE_ASSET_GETTER(Image, ImageData)
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)

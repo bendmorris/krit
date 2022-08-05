@@ -9,6 +9,8 @@
 namespace krit {
 
 template <typename T, typename Self> struct BaseRectangle {
+    static Self *create(T x, T y, T width, T height) { return new Self(x, y, width, height); }
+
     T x = 0, y = 0, width = 0, height = 0;
 
     BaseRectangle<T, Self>() {}
@@ -67,14 +69,9 @@ template <typename T, typename Self> struct BaseRectangle {
         return w > 0 && h > 0 ? Self(xi, yi, w, h) : Self();
     }
 
-    template <typename U> bool contains(Vec<U, 2> &p) {
+    bool contains(const Vec2<T> &p) {
         return p[0] >= this->x && p[0] <= (this->x + this->width) &&
                p[1] >= this->y && p[1] <= (this->y + this->height);
-    }
-
-    bool contains(T x, T y) {
-        return x >= this->x && x <= (this->x + this->width) && y >= this->y &&
-               y <= (this->y + this->height);
     }
 
     Self &copyFrom(const Self &other) {

@@ -5,7 +5,6 @@
 #include "krit/asset/Font.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/utils/Color.h"
 #include <cassert>
 #include <functional>
@@ -40,13 +39,12 @@ struct NewlineData {
 struct GlyphRenderData {
     int32_t c = 0;
     Color color;
-    ScaleFactor scale;
+    Vec2f scale{1, 1};
     Point position;
 
     GlyphRenderData() {}
     GlyphRenderData(const Point &position) : position(position) {}
-    GlyphRenderData(int32_t c, Color color, ScaleFactor &scale,
-                    const Point &position)
+    GlyphRenderData(int32_t c, Color color, Vec2f &scale, const Point &position)
         : c(c), color(color), scale(scale), position(position) {}
 };
 
@@ -54,6 +52,8 @@ using CustomTextRenderFunction =
     std::function<void(RenderContext *, Text *, GlyphRenderData *)>;
 
 struct TextOptions {
+    static TextOptions *create() { return new TextOptions(); }
+
     Font *font = nullptr;
     int size = 16;
     AlignType align = LeftAlign;
@@ -62,7 +62,7 @@ struct TextOptions {
 
     TextOptions() {}
 
-    TextOptions &setFont(Font *font) {
+    TextOptions &setFontAsset(Font *font) {
         this->font = font;
         return *this;
     }
@@ -86,6 +86,8 @@ struct TextOptions {
 };
 
 struct TextFormatTagOptions {
+    static TextFormatTagOptions *create() { return new TextFormatTagOptions(); }
+
     std::optional<Color> color;
     std::optional<AlignType> align;
     bool newline = false;
@@ -167,6 +169,9 @@ struct Text : public VisibleSprite, public TextOptions {
     static std::unordered_map<std::string, TextFormatTagOptions> formatTags;
 
     static void addFormatTag(std::string, TextFormatTagOptions);
+    static Text *create(const TextOptions &options) {
+        return new Text(options);
+    }
 
     int charCount = -1;
     int maxChars = 0;
@@ -207,11 +212,11 @@ struct Text : public VisibleSprite, public TextOptions {
         this->refresh();
         return textDimensions;
     }
-    float width() {
+    float &width() {
         refresh();
         return textDimensions.x();
     }
-    float height() {
+    float &height() {
         refresh();
         return textDimensions.y();
     }

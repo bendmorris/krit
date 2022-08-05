@@ -65,7 +65,7 @@ void Camera::update(RenderContext &context) {
         scale.setTo(s, s);
     } else {
         offset.setTo(0, 0);
-        scale.setTo(height / dimensions.y());
+        scale.setTo(height / dimensions.y(), height / dimensions.y());
     }
     currentDimensions.setTo(ratio * dimensions.y(), dimensions.y());
 }

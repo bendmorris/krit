@@ -22,17 +22,17 @@ struct Sprite {
 
 struct SpriteStyle {
     Color color = Color::white();
-    ScaleFactor scale;
+    Vec2f scale{1, 1};
 
-    SpriteStyle(ScaleFactor scale, Color color = Color::white())
+    SpriteStyle(Vec2f scale, Color color = Color::white())
         : color(color), scale(scale) {}
 
-    SpriteStyle(Color color = Color::white()) : color(color), scale() {}
+    SpriteStyle(Color color = Color::white()) : color(color) {}
 
     SpriteStyle lerp(const SpriteStyle &other, float mix) {
         return SpriteStyle(
-            ScaleFactor(this->scale.x() * (1 - mix) + other.scale.x() * mix,
-                        this->scale.y() * (1 - mix) + other.scale.y() * mix),
+            Vec2f(this->scale.x() * (1 - mix) + other.scale.x() * mix,
+                  this->scale.y() * (1 - mix) + other.scale.y() * mix),
             this->color.lerp(other.color, mix));
     }
 };

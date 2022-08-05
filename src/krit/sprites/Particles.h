@@ -131,6 +131,8 @@ struct EffectInstance {
 };
 
 struct ParticleSystem : public VisibleSprite {
+    static ParticleSystem *create() { return new ParticleSystem(); }
+
     ParticleSystem() {}
     ParticleSystem(const ParticleSystem &other) = default;
 
@@ -139,7 +141,7 @@ struct ParticleSystem : public VisibleSprite {
     std::size_t particleCount() { return _particles.size(); }
 
     void loadAtlas(const std::string &path);
-    void loadAtlas(std::shared_ptr<TextureAtlas> atlas) { this->atlas = atlas; }
+    void loadAtlasAsset(std::shared_ptr<TextureAtlas> atlas) { this->atlas = atlas; }
 
     void loadEffect(const std::string &path);
     void registerEffect(std::shared_ptr<ParticleEffect> effect) {
@@ -152,9 +154,6 @@ struct ParticleSystem : public VisibleSprite {
         }
     }
     EffectInstance &emit(const std::string &, const Point &at, bool loop = false);
-    EffectInstance &emit(const std::string &id, float x, float y, bool loop = false) {
-        return emit(id, Point(x, y), loop);
-    }
     void clear() {
         _effects.clear();
         _particles.clear();

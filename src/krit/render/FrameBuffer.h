@@ -1,19 +1,22 @@
 #ifndef KRIT_RENDER_FRAMEBUFFER
 #define KRIT_RENDER_FRAMEBUFFER
 
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
 #include <cstddef>
 #include <memory>
-
 
 namespace krit {
 
 struct FrameBuffer {
     static const int BUFFER_COUNT = 2;
 
-    ScaleFactor scale;
+    static FrameBuffer *create(unsigned int width, unsigned int height,
+                               bool multisample = false) {
+        return new FrameBuffer(width, height, multisample);
+    }
+
+    Vec2f scale{1, 1};
     IntDimensions size;
     bool multisample = false;
     bool doubleBuffer = false;
@@ -22,7 +25,9 @@ struct FrameBuffer {
 
     FrameBuffer(unsigned int width, unsigned int height,
                 bool multisample = false)
-        : size(width, height), multisample(multisample) {}
+        : size(width, height), multisample(multisample) {
+        assert(width && height);
+    }
 
     virtual ~FrameBuffer() {
         for (int i = 0; i < BUFFER_COUNT; ++i) {

@@ -25,9 +25,7 @@ template <typename ModelType> struct DataModel {
         return this->data[it->second];
     }
 
-    ModelType &get(size_t index) {
-        return this->data[index];
-    }
+    ModelType &get(size_t index) { return this->data[index]; }
 
     bool has(const std::string &id) {
         return this->idMap.find(id) != this->idMap.end();
@@ -41,8 +39,8 @@ template <typename ModelType> struct DataModel {
     size_t count() { return this->data.size(); }
 
     void reserve(size_t n) { data.reserve(n); }
-    template <typename... Args> ModelType &newItem(Args &&... args) {
-        this->data.emplace_back(args...);
+    ModelType &newItem() {
+        this->data.emplace_back();
         ModelType &item = this->data.back();
         item.index = this->data.size() - 1;
         return item;

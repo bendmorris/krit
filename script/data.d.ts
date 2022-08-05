@@ -1,11 +1,3 @@
-/**
- * @namespace krit
- * @import krit/data/DataModel.h
- */
-declare class DataItem {
-    id: string;
-}
-
 // DataModel must be extended, and the child must be exposed separately.
 
 interface DataModel<T> {

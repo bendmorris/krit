@@ -1,13 +1,13 @@
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptAllocator.h"
-#include "krit/script/ScriptBridge.h"
 #include "krit/script/ScriptClass.h"
-#include "krit/script/ScriptFinalizer.h"
 #include <cstring>
 #include <memory>
 #include <stdio.h>
 
 namespace krit {
+
+std::unique_ptr<std::vector<void (*)(ScriptEngine *)>> ScriptEngine::scriptClassInitializers;
 
 static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
     const char *str = JS_ToCString(ctx, val);
@@ -81,11 +81,22 @@ ScriptEngine::ScriptEngine() {
     JSValue globalObj = JS_GetGlobalObject(ctx);
 
     JS_SetPropertyStr(ctx, globalObj, "exports", JS_DupValue(ctx, exports));
+
+    // finalizers
+    JSValue symbol = JS_GetPropertyStr(ctx, globalObj, "Symbol");
+    JSValue finalizerName = JS_NewString(ctx, "__finalizer");
+    finalizerSymbol = JS_Call(ctx, symbol, JS_UNDEFINED, 1, &finalizerName);
+    JS_SetPropertyStr(ctx, globalObj, "__finalizerSymbol",
+                      JS_DupValue(ctx, finalizerSymbol));
+    JS_FreeValue(ctx, finalizerName);
+    JS_FreeValue(ctx, symbol);
     JS_FreeValue(ctx, globalObj);
 
-    ScriptFinalizer::init(this);
-    // registerScriptClass<0>(this);
-    initScriptBridge(*this);
+    if (scriptClassInitializers) {
+        for (auto &init : *scriptClassInitializers) {
+            init(this);
+        }
+    }
 }
 
 ScriptEngine::~ScriptEngine() {
@@ -135,25 +146,6 @@ void ScriptEngine::checkForErrors(JSValue exception_val) {
     if (JS_IsError(ctx, exception_val) || JS_IsException(exception_val)) {
         js_std_dump_error(ctx, exception_val);
     }
-}
-
-JSValue ScriptEngine::create(ScriptClass e, void *data) {
-    if (!data) {
-        return JS_NULL;
-    }
-    JSValue val = JS_NewObjectClass(ctx, classId(e));
-    JS_SetOpaque(val, data);
-    return val;
-}
-
-JSValue ScriptEngine::createOwned(ScriptClass e, void *data) {
-    if (!data) {
-        return JS_NULL;
-    }
-    JSValue val = JS_NewObjectClass(ctx, classId(e));
-    JS_SetOpaque(val, data);
-    addFinalizer(val, e);
-    return val;
 }
 
 JSValue ScriptEngine::delay(float duration) {

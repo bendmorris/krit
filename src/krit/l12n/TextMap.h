@@ -9,6 +9,8 @@
 namespace krit {
 
 struct TextMap {
+    static TextMap *create() { return new TextMap(); }
+
     std::string locale;
 
     void registerLocale(const std::string &key, const std::string &asset);

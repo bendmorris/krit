@@ -4,7 +4,6 @@
 #include "krit/Camera.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/render/RenderContext.h"

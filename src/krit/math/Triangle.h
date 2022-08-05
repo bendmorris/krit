@@ -36,9 +36,9 @@ struct Triangle {
     }
 
     Triangle &scale(float sx, float sy) {
-        this->p1 *= Vec3f(sx, sy, 0);
-        this->p2 *= Vec3f(sx, sy, 0);
-        this->p3 *= Vec3f(sx, sy, 0);
+        this->p1 *= Vec3f(sx, sy, 1);
+        this->p2 *= Vec3f(sx, sy, 1);
+        this->p3 *= Vec3f(sx, sy, 1);
         return *this;
     }
 

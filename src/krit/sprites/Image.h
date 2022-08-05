@@ -8,7 +8,6 @@
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
 #include "krit/math/Rectangle.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
@@ -17,6 +16,8 @@ namespace krit {
 struct RenderContext;
 
 struct Image : public VisibleSprite {
+    static Image *create(ImageRegion &id) { return new Image(id); }
+
     Point origin;
     Point scroll;
     float angle = 0;

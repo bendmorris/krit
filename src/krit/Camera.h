@@ -4,7 +4,6 @@
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/utils/Signal.h"
 
 namespace krit {
@@ -19,7 +18,7 @@ struct Camera {
     Point anchor;
     Dimensions dimensions;
     Dimensions currentDimensions;
-    ScaleFactor scale;
+    Vec2f scale { 1, 1 };
     double minRatio = 16.0 / 9;
     double maxRatio = 16.0 / 9;
     FrameBuffer *fb = nullptr;

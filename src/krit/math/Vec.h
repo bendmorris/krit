@@ -8,12 +8,11 @@
 
 namespace krit {
 
-template <typename T, size_t N> struct Vec {
+template <typename T, size_t N, typename Self> struct Vec {
     Vec() : v{0} {}
-    template <typename U> Vec(const Vec<U, N> &other) : v(other.v) {}
     template <typename... Arg> Vec(Arg &&... vals) : v{vals...} {}
 
-    template <typename U> void copyFrom(const Vec<U, N> &other) {
+    void copyFrom(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             v[i] = other[i];
         }
@@ -22,7 +21,7 @@ template <typename T, size_t N> struct Vec {
     T &operator[](size_t i) { return v[i]; }
     const T &operator[](size_t i) const { return v[i]; }
 
-    template <typename U> bool operator==(const Vec<U, N> &other) {
+    bool operator==(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             if (v[i] != other[i]) {
                 return false;
@@ -31,7 +30,7 @@ template <typename T, size_t N> struct Vec {
         return true;
     }
 
-    template <typename U> bool operator!=(const Vec<U, N> &other) {
+    bool operator!=(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             if (v[i] != other[i]) {
                 return true;
@@ -40,7 +39,7 @@ template <typename T, size_t N> struct Vec {
         return false;
     }
 
-    template <typename U> void operator+=(const Vec<U, N> &other) {
+    void operator+=(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             v[i] += other[i];
         }
@@ -50,15 +49,15 @@ template <typename T, size_t N> struct Vec {
             v[i] += other;
         }
     }
-    template <typename U> Vec<T, N> operator+(const Vec<U, N> &other) const {
-        Vec<T, N> result;
+    Self operator+(const Self &other) const {
+        Self result;
         for (size_t i = 0; i < N; ++i) {
             result[i] = v[i] + other[i];
         }
         return result;
     }
 
-    template <typename U> void operator-=(const Vec<U, N> &other) {
+    void operator-=(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             v[i] -= other[i];
         }
@@ -68,15 +67,15 @@ template <typename T, size_t N> struct Vec {
             v[i] -= other;
         }
     }
-    template <typename U> Vec<T, N> operator-(const Vec<U, N> &other) const {
-        Vec<T, N> result;
+    Self operator-(const Self &other) const {
+        Self result;
         for (size_t i = 0; i < N; ++i) {
             result[i] = v[i] - other[i];
         }
         return result;
     }
 
-    template <typename U> void operator*=(const Vec<U, N> &other) {
+    void operator*=(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             v[i] *= other[i];
         }
@@ -86,22 +85,22 @@ template <typename T, size_t N> struct Vec {
             v[i] *= other;
         }
     }
-    template <typename U> Vec<T, N> operator*(const Vec<U, N> &other) const {
-        Vec<T, N> result;
+    Self operator*(const Self &other) const {
+        Self result;
         for (size_t i = 0; i < N; ++i) {
             result[i] = v[i] * other[i];
         }
         return result;
     }
-    Vec<T, N> operator*(T val) const {
-        Vec<T, N> result;
+    Self operator*(T val) const {
+        Self result;
         for (size_t i = 0; i < N; ++i) {
             result[i] = v[i] * val;
         }
         return result;
     }
 
-    template <typename U> void operator/=(const Vec<U, N> &other) {
+    void operator/=(const Self &other) {
         for (size_t i = 0; i < N; ++i) {
             v[i] /= other[i];
         }
@@ -111,19 +110,19 @@ template <typename T, size_t N> struct Vec {
             v[i] /= other;
         }
     }
-    template <typename U> Vec<T, N> operator/(const Vec<U, N> &other) const {
-        Vec<T, N> result;
+    Self operator/(const Self &other) const {
+        Self result;
         for (size_t i = 0; i < N; ++i) {
             result[i] = v[i] / other[i];
         }
         return result;
     }
 
-    template <typename U> float distance(const Vec<U, N> &other) {
+    float distance(const Self &other) {
         return sqrt(squaredDistance(other));
     }
 
-    template <typename U> float squaredDistance(const Vec<U, N> &other) {
+    float squaredDistance(const Self &other) {
         float dist = 0;
         for (size_t i = 0; i < N; ++i) {
             dist += pow(v[i] - other[i], 2);
@@ -137,7 +136,7 @@ template <typename T, size_t N> struct Vec {
         }
     }
 
-    float length() { return distance(Vec<T, N>()); }
+    float length() { return distance(Self()); }
 
     void normalize(float size) {
         float normal = size / length();
@@ -149,8 +148,9 @@ template <typename T, size_t N> struct Vec {
     std::array<T, N> v;
 };
 
-template <typename T> struct Vec2 : public Vec<T, 2> {
-    Vec2(T x = 0, T y = 0) : Vec<T, 2>{x, y} {}
+template <typename T> struct Vec2 : public Vec<T, 2, Vec2<T>> {
+    static Vec2<T> *create(T x, T y) { return new Vec2<T>(x, y); }
+    Vec2(T x = 0, T y = 0) : Vec<T, 2, Vec2<T>>{x, y} {}
     T &x() { return (*this)[0]; }
     T &y() { return (*this)[1]; }
     const T &x() const { return (*this)[0]; }
@@ -168,8 +168,9 @@ template <typename T> struct Vec2 : public Vec<T, 2> {
     }
 };
 
-template <typename T> struct Vec3 : public Vec<T, 3> {
-    Vec3(T x = 0, T y = 0, T z = 0) : Vec<T, 3>{x, y, z} {}
+template <typename T> struct Vec3 : public Vec<T, 3, Vec3<T>> {
+    static Vec3<T> *create(T x, T y, T z) { return new Vec3<T>(x, y, z); }
+    Vec3(T x = 0, T y = 0, T z = 0) : Vec<T, 3, Vec3<T>>{x, y, z} {}
     T &x() { return (*this)[0]; }
     T &y() { return (*this)[1]; }
     T &z() { return (*this)[2]; }
@@ -183,8 +184,8 @@ template <typename T> struct Vec3 : public Vec<T, 3> {
     }
 };
 
-template <typename T> struct Vec4 : public Vec<T, 4> {
-    Vec4(T x = 0, T y = 0, T z = 0, T w = 0) : Vec<T, 4>{x, y, z, w} {}
+template <typename T> struct Vec4 : public Vec<T, 4, Vec4<T>> {
+    Vec4(T x = 0, T y = 0, T z = 0, T w = 0) : Vec<T, 4, Vec4<T>>{x, y, z, w} {}
     T &x() { return (*this)[0]; }
     T &y() { return (*this)[1]; }
     T &z() { return (*this)[2]; }

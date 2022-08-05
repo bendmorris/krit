@@ -45,7 +45,7 @@ struct KeyContext {
 };
 
 struct MouseContext {
-    Point mousePos;
+    Vec3i mousePos;
     bool mouseOver = false;
 
     Action mappings[MouseButtonMax] = {0};

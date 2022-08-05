@@ -1,18 +1,42 @@
 #ifndef KRIT_SCRIPT_SCRIPTCLASS
 #define KRIT_SCRIPT_SCRIPTCLASS
 
-struct JSClassDef;
+#include <quickjs.h>
 
 namespace krit {
 
 struct ScriptEngine;
 
-struct ScriptClassDef {
-    void (*registerClass)(ScriptEngine *engine);
-    JSClassDef *classDef;
-};
+template <typename T> struct ScriptClass {
+    static JSClassID classId() {
+        static JSClassID id = 0;
+        if (!id) {
+            JS_NewClassID(&id);
+        }
+        return id;
+    }
+    static JSClassID finalizerId() {
+        static JSClassID id;
+        if (!id) {
+            JS_NewClassID(&id);
+        }
+        return id;
+    }
+    static JSClassID sharedFinalizerId() {
+        static JSClassID id;
+        if (!id) {
+            JS_NewClassID(&id);
+        }
+        return id;
+    }
 
-typedef ScriptClassDef *ScriptClass;
+    static void populateFromPartial(JSContext *ctx, T &val, JSValue partial);
+    static void init(ScriptEngine *engine);
+
+    // this is used in static assertions and will cause a link failure in case of a template type
+    // incorrectly matching to a specialization for script classes
+    static bool generated();
+};
 
 }
 

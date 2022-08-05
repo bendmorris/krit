@@ -6,13 +6,16 @@
 #include "krit/Sprite.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/ImageRegion.h"
 
 namespace krit {
 struct RenderContext;
 
 struct NineSlice : public VisibleSprite {
+    static NineSlice *create(ImageRegion &base, int l, int r, int t, int b) {
+        return new NineSlice(base, l, r, t, b);
+    }
+
     Point origin;
     float pitch = 0;
 

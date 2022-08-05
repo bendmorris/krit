@@ -15,7 +15,7 @@ struct FileIo {
 
     static char *read(const std::string &path, int *length = nullptr);
     static void write(const std::string &path, const char *buf, size_t size);
-    static void write(const std::string &path, const std::string &buf) { write(path, buf.c_str(), buf.size()); }
+    static void write2(const std::string &path, const std::string &buf) { write(path, buf.c_str(), buf.size()); }
 
     static void *alloc(size_t size) { return new char[size]; }
     static void free(char *buf) { delete[] buf; }

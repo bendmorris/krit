@@ -1,0 +1,409 @@
+{% if types.hasDeclarations %}
+
+#include <stddef.h>
+#include <stdint.h>
+#include <utility>
+#include <vector>
+#include <string>
+#include "krit/script/ScriptClass.h"
+#include "krit/script/ScriptEngine.h"
+#include "krit/script/ScriptType.h"
+#include "krit/script/ScriptValue.h"
+#include "krit/utils/Log.h"
+#include "quickjs.h"
+
+#include "{{ includeHeader }}"
+
+#define countof(x) (sizeof(x) / sizeof((x)[0]))
+
+// classes
+
+{% for cls in types.classes %}
+
+namespace {{namespace}} {
+
+{% if cls.partial %}
+template<> void krit::ScriptClass<{{namespacedName(cls)}}>::populateFromPartial(JSContext *ctx, {{namespacedName(cls)}} &o, JSValue partial) {
+    {% for prop in cls.properties %}
+    {% if not prop.readonly %}
+    {
+        JSValue val = JS_GetPropertyStr(ctx, partial, "{{ prop.name }}");
+        if (!JS_IsUndefined(val)) {
+            {% if prop.set %}
+            o.{{ prop.name }}() = krit::ScriptValueFromJs<std::remove_reference<decltype(o.{{ prop.name }}())>::type>::valueFromJs(ctx, val);
+            {% else %}
+            o.{{ prop.name }} = krit::ScriptValueFromJs<decltype(o.{{ prop.name }})>::valueFromJs(ctx, val);
+            {% endif %}
+        }
+        JS_FreeValue(ctx, val);
+    }
+    {% endif %}
+    {% endfor %}
+}
+{% endif %}
+
+namespace {
+
+static JSValue js_{{ cls.name }}_get_internal_id(JSContext *ctx, JSValueConst this_val) {
+    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    if (!p) {
+        return JS_UNDEFINED;
+    }
+    return JS_NewInt64(ctx, (int64_t)p);
+}
+
+{% for prop in cls.properties %}
+static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
+    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    if (!p) {
+        return JS_EXCEPTION;
+    }
+    {% if prop.get %}
+    return krit::ScriptValueToJs<prop_type<decltype(p->{{prop.name}}())>::type>::valueToJs(ctx, p->{{ prop.name }}());
+    {% else %}
+    return krit::ScriptValueToJs<prop_type<decltype(p->{{prop.name}})>::type>::valueToJs(ctx, p->{{ prop.name }});
+    {% endif %}
+}
+
+{% if not prop.readonly %}
+static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
+    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    if (!p) {
+        return JS_EXCEPTION;
+    }
+    {% if prop.set %}
+    p->{{ prop.name }}() = krit::ScriptValueFromJs<std::remove_reference<decltype(p->{{ prop.name }}())>::type>::valueFromJs(ctx, val);
+    {% else %}
+    p->{{ prop.name }} = krit::ScriptValueFromJs<decltype(p->{{ prop.name }})>::valueFromJs(ctx, val);
+    {% endif %}
+    return JS_UNDEFINED;
+}
+{% endif %}
+{% endfor %}
+
+static JS_FUNC({{cls.name}}_toString) {
+    void *p = JS_GetOpaque(this_val, 0);
+    std::string s = "<{{cls.name}}@" + ScriptEngine::n2hexstr((int64_t)p) + ">";
+    return JS_NewString(ctx, s.c_str());
+}
+
+{% if cls.from %}
+static JS_FUNC({{cls.name}}___from__) {
+    if (JS_IsUndefined(argv[0])) {
+        return JS_UNDEFINED;
+    }
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    void *p = JS_GetOpaque(argv[0], 0);
+    JSValue finalizerSymbol = engine->finalizerSymbol;
+    JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
+    bool owned = false;
+    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
+        // if this was owned, we'll transfer ownership to the return value
+        //Log::debug("transfer finalizer: {{cls.name}}");
+        owned = true;
+        JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
+        JS_SetOpaque(finalizer, nullptr);
+        JS_DeleteProperty(ctx, argv[0], atom, 0);
+        JS_FreeValue(ctx, finalizer);
+    }
+    JS_FreeValue(ctx, finalizerSymbol);
+    JSValue val = owned ? engine->createOwned<{{ namespacedName(cls) }}>(p) : engine->create<{{ namespacedName(cls) }}>(p);
+    return val;
+}
+{% endif %}
+
+{% if cls.clone %}
+static JS_FUNC({{cls.name}}___clone__) {
+    if (JS_IsUndefined(argv[0])) {
+        return JS_UNDEFINED;
+    }
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    void *p = JS_GetOpaque(argv[0], 0);
+    {{ namespacedName(cls) }} *cloned = new {{ namespacedName(cls) }}(*static_cast<{{ cls.name }}*>(p));
+    JSValue val = engine->createOwned<{{ namespacedName(cls) }}>(cloned);
+    return val;
+}
+{% endif %}
+
+{% if cls.ctor %}
+static JS_FUNC({{cls.name}}___constructor__) {
+    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    {% if cls.partial %}
+    if (argc == 1 && JS_IsObject(argv[0])) {
+        {{ namespacedName(cls) }} *val = new {{ namespacedName(cls) }}();
+        ScriptClass<{{ namespacedName(cls) }}>::populateFromPartial(ctx, *val, argv[0]);
+        return engine->createOwned<{{ namespacedName(cls) }}>(val);
+    }
+    {% endif %}
+    return engine->createOwned<{{ namespacedName(cls) }}>({{ (namespacedName(cls) + '::create') | call(cls.ctor) }});
+}
+{% endif %}
+
+{% for method in cls.staticMethods %}
+static JS_FUNC({{cls.name}}_{{method.name}}) {
+    static_assert(krit::TypeValidator<{{ typename(method.returnType) }}, {{ method.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in method.args %}
+    static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
+    {% endfor %}
+    {% set comma = joiner() %}
+    {% if method.returnType.validationType !== 'void' %}
+    return krit::ScriptValueToJs<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(method) }});
+    {% else %}
+    return JS_UNDEFINED;
+    {% endif %}
+}
+{% endfor %}
+
+{% for method in cls.methods %}
+static JS_FUNC({{cls.name}}_{{ method.name }}) {
+    static_assert(krit::TypeValidator<{{ typename(method.returnType) }}, {{ method.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in method.args %}
+    static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
+    {% endfor %}
+    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    {% set comma = joiner() %}
+    {% if method.returnType.validationType !== 'void' %}
+    return krit::ScriptValueToJs<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ ("p->" + method.name) | call(method) }});
+    {% else %}
+    {{ ("p->" + method.name) | call(method) }};
+    return JS_UNDEFINED;
+    {% endif %}
+}
+{% endfor %}
+
+}
+
+}
+
+namespace krit {
+
+// script class definition
+
+static const JSCFunctionListEntry protoFuncs{{ cls.name }}[] = {
+    JS_CGETSET_DEF("__id", {{ namespace }}::js_{{cls.name}}_get_internal_id, nullptr),
+    {% for prop in cls.properties %}
+    JS_CGETSET_DEF("{{ prop.name }}", {{ namespace }}::js_{{cls.name}}_get_{{ prop.name }}, {% if prop.readonly %} nullptr {% else %} {{ namespace }}::js_{{cls.name}}_set_{{ prop.name }} {% endif %}),
+    {% endfor %}
+    JS_CFUNC_DEF("toString", 0, {{ namespace }}::js_{{ cls.name }}_toString),
+    {% if cls.ctor %}
+    JS_CFUNC_SPECIAL_DEF("__ctor", {{ cls.ctor.params.length }}, constructor, {{ namespace }}::js_{{ cls.name }}___constructor__),
+    {% endif %}
+    {% for method in cls.methods %}
+    JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}),
+    {% endfor %}
+};
+
+static JSClassDef classDefMain{{ cls.name }} = {
+    .class_name = "{{ cls.name }}",
+    .finalizer = nullptr,
+};
+
+// finalizer definition
+
+static void finalize{{cls.name}}(JSRuntime *rt, JSValue val) {
+    {{ namespacedName(cls) }} *p = static_cast<{{ namespacedName(cls) }}*>(JS_GetOpaque(val, 0));
+    if (p) {
+        delete p;
+    }
+}
+
+static JSClassDef classDefFinalizer{{ cls.name }} = {
+    .class_name = "{{ cls.name }}Finalizer",
+    .finalizer = finalize{{cls.name}},
+};
+
+// shared finalizer definition
+
+static void sharedFinalize{{cls.name}}(JSRuntime *rt, JSValue val) {
+    std::shared_ptr<{{ namespacedName(cls) }}> *p = static_cast<std::shared_ptr<{{ namespacedName(cls) }}>*>(JS_GetOpaque(val, 0));
+    if (p) {
+        delete p;
+    }
+}
+
+static JSClassDef classDefSharedFinalizer{{ cls.name }} = {
+    .class_name = "{{ cls.name }}SharedFinalizer",
+    .finalizer = sharedFinalize{{cls.name}},
+};
+
+// registration
+
+template<> bool ScriptClass<{{namespacedName(cls)}}>::generated() {
+    return true;
+}
+
+template<> void ScriptClass<{{namespacedName(cls)}}>::init(ScriptEngine *engine) {
+    static bool initialized = false;
+    if (initialized) {
+        return;
+    }
+    initialized = true;
+
+    {% if cls.parent %}
+        ScriptClass<{{ namespacedName(cls.parent) }}>::init(engine);
+    {% endif %}
+
+    JSRuntime *rt = engine->rt;
+    JSContext *ctx = engine->ctx;
+
+    {
+        // class
+        auto funcs = protoFuncs{{ cls.name }};
+        JSValue proto = JS_NewObject(ctx);
+        JSClassID clsId = classId();
+        JS_NewClass(rt, clsId, &classDefMain{{ cls.name }});
+        JS_SetPropertyFunctionList(ctx, proto, funcs, countof(protoFuncs{{ cls.name }}));
+        JS_SetClassProto(ctx, clsId, proto);
+        {% if cls.parent %}
+        {
+            JSValue parentProto = JS_GetClassProto(ctx, ScriptClass<{{ namespacedName(cls.parent) }}>::classId());
+            JS_SetPrototype(ctx, proto, parentProto);
+            JS_FreeValue(ctx, parentProto);
+        }
+        {% endif %}
+        // bind prototype/constructor to global object
+        {% if cls.ctor %}
+        JSValue ctor = JS_GetPropertyStr(ctx, proto, "__ctor");
+        JS_SetConstructor(ctx, ctor, proto);
+        {% else %}
+        JSValue ctor = JS_NewObject(ctx);
+        JS_SetPropertyStr(ctx, ctor, "prototype", JS_DupValue(ctx, proto));
+        {% endif %}
+        const char *ns[] {{ namespaceArray(cls) }};
+        engine->setAtNamespace(ns, "{{ cls.name }}", ctor);
+        {% if cls.from %}
+        {
+            JSValue from = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}___from__, "from", 0);
+            JS_SetPropertyStr(ctx, ctor, "from", from);
+        }
+        {% endif %}
+        {% if cls.clone %}
+        {
+            JSValue clone = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}___clone__, "clone", 0);
+            JS_SetPropertyStr(ctx, ctor, "clone", clone);
+        }
+        {% endif %}
+        {% for method in cls.staticMethods %}
+        {
+            JSValue method = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}, "{{ method.name }}", {{ method.params.length }});
+            JS_SetPropertyStr(ctx, ctor, "{{ method.name }}", method);
+        }
+        {% endfor %}
+    }
+
+    {
+        // finalizer
+        JSValue proto = JS_NewObject(ctx);
+        JSClassID clsId = finalizerId();
+        JS_NewClass(rt, clsId, &classDefFinalizer{{ cls.name }});
+        JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
+        JS_SetClassProto(ctx, clsId, proto);
+    }
+
+    {
+        // shared finalizer
+        JSValue proto = JS_NewObject(ctx);
+        JSClassID clsId = sharedFinalizerId();
+        JS_NewClass(rt, clsId, &classDefSharedFinalizer{{ cls.name }});
+        JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
+        JS_SetClassProto(ctx, clsId, proto);
+    }
+}
+
+bool register{{ cls.name }}() {
+    ScriptEngine::pushInitializer(&ScriptClass<{{namespacedName(cls)}}>::init);
+    return true;
+}
+static bool _registered{{cls.name}} = register{{ cls.name }}();
+
+{# static ScriptClassDef _cls = {
+    .registerClass = registerClass,
+    .classDef = &classDef,
+};
+
+static ScriptClassDef _finalizer = {
+    .registerClass = registerFinalizer,
+    .classDef = &classDefFinalizer,
+}; #}
+
+}
+
+{% endfor %}
+
+// functions
+
+{% for fn in types.functions %}
+
+namespace {{ namespace }} {
+
+namespace {
+
+{% if not fn.jsfunc %}
+static JS_FUNC({{ jsFuncName(fn) }}) {
+    static_assert(krit::TypeValidator<{{ typename(fn.returnType) }}, {{ fn.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in fn.args %}
+    static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
+    {% endfor %}
+    {% set comma = joiner() %}
+    {% if fn.returnType.validationType !== 'void' %}
+    return krit::ScriptValueToJs<{{ typename(fn.returnType) }}>::valueToJs(ctx, {{ fn.name | call(fn) }});
+    {% else %}
+    return JS_UNDEFINED;
+    {% endif %}
+}
+{% endif %}
+
+void init{{ fn.name }}(ScriptEngine *engine) {
+    JSContext *ctx = engine->ctx;
+    JSValue fn = JS_NewCFunction(ctx, js_{{ jsFuncName(fn) }}, "{{ fn.name }}", {{ fn.params.length }});
+    const char *ns[] {{ namespaceArray(fn) }};
+    engine->setAtNamespace(ns, "{{ fn.name }}", fn);
+}
+
+bool register{{ fn.name }}() {
+    ScriptEngine::pushInitializer(&init{{ fn.name }});
+    return true;
+}
+
+static bool _registered{{ fn.name }} = register{{ fn.name }}();
+
+}
+
+}
+
+{% endfor %}
+
+// enums
+
+{% for enum in types.enums %}
+
+namespace {{ namespace }} {
+
+namespace {
+
+void init{{ enum.name }}(ScriptEngine *engine) {
+    JSContext *ctx= engine->ctx;
+    JSValue e = JS_NewObject(ctx);
+    {% for member in enum.members %}
+    JS_SetPropertyStr(ctx, e, "{{ member }}", JS_NewInt32(ctx, {{ namespacedName(enum) }}::{{ member }}));
+    {% endfor %}
+    const char *ns[] {{ namespaceArray(enum) }};
+    engine->setAtNamespace(ns, "{{ enum.name }}", e);
+}
+
+bool register{{ enum.name }}() {
+    ScriptEngine::pushInitializer(&init{{ enum.name }});
+    return true;
+}
+
+static bool _registered{{ enum.name }} = register{{ enum.name }}();
+
+}
+
+}
+
+{% endfor %}
+
+{% endif %}

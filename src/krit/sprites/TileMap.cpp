@@ -2,7 +2,6 @@
 #include "krit/Window.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Point.h"
-#include "krit/math/ScaleFactor.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/RenderContext.h"
 #include "krit/utils/Color.h"

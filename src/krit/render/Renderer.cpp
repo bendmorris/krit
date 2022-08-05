@@ -598,8 +598,8 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
 #endif
     IntDimensions size =
         currentRenderTarget ? currentRenderTarget->size : ctx.size();
-    ScaleFactor scale =
-        currentRenderTarget ? currentRenderTarget->scale : ScaleFactor(1, 1);
+    Vec2f scale =
+        currentRenderTarget ? currentRenderTarget->scale : Vec2f(1, 1);
     width = size.x() * scale.x();
     height = size.y() * scale.y();
 

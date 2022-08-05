@@ -1,13 +1,13 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
-#include "krit/script/ScriptClass.h"
-#include "krit/script/ScriptFinalizer.h"
 #include "krit/script/ScriptValue.h"
+#include "krit/utils/Panic.h"
 #include "quickjs.h"
 #include <cstring>
 #include <iosfwd>
 #include <list>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <unordered_map>
@@ -38,7 +38,7 @@ using is_complete = decltype(is_complete_impl(std::declval<T *>()));
 
 template <typename Head>
 void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head) {
-    args[0] = ScriptValue<Head>::valueToJs(ctx, head);
+    args[0] = ScriptValueToJs<Head>::valueToJs(ctx, head);
 }
 template <typename Head, typename... Tail>
 void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head,
@@ -63,6 +63,26 @@ struct DelayRequest {
  * methods.
  */
 struct ScriptEngine {
+    static std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
+        scriptClassInitializers;
+    static void pushInitializer(void (*initializer)(ScriptEngine *)) {
+        if (!scriptClassInitializers) {
+            scriptClassInitializers =
+                std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>(
+                    new std::vector<void (*)(ScriptEngine *)>());
+        }
+        scriptClassInitializers->push_back(initializer);
+    }
+
+    template <typename I>
+    static std::string n2hexstr(I w, size_t hex_len = sizeof(I) << 1) {
+        static const char *digits = "0123456789abcdef";
+        std::string rc(hex_len, '0');
+        for (size_t i = 0, j = (hex_len - 1) * 4; i < hex_len; ++i, j -= 4)
+            rc[i] = digits[(w >> j) & 0x0f];
+        return rc;
+    }
+
     JSRuntime *rt;
     JSContext *ctx = nullptr;
     JSValue exports = JS_UNDEFINED;
@@ -71,20 +91,6 @@ struct ScriptEngine {
 
     ScriptEngine();
     ~ScriptEngine();
-
-    JSClassID classId(ScriptClass cls) {
-        auto found = classIds.find(cls);
-        if (found == classIds.end()) {
-            JSClassID id = 0;
-            JS_NewClassID(&id);
-            JS_NewClass(rt, id, cls->classDef);
-            classIds[cls] = id;
-            cls->registerClass(this);
-            return id;
-        } else {
-            return found->second;
-        }
-    }
 
     void eval(const std::string &scriptName, const std::string &src) {
         this->eval(scriptName.c_str(), src.c_str(), src.length());
@@ -101,7 +107,7 @@ struct ScriptEngine {
     void callPut(ReturnValue &dest, JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors();
-        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
+        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
     }
@@ -114,7 +120,7 @@ struct ScriptEngine {
         JSValue jsResult =
             JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors();
-        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
+        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
             JS_FreeValue(ctx, jsArgs[i]);
@@ -139,7 +145,7 @@ struct ScriptEngine {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors();
         ReturnValue dest;
-        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
+        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
         return dest;
@@ -152,7 +158,7 @@ struct ScriptEngine {
             JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors();
         ReturnValue dest;
-        ScriptValue<ReturnValue>::jsToValue(ctx, dest, jsResult);
+        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
             JS_FreeValue(ctx, jsArgs[i]);
@@ -210,20 +216,114 @@ struct ScriptEngine {
     void checkForErrors();
     void checkForErrors(JSValue);
 
-    void addFinalizer(JSValue obj, ScriptClass e);
-    JSValue create(ScriptClass e, void *data);
-    JSValue createOwned(ScriptClass e, void *data);
+    template <typename T> JSValue create(void *data) {
+        if (!data) {
+            return JS_NULL;
+        }
+        JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
+        JS_SetOpaque(val, data);
+        return val;
+    }
+
+    template <typename T> JSValue createOwned(void *data) {
+        if (!data) {
+            return JS_NULL;
+        }
+        JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
+        JS_SetOpaque(val, data);
+        JSClassID finalizerId = ScriptClass<T>::finalizerId();
+        JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
+        JS_SetOpaque(finalizer, data);
+        JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
+                       finalizer);
+        JS_FreeValue(ctx, finalizerSymbol);
+        return val;
+    }
+
+    template <typename T> JSValue createShared(std::shared_ptr<T> data) {
+        if (!data) {
+            return JS_NULL;
+        }
+        JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
+        JS_SetOpaque(val, data.get());
+        JSClassID finalizerId = ScriptClass<T>::sharedFinalizerId();
+        JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
+        std::shared_ptr<T> *sharedCpy = new std::shared_ptr<T>(data);
+        JS_SetOpaque(finalizer, sharedCpy);
+        JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
+                       finalizer);
+        JS_FreeValue(ctx, finalizerSymbol);
+        return val;
+    }
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
     JSValue delay(float duration);
 
-    friend struct ScriptFinalizer;
+    void setAtNamespace(const char **ns, const char *name, JSValue val) {
+        JSValue obj = JS_GetGlobalObject(ctx);
+        while (ns[0]) {
+            JSValue child = JS_GetPropertyStr(ctx, obj, ns[0]);
+            if (JS_IsUndefined(child)) {
+                child = JS_NewObject(ctx);
+                JS_DupValue(ctx, child);
+                JS_SetPropertyStr(ctx, obj, ns[0], child);
+            }
+            JS_FreeValue(ctx, obj);
+            obj = child;
+            ++ns;
+        }
+        JS_SetPropertyStr(ctx, obj, name, val);
+        JS_FreeValue(ctx, obj);
+    }
 
 private:
     std::vector<DelayRequest> delayPromises;
-    std::unordered_map<ScriptClass, JSClassID> classIds;
-    std::unordered_map<ScriptClass, JSClassID> finalizerIds;
+};
+
+template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {
+    static JSValue valueToJs(JSContext *ctx, std::unique_ptr<T> &&val) {
+        if (!val) {
+            return JS_NULL;
+        }
+        ScriptEngine *engine =
+            static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+        return engine->createOwned<T>(val.release());
+    }
+};
+
+template <typename T> struct ScriptValueFromJs<std::shared_ptr<T>> {
+    static std::shared_ptr<T> valueFromJs(JSContext *ctx, JSValue val) {
+        if (JS_IsNull(val) || !JS_IsObject(val)) {
+            return nullptr;
+        }
+        ScriptEngine *engine =
+            static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+        JSValue finalizer = JS_GetProperty(
+            ctx, val, JS_ValueToAtom(ctx, engine->finalizerSymbol));
+        if (!JS_IsObject(finalizer)) {
+            return nullptr;
+        }
+        void *opaque =
+            JS_GetOpaque(finalizer, ScriptClass<T>::sharedFinalizerId());
+        if (!opaque) {
+            assert(false);
+            return nullptr;
+        }
+        JS_FreeValue(ctx, finalizer);
+        return *static_cast<std::shared_ptr<T> *>(opaque);
+    }
+};
+
+template <typename T> struct ScriptValueToJs<std::shared_ptr<T>> {
+    static JSValue valueToJs(JSContext *ctx, const std::shared_ptr<T> &val) {
+        if (!val) {
+            return JS_NULL;
+        }
+        ScriptEngine *engine =
+            static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+        return engine->createShared<T>(val);
+    }
 };
 
 }
