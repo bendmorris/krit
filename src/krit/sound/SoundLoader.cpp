@@ -1,3 +1,4 @@
+#include "krit/App.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/asset/AssetType.h"
 #include "krit/io/Io.h"
@@ -58,13 +59,13 @@ static SF_VIRTUAL_IO vio = (SF_VIRTUAL_IO){
 
 static SNDFILE *loadSoundFile(VirtualIo &io, const std::string &path,
                               SF_INFO &sfInfo, char **data) {
-    *data = IoRead::read(path, &io.length);
+    *data = app->io->read(path.c_str(), &io.length);
     io.data = *data;
     SNDFILE *sndFile = sf_open_virtual(&vio, SFM_READ, &sfInfo, &io);
     if (!sndFile) {
         Log::error("error loading sound asset %s: %s\n", path.c_str(),
                    sf_strerror(nullptr));
-        IoRead::free(*data);
+        app->io->free(*data);
         *data = io.data = nullptr;
         return nullptr;
     }
@@ -105,7 +106,7 @@ AssetLoader<SoundData>::loadAsset(const std::string &path) {
     int16_t *data = new int16_t[len];
     sf_read_short(sndFile, data, len);
     sf_close(sndFile);
-    IoRead::free(fileData);
+    app->io->free(fileData);
 
     alGenBuffers(1, &s->buffer);
     alBufferData(s->buffer, format, data, len * 2, s->sampleRate);

@@ -1,5 +1,6 @@
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
+#include "krit/App.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
@@ -30,7 +31,7 @@ static FT_Stroker stroker;
 template <>
 std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const std::string &path) {
     int length;
-    char *content = IoRead::read(path, &length);
+    char *content = app->io->read(path.c_str(), &length);
     // FIXME: do we leak content here, or does FT free it?
     return std::make_shared<Font>(path, content, length);
 }
@@ -128,7 +129,7 @@ Font::~Font() {
         hb_blob_destroy(blob);
     }
     if (fontData) {
-        IoRead::free((char *)fontData);
+        app->io->free((char *)fontData);
     }
 }
 

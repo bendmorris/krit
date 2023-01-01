@@ -1,5 +1,5 @@
 #include "krit/Engine.h"
-
+#include "krit/App.h"
 #include "krit/TaskManager.h"
 #include "krit/UpdateContext.h"
 #include "krit/io/Io.h"
@@ -157,13 +157,13 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
 void Engine::addCursor(const std::string &cursorPath,
                        const std::string &cursorName, int resolution) {
     int len;
-    char *s = IoRead::read(cursorPath, &len);
+    char *s = app->io->read(cursorPath.c_str(), &len);
 
     TaskManager::instance->push([=](UpdateContext &) {
         SDL_RWops *rw = SDL_RWFromConstMem(s, len);
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
         SDL_RWclose(rw);
-        IoRead::free(s);
+        app->io->free(s);
 
         SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 0, 0);
 

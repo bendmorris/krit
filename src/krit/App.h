@@ -2,7 +2,9 @@
 #define KRIT_APP
 
 #include "krit/Engine.h"
+#include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
+#include "krit/platform/Platform.h"
 #include "krit/render/Renderer.h"
 #include <chrono>
 #include <string>
@@ -15,8 +17,25 @@ struct TaskManager;
 const int MAX_FRAMES = 5;
 const int FPS = 60;
 
+struct App;
+
+extern App *app;
+
 struct App {
     static RenderContext ctx;
+
+private:
+    struct AppScope {
+        AppScope(App *);
+        ~AppScope();
+    };
+
+    AppScope _scope;
+
+public:
+    // backends
+    std::unique_ptr<Io> io;
+    std::unique_ptr<Platform> platform;
 
     Engine engine;
     int framerate;

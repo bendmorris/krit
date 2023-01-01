@@ -1,3 +1,4 @@
+#include "krit/App.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/asset/AssetType.h"
 #include "krit/io/Io.h"
@@ -8,7 +9,7 @@ namespace krit {
 
 struct TextDeleter {
     void operator()(std::string_view const *view) {
-        IoRead::free(const_cast<char *>(view->data()));
+        app->io->free(const_cast<char *>(view->data()));
         delete view;
     }
 };
@@ -18,7 +19,7 @@ std::shared_ptr<std::string_view>
 AssetLoader<std::string_view>::loadAsset(const std::string &path) {
     // load asset as raw text
     int length;
-    char *content = IoRead::read(path, &length);
+    char *content = app->io->read(path.c_str(), &length);
     std::string_view *view = new std::string_view(content, length);
     return std::shared_ptr<std::string_view>(view, TextDeleter());
 }

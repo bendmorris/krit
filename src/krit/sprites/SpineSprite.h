@@ -56,7 +56,6 @@ struct SpineData {
 struct SpineSprite : public VisibleSprite {
     static float worldVertices[1024];
     static std::string defaultAtlasPath;
-    static spine::String _customSkin;
 
     static void setAtlasPath(const std::string &s) { defaultAtlasPath = s; }
 

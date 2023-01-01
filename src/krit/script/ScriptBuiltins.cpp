@@ -98,10 +98,10 @@ JS_FUNC(dumpMemoryUsage) {
 
 JS_FUNC(readFile) {
     int len;
-    char *content =
-        FileIo::read(ScriptValueFromJs<std::string>::valueFromJs(ctx, argv[0]), &len);
+    char *content = app->io->read(
+        ScriptValueFromJs<const char *>::valueFromJs(ctx, argv[0]), &len);
     auto rt = JS_NewStringLen(ctx, content, len);
-    FileIo::free(content);
+    app->io->free(content);
     return rt;
 }
 

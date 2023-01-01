@@ -42,12 +42,12 @@ struct ImageInfo {
 static std::unordered_map<std::string, ImageInfo> imageManifest;
 
 void ImageLoader::parseManifest() {
-    if (!IoRead::exists("assets/images.yaml")) {
+    if (!app->io->exists("assets/images.yaml")) {
         panic("couldn't find image manifest");
     }
 
     int len;
-    char *manifest = IoRead::read("assets/images.yaml", &len);
+    char *manifest = app->io->read("assets/images.yaml", &len);
     yaml_parser_t parser;
     yaml_parser_initialize(&parser);
     yaml_parser_set_input_string(&parser, (unsigned char *)manifest, len);
@@ -102,7 +102,7 @@ void ImageLoader::parseManifest() {
     yaml_document_delete(&doc);
     yaml_parser_delete(&parser);
 
-    IoRead::free(manifest);
+    app->io->free(manifest);
 }
 
 template <>
@@ -163,7 +163,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
         }
 #else
     int len;
-    char *s = IoRead::read(pathToLoad, &len);
+    char *s = app->io->read(pathToLoad.c_str(), &len);
     size_t pos = pathToLoad.find_last_of('.');
     const char *extension = &pathToLoad.c_str()[pos];
     const char *imgType;
@@ -184,7 +184,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
         }
         img->dimensions.setTo(surface->w / scale, surface->h / scale);
         SDL_RWclose(rw);
-        IoRead::free(s);
+        app->io->free(s);
 #endif
         unsigned int mode =
             surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;

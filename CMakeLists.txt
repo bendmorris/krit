@@ -70,6 +70,40 @@ file(GLOB KRIT_SRC_FILES CONFIGURE_DEPENDS
 )
 file(GLOB_RECURSE KRIT_THIRDPARTY_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp)
 
+if(KRIT_BACKEND_IO STREQUAL "File")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/krit/io/IoFileHelper.cpp
+        ${KRIT_DIR}/backend/krit/io/IoFile.cpp
+    )
+elseif(KRIT_BACKEND_IO STREQUAL "Zip")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/krit/io/IoFileHelper.cpp
+        ${KRIT_DIR}/backend/krit/io/IoZip.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized IO backend: ${KRIT_IO_BACKEND}")
+endif()
+
+if(KRIT_BACKEND_PLATFORM STREQUAL "Desktop")
+    list(APPEND KRIT_SRC_FILES
+    ${KRIT_DIR}/backend/krit/platform/PlatformDesktop.cpp
+    )
+elseif(KRIT_BACKEND_PLATFORM STREQUAL "Emscripten")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/krit/platform/PlatformEmscripten.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized platform backend: ${KRIT_PLATFORM_BACKEND}")
+endif()
+
+if(KRIT_BACKEND_RENDERER STREQUAL "Gl")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/krit/renderer/RendererGl.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized platform backend: ${KRIT_PLATFORM_BACKEND}")
+endif()
+
 if(KRIT_SCRIPT_BRIDGE)
     file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
         ${KRIT_DIR}/src/krit/script/*.cpp
@@ -85,6 +119,7 @@ if(KRIT_ENABLE_TOOLS)
 endif()
 
 include_directories(${KRIT_INCLUDE_PATHS})
+include_directories(${KRIT_DIR}/backend)
 include_directories(${KRIT_DIR}/src)
 include_directories(${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/include)
 include_directories(${KRIT_DIR}/quickjs)

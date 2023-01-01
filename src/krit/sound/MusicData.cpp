@@ -1,3 +1,4 @@
+#include "krit/App.h"
 #include "krit/sound/MusicData.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
@@ -13,7 +14,7 @@ MusicData::~MusicData() {
         sf_close(sndFile);
     }
     if (io.data) {
-        IoRead::free(io.data);
+        app->io->free(io.data);
     }
 }
 

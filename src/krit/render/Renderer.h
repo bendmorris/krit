@@ -53,8 +53,6 @@ private:
     void clear(RenderContext &ctx);
     void updateClip(RenderContext &ctx);
     void dispatchCommands(RenderContext &ctx);
-
-    int index();
 };
 
 }

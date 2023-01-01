@@ -23,30 +23,30 @@
 
 struct KritSpineExtension : public spine::DefaultSpineExtension {
     char *_readFile(const spine::String &path, int *length) override {
-        return krit::IoRead::read(std::string(path.buffer()), length);
+        return krit::app->io->read(path.buffer(), length);
     }
 
     void *_alloc(size_t size, const char *_1, int _2) override {
         if (!size) {
             return nullptr;
         }
-        return krit::IoRead::alloc(size);
+        return krit::app->io->alloc(size);
     }
 
     void *_calloc(size_t size, const char *file, int line) override {
         if (!size) {
             return nullptr;
         }
-        return krit::IoRead::alloc(size);
+        return krit::app->io->alloc(size);
     }
 
     void *_realloc(void *ptr, size_t size, const char *file,
                    int line) override {
-        return krit::IoRead::realloc(ptr, size);
+        return krit::app->io->realloc(ptr, size);
     }
 
     void _free(void *mem, const char *_1, int _2) override {
-        krit::IoRead::free(mem);
+        krit::app->io->free(mem);
     }
 };
 
@@ -75,7 +75,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     // data->json = std::unique_ptr<spine::SkeletonJson>(
     //     new spine::SkeletonJson(data->atlas.get()));
     int length;
-    unsigned char *s = (unsigned char *)IoRead::read(path, &length);
+    unsigned char *s = (unsigned char *)app->io->read(path.c_str(), &length);
     data->skeletonData = std::unique_ptr<spine::SkeletonData>(
         data->binary->readSkeletonData(s, length));
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
@@ -85,7 +85,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
-    IoRead::free((char *)s);
+    app->io->free((char *)s);
     return data;
 }
 
@@ -169,7 +169,7 @@ const char *SpineSprite::getAnimation(size_t track) {
     return "";
 }
 
-spine::String SpineSprite::_customSkin("custom");
+// spine::String SpineSprite::_customSkin("custom");
 
 void SpineSprite::advance(float t) {
     if (t) {

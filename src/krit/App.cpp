@@ -36,6 +36,7 @@
 namespace krit {
 struct UpdateContext;
 
+App *app {0};
 RenderContext App::ctx;
 
 void sigintHandler(int) { App::ctx.app->quit(); }
@@ -53,20 +54,25 @@ static void __doFrame(void *app) { ((App *)app)->doFrame(); }
 #endif
 
 App::App(KritOptions &options)
-    :
+    : _scope(this), io(krit::io()), platform(krit::platform()),
 #ifdef __EMSCRIPTEN__
       engine((emscripten_set_main_loop_arg(__doFrame, this, 0, 0), options)),
 #else
       engine(options),
 #endif
       framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
-    if (ctx.app) {
-        panic("can only have a single App running at once");
-    }
-    ctx.app = this;
 }
 
-App::~App() { ctx.app = nullptr; }
+App::~App() {}
+
+App::AppScope::AppScope(App *app) {
+    if (krit::app) {
+        panic("can only have a single App running at once");
+    }
+    krit::app = App::ctx.app = app;
+}
+
+App::AppScope::~AppScope() { krit::app = App::ctx.app = nullptr; }
 
 float App::time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(clock.now() -
