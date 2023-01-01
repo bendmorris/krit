@@ -30,6 +30,8 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections 
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -DTRACY_ENABLE -Wno-sometimes-uninitialized")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_ASAN} -fsanitize=address -fsanitize=undefined")
+
+set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -rdynamic")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
 set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_DEBUG} ${CMAKE_LINKER_FLAGS_ASAN} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
 set(CMAKE_LINKER_FLAGS_PROF "${CMAKE_LINKER_FLAGS_RELEASE} ${CMAKE_LINKER_FLAGS_PROF}")
@@ -226,17 +228,16 @@ function(tsbindgen BRIDGE_SRC_DIR PREFIX NAMESPACE)
 
     foreach(BRIDGE ${BRIDGE_TYPE_DEFS})
         file(RELATIVE_PATH BRIDGE_RELATIVE ${BRIDGE_SRC_DIR} ${BRIDGE})
+        set_directory_properties(PROPERTIES CMAKE_CONFIGURE_DEPENDS ${BRIDGE})
         list(APPEND BRIDGE_OUTPUTS "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/${BRIDGE_RELATIVE}.ScriptClass.cpp")
     endforeach()
 
     get_property(CURRENT_BRIDGE_NAMESPACES GLOBAL PROPERTY BRIDGE_NAMESPACES)
     message("cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
     add_custom_command(
-        # OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/ts
         OUTPUT ${BRIDGE_OUTPUTS}
-        # BYPRODUCTS ${BRIDGE_OUTPUTS}
         DEPENDS ${BRIDGE_TYPE_DEFS} ${KRIT_DIR}/tools/tsbindgen/dist/index.js ${KRIT_DIR}/tools/tsbindgen/templates/ScriptClass.cpp.njk
-        COMMAND cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}" && touch ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}/ts
+        COMMAND cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}"
     )
 
     target_sources(${PROJECT_NAME} PRIVATE ${BRIDGE_OUTPUTS})

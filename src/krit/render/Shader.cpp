@@ -223,6 +223,12 @@ void ShaderInstance::bind(RenderContext &ctx) {
                     Vec2f &scale = ctx.camera->scale;
                     glUniform2f(i, scale.x(), scale.y());
                     checkForGlErrors("glUniform2f");
+                } else if (uniformName == "uInverseMatrix") {
+                    Matrix4 inverseMatrix;
+                    inverseMatrix.identity();
+                    ctx.camera->getTransformationMatrix(inverseMatrix, ctx.camera->viewportWidth(), ctx.camera->viewportHeight());
+                    inverseMatrix.invert();
+                    glUniformMatrix4fv(i, 1, GL_FALSE, inverseMatrix.data());
                 }
                 break;
             }

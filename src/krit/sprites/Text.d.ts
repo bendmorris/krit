@@ -56,4 +56,5 @@ declare class Text extends VisibleSprite {
     setRichText(s: string): void;
     setTabStops(s: string): void;
     setFontSize(s: number): void;
+    setAlign(align: AlignType): void;
 }

@@ -16,11 +16,13 @@ void TextMap::setLocale(const std::string &key) {
     const char *current = loaded->data();
     size_t remaining = loaded->length();
     const char *nextNewline, *nextTab;
+    int line = 0;
     while ((nextNewline = (const char *)memchr(current, '\n', remaining))) {
+        ++line;
         size_t lineLength = nextNewline - current;
         nextTab = (const char *)memchr(current, '\t', lineLength);
         if (!nextTab) {
-            Log::error("no tab in line: %.*s\n", (int)lineLength - 1, current);
+            Log::error("no tab in line %i: %.*s\n", line, (int)lineLength - 1, current);
             current = nextNewline + 1;
             remaining -= lineLength + 1;
             continue;

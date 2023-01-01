@@ -138,7 +138,7 @@ template <typename T, size_t N, typename Self> struct Vec {
 
     float length() { return distance(Self()); }
 
-    void normalize(float size) {
+    void normalize(float size = 1) {
         float normal = size / length();
         for (size_t i = 0; i < N; ++i) {
             v[i] *= normal;

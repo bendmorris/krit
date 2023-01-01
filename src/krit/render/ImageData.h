@@ -32,7 +32,7 @@ struct ImageData {
     int height() { return this->dimensions.y(); }
 
     ImageData() {}
-    ~ImageData();
+    virtual ~ImageData();
 
 private:
     bool hasMipmaps = false;

@@ -24,6 +24,7 @@ struct App {
     bool running = false;
 
     App(KritOptions &options);
+    ~App();
 
     void run();
     bool doFrame();

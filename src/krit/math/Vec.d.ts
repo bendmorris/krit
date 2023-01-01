@@ -11,6 +11,7 @@ declare class Vec2f {
     setTo(x: number, y: number): void;
     distance(p: Partial<Vec2f>): number;
     squaredDistance(p: Partial<Vec2f>): number;
+    normalize(): void;
 }
 
 declare class Vec3f {
@@ -28,6 +29,7 @@ declare class Vec3f {
     setTo(x: number, y: number, z?: number): void;
     distance(p: Partial<Vec3f>): number;
     squaredDistance(p: Partial<Vec3f>): number;
+    normalize(): void;
 }
 
 declare class Vec2i {
@@ -43,6 +45,7 @@ declare class Vec2i {
     setTo(x: number, y: number): void;
     distance(p: Partial<Vec2i>): number;
     squaredDistance(p: Partial<Vec2i>): number;
+    normalize(): void;
 }
 
 declare class Vec3i {
@@ -60,4 +63,5 @@ declare class Vec3i {
     setTo(x: number, y: number): void;
     distance(p: Partial<Vec3i>): number;
     squaredDistance(p: Partial<Vec3i>): number;
+    normalize(): void;
 }

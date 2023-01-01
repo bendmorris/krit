@@ -23,7 +23,9 @@
 #include <SDL2/SDL_mutex.h>
 #include <cmath>
 #include <csignal>
+#include <execinfo.h>
 #include <stdlib.h>
+#include <unistd.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -36,7 +38,15 @@ struct UpdateContext;
 
 RenderContext App::ctx;
 
-void sigintHandler(int sig_num) { App::ctx.app->quit(); }
+void sigintHandler(int) { App::ctx.app->quit(); }
+
+void segvHandler(int sig) {
+    void *array[10];
+    size_t size = backtrace(array, 10);
+    printf("Error: signal %d:\n", sig);
+    backtrace_symbols_fd(array, size, STDOUT_FILENO);
+    exit(1);
+}
 
 #ifdef __EMSCRIPTEN__
 static void __doFrame(void *app) { ((App *)app)->doFrame(); }
@@ -50,7 +60,13 @@ App::App(KritOptions &options)
       engine(options),
 #endif
       framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
+    if (ctx.app) {
+        panic("can only have a single App running at once");
+    }
+    ctx.app = this;
 }
+
+App::~App() { ctx.app = nullptr; }
 
 float App::time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(clock.now() -
@@ -60,13 +76,14 @@ float App::time() {
 }
 
 void App::run() {
-    if (ctx.app) {
-        panic("can only have a single App running at once");
-    }
-
+    static bool registeredHandlers = false;
+    if (!registeredHandlers) {
 #ifndef __EMSCRIPTEN
-    std::signal(SIGINT, sigintHandler);
+        registeredHandlers = true;
+        std::signal(SIGINT, sigintHandler);
+        std::signal(SIGSEGV, segvHandler);
 #endif
+    }
 
     appStart = clock.now();
 
@@ -82,7 +99,6 @@ void App::run() {
 
     // the RenderContext will be upcast to an UpdateContext during the update
     // phase
-    ctx.app = this;
     ctx.engine = &engine;
     ctx.window = &engine.window;
     ctx.camera = nullptr;
@@ -131,7 +147,8 @@ bool App::doFrame() {
     frameFinish = clock.now();
     elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
                   frameFinish - frameStart)
-                  .count() * engine.speed;
+                  .count() *
+              engine.speed;
     // } while (lockFramerate && elapsed < frameDelta2);
     // if (1.0 / elapsed < 50) {
     //     printf("%.2f\n", 1.0 / elapsed);
@@ -174,9 +191,9 @@ bool App::doFrame() {
     engine.render(ctx);
     engine.flip(ctx);
 
-    #if TRACY_ENABLE
+#if TRACY_ENABLE
     FrameMark;
-    #endif
+#endif
 
     return true;
 }

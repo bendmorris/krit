@@ -7,5 +7,5 @@ declare class RenderContext extends UpdateContext {
     popClip(): void;
     startAutoClip(): void;
     endAutoClip(): void;
-    drawRect(x: number, y: number, w: number, h: number, c: number, a: number): void;
+    drawRect(x: number, y: number, w: number, h: number, c: Color, a: number): void;
 }

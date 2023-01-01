@@ -128,6 +128,11 @@ static std::unordered_map<hb_codepoint_t, int> charDelays = {
 //     }
 // }
 
+struct FormatTag {
+    std::string_view name;
+    std::vector<std::pair<std::string_view, std::string_view>> attributes;
+};
+
 /**
  * Utility structure to parse format tags from a string of text and generate a
  * Vector of TextOpcodes.
@@ -186,13 +191,13 @@ struct TextParser {
                         break;
                     }
                 }
-            } else if (c == '\n') {
+            } else if (c == '\n' || c == '\t') {
                 tagLocations.emplace_back(i, 1);
             }
         }
         auto &rawText = txt.rawText;
         rawText.clear();
-        std::vector<std::pair<size_t, std::string_view>> tags;
+        std::vector<std::pair<size_t, FormatTag>> tags;
         size_t tagNameOffset = 0;
         if (tagLocations.size()) {
             // add text before first tag
@@ -213,8 +218,52 @@ struct TextParser {
                 if (s[offset + len - 1] == '/') {
                     --len;
                 }
-                tags.emplace_back(l.first - tagNameOffset,
-                                  std::string_view(&s[offset], len));
+                // add the tag and find any attributes inside;
+                // this parses in one pass and does not handle malformed tags!
+                FormatTag tag;
+                size_t start = offset;
+                if (s[offset] == '\n') {
+                    tag.name = std::string_view(&s[offset], 1);
+                } else {
+                    for (size_t o = offset; o < offset + len; ++o) {
+                        if (s[o] == ' ') {
+                            if (tag.name.empty()) {
+                                // we have the tag name
+                                tag.name = std::string_view(&s[offset], o - offset);
+                            }
+                            start = o + 1;
+                        } else if (s[o] == '=') {
+                            // we have the attribute name; parse the attribute value
+                            tag.attributes.emplace_back();
+                            tag.attributes.back().first =
+                                std::string_view(&s[start], o - start);
+                            assert(s[o + 1] == '"' || s[o + 1] == '\'');
+                            for (size_t o2 = o + 2; o2 < offset + len; ++o2) {
+                                if (s[o2] == s[o + 1]) {
+                                    tag.attributes.back().second =
+                                        std::string_view(&s[o + 2], o2 - (o + 2));
+                                    o = o2;
+                                }
+                            }
+                        }
+                    }
+                    if (tag.name.empty()) {
+                        // there were no attributes, so the whole thing is the tag
+                        // name
+                        tag.name = std::string_view(&s[offset], len);
+                    }
+                }
+                // printf("tag: name %.*s (%zu)\n", (int)tag.name.size(),
+                // tag.name.data(), tag.name.size()); for (size_t _i = 0; _i <
+                // tag.attributes.size(); ++_i) {
+                //     printf("  attribute %.*s=%.*s\n",
+                //            (int)tag.attributes[_i].first.size(),
+                //            tag.attributes[_i].first.data(),
+                //            (int)tag.attributes[_i].second.size(),
+                //            tag.attributes[_i].second.data());
+                // }
+                // std::string_view(&s[offset], len)
+                tags.emplace_back(l.first - tagNameOffset, tag);
                 tagNameOffset += l.second;
                 if (l.first + l.second < s.size()) {
                     size_t startPos = l.first + l.second;
@@ -251,7 +300,6 @@ struct TextParser {
         word.clear();
         txt.opcodes.emplace_back(std::in_place_index_t<NewLine>(), Dimensions(),
                                  txt.align);
-        txt.maxChars = rawText.size();
         txt.hasBorderTags = false;
 
         hb_font_extents_t extents;
@@ -277,7 +325,6 @@ struct TextParser {
                 ++it;
             }
             char32_t c = *it;
-            glyphCost += std::max(charDelays[c], 1);
             switch (c) {
                 case ' ': {
                     flushWord(txt);
@@ -293,6 +340,7 @@ struct TextParser {
                     break;
                 }
                 default: {
+                    glyphCost += std::max(charDelays[c], 1);
                     if (!word.empty() && word.back().index() == GlyphBlock &&
                         std::get<GlyphBlock>(word.back()).startIndex +
                                 std::get<GlyphBlock>(word.back()).glyphs ==
@@ -326,6 +374,8 @@ struct TextParser {
         for (auto it : txt.opcodes) {
             if (it.index() == CharDelay) {
                 txt.maxChars += std::get<CharDelay>(it);
+            } else if (it.index() == Whitespace) {
+                ++txt.maxChars;
             }
         }
 
@@ -350,7 +400,9 @@ struct TextParser {
         wordLength = 0;
     }
 
-    void addTag(Text &txt, std::string_view tagName) {
+    void addTag(Text &txt, const FormatTag &tag) {
+        // printf("add tag: %.*s\n", (int)tag.name.size(), tag.name.data());
+        std::string_view tagName = tag.name;
         static std::string tagStr;
         bool close = false;
         if (tagName[0] == '/') {
@@ -622,24 +674,24 @@ void Text::__render(RenderContext &ctx, bool border) {
                 break;
             }
             case RenderSprite: {
+                auto sprite = std::get<RenderSprite>(op);
+                auto size = sprite->getSize();
                 if (!border) {
-                    auto sprite = std::get<RenderSprite>(op);
                     GlyphRenderData renderData(cursor);
                     if (custom) {
                         custom(&ctx, this, &renderData);
                     }
-                    auto size = sprite->getSize();
                     sprite->scale.copyFrom(scale);
                     sprite->position.setTo(
-                        this->position.x() + renderData.position.x(),
-                        this->position.y() + renderData.position.y() +
-                            (lineHeight * scale.y() - size.y()));
+                        this->position.x() + renderData.position.x() * fontScale,
+                        this->position.y() + renderData.position.y() * fontScale +
+                        (lineHeight * scale.y() * fontScale - size.y()) - lineHeight * fontScale);
                     Color originalColor(sprite->color);
-                    sprite->color = sprite->color * this->color;
+                    sprite->color = sprite->color * color;
                     sprite->render(ctx);
                     sprite->color = originalColor;
-                    cursor.x() += size.x();
                 }
+                cursor.x() += size.x();
                 break;
             }
             case CharDelay: {
@@ -686,6 +738,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                     if (custom) {
                         custom(&ctx, this, &renderData);
                     }
+                    float fullScaleX = cameraScale / renderData.scale.x(),
+                          fullScaleY = cameraScale / renderData.scale.y();
                     Matrix4 matrix;
                     matrix.identity();
                     DrawKey key;
@@ -693,24 +747,24 @@ void Text::__render(RenderContext &ctx, bool border) {
                         key.smooth = SmoothingMode::SmoothNearest;
                         matrix.translate(position.x(), position.y());
                         matrix.tx() =
-                            std::round(matrix.tx() * cameraScale) / cameraScale;
+                            std::round(matrix.tx() * fullScaleX) / fullScaleX;
                         matrix.ty() =
-                            std::round(matrix.ty() * cameraScale) / cameraScale;
-                        matrix.a() = matrix.d() =
-                            1.0 / glyphScale / cameraScale;
+                            std::round(matrix.ty() * fullScaleY) / fullScaleY;
+                        matrix.a() = 1.0 / glyphScale / fullScaleX;
+                        matrix.d() = 1.0 / glyphScale / fullScaleY;
                         matrix.a() *=
                             ctx.camera->scale.x() / ctx.camera->scale.y();
                         matrix.b() = matrix.c() = 0;
                         matrix.translate(
-                            std::round(renderData.position.x() * cameraScale) /
-                                cameraScale,
-                            std::round(renderData.position.y() * cameraScale) /
-                                cameraScale);
+                            std::round(renderData.position.x() * fullScaleX) /
+                                fullScaleX,
+                            std::round(renderData.position.y() * fullScaleY) /
+                                fullScaleY);
                         matrix.translate(
                             std::round(glyph.offset.x() / glyphScale) /
-                                cameraScale,
+                                fullScaleX,
                             std::round(-glyph.offset.y() / glyphScale) /
-                                cameraScale);
+                                fullScaleY);
                     } else {
                         key.smooth = smooth == SmoothingMode::SmoothMipmap
                                          ? SmoothingMode::SmoothLinear
@@ -718,14 +772,14 @@ void Text::__render(RenderContext &ctx, bool border) {
                         matrix.translate(position.x(), position.y());
                         matrix.translate(renderData.position.x(),
                                          renderData.position.y());
-                        matrix.a() = matrix.d() =
-                            1.0 / glyphScale / cameraScale;
+                        matrix.a() = 1.0 / glyphScale / fullScaleX;
+                        matrix.d() = 1.0 / glyphScale / fullScaleY;
                         matrix.a() *=
                             ctx.camera->scale.x() / ctx.camera->scale.y();
                         matrix.b() = matrix.c() = 0;
                         matrix.translate(
-                            glyph.offset.x() / glyphScale / cameraScale,
-                            -glyph.offset.y() / glyphScale / cameraScale);
+                            glyph.offset.x() / glyphScale / fullScaleX,
+                            -glyph.offset.y() / glyphScale / fullScaleY);
                     }
                     key.image = glyph.region.img;
                     key.blend = blendMode;
@@ -764,7 +818,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                                     renderData.color, zIndex);
                     }
 
-                    cursor.x() += _pos.x_advance;
+                    cursor.x() += _pos.x_advance * renderData.scale.x();
                     if (charCount > -1) {
                         charCount -= std::max(charDelays[*it], 1);
                         if (charCount <= 0) {
@@ -775,6 +829,12 @@ void Text::__render(RenderContext &ctx, bool border) {
                 break;
             }
             case Whitespace: {
+                if (charCount > -1) {
+                    --charCount;
+                    if (charCount <= 0) {
+                        return;
+                    }
+                }
                 cursor.x() += std::get<Whitespace>(op);
                 break;
             }

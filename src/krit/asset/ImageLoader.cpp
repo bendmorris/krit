@@ -164,17 +164,27 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
 #else
     int len;
     char *s = IoRead::read(pathToLoad, &len);
+    size_t pos = pathToLoad.find_last_of('.');
+    const char *extension = &pathToLoad.c_str()[pos];
+    const char *imgType;
+    if (!strncmp(extension, ".png", 4)) {
+        imgType = "PNG";
+    } else if (!strncmp(extension, ".jpg", 4)) {
+        imgType = "JPEG";
+    } else {
+        panic("unrecognized image extension: %s\n", extension);
+    }
 
     TaskManager::instance->push([=](UpdateContext &) {
         SDL_RWops *rw = SDL_RWFromConstMem(s, len);
-        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
-        img->dimensions.setTo(surface->w / scale, surface->h / scale);
-        SDL_RWclose(rw);
-        IoRead::free(s);
+        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
         if (!surface) {
             panic("IMG_Load(%s) is null: %s\n", pathToLoad.c_str(),
                   IMG_GetError());
         }
+        img->dimensions.setTo(surface->w / scale, surface->h / scale);
+        SDL_RWclose(rw);
+        IoRead::free(s);
 #endif
         unsigned int mode =
             surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;

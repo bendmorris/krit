@@ -116,6 +116,8 @@ struct DrawCommandBuffer {
 
     void updateBounds(AutoClipBounds &bounds, float x1, float y1, float x2,
                       float y2, float z1, float z2);
+
+    void renderFbToScreen(FrameBuffer &fb);
 };
 
 }

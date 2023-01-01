@@ -15,9 +15,10 @@ namespace krit {
 struct RenderContext;
 
 struct Backdrop : public VisibleSprite {
-    static Backdrop *create(const std::string &id) { return new Backdrop(id); }
+    static Backdrop *create(ImageRegion region) { return new Backdrop(region); }
 
     float angle = 0;
+    float pitch = 0;
     ImageRegion region;
     Point scroll;
     bool repeatX = true;

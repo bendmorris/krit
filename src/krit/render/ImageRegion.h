@@ -8,6 +8,7 @@
 namespace krit {
 
 struct ImageRegion {
+    static ImageRegion *create(std::shared_ptr<ImageData> img) { return new ImageRegion(img); }
     std::shared_ptr<ImageData> img;
     IntRectangle rect;
     std::string name;

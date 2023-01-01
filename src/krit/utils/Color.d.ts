@@ -10,4 +10,5 @@ declare class Color {
     setTo(c: number): void;
     lerpInPlace(c: number, mix: number): void;
     rgb(): number;
+    rgba(): number;
 }

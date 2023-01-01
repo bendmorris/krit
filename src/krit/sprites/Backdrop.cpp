@@ -35,18 +35,16 @@ void Backdrop::render(RenderContext &ctx) {
         if (pos.x() > 0) {
             pos.x() -= scaledDimensions.x();
         }
-        xi = static_cast<int>(ceil(ctx.window->x() - pos.x()) /
-                                  scaledDimensions.x() +
-                              1);
+        xi = static_cast<int>(
+            ceil(ctx.window->x() - pos.x()) / scaledDimensions.x() + 1);
     }
     if (this->repeatY) {
         pos.y() = fmod(pos.y(), scaledDimensions.y());
         if (pos.y() > 0) {
             pos.y() -= scaledDimensions.y();
         }
-        yi = static_cast<int>(ceil(ctx.window->y() - pos.y()) /
-                                  scaledDimensions.y() +
-                              1);
+        yi = static_cast<int>(
+            ceil(ctx.window->y() - pos.y()) / scaledDimensions.y() + 1);
     }
     DrawKey key;
     key.image = this->region.img;
@@ -57,6 +55,9 @@ void Backdrop::render(RenderContext &ctx) {
     m.identity();
     m.a() = static_cast<float>(scaledDimensions.x()) / this->width();
     m.d() = static_cast<float>(scaledDimensions.y()) / this->height();
+    if (this->pitch) {
+        m.pitch(this->pitch);
+    }
     for (int y = 0; y < yi; ++y) {
         for (int x = 0; x < xi; ++x) {
             m.tx() = pos.x() + scaledDimensions.x() * x;

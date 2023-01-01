@@ -41,7 +41,7 @@ void Image::render(RenderContext &ctx) {
         matrix.pitch(this->pitch);
     }
     matrix.scale(this->scale.x(), this->scale.y());
-    matrix.translate(this->position.x(), this->position.y());
+    matrix.translate(this->position.x(), this->position.y(), this->position.z());
     DrawKey key;
     key.shader = this->shader;
     key.image = this->region.img;

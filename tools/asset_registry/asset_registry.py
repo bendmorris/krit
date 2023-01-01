@@ -26,10 +26,11 @@ def run(inputPath, outputDir):
             if item.get('type') == 'Image':
                 matches = glob(os.path.join(assetRoot, item['pattern']), recursive=True)
                 for matchPath in matches:
-                    basePath = os.path.join(os.path.dirname(matchPath), os.path.basename(matchPath).split('.')[0]) + '.png'
+                    format = os.path.basename(matchPath).split('.')[-1]
+                    basePath = os.path.join(os.path.dirname(matchPath), os.path.basename(matchPath).split('.')[0]) + '.' + format
                     extension = os.path.basename(matchPath).split('.')[1:]
 
-                    if extension == ['png'] or extension == ['4k', 'png']:
+                    if extension == [format] or extension == ['4k', format]:
                         size = 2160
                     elif extension[0].isdigit():
                         size = int(extension[0])

@@ -195,6 +195,22 @@ template <typename T> struct ScriptValueFromJs<std::vector<T>> {
     }
 };
 
+// vectors
+template <typename T> struct ScriptValueFromJs<std::vector<T>&&> {
+    static std::vector<T> &&valueFromJs(JSContext *ctx, JSValue arr) {
+        int len;
+        JSValue length = JS_GetPropertyStr(ctx, arr, "length");
+        JS_ToInt32(ctx, &len, length);
+        std::vector<T> vec(len);
+        for (int i = 0; i < len; ++i) {
+            JSValue item = JS_GetPropertyUint32(ctx, arr, i);
+            vec[i] = ScriptValueFromJs<T>::valueFromJs(ctx, item);
+        }
+        JS_FreeValue(ctx, length);
+        return std::move(vec);
+    }
+};
+
 template <typename T0> struct ScriptValueFromPartial {
     using T = typename remove_all<T0>::type;
 

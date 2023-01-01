@@ -151,6 +151,7 @@ static JS_FUNC({{cls.name}}_{{method.name}}) {
     {% if method.returnType.validationType !== 'void' %}
     return krit::ScriptValueToJs<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(method) }});
     {% else %}
+    {{ cls.name + '::' + method.name | call(method) }};
     return JS_UNDEFINED;
     {% endif %}
 }

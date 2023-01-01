@@ -41,8 +41,8 @@ struct AudioStream {
     int sampleRate();
     float currentPlayTime();
 
-    // void onLoop(const std::string &name);
-    void onLoop(std::shared_ptr<MusicData> music);
+    void onLoop(const std::string &name);
+    // void onLoop(std::shared_ptr<MusicData> music);
 
     void clear() {
         volume = 1;

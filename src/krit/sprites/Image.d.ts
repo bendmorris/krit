@@ -8,5 +8,6 @@ declare class Image extends VisibleSprite {
     get height(): number;
     angle: number;
     pitch: number;
+    region: ImageRegion;
     centerOrigin(): void;
 }

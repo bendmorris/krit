@@ -268,10 +268,8 @@ float AudioStream::currentPlayTime() {
     return static_cast<float>(samplesPlayed + sampleOffset) / data->sampleRate;
 }
 
-// void AudioStream::onLoop(const std::string &name) {
-//     onLoop(App::ctx.engine->getMusic(name));
-// }
-void AudioStream::onLoop(std::shared_ptr<MusicData> music) {
+void AudioStream::onLoop(const std::string &name) {
+    auto music = App::ctx.engine->getMusic(name);
     onLoopData = music;
 }
 
