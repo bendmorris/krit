@@ -85,6 +85,9 @@ struct DrawCommandBuffer {
 
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
                      const Triangle &uv, const Color &color, int zIndex = 0);
+    void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
+                     const Triangle &uv, const Color &color1,
+                     const Color &color2, const Color &color3, int zIndex = 0);
 
     void pushClip(Rectangle clip) { buf.emplace_back<PushClipRect>(clip); }
     void popClip() { buf.emplace_back<PopClipRect>(); }
@@ -96,14 +99,17 @@ struct DrawCommandBuffer {
         buf.emplace_back<SetRenderTarget>(currentRenderTarget = fb, clear);
     }
 
-    void clearColor(Color color = Color::black()) { buf.emplace_back<ClearColor>(color); }
+    void clearColor(Color color = Color::black()) {
+        buf.emplace_back<ClearColor>(color);
+    }
 
     void drawSceneShader(SceneShader *shader) {
         buf.emplace_back<DrawSceneShader>(shader);
     }
 
     void addTriangle(DrawCall &draw, const Triangle &t, const Triangle &uv,
-                     const Color &color);
+                     const Color &color1, const Color &color2,
+                     const Color &color3);
 
     void addTriangle(DrawCall &draw, float x1, float y1, float z1, float x2,
                      float y2, float z2, float x3, float y3, float z3,
@@ -116,8 +122,6 @@ struct DrawCommandBuffer {
 
     void updateBounds(AutoClipBounds &bounds, float x1, float y1, float x2,
                       float y2, float z1, float z2);
-
-    void renderFbToScreen(FrameBuffer &fb);
 };
 
 }

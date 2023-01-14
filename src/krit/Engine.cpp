@@ -1,27 +1,297 @@
 #include "krit/Engine.h"
-#include "krit/App.h"
+#if KRIT_ENABLE_TOOLS
+#include "imgui.h"
+#include "imgui_impl_sdl.h"
+#include "krit/editor/Editor.h"
+#endif
+#include "krit/CrashHandler.h"
+#include "krit/Options.h"
 #include "krit/TaskManager.h"
-#include "krit/UpdateContext.h"
-#include "krit/io/Io.h"
-#include "krit/math/Dimensions.h"
-#include "krit/math/Matrix.h"
-#include "krit/math/Rectangle.h"
-#include "krit/render/DrawCommand.h"
-#include "krit/render/DrawKey.h"
+#include "krit/asset/Font.h"
+#include "krit/input/InputContext.h"
+#include "krit/input/Key.h"
+#include "krit/input/Mouse.h"
+#include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
+#include "krit/utils/Panic.h"
+#include "krit/utils/Signal.h"
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_error.h>
+#include <SDL2/SDL_events.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_surface.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_mouse.h>
+#include <SDL2/SDL_mutex.h>
+#include <cmath>
+#include <stdlib.h>
+#include <unistd.h>
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
 #if TRACY_ENABLE
 #include "krit/tracy/Tracy.hpp"
 #endif
 
 namespace krit {
 
-Engine::Engine(KritOptions &options) : window(options), renderer(window) {
+struct UpdateContext;
+
+Engine *engine{0};
+
+#ifdef __EMSCRIPTEN__
+static void __doFrame(void *app) { ((App *)app)->doFrame(); }
+#endif
+
+Engine::Engine(KritOptions &options)
+    : _scope(this), io(krit::io()), net(krit::net()), platform(krit::platform()),
+#ifdef __EMSCRIPTEN__
+      engine((emscripten_set_main_loop_arg(__doFrame, this, 0, 0), options)),
+#else
+      window(options), renderer(window),
+#endif
+      framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
 #if KRIT_ENABLE_SCRIPT
     script.userData = this;
+    scriptContext = JS_NewObject(script.ctx);
 #endif
+}
+
+Engine::~Engine() {
+#if KRIT_ENABLE_SCRIPT
+    JS_FreeValue(script.ctx, scriptContext);
+#endif
+}
+
+Engine::EngineScope::EngineScope(Engine *engine) {
+    if (krit::engine) {
+        panic("can only have a single Engine running at once");
+    }
+    krit::engine = engine;
+}
+
+Engine::EngineScope::~EngineScope() { krit::engine = nullptr; }
+
+float Engine::time() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(clock.now() -
+                                                                 appStart)
+               .count() /
+           1000.0f;
+}
+
+void Engine::run() {
+    CrashHandler::init();
+
+    appStart = clock.now();
+
+    // // SDL_Image
+    // int flags = IMG_INIT_PNG;
+    // int result = IMG_Init(flags);
+    // if ((result & flags) != flags) {
+    //     panic("PNG support is required");
+    // }
+
+    frameDelta = 1000000 / fixedFramerate;
+    frameDelta2 = 1000000 / (fixedFramerate + 2);
+
+    ctx.camera = nullptr;
+    ctx.drawCommandBuffer = &renderer.drawCommandBuffer;
+
+    frameStart = clock.now();
+    frameFinish = frameStart;
+    // bool lockFramerate = true;
+
+    taskManager = new TaskManager(ctx, 3);
+
+    // generate an initial MouseMotion event; without this, SDL will return an
+    // invalid initial mouse position
+
+    phase = FramePhase::Begin;
+    invoke(onBegin, &updateCtx());
+    phase = FramePhase::Inactive;
+    onBegin = nullptr;
+
+    running = true;
+#ifndef __EMSCRIPTEN__
+    while (running) {
+        if (!doFrame()) {
+            break;
+        }
+    }
+
+    cleanup();
+#endif
+}
+
+void Engine::cleanup() {
+    invoke(onEnd, &ctx);
+    TaskManager::instance->cleanup();
+}
+
+bool Engine::doFrame() {
+    UpdateContext *update = &ctx;
+    ++ctx.tickId;
+
+    TaskManager::work(taskManager->mainQueue, *update);
+    TaskManager::work(taskManager->renderQueue, ctx);
+    // do {
+    frameFinish = clock.now();
+    elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
+                  frameFinish - frameStart)
+                  .count() *
+              speed;
+    // } while (lockFramerate && elapsed < frameDelta2);
+    // if (1.0 / elapsed < 50) {
+    //     printf("%.2f\n", 1.0 / elapsed);
+    // }
+    accumulator += elapsed;
+    ctx.elapsed = ctx.frameCount = 0;
+    totalElapsed += elapsed / 1000000.0;
+
+    input.startFrame();
+    handleEvents();
+    input.endFrame();
+
+    if (!running) {
+        quit();
+        return false;
+    }
+
+    phase = FramePhase::Update;
+    while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
+        accumulator -= frameDelta;
+        if (accumulator < 0) {
+            accumulator = 0;
+        }
+        ++ctx.frameCount;
+        ++ctx.frameId;
+        ctx.elapsed = frameDelta / 1000000.0;
+        fixedUpdate(ctx);
+    }
+    if (accumulator > frameDelta2) {
+        accumulator = fmod(accumulator, frameDelta2);
+    }
+
+    ctx.elapsed = elapsed / 1000000.0;
+    this->update(ctx);
+    if (!running) {
+        quit();
+        return false;
+    }
+    frameStart = frameFinish;
+
+    phase = FramePhase::Render;
+    render(ctx);
+    flip(ctx);
+
+    phase = FramePhase::Inactive;
+
+#if TRACY_ENABLE
+    FrameMark;
+#endif
+
+    return true;
+}
+
+MouseButton sdlMouseButton(int b) {
+    switch (b) {
+        case SDL_BUTTON_MIDDLE:
+            return MouseMiddle;
+        case SDL_BUTTON_RIGHT:
+            return MouseRight;
+        default:
+            return MouseLeft;
+    }
+}
+
+void Engine::handleEvents() {
+    static bool seenMouseEvent = false;
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        bool handleKey = true, handleMouse = true;
+#if KRIT_ENABLE_TOOLS
+        if (Editor::imguiInitialized) {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            auto &io = ImGui::GetIO();
+            handleKey = !io.WantTextInput;
+            handleMouse = !io.WantCaptureMouse;
+        }
+#endif
+        switch (event.type) {
+            case SDL_QUIT: {
+                quit();
+                break;
+            }
+            case SDL_WINDOWEVENT: {
+                switch (event.window.event) {
+                    case SDL_WINDOWEVENT_ENTER: {
+                        input.registerMouseOver(true);
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_LEAVE: {
+                        input.registerMouseOver(false);
+                        break;
+                    }
+                    case SDL_WINDOWEVENT_CLOSE: {
+                        quit();
+                        break;
+                    }
+                }
+                break;
+            }
+            case SDL_KEYDOWN: {
+                if (!event.key.repeat) {
+                    if (handleKey) {
+                        input.keyDown(
+                            static_cast<Key>(event.key.keysym.scancode));
+                    }
+                }
+                break;
+            }
+            case SDL_KEYUP: {
+                if (handleKey) {
+                    input.keyUp(static_cast<Key>(event.key.keysym.scancode));
+                }
+                break;
+            }
+            case SDL_MOUSEBUTTONDOWN: {
+                if (handleMouse) {
+                    input.mouseDown(sdlMouseButton(event.button.button));
+                }
+                break;
+            }
+            case SDL_MOUSEBUTTONUP: {
+                if (handleMouse) {
+                    input.mouseUp(sdlMouseButton(event.button.button));
+                }
+                break;
+            }
+            case SDL_MOUSEMOTION: {
+                if (event.motion.x || event.motion.y) {
+                    seenMouseEvent = true;
+                }
+                break;
+            }
+            case SDL_MOUSEWHEEL: {
+                if (handleMouse && event.wheel.y) {
+                    input.mouseWheel(
+                        event.wheel.y *
+                        (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1
+                                                                         : -1));
+                }
+                break;
+            }
+        }
+    }
+
+    // the mouse position will return (0,0) if we haven't had any mouse events,
+    // but since this is a valid position, we use (-1,-1) for no position;
+    // therefore, we need to avoid asking for position until a SDL_MOUSEMOTION
+    // event has been seen
+    if (seenMouseEvent) {
+        int mouseX, mouseY;
+        SDL_GetMouseState(&mouseX, &mouseY);
+        input.registerMousePos(mouseX, mouseY);
+    }
 }
 
 void Engine::fixedUpdate(UpdateContext &ctx) {
@@ -50,8 +320,6 @@ void Engine::update(UpdateContext &ctx) {
     if (!cursor.empty() && (height != window.y() || !_cursor)) {
         chooseCursor();
     }
-
-    ctx.userData = this->userData;
 
     // handle setTimeout events
     static std::list<TimedEvent> requeue;
@@ -97,15 +365,12 @@ void Engine::render(RenderContext &ctx) {
 #endif
     checkForGlErrors("engine render");
 
-    ctx.userData = userData;
-
     fonts.commit();
 
-    renderer.startFrame(ctx);
-
-    if (ctx.window->skipFrames > 0) {
-        --ctx.window->skipFrames;
+    if (engine->window.skipFrames > 0) {
+        --engine->window.skipFrames;
     } else {
+        renderer.startFrame(ctx);
         invoke(onRender, &ctx);
 
         for (auto &camera : cameras) {
@@ -119,10 +384,9 @@ void Engine::render(RenderContext &ctx) {
         }
 
         invoke(this->postRender, &ctx);
-    }
 
-    checkForGlErrors("before render frame");
-    checkForGlErrors("after render frame");
+        checkForGlErrors("after render frame");
+    }
 }
 
 void Engine::flip(RenderContext &ctx) {
@@ -157,13 +421,13 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
 void Engine::addCursor(const std::string &cursorPath,
                        const std::string &cursorName, int resolution) {
     int len;
-    char *s = app->io->read(cursorPath.c_str(), &len);
+    char *s = engine->io->read(cursorPath.c_str(), &len);
 
     TaskManager::instance->push([=](UpdateContext &) {
         SDL_RWops *rw = SDL_RWFromConstMem(s, len);
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
         SDL_RWclose(rw);
-        app->io->free(s);
+        engine->io->free(s);
 
         SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 0, 0);
 

@@ -1,5 +1,5 @@
 #include "krit/sprites/SpineSprite.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/UpdateContext.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
@@ -23,30 +23,30 @@
 
 struct KritSpineExtension : public spine::DefaultSpineExtension {
     char *_readFile(const spine::String &path, int *length) override {
-        return krit::app->io->read(path.buffer(), length);
+        return krit::engine->io->read(path.buffer(), length);
     }
 
     void *_alloc(size_t size, const char *_1, int _2) override {
         if (!size) {
             return nullptr;
         }
-        return krit::app->io->alloc(size);
+        return krit::engine->io->alloc(size);
     }
 
     void *_calloc(size_t size, const char *file, int line) override {
         if (!size) {
             return nullptr;
         }
-        return krit::app->io->alloc(size);
+        return krit::engine->io->alloc(size);
     }
 
     void *_realloc(void *ptr, size_t size, const char *file,
                    int line) override {
-        return krit::app->io->realloc(ptr, size);
+        return krit::engine->io->realloc(ptr, size);
     }
 
     void _free(void *mem, const char *_1, int _2) override {
-        krit::app->io->free(mem);
+        krit::engine->io->free(mem);
     }
 };
 
@@ -75,7 +75,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     // data->json = std::unique_ptr<spine::SkeletonJson>(
     //     new spine::SkeletonJson(data->atlas.get()));
     int length;
-    unsigned char *s = (unsigned char *)app->io->read(path.c_str(), &length);
+    unsigned char *s = (unsigned char *)engine->io->read(path.c_str(), &length);
     data->skeletonData = std::unique_ptr<spine::SkeletonData>(
         data->binary->readSkeletonData(s, length));
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
@@ -85,7 +85,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
-    app->io->free((char *)s);
+    engine->io->free((char *)s);
     return data;
 }
 
@@ -102,7 +102,7 @@ template <> AssetType AssetLoader<SpineData>::type() {
 void SpineTextureLoader::load(spine::AtlasPage &page,
                               const spine::String &path) {
     std::string assetName(path.buffer());
-    std::shared_ptr<ImageData> texture = App::ctx.engine->getImage(assetName);
+    std::shared_ptr<ImageData> texture = engine->getImage(assetName);
     ImageRegion *region = new ImageRegion(texture);
     page.setRendererObject(region);
     page.width = texture->width();
@@ -119,7 +119,7 @@ SpineSprite::SpineSprite(const std::string &id) {
 
     // load skeleton/animation data
     this->smooth = SmoothMipmap;
-    this->data = App::ctx.engine->getSpine(id);
+    this->data = engine->getSpine(id);
     this->skeleton = std::unique_ptr<spine::Skeleton>(
         new spine::Skeleton(&this->skeletonData()));
     this->animationState = std::unique_ptr<spine::AnimationState>(
@@ -305,8 +305,8 @@ void SpineSprite::render(RenderContext &ctx) {
             
             t1 = m * t1;
             t2 = m * t2;
-            ctx.addTriangle(key, t1, uvt1, color);
-            ctx.addTriangle(key, t2, uvt2, color);
+            ctx.addTriangle(key, t1, uvt1, color, zIndex);
+            ctx.addTriangle(key, t2, uvt2, color, zIndex);
         } else if (attachment->getRTTI().isExactly(
                        spine::MeshAttachment::rtti)) {
             float *worldVertices = SpineSprite::worldVertices;
@@ -335,7 +335,7 @@ void SpineSprite::render(RenderContext &ctx) {
                 Triangle uvt(uvs[i0], uvs[i0 + 1], uvs[i1], uvs[i1 + 1],
                              uvs[i2], uvs[i2 + 1]);
                 t = m * t;
-                ctx.addTriangle(key, t, uvt, color);
+                ctx.addTriangle(key, t, uvt, color, zIndex);
             }
         }
     }

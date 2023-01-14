@@ -1,5 +1,5 @@
 #include "krit/sound/AudioBackend.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/sound/MusicData.h"
 #include "krit/sound/SoundData.h"
 #include "krit/utils/Log.h"
@@ -62,24 +62,29 @@ AudioBackend::~AudioBackend() {
 }
 
 void AudioBackend::playSound(const std::string &name) {
-    playSoundAsset(App::ctx.engine->getSound(name).get());
+    auto sound = engine->getSound(name);
+    if (sound) {
+        playSoundAsset(sound.get());
+    }
 }
 
 void AudioBackend::playSoundAsset(SoundData *sound) {
-    if (enabled) {
+    if (enabled && sound) {
         ALuint buffer = sound->buffer;
-        AudioSource *source = getSource();
-        if (source) {
-            ALuint s = source->source;
-            alSourcef(s, AL_PITCH, 1);
-            alSourcef(s, AL_GAIN, soundVolume);
-            alSource3f(s, AL_POSITION, 0, 0, 0);
-            alSource3f(s, AL_VELOCITY, 0, 0, 0);
-            alSourcei(s, AL_LOOPING, AL_FALSE);
-            alSourcei(s, AL_BUFFER, buffer);
-            alSourcePlay(s);
-            source->next = activeSources;
-            activeSources = source;
+        if (buffer) {
+            AudioSource *source = getSource();
+            if (source) {
+                ALuint s = source->source;
+                alSourcef(s, AL_PITCH, 1);
+                alSourcef(s, AL_GAIN, soundVolume);
+                alSource3f(s, AL_POSITION, 0, 0, 0);
+                alSource3f(s, AL_VELOCITY, 0, 0, 0);
+                alSourcei(s, AL_LOOPING, AL_FALSE);
+                alSourcei(s, AL_BUFFER, buffer);
+                alSourcePlay(s);
+                source->next = activeSources;
+                activeSources = source;
+            }
         }
     }
 }
@@ -142,7 +147,7 @@ void AudioBackend::update() {
 }
 
 AudioStream *AudioBackend::playMusic(const std::string &name) {
-    return playMusicAsset(App::ctx.engine->getMusic(name));
+    return playMusicAsset(engine->getMusic(name));
 }
 AudioStream *AudioBackend::playMusicAsset(std::shared_ptr<MusicData> music) {
     int streamIndex = -1;
@@ -207,7 +212,9 @@ void AudioStream::stop() {
             alSourceUnqueueBuffers(source->source, 1, &b);
         }
         backend->recycleSource(source);
-        sf_seek(data->sndFile, 0, SEEK_SET);
+        if (data) {
+            sf_seek(data->sndFile, 0, SEEK_SET);
+        }
         bufferPtr = 0;
         source = nullptr;
         data = nullptr;
@@ -269,7 +276,7 @@ float AudioStream::currentPlayTime() {
 }
 
 void AudioStream::onLoop(const std::string &name) {
-    auto music = App::ctx.engine->getMusic(name);
+    auto music = engine->getMusic(name);
     onLoopData = music;
 }
 

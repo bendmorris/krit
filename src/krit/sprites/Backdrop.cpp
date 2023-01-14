@@ -3,7 +3,7 @@
 #include <math.h>
 #include <memory>
 
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Engine.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
@@ -14,7 +14,7 @@
 namespace krit {
 
 Backdrop::Backdrop(const std::string &id)
-    : region(App::ctx.engine->getImage(id)) {}
+    : region(engine->getImage(id)) {}
 
 void Backdrop::render(RenderContext &ctx) {
     if (this->color.a <= 0 && !shader) {
@@ -36,7 +36,7 @@ void Backdrop::render(RenderContext &ctx) {
             pos.x() -= scaledDimensions.x();
         }
         xi = static_cast<int>(
-            ceil(ctx.window->x() - pos.x()) / scaledDimensions.x() + 1);
+            ceil(engine->window.x() - pos.x()) / scaledDimensions.x() + 1);
     }
     if (this->repeatY) {
         pos.y() = fmod(pos.y(), scaledDimensions.y());
@@ -44,7 +44,7 @@ void Backdrop::render(RenderContext &ctx) {
             pos.y() -= scaledDimensions.y();
         }
         yi = static_cast<int>(
-            ceil(ctx.window->y() - pos.y()) / scaledDimensions.y() + 1);
+            ceil(engine->window.y() - pos.y()) / scaledDimensions.y() + 1);
     }
     DrawKey key;
     key.image = this->region.img;

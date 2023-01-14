@@ -15,6 +15,7 @@ DEFINE_LOG_METHOD(success)
 #undef DEFINE_LOG_METHOD
 
 JS_FUNC(exit);
+JS_FUNC(abort);
 JS_FUNC(__id);
 JS_FUNC(timeout);
 JS_FUNC(gc);

@@ -6,7 +6,7 @@
 #include <string>
 #include <utility>
 
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Engine.h"
 #include "krit/Sprite.h"
 #include "krit/asset/AssetCache.h"

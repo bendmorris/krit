@@ -1,6 +1,6 @@
 #include "krit/Camera.h"
 
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Window.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/FrameBuffer.h"
@@ -42,8 +42,8 @@ void Camera::unscaleDimensions(Dimensions &d) {
     d.setTo(d.x() / scale.x(), d.y() / scale.y());
 }
 
-void Camera::update(RenderContext &context) {
-    double width = context.window->x(), height = context.window->y();
+void Camera::update(RenderContext &) {
+    double width = engine->window.x(), height = engine->window.y();
     double ratio = width / height;
     if (ratio < minRatio) {
         // too narrow; top and bottom letterboxing
@@ -94,14 +94,14 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
 };
 
 void Camera::screenToWorldCoords(Vec3f &screenCoords) {
-    auto w = App::ctx.window;
-    // printf("%i, %i, %i\n", offset.x(), viewportWidth(), w->x());
+    auto &w = engine->window;
+    // printf("%i, %i, %i\n", offset.x(), viewportWidth(), w.x());
     screenCoords.x() -= offset.x();
     screenCoords.y() -= offset.y();
-    screenCoords.x() /= static_cast<double>(viewportWidth()) / w->x();
-    screenCoords.y() /= static_cast<double>(viewportHeight()) / w->y();
-    screenCoords.x() = (screenCoords.x() / w->x()) * 2.0 - 1.0;
-    screenCoords.y() = 1.0 - (screenCoords.y() / w->y()) * 2.0;
+    screenCoords.x() /= static_cast<double>(viewportWidth()) / w.x();
+    screenCoords.y() /= static_cast<double>(viewportHeight()) / w.y();
+    screenCoords.x() = (screenCoords.x() / w.x()) * 2.0 - 1.0;
+    screenCoords.y() = 1.0 - (screenCoords.y() / w.y()) * 2.0;
 
     // pick a W value and undo the perspective divide
     Vec4f p1{screenCoords.x(), screenCoords.y(), 0.0f, 1.0f};

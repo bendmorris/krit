@@ -1,4 +1,4 @@
-#include "Renderer.h"
+#include "krit/renderer/Renderer.h"
 
 namespace krit {
 

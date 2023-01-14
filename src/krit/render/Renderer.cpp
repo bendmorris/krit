@@ -4,7 +4,7 @@
 #include "imgui_impl_opengl3.h"
 #include "imgui_impl_sdl.h"
 #endif
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/editor/Editor.h"
 #include "krit/render/BlendMode.h"
 #include "krit/render/CommandBuffer.h"
@@ -422,7 +422,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
     // puts("draw");
     checkForGlErrors("drawCall");
 
-    int index = App::ctx.tickId % 3;
+    int index = engine->updateCtx().tickId % 3;
 
     setSize(ctx);
 
@@ -513,7 +513,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
 #endif
 
     setSize(ctx);
-    int index = App::ctx.tickId % 3;
+    int index = engine->updateCtx().tickId % 3;
 
     // upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
@@ -549,8 +549,8 @@ void Renderer::renderFrame(RenderContext &ctx) {
 
 void Renderer::clear(RenderContext &ctx) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    auto &bgColor = ctx.engine->bgColor;
-    glScissor(0, 0, ctx.window->x(), ctx.window->y());
+    auto &bgColor = engine->bgColor;
+    glScissor(0, 0, engine->window.x(), engine->window.y());
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     // this->triangleCount = 0;
@@ -585,7 +585,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 }
 
 void Renderer::flip(RenderContext &ctx) {
-    SDL_GL_SwapWindow(ctx.window->window);
+    SDL_GL_SwapWindow(engine->window.window);
 
     // #if TRACY_ENABLE
     //     TracyGpuCollect;

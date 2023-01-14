@@ -1,4 +1,5 @@
 #include "krit/render/RenderContext.h"
+#include "krit/Engine.h"
 #include "krit/render/DrawCommand.h"
 
 namespace krit {
@@ -15,7 +16,7 @@ IntDimensions RenderContext::size() {
     } else if (camera) {
         return IntDimensions(camera->viewportWidth(), camera->viewportHeight());
     } else {
-        return window->size();
+        return engine->window.size();
     }
 }
 
@@ -42,6 +43,11 @@ void RenderContext::addRect(const DrawKey &key, IntRectangle &rect,
 void RenderContext::addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
                                 Color color, int zIndex) {
     this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
+}
+
+void RenderContext::addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
+                                const Color &color1, const Color &color2, const Color &color3, int zIndex) {
+    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color1, color2, color3, zIndex);
 }
 
 void RenderContext::drawRect(int x, int y, int w, int h, Color c, float alpha) {

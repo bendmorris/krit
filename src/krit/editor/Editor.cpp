@@ -2,7 +2,7 @@
 #include "krit/editor/Editor.h"
 
 #include "imgui.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Camera.h"
 #include "krit/Engine.h"
 #include "krit/UpdateContext.h"
@@ -25,9 +25,9 @@ static std::vector<Metric> defaultMetrics() {
 std::vector<Metric> Overlay::metrics = defaultMetrics();
 
 void Overlay::draw(krit::RenderContext &ctx) {
-    ImGui::SetNextWindowPos(ImVec2(ctx.window->x() - 32, 32), ImGuiCond_Always, ImVec2(1, 0));
+    ImGui::SetNextWindowPos(ImVec2(engine->window.x() - 32, 32), ImGuiCond_Always, ImVec2(1, 0));
     bool pOpen;
-    if (!ctx.engine->paused) {
+    if (!engine->paused) {
         elapsed += ctx.elapsed;
     }
     if (ImGui::Begin("FPS", &pOpen,
@@ -45,11 +45,11 @@ void Overlay::draw(krit::RenderContext &ctx) {
             }
         }
         ImGui::Checkbox("Debug draw", &ctx.debugDraw);
-        ImGui::Checkbox("Pause", &ctx.engine->paused);
+        ImGui::Checkbox("Pause", &engine->paused);
         if (ImGui::Button("Advance Frame")) {
-            ctx.engine->paused = false;
-            ctx.engine->setTimeout([](UpdateContext *ctx, void *) {
-                ctx->engine->paused = true;
+            engine->paused = false;
+            engine->setTimeout([](UpdateContext *ctx, void *) {
+                engine->paused = true;
                 return false;
             });
         }
@@ -70,9 +70,9 @@ void Editor::render(krit::RenderContext &ctx) {
         auto &io = ImGui::GetIO();
         io.DeltaTime = ctx.elapsed;
         // io.FontGlobalScale =
-        //     std::max(1.0, ctx.window->height() * 1.0 / ctx.height());
-        io.DisplaySize.x = ctx.window->x();
-        io.DisplaySize.y = ctx.window->y();
+        //     std::max(1.0, engine->window.height() * 1.0 / ctx.height());
+        io.DisplaySize.x = engine->window.x();
+        io.DisplaySize.y = engine->window.y();
 
         ImGui::NewFrame();
 

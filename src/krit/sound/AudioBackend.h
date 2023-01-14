@@ -23,7 +23,6 @@ struct AudioSource {
 struct AudioStream {
     static const int NUM_BUFFERS = 4;
 
-    bool playing = false;
     bool repeat = false;
 
     AudioStream(std::shared_ptr<MusicData> data = nullptr) : data(data) {}
@@ -46,7 +45,6 @@ struct AudioStream {
 
     void clear() {
         volume = 1;
-        playing = false;
         repeat = false;
         data = nullptr;
         onLoopData = nullptr;
@@ -71,7 +69,7 @@ private:
 struct VirtualIo {
     int length = 0;
     int cursor = 0;
-    char *data;
+    char *data = nullptr;
 };
 
 struct AudioBackend {

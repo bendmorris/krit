@@ -10,7 +10,10 @@ void panic(const char *fmt, ...) {
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);
     fputs("\n", stderr);
-    abort();
+    ssize_t len = vsnprintf(NULL, 0, fmt, args);
+    char *buf = static_cast<char *>(std::malloc(len + 1));
+    vsnprintf(buf, len + 1, fmt, args);
+    throw buf;
 }
 
 }

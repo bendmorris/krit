@@ -30,6 +30,11 @@ template <typename T> struct remove_all<std::shared_ptr<T>> {
 template <typename T> struct remove_all<T &> {
     using type = typename remove_all<T>::type;
 };
+
+template <typename T> struct remove_all<T &&> {
+    using type = typename remove_all<T>::type;
+};
+
 template <typename T> struct remove_all<const T> {
     using type = typename remove_all<T>::type;
 };

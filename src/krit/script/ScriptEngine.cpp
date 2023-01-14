@@ -7,7 +7,11 @@
 
 namespace krit {
 
-std::unique_ptr<std::vector<void (*)(ScriptEngine *)>> ScriptEngine::scriptClassInitializers;
+struct Engine;
+extern Engine *engine;
+
+std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
+    ScriptEngine::scriptClassInitializers;
 
 static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
     const char *str = JS_ToCString(ctx, val);
@@ -43,9 +47,10 @@ static std::string js_std_get_error(JSContext *ctx,
     }
 }
 
-static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
+static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val,
+                              FILE *f) {
     std::string err = js_std_get_error(ctx, exception_val);
-    fprintf(stderr, "%s\n", err.c_str());
+    fprintf(f, "%s", err.c_str());
 }
 
 static void js_std_promise_rejection_tracker(JSContext *ctx,
@@ -54,7 +59,7 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
                                              int is_handled, void *opaque) {
     if (!is_handled) {
         fprintf(stderr, "Possibly unhandled promise rejection: ");
-        js_std_dump_error(ctx, reason);
+        js_std_dump_error(ctx, reason, stderr);
     }
 }
 
@@ -97,6 +102,9 @@ ScriptEngine::ScriptEngine() {
             init(this);
         }
     }
+
+    JS_SetPropertyStr(ctx, globalObj, "krit",
+                      ScriptValueToJs<Engine *>::valueToJs(ctx, krit::engine));
 }
 
 ScriptEngine::~ScriptEngine() {
@@ -112,7 +120,7 @@ void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
     JSValue result = JS_Eval(ctx, src, len, scriptName, JS_EVAL_TYPE_MODULE);
     if (JS_IsException(result) || JS_IsError(ctx, result)) {
         printf("error evaluating script: %s\n", scriptName);
-        js_std_dump_error(ctx, result);
+        js_std_dump_error(ctx, result, stderr);
     }
     JS_FreeValue(ctx, result);
 }
@@ -142,9 +150,9 @@ void ScriptEngine::checkForErrors() {
     JS_FreeValue(ctx, exception_val);
 }
 
-void ScriptEngine::checkForErrors(JSValue exception_val) {
+void ScriptEngine::checkForErrors(JSValue exception_val, FILE *f) {
     if (JS_IsError(ctx, exception_val) || JS_IsException(exception_val)) {
-        js_std_dump_error(ctx, exception_val);
+        js_std_dump_error(ctx, exception_val, f);
     }
 }
 
@@ -199,6 +207,13 @@ void ScriptEngine::handleDelays(float elapsed) {
             this->delayPromises.pop_back();
         }
     }
+}
+
+void ScriptEngine::dumpBacktrace(FILE *f) {
+    assert(ctx);
+    JS_ThrowInternalError(ctx, "JS backtrace");
+    JSValue exception_val = JS_GetException(ctx);
+    checkForErrors(exception_val, f);
 }
 
 }

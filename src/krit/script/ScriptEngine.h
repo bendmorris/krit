@@ -214,7 +214,7 @@ struct ScriptEngine {
     void update();
     void handleDelays(float elapsed);
     void checkForErrors();
-    void checkForErrors(JSValue);
+    void checkForErrors(JSValue, FILE *f = stderr);
 
     template <typename T> JSValue create(void *data) {
         if (!data) {
@@ -277,6 +277,8 @@ struct ScriptEngine {
         JS_FreeValue(ctx, obj);
     }
 
+    void dumpBacktrace(FILE *);
+
 private:
     std::vector<DelayRequest> delayPromises;
 };
@@ -289,6 +291,12 @@ template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {
         ScriptEngine *engine =
             static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
         return engine->createOwned<T>(val.release());
+    }
+};
+
+template <typename T> struct ScriptValueToJs<std::unique_ptr<T>&> {
+    static JSValue valueToJs(JSContext *ctx, std::unique_ptr<T> &val) {
+        return ScriptValueToJs<T*>::valueToJs(ctx, val.get());
     }
 };
 

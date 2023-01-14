@@ -18,6 +18,7 @@ struct DrawKey;
 
 struct RenderContext : public UpdateContext {
     DrawCommandBuffer *drawCommandBuffer = nullptr;
+    Camera *camera = nullptr;
     bool debugDraw = false;
 
     RenderContext() {}
@@ -32,8 +33,13 @@ struct RenderContext : public UpdateContext {
     void startAutoClip(float xBuffer = 0, float yBuffer = 0);
     bool endAutoClip();
 
-    void addRect(const DrawKey &key, IntRectangle &rect, Matrix4 &matrix, Color color, int zIndex = 0);
-    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color, int zIndex = 0);
+    void addRect(const DrawKey &key, IntRectangle &rect, Matrix4 &matrix,
+                 Color color, int zIndex = 0);
+    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color,
+                     int zIndex = 0);
+    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
+                     const Color &c1, const Color &c2, const Color &c3,
+                     int zIndex = 0);
 
     Point &transformPoint(Point &point) {
         if (this->camera) {
@@ -83,7 +89,8 @@ struct RenderContext : public UpdateContext {
         return d;
     }
 
-    void drawRect(int x, int y, int w, int h, Color c = Color::white(), float alpha = 1);
+    void drawRect(int x, int y, int w, int h, Color c = Color::white(),
+                  float alpha = 1);
 };
 
 }

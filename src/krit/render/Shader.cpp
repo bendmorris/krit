@@ -209,10 +209,10 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 auto &uniformName = shader.uniforms[idx].name;
                 i = shader.uniforms[idx].location;
                 if (uniformName == "uTime") {
-                    glUniform1f(i, ctx.engine->elapsed);
+                    glUniform1f(i, engine->totalElapsed);
                     checkForGlErrors("glUniform1f");
                 } else if (uniformName == "uResolution") {
-                    IntDimensions size = ctx.window->size();
+                    IntDimensions size = engine->window.size();
                     glUniform2f(i, size.x(), size.y());
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uSize") {

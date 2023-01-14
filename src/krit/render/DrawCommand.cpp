@@ -57,23 +57,34 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
                                     const Color &color, int zIndex) {
     if (color.a > 0 || key.shader) {
         DrawCall &call = this->getDrawCall(key, zIndex);
-        addTriangle(call, t, uv, color);
+        addTriangle(call, t, uv, color, color, color);
+    }
+}
+
+void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
+                                    const Triangle &t, const Triangle &uv,
+                                    const Color &color1, const Color &color2,
+                                    const Color &color3, int zIndex) {
+    if (color1.a > 0 || color2.a > 0 || color3.a > 0 || key.shader) {
+        DrawCall &call = this->getDrawCall(key, zIndex);
+        addTriangle(call, t, uv, color1, color2, color3);
     }
 }
 
 void DrawCommandBuffer::addTriangle(DrawCall &draw, const Triangle &t,
-                                    const Triangle &uv, const Color &color) {
+                                    const Triangle &uv, const Color &color1,
+                                    const Color &color2, const Color &color3) {
     size_t i = triangles.size();
     triangles.resize(i + 48);
     SpriteShader *s = draw.key.shader ? draw.key.shader
                                       : draw.key.image ? defaultTextureShader
                                                        : defaultColorShader;
     s->prepareVertex(triangles.data() + i, t.p1.x(), t.p1.y(), t.p1.z(),
-                     uv.p1.x(), uv.p1.y(), color);
+                     uv.p1.x(), uv.p1.y(), color1);
     s->prepareVertex(triangles.data() + i + 16, t.p2.x(), t.p2.y(), t.p2.z(),
-                     uv.p2.x(), uv.p2.y(), color);
+                     uv.p2.x(), uv.p2.y(), color2);
     s->prepareVertex(triangles.data() + i + 32, t.p3.x(), t.p3.y(), t.p3.z(),
-                     uv.p3.x(), uv.p3.y(), color);
+                     uv.p3.x(), uv.p3.y(), color3);
     draw.indices.push_back(i / 16);
     draw.indices.push_back(i / 16 + 1);
     draw.indices.push_back(i / 16 + 2);
@@ -282,8 +293,8 @@ bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
     r.setTo(x1, y2, x2 - x1, y1 - y2);
     boundsStack.pop_back();
 
-    return r.width > 0 && r.height > 0 && r.x <= w &&
-           r.right() >= 0 && r.y <= h && r.bottom() >= 0;
+    return r.width > 0 && r.height > 0 && r.x <= w && r.right() >= 0 &&
+           r.y <= h && r.bottom() >= 0;
 }
 
 }

@@ -1,5 +1,5 @@
 #include "krit/sprites/Particles.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Math.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
@@ -102,11 +102,11 @@ void ParticleSystem::render(RenderContext &ctx) {
 }
 
 void ParticleSystem::loadAtlas(const std::string &path) {
-    loadAtlasAsset(App::ctx.engine->getAtlas(path));
+    loadAtlasAsset(engine->getAtlas(path));
 }
 
 void ParticleSystem::loadEffect(const std::string &path) {
-    registerEffect(App::ctx.engine->getParticle(path));
+    registerEffect(engine->getParticle(path));
 }
 
 static char *yamlStr(yaml_node_t *node) {
@@ -165,7 +165,7 @@ static void parseParam(yaml_document_t *doc, yaml_node_t *node,
 
 std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
     int len;
-    char *manifest = app->io->read(path.c_str(), &len);
+    char *manifest = engine->io->read(path.c_str(), &len);
     yaml_parser_t parser;
     yaml_parser_initialize(&parser);
     yaml_parser_set_input_string(&parser, (unsigned char *)manifest, len);
@@ -256,7 +256,7 @@ std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
 
     yaml_document_delete(&doc);
     yaml_parser_delete(&parser);
-    app->io->free(manifest);
+    engine->io->free(manifest);
 
     return effect;
 }

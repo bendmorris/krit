@@ -1,4 +1,4 @@
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/asset/TextureAtlas.h"
 #include "krit/io/Io.h"
 #include "krit/script/ScriptClass.h"
@@ -49,7 +49,6 @@ DEFINE_LOG_METHOD(info)
 DEFINE_LOG_METHOD(warn)
 DEFINE_LOG_METHOD(error)
 DEFINE_LOG_METHOD(fatal)
-DEFINE_LOG_METHOD(success)
 #undef DEFINE_LOG_METHOD
 
 JS_FUNC(exit) {
@@ -60,9 +59,19 @@ JS_FUNC(exit) {
     if (code) {
         exit(code);
     } else {
-        App::ctx.app->quit();
+        engine->quit();
     }
     return JS_UNDEFINED;
+}
+
+[[noreturn]] JS_FUNC(abort) {
+    if (argc > 0) {
+        const char *s = JS_ToCString(ctx, argv[0]);
+        if (s) {
+            panic(s);
+        }
+    }
+    abort();
 }
 
 JS_FUNC(__id) {
@@ -98,17 +107,17 @@ JS_FUNC(dumpMemoryUsage) {
 
 JS_FUNC(readFile) {
     int len;
-    char *content = app->io->read(
+    char *content = engine->io->read(
         ScriptValueFromJs<const char *>::valueFromJs(ctx, argv[0]), &len);
     auto rt = JS_NewStringLen(ctx, content, len);
-    app->io->free(content);
+    engine->io->free(content);
     return rt;
 }
 
 JS_FUNC(getImage) {
     GET_ENGINE;
     const char *s = JS_ToCString(ctx, argv[0]);
-    ImageRegion *img = new ImageRegion(App::ctx.engine->getImage(s));
+    ImageRegion *img = new ImageRegion(krit::engine->getImage(s));
     JS_FreeCString(ctx, s);
     return engine->createOwned<ImageRegion>(img);
 }
@@ -118,7 +127,7 @@ JS_FUNC(getAtlasRegion) {
     const char *s = JS_ToCString(ctx, argv[0]);
     const char *s2 = JS_ToCString(ctx, argv[1]);
     ImageRegion *img =
-        new ImageRegion(App::ctx.engine->getAtlas(s)->getRegion(s2));
+        new ImageRegion(krit::engine->getAtlas(s)->getRegion(s2));
     JS_FreeCString(ctx, s2);
     JS_FreeCString(ctx, s);
     return engine->createOwned<ImageRegion>(img);

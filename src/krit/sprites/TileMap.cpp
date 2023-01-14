@@ -28,11 +28,11 @@ void TileMap::render(RenderContext &ctx) {
     //                                                 scaledDimensions.y()))),
     //     destX = std::min(
     //         static_cast<int>(startX + 1 +
-    //                          ceil(ctx.window->x() / scaledDimensions.x())),
+    //                          ceil(engine->window.x() / scaledDimensions.x())),
     //         this->properties.sizeInTiles.x()),
     //     destY = std::min(
     //         static_cast<int>(startY + 1 +
-    //                          ceil(ctx.window->y() / scaledDimensions.y())),
+    //                          ceil(engine->window.y() / scaledDimensions.y())),
     //         this->properties.sizeInTiles.y());
 
     DrawKey key;

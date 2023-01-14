@@ -49,6 +49,7 @@ declare class Text extends VisibleSprite {
     borderThickness: number;
     borderColor: Color;
     glyphScale: number;
+    pitch: number;
 
     refresh(): void;
     invalidate(): void;

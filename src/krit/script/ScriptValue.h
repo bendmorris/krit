@@ -16,6 +16,7 @@
 
 namespace krit {
 
+struct Promise;
 struct ScriptEngine;
 
 // template <typename T> struct Partial<T> {
@@ -49,6 +50,14 @@ template <> struct is_class_type<std::string> {
     static constexpr bool value = false;
 };
 
+template <> struct is_class_type<JSValue> {
+    static constexpr bool value = false;
+};
+
+template <> struct is_class_type<Promise> {
+    static constexpr bool value = false;
+};
+
 template <> struct is_class_type<std::string_view> {
     static constexpr bool value = false;
 };
@@ -65,9 +74,7 @@ template <typename T, typename enable = void> struct ScriptValueFromJs {
 // class type pointers
 
 template <> struct ScriptValueFromJs<JSValue> {
-    static JSValue valueFromJs(JSContext *ctx, JSValue val) {
-        return JS_DupValue(ctx, val);
-    }
+    static JSValue valueFromJs(JSContext *ctx, JSValue val) { return val; }
 };
 
 // bool
@@ -196,7 +203,7 @@ template <typename T> struct ScriptValueFromJs<std::vector<T>> {
 };
 
 // vectors
-template <typename T> struct ScriptValueFromJs<std::vector<T>&&> {
+template <typename T> struct ScriptValueFromJs<std::vector<T> &&> {
     static std::vector<T> &&valueFromJs(JSContext *ctx, JSValue arr) {
         int len;
         JSValue length = JS_GetPropertyStr(ctx, arr, "length");
@@ -218,7 +225,7 @@ template <typename T0> struct ScriptValueFromPartial {
         assert(ScriptClass<T>::generated());
         void *opaque = JS_GetOpaque(partial, 0);
         if (opaque) {
-            return *static_cast<T*>(opaque);
+            return *static_cast<T *>(opaque);
         } else {
             T val;
             ScriptClass<T>::populateFromPartial(ctx, val, partial);
@@ -227,14 +234,21 @@ template <typename T0> struct ScriptValueFromPartial {
     }
 };
 
-// valueToJs is defined for: basic types, basic type
-// references, basic type pointers, class type references, class type pointers
+// valueToJs is defined for: basic types, basic type references, basic type
+// pointers, class type references, class type pointers, promises
 template <typename T, typename enable = void> struct ScriptValueToJs {
     static JSValue valueToJs(JSContext *ctx, T val);
 };
 
 template <> struct ScriptValueToJs<JSValue> {
-    static JSValue valueToJs(JSContext *ctx, const JSValue &val) {
+    static JSValue valueToJs(JSContext *ctx, JSValue val) {
+        JS_DupValue(ctx, val);
+        return val;
+    }
+};
+
+template <> struct ScriptValueToJs<JSValue &> {
+    static JSValue &valueToJs(JSContext *ctx, JSValue &val) {
         JS_DupValue(ctx, val);
         return val;
     }

@@ -1,6 +1,6 @@
 #include "imgui.h"
 #include "imgui_stdlib.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Camera.h"
 #include "krit/Engine.h"
 #include "krit/Options.h"
@@ -170,7 +170,7 @@ struct ParticleEditor : public DevTool {
     }
 
     void loadAtlas(const std::string &path) {
-        atlas = app->ctx.engine->getAtlas(path);
+        atlas = engine->getAtlas(path);
         images.clear();
         for (auto &it : atlas->regions) {
             images.push_back(
@@ -238,7 +238,7 @@ struct ParticleEditor : public DevTool {
                 }
                 if (ImGui::MenuItem("Quit", "CTRL+Q")) {
                     // TODO: warn if dirty
-                    app->quit();
+                    engine->quit();
                 }
                 ImGui::EndMenu();
             }
@@ -269,7 +269,7 @@ struct ParticleEditor : public DevTool {
         }
 
         ImGui::SetNextWindowPos(ImVec2(32, 32), ImGuiCond_Always, ImVec2(0, 0));
-        ImGui::SetNextWindowSize(ImVec2(360, ctx.window->height() - 64));
+        ImGui::SetNextWindowSize(ImVec2(360, engine->window.height() - 64));
         std::string title = "Particle Editor (";
         title += (fileName.empty() ? "untitled" : fileName);
         title += ")";
@@ -553,7 +553,7 @@ void appMain() {
     KritOptions options;
     options.setTitle("Particle Editor").setSize(1280, 720).setFrameRate(60);
     app = new App(options);
-    Engine &engine = app->engine;
+    Engine &engine = engine->engine;
     std::unique_ptr<Editor> editor;
     std::unique_ptr<ParticleSystem> p =
         std::unique_ptr<ParticleSystem>(new ParticleSystem());
@@ -599,7 +599,7 @@ void appMain() {
         };
     }
 
-    app->run();
+    engine->run();
 }
 }
 

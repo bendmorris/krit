@@ -4,5 +4,4 @@ declare enum LogLevel {
     Warn,
     Error,
     Fatal,
-    Success,
 }

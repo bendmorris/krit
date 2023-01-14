@@ -66,7 +66,7 @@ template <typename... AssetTypes> struct AssetCacheBase {
                 // we can reuse a global reference
                 std::shared_ptr<void> v = it->second.lock();
                 if (v) {
-                    Log::info("reuse asset: %s", id.c_str());
+                    Log::debug("reuse asset: %s", id.c_str());
                     SharedPtrT<A> ptr = std::static_pointer_cast<AssetT<A>>(v);
                     return ptr;
                 }
@@ -75,6 +75,9 @@ template <typename... AssetTypes> struct AssetCacheBase {
         // we need to load this asset
         Log::info("load asset: %s", id.c_str());
         SharedPtrT<A> asset = AssetLoaderT<A>::loadAsset(id);
+        if (!asset) {
+            return nullptr;
+        }
         size_t cost = AssetLoaderT<A>::cost(asset.get());
 
         cache[id] = std::weak_ptr<AssetT<A>>(asset);

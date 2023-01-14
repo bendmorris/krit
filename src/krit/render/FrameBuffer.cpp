@@ -1,11 +1,11 @@
 #include "krit/render/FrameBuffer.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include <cassert>
 
 namespace krit {
 
 int FrameBuffer::index() {
-    return doubleBuffer ? (App::ctx.tickId % FrameBuffer::BUFFER_COUNT) : 0;
+    return doubleBuffer ? (engine->updateCtx().tickId % FrameBuffer::BUFFER_COUNT) : 0;
 }
 
 void FrameBuffer::init() {

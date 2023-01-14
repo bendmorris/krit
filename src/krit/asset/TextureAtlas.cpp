@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <string>
 
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Engine.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
@@ -33,9 +33,9 @@ std::pair<int, int> parseTuple(std::string &x) {
 
 TextureAtlas::TextureAtlas(const std::string &path) {
     int len;
-    char *data = app->io->read(path.c_str(), &len);
+    char *data = engine->io->read(path.c_str(), &len);
     std::string s(data, len);
-    app->io->free(data);
+    engine->io->free(data);
 
     std::istringstream input(s);
     std::string line;
@@ -49,7 +49,7 @@ TextureAtlas::TextureAtlas(const std::string &path) {
         std::string s = (lastSlash == std::string::npos)
                             ? pageName
                             : (path.substr(0, lastSlash) + "/" + pageName);
-        std::shared_ptr<ImageData> image = App::ctx.engine->getImage(s);
+        std::shared_ptr<ImageData> image = engine->getImage(s);
 
         while (std::getline(input, line) &&
                line.find(':') != std::string::npos) {

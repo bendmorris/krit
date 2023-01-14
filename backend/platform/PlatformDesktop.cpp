@@ -1,4 +1,4 @@
-#include "Platform.h"
+#include "krit/platform/Platform.h"
 
 namespace krit {
 
@@ -49,6 +49,16 @@ struct PlatformDesktop : public Platform {
         }
         // TODO: mkdir
         return path.c_str();
+    }
+
+    const char *name() override {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
+        return "windows";
+#elif __APPLE__
+        return "apple";
+#else
+        return "linux";
+#endif
     }
 };
 

@@ -305,19 +305,22 @@ export class Bindgen {
                                 const p = ts.isGetAccessorDeclaration(node) ? 'get' : 'set';
                                 const name = node.name.getText();
                                 const type = this.parseType(p === 'get' ? node.type : node.parameters[0].type);
-                                let found = false;
+                                let found: ScriptClassProperty | undefined;
                                 for (const prop of cls.properties) {
                                     if (prop.name === name && typeof prop.type === 'object') {
                                         if (prop[p]) {
                                             throw new TsError(`property ${name} already has a ${p}ter`, node);
                                         }
-                                        found = true;
-                                        prop[p] = true;
+                                        found = prop;
                                         break;
                                     }
                                 }
-                                if (!found) {
-                                    cls.properties.push({ name, type, [p]: true });
+                                if (found) {
+                                    if (p === 'set') {
+                                        found.readonly = false;
+                                    }
+                                } else {
+                                    cls.properties.push({ name, type, [p]: true, readonly: p === 'get' });
                                 }
                             } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
                                 // method

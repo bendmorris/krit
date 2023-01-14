@@ -1,6 +1,6 @@
 #include "krit/sprites/Text.h"
 #include "harfbuzz/hb.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Camera.h"
 #include "krit/math/Matrix.h"
 #include "krit/math/Point.h"
@@ -575,7 +575,7 @@ struct TextParser {
 TextRenderStack TextParser::stack;
 
 TextOptions &TextOptions::setFont(const std::string &name) {
-    this->font = App::ctx.engine->fonts.getFont(name);
+    this->font = engine->fonts.getFont(name);
     assert(this->font);
     return *this;
 }
@@ -657,7 +657,7 @@ void Text::__render(RenderContext &ctx, bool border) {
             case NewLine: {
                 tabIndex = 0;
                 Dimensions &dims = std::get<NewLine>(op).first;
-                float align;
+                float align = 0;
                 switch (std::get<NewLine>(op).second) {
                     case LeftAlign:
                         align = 0;
@@ -723,7 +723,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                      ++i) {
                     hb_glyph_info_t &_info = glyphInfo[i];
                     hb_glyph_position_t &_pos = glyphPos[i];
-                    GlyphData &glyph = ctx.engine->fonts.getGlyph(
+                    GlyphData &glyph = engine->fonts.getGlyph(
                         font, _info.codepoint, std::round(size * glyphScale));
                     size_t txtPointer = _info.cluster;
                     while (it.index() < txtPointer) {
@@ -786,7 +786,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                     key.shader =
                         this->shader
                             ? this->shader
-                            : ctx.engine->renderer.getDefaultTextShader();
+                            : engine->renderer.getDefaultTextShader();
                     if (border) {
                         if (_borderEnabled) {
                             float thickness = borderThickness * cameraScale;
@@ -794,7 +794,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                                               this->borderColor.g,
                                               this->borderColor.b,
                                               this->borderColor.a * color.a);
-                            GlyphData &borderGlyph = ctx.engine->fonts.getGlyph(
+                            GlyphData &borderGlyph = engine->fonts.getGlyph(
                                 font, _info.codepoint,
                                 std::round(size * glyphScale),
                                 std::round(thickness * glyphScale));

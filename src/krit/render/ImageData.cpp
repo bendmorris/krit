@@ -1,5 +1,5 @@
 #include "krit/render/ImageData.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/TaskManager.h"
 #include "krit/render/Gl.h"
 
@@ -27,7 +27,7 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
 }
 
 ImageData::~ImageData() {
-    if (App::ctx.app && App::ctx.app->running && texture && owned) {
+    if (engine && engine->running && texture && owned) {
         GLuint tex = this->texture;
         TaskManager::instance->pushRender(
             [tex](RenderContext &) { glDeleteTextures(1, &tex); });

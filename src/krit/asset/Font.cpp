@@ -1,6 +1,6 @@
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Rectangle.h"
@@ -8,8 +8,8 @@
 #include "krit/render/ImageData.h"
 #include "krit/utils/Panic.h"
 #include <cstring>
-#include <freetype2/freetype/config/ftheader.h>
-#include <freetype2/freetype/ftimage.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
 #include <freetype2/freetype/ftstroke.h>
 #include <freetype2/freetype/fttypes.h>
 #include <stdlib.h>
@@ -31,7 +31,7 @@ static FT_Stroker stroker;
 template <>
 std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const std::string &path) {
     int length;
-    char *content = app->io->read(path.c_str(), &length);
+    char *content = engine->io->read(path.c_str(), &length);
     // FIXME: do we leak content here, or does FT free it?
     return std::make_shared<Font>(path, content, length);
 }
@@ -129,7 +129,7 @@ Font::~Font() {
         hb_blob_destroy(blob);
     }
     if (fontData) {
-        app->io->free((char *)fontData);
+        engine->io->free((char *)fontData);
     }
 }
 

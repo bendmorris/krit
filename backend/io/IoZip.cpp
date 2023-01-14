@@ -1,5 +1,6 @@
-#include "Io.h"
+#include "krit/io/Io.h"
 #include "IoFileHelper.h"
+#include "krit/Engine.h"
 #include "krit/utils/Panic.h"
 #include <memory>
 #define ZIP_STATIC 1
@@ -10,17 +11,25 @@ namespace krit {
 struct IoZip : public Io {
     std::unique_ptr<IoFile> file;
     zip_t *archive = nullptr;
+    bool initialized = false;
 
-    IoZip() {
-        file = std::unique_ptr<IoFile>(new IoFile());
-        zip_source_t *source =
-            zip_source_file_create("assets.zip", 0, 0, nullptr);
-        archive = zip_open_from_source(source, ZIP_RDONLY, nullptr);
-    }
+    IoZip() { file = std::unique_ptr<IoFile>(new IoFile()); }
 
     ~IoZip() {
         if (archive) {
             zip_close(archive);
+        }
+    }
+
+    void init() {
+        if (initialized) {
+            return;
+        }
+        initialized = true;
+        if (file->exists("assets.zip")) {
+            zip_source_t *source =
+                zip_source_file_create("assets.zip", 0, 0, nullptr);
+            archive = zip_open_from_source(source, ZIP_RDONLY, nullptr);
         }
     }
 
@@ -63,12 +72,15 @@ struct IoZip : public Io {
     }
 
     bool exists(const char *path) override {
+        init();
         if (!archive) {
             return file->exists(path);
         }
         int index = zip_name_locate(archive, path, 0);
         return index != -1 || file->exists(path);
     }
+
+    bool rm(const char *path) override { return file->rm(path); }
 
     void *alloc(size_t size) override { return file->alloc(size); }
     void *calloc(size_t size) override { return file->calloc(size); }

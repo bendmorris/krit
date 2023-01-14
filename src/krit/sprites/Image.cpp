@@ -1,6 +1,6 @@
 #include <memory>
 
-#include "krit/App.h"
+#include "krit/Engine.h"
 #include "krit/Engine.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
@@ -17,7 +17,7 @@ Image::Image(ImageRegion region) : region(region) {
     dimensions.setTo(region.rect.width, region.rect.height);
 }
 
-Image::Image(const std::string &id) : region(App::ctx.engine->getImage(id)) {
+Image::Image(const std::string &id) : region(engine->getImage(id)) {
     dimensions.setTo(region.rect.width, region.rect.height);
 }
 

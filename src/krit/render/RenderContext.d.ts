@@ -1,5 +1,6 @@
 declare class RenderContext extends UpdateContext {
     drawCommandBuffer: DrawCommandBuffer;
+    camera: Camera;
 
     width(): number;
     height(): number;

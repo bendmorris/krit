@@ -7,26 +7,14 @@ option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
 option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
+set(KRIT_BACKEND_NET Curl CACHE STRING "Net backend")
 
-if(BUILD_WINDOWS)
-    include(${KRIT_DIR}/toolchain/windows.cmake)
-    add_definitions(-DKRIT_WINDOWS)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    include(${KRIT_DIR}/toolchain/emscripten.cmake)
-    add_definitions(-DKRIT_EMSCRIPTEN)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    include(${KRIT_DIR}/toolchain/linux.cmake)
-    add_definitions(-DKRIT_LINUX)
-else()
-    message(FATAL_ERROR "Unrecognized platform")
-endif()
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\"")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\" -fno-omit-frame-pointer -fasynchronous-unwind-tables")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF} -DTRACY_ENABLE")
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-c99-designator -Wno-parentheses -Wno-unused-result -Werror -Wall -fno-exceptions")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -fno-exceptions -DKRIT_RELEASE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Werror -Wall -ffunction-sections -fdata-sections -Os")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -DTRACY_ENABLE -Wno-sometimes-uninitialized")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_ASAN} -fsanitize=address -fsanitize=undefined")
@@ -35,6 +23,9 @@ set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -rdynamic")
 set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -lmcheck")
 set(CMAKE_LINKER_FLAGS_ASAN "${CMAKE_LINKER_FLAGS_DEBUG} ${CMAKE_LINKER_FLAGS_ASAN} -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined")
 set(CMAKE_LINKER_FLAGS_PROF "${CMAKE_LINKER_FLAGS_RELEASE} ${CMAKE_LINKER_FLAGS_PROF}")
+
+list(APPEND KRIT_LIBS)
+list(APPEND KRIT_STATIC_LIBS)
 
 if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     find_package(OpenGL REQUIRED)
@@ -62,47 +53,16 @@ file(GLOB KRIT_SRC_FILES CONFIGURE_DEPENDS
     ${KRIT_DIR}/src/krit/io/*.cpp
     ${KRIT_DIR}/src/krit/l12n/*.cpp
     ${KRIT_DIR}/src/krit/math/*.cpp
+    ${KRIT_DIR}/src/krit/net/*.cpp
+    ${KRIT_DIR}/src/krit/platform/*.cpp
     ${KRIT_DIR}/src/krit/render/*.cpp
+    ${KRIT_DIR}/src/krit/renderer/*.cpp
     ${KRIT_DIR}/src/krit/sound/*.cpp
     ${KRIT_DIR}/src/krit/sprites/*.cpp
     ${KRIT_DIR}/src/krit/state/*.cpp
     ${KRIT_DIR}/src/krit/utils/*.cpp
 )
 file(GLOB_RECURSE KRIT_THIRDPARTY_FILES CONFIGURE_DEPENDS ${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/src/spine/*.cpp)
-
-if(KRIT_BACKEND_IO STREQUAL "File")
-    list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/krit/io/IoFileHelper.cpp
-        ${KRIT_DIR}/backend/krit/io/IoFile.cpp
-    )
-elseif(KRIT_BACKEND_IO STREQUAL "Zip")
-    list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/krit/io/IoFileHelper.cpp
-        ${KRIT_DIR}/backend/krit/io/IoZip.cpp
-    )
-else()
-    message(FATAL_ERROR "unrecognized IO backend: ${KRIT_IO_BACKEND}")
-endif()
-
-if(KRIT_BACKEND_PLATFORM STREQUAL "Desktop")
-    list(APPEND KRIT_SRC_FILES
-    ${KRIT_DIR}/backend/krit/platform/PlatformDesktop.cpp
-    )
-elseif(KRIT_BACKEND_PLATFORM STREQUAL "Emscripten")
-    list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/krit/platform/PlatformEmscripten.cpp
-    )
-else()
-    message(FATAL_ERROR "unrecognized platform backend: ${KRIT_PLATFORM_BACKEND}")
-endif()
-
-if(KRIT_BACKEND_RENDERER STREQUAL "Gl")
-    list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/krit/renderer/RendererGl.cpp
-    )
-else()
-    message(FATAL_ERROR "unrecognized platform backend: ${KRIT_PLATFORM_BACKEND}")
-endif()
 
 if(KRIT_SCRIPT_BRIDGE)
     file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
@@ -116,6 +76,64 @@ if(KRIT_ENABLE_TOOLS)
         ${KRIT_DIR}/src/krit/editor/*.cpp
     )
     list(APPEND KRIT_SRC_FILES ${KRIT_EDITOR_FILES})
+endif()
+
+if(BUILD_WINDOWS)
+    include(${KRIT_DIR}/toolchain/windows.cmake)
+    add_definitions(-DKRIT_WINDOWS)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
+    include(${KRIT_DIR}/toolchain/emscripten.cmake)
+    add_definitions(-DKRIT_EMSCRIPTEN)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    include(${KRIT_DIR}/toolchain/linux.cmake)
+    add_definitions(-DKRIT_LINUX)
+else()
+    message(FATAL_ERROR "Unrecognized platform")
+endif()
+
+if(KRIT_BACKEND_IO STREQUAL "File")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/io/IoFileHelper.cpp
+        ${KRIT_DIR}/backend/io/IoFile.cpp
+    )
+elseif(KRIT_BACKEND_IO STREQUAL "Zip")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/io/IoFileHelper.cpp
+        ${KRIT_DIR}/backend/io/IoZip.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized IO backend: ${KRIT_BACKEND_IO}")
+endif()
+
+if(KRIT_BACKEND_PLATFORM STREQUAL "Desktop")
+    list(APPEND KRIT_SRC_FILES
+    ${KRIT_DIR}/backend/platform/PlatformDesktop.cpp
+    )
+elseif(KRIT_BACKEND_PLATFORM STREQUAL "Emscripten")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/platform/PlatformEmscripten.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized platform backend: ${KRIT_BACKEND_PLATFORM}")
+endif()
+
+if(KRIT_BACKEND_RENDERER STREQUAL "Gl")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/renderer/RendererGl.cpp
+    )
+else()
+    message(FATAL_ERROR "unrecognized renderer backend: ${KRIT_BACKEND_RENDERER}")
+endif()
+
+if(KRIT_BACKEND_NET STREQUAL "Curl")
+    list(APPEND KRIT_SRC_FILES
+        ${KRIT_DIR}/backend/net/NetCurl.cpp
+    )
+    find_library(CURL_LIB NAMES curl HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+    list(APPEND KRIT_STATIC_LIBS ${CURL_LIB})
+    add_definitions(-DCURL_STATICLIB)
+else()
+    message(FATAL_ERROR "unrecognized net backend: ${KRIT_BACKEND_NET}")
 endif()
 
 include_directories(${KRIT_INCLUDE_PATHS})
@@ -162,58 +180,66 @@ if(KRIT_ENABLE_THREADS)
     add_definitions(-DKRIT_ENABLE_THREADS)
 endif()
 
-if(KRIT_USE_GLEW)
-    add_definitions(-DKRIT_USE_GLEW)
-endif()
-
 if(KRIT_ENABLE_MULTISAMPLING)
     add_definitions(-DKRIT_ENABLE_MULTISAMPLING)
 endif()
 
-include_directories(krit/src)
-include_directories(krit/spine-runtimes/spine-cpp/spine-cpp/include)
-include_directories(krit/imgui)
-include_directories(krit/quickjs)
-include_directories(/usr/include/SDL2)
+include_directories(${KRIT_DIR}/src)
+include_directories(${KRIT_DIR}/spine-runtimes/spine-cpp/spine-cpp/include)
+include_directories(${KRIT_DIR}/imgui)
+include_directories(${KRIT_DIR}/quickjs)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
 
-find_library(EXPAT_LIB NAMES expat HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(FREETYPE_LIB NAMES freetype freetype-6 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(HARFBUZZ_LIB NAMES harfbuzz HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(SDL_LIB NAMES SDL2 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(SNDFILE_LIB NAMES sndfile HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(Z_LIB NAMES z HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-find_library(ZIP_LIB NAMES zip HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(CRYPTO_LIB NAMES crypto HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(FLAC_LIB NAMES FLAC HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(FREETYPE_LIB NAMES freetype freetype-6 HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(HARFBUZZ_LIB NAMES harfbuzz HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(JPEG_LIB NAMES jpeg HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(OGG_LIB NAMES ogg HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(OPUS_LIB NAMES opus HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(PNG_LIB NAMES png HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SDL_LIB NAMES SDL2 HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SDL_MAIN_LIB NAMES SDL2main HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SNDFILE_LIB NAMES sndfile HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(SSL_LIB NAMES ssl HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(VORBIS_LIB NAMES vorbis HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(VORBISENC_LIB NAMES vorbisenc HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(YAML_LIB NAMES yaml HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(Z_LIB NAMES z HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
+find_library(ZIP_LIB NAMES zip HINTS "${TOOLCHAIN_LIB_PATH}" REQUIRED CMAKE_FIND_ROOT_PATH_BOTH)
 
-list(APPEND KRIT_LIBS)
+list(APPEND KRIT_LIBS
+    ${OPENAL_LIB}
+    ${OPENGL_LIBRARIES}
+    ${KRIT_PLATFORM_LIBS}
+)
 list(APPEND KRIT_STATIC_LIBS
-    ${EXPAT_LIB}
     ${FREETYPE_LIB}
     ${HARFBUZZ_LIB}
     ${SDL_LIB}
+    ${SDL_MAIN_LIB}
+    ${SDL_IMAGE_LIB}
+    ${PNG_LIB}
+    ${JPEG_LIB}
     ${SNDFILE_LIB}
+    ${VORBIS_LIB}
+    ${VORBISENC_LIB}
+    ${FLAC_LIB}
+    ${OPUS_LIB}
+    ${OGG_LIB}
     ${YAML_LIB}
     ${ZIP_LIB}
+    ${SSL_LIB}
+    ${CRYPTO_LIB}
     ${Z_LIB}
+    ${KRIT_PLATFORM_STATIC_LIBS}
 )
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    list(APPEND KRIT_LIBS "-lopenal -lGLEW -lGLU -lm -lGL")
-else()
-    find_library(GLEW_LIB NAMES GLEW glew32 HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-    find_library(OPENAL_LIB NAMES openal HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-    list(APPEND KRIT_LIBS ${GLEW_LIB} ${OPENAL_LIB} ${OPENGL_LIBRARIES})
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    list(APPEND KRIT_LIBS "-lSDL2_image")
-else()
-    find_library(SDL_IMAGE_LIB NAMES SDL2_image HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
-    list(APPEND KRIT_LIBS ${SDL_IMAGE_LIB} "-ldl")
-endif()
+message("==> ${KRIT_STATIC_LIBS}")
 
 if(KRIT_ENABLE_THREADS)
     list(APPEND KRIT_STATIC_LIBS "-lpthread")

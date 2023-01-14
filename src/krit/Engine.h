@@ -10,26 +10,20 @@
 #if KRIT_ENABLE_SCRIPT
 #include "krit/script/ScriptEngine.h"
 #endif
+#include "krit/io/Io.h"
+#include "krit/math/Dimensions.h"
+#include "krit/net/Net.h"
+#include "krit/platform/Platform.h"
+#include "krit/render/Renderer.h"
 #include "krit/sound/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Signal.h"
-#include <list>
-#include <memory>
-#include <vector>
+#include <chrono>
+#include <string>
 
 namespace krit {
-
-struct TimedEvent {
-    float delay;
-    float interval;
-    CustomSignal signal;
-    void *userData;
-
-    TimedEvent(float delay, float interval, CustomSignal signal, void *userData)
-        : delay(delay), interval(interval), signal(signal), userData(userData) {
-    }
-};
-
+struct KritOptions;
+struct TaskManager;
 struct RenderContext;
 struct UpdateContext;
 struct ImageData;
@@ -41,12 +35,64 @@ struct SoundData;
 struct SpineData;
 struct MusicData;
 
+const int MAX_FRAMES = 5;
+const int FPS = 60;
+
+struct Engine;
+
+extern Engine *engine;
+
 struct Engine {
+    enum class FramePhase { Inactive, Begin, Update, Render };
+
+    struct TimedEvent {
+        float delay;
+        float interval;
+        CustomSignal signal;
+        void *userData;
+
+        TimedEvent(float delay, float interval, CustomSignal signal,
+                   void *userData)
+            : delay(delay), interval(interval), signal(signal),
+              userData(userData) {}
+    };
+
+private:
+    struct EngineScope {
+        EngineScope(Engine *);
+        ~EngineScope();
+    };
+
+    EngineScope _scope;
+    RenderContext ctx;
+
+public:
+    // backends
+    std::unique_ptr<Io> io;
+    std::unique_ptr<Net> net;
+    std::unique_ptr<Platform> platform;
+
+    Window window;
+    Renderer renderer;
+    FontManager fonts;
+    AudioBackend audio;
+    InputContext input;
+    AssetCache assets;
+#if KRIT_ENABLE_SCRIPT
+    ScriptEngine script;
+    JSValue scriptContext = JS_UNDEFINED;
+#endif
+    std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
+        cursors;
+
+    FramePhase phase = FramePhase::Inactive;
+    int framerate = 0;
+    int fixedFramerate = 0;
+    bool running = false;
     bool paused = false;
     bool fixedFrameRate = false;
-    bool finished = false;
     float speed = 1;
-    float elapsed = 0;
+    double totalElapsed = 0;
 
     UpdateSignal onBegin = nullptr;
     UpdateSignal onEnd = nullptr;
@@ -57,17 +103,31 @@ struct Engine {
     RenderSignal postRender = nullptr;
     std::list<TimedEvent> events;
 
-    Window window;
-    Renderer renderer;
-    FontManager fonts;
-    AudioBackend audio;
-    InputContext input;
-    AssetCache assets;
-#if KRIT_ENABLE_SCRIPT
-    ScriptEngine script;
-#endif
-    std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
-        cursors;
+    Engine(KritOptions &options);
+    ~Engine();
+
+    UpdateContext &updateCtx() {
+        assert(phase != FramePhase::Inactive);
+        return ctx;
+    }
+
+    RenderContext &renderCtx() {
+        assert(phase == FramePhase::Render);
+        return ctx;
+    }
+
+    void run();
+    bool doFrame();
+
+    /**
+     * Ends the run() loop.
+     */
+    void quit() { running = false; }
+
+    /**
+     * Current time in milliseconds, as a float with microsecond precision.
+     */
+    float time();
 
     Color bgColor = Color::black();
 
@@ -77,15 +137,12 @@ struct Engine {
 
     std::string cursor;
 
-    Engine(KritOptions &options);
-
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
     void render(RenderContext &ctx);
     void flip(RenderContext &ctx);
 
     void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
-    void quit() { finished = true; }
 
     void addCursor(const std::string &cursorPath, const std::string &cursor,
                    int resolution);
@@ -111,8 +168,21 @@ struct Engine {
 #undef DECLARE_ASSET_GETTER
 
 private:
-    void chooseCursor();
+    std::chrono::steady_clock clock;
+    std::chrono::steady_clock::time_point appStart, frameStart, frameFinish;
+    // accumulator and total elapsed time, in microseconds
+    int32_t accumulator = 0, elapsed = 0;
+    // microseconds per frame, at framerate and framerate+2
+    int32_t frameDelta, frameDelta2;
+    TaskManager *taskManager = nullptr;
     SDL_Cursor *_cursor = nullptr;
+
+    void handleEvents();
+    void cleanup();
+    void chooseCursor();
+
+    friend struct Editor;
+    friend struct Renderer;
 };
 
 }

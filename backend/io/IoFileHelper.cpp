@@ -1,5 +1,6 @@
 #include "IoFileHelper.h"
 #include "krit/utils/Panic.h"
+#include <cstring>
 #include <fstream>
 #include <sstream>
 
@@ -29,6 +30,10 @@ void IoFile::write(const char *path, const char *buf, size_t size) {
 bool IoFile::exists(const char *path) {
     std::ifstream infile(path);
     return infile.good();
+}
+
+bool IoFile::rm(const char *path) {
+    return remove(path) == 0;
 }
 
 void *IoFile::alloc(size_t size) { return std::malloc(size); }
