@@ -15,12 +15,15 @@ struct TextMap {
 
     void registerLocale(const std::string &key, const std::string &asset);
     void setLocale(const std::string &key);
+    void setCurrentLocaleAsDefault();
     std::string_view getString(const std::string &key);
 
 private:
     std::unordered_map<std::string, std::string> locales;
     std::unordered_map<std::string_view, std::string_view> strings;
+    std::unordered_map<std::string_view, std::string_view> defaultStrings;
     std::shared_ptr<std::string_view> loaded = nullptr;
+    std::shared_ptr<std::string_view> loadedDefault = nullptr;
 };
 
 }

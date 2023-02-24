@@ -34,7 +34,10 @@ template <typename T> struct PreservedAsset {
 
 template <typename T>
 bool lru(const PreservedAsset<T> &a1, const PreservedAsset<T> &a2) {
-    return a1.unusedFrames < a2.unusedFrames;
+    return a1.unusedFrames < a2.unusedFrames ||
+           (a1.unusedFrames == a2.unusedFrames &&
+            AssetLoader<T>::cost(a1.asset.get()) <
+                AssetLoader<T>::cost(a2.asset.get()));
 }
 
 template <typename... AssetTypes> struct AssetCacheBase {
@@ -81,26 +84,39 @@ template <typename... AssetTypes> struct AssetCacheBase {
         size_t cost = AssetLoaderT<A>::cost(asset.get());
 
         cache[id] = std::weak_ptr<AssetT<A>>(asset);
-        preserved.push_back(PreservedAsset<AssetT<A>>(id, asset));
 
         auto &it = sizes;
         it.first += cost;
         if (it.second > 0 && it.first > it.second) {
+            LOG_DEBUG("we need space (%i); need %zu, %zu total, %zu limit", A,
+                      cost, it.first, it.second);
             // purge assets to make room
             std::sort(preserved.begin(), preserved.end(), lru<AssetT<A>>);
             while (it.first > it.second) {
+                if (preserved.size() > 0) {
+                    LOG_DEBUG("I have a preserved asset in the back, %s, with "
+                              "unused count %zu",
+                              preserved.back().id.c_str(),
+                              preserved.back().unusedFrames);
+                }
                 if (preserved.size() > 0 &&
                     preserved.back().asset.use_count() == 1 &&
                     preserved.back().unusedFrames > 0) {
                     auto &dropped = preserved.back();
-                    Log::info("drop asset: %s", id.c_str());
-                    it.first -= AssetLoaderT<A>::cost(dropped.asset.get());
+                    size_t reclaimed =
+                        AssetLoaderT<A>::cost(dropped.asset.get());
+                    LOG_INFO("drop asset: %s (reclaimed %zu)",
+                             preserved.back().id.c_str(), reclaimed);
+                    it.first -= reclaimed;
                     preserved.pop_back();
                 } else {
                     break;
                 }
             }
         }
+
+        preserved.push_back(PreservedAsset<AssetT<A>>(id, asset));
+
         return asset;
     }
 };

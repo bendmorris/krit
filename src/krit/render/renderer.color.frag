@@ -1,4 +1,4 @@
-R"(#version 330
+R"(#version 300 es
 // renderer.color.frag
 #ifdef GL_ES
 precision mediump float;

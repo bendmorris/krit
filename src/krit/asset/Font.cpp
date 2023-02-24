@@ -10,13 +10,12 @@
 #include <cstring>
 #include <ft2build.h>
 #include FT_FREETYPE_H
-#include <freetype2/freetype/ftstroke.h>
-#include <freetype2/freetype/fttypes.h>
+#include FT_GLYPH_H
+#include FT_TYPES_H
+#include FT_STROKER_H
 #include <stdlib.h>
 #include <tuple>
 #include <utility>
-
-#include FT_FREETYPE_H
 
 namespace krit {
 
@@ -217,6 +216,9 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
 void GlyphCache::createTexture() {
     GLuint textureId;
     glGenTextures(1, &textureId);
+    if (!textureId) {
+        LOG_ERROR("failed to generate texture for GlyphCache");
+    }
     img = std::make_shared<ImageData>(
         textureId, IntDimensions(CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE));
     pixelData = std::make_unique<uint8_t[]>(

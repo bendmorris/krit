@@ -14,6 +14,9 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
         glActiveTexture(GL_TEXTURE0);
         checkForGlErrors("active texture");
         glGenTextures(1, &texture);
+        if (!texture) {
+            LOG_ERROR("failed to generate empty texture for new ImageData");
+        }
         checkForGlErrors("gen textures");
         glBindTexture(GL_TEXTURE_2D, texture);
         checkForGlErrors("bind texture");

@@ -64,7 +64,7 @@ struct DrawCommandBuffer {
     SpriteShader *defaultColorShader = nullptr;
 
     DrawCommandBuffer() {
-        triangles.reserve(0x20000);
+        triangles.reserve(0x1000);
         buf.get<DrawTriangles>().reserve(0x80);
         buf.get<PushClipRect>().reserve(0x10);
         buf.get<PopClipRect>().reserve(0x10);

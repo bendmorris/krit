@@ -1,11 +1,14 @@
 #include "krit/render/FrameBuffer.h"
 #include "krit/Engine.h"
+#include "krit/render/Gl.h"
 #include <cassert>
 
 namespace krit {
 
 int FrameBuffer::index() {
-    return doubleBuffer ? (engine->updateCtx().tickId % FrameBuffer::BUFFER_COUNT) : 0;
+    return doubleBuffer
+               ? (engine->updateCtx().tickId % FrameBuffer::BUFFER_COUNT)
+               : 0;
 }
 
 void FrameBuffer::init() {
@@ -38,6 +41,9 @@ void FrameBuffer::resize(unsigned int width, unsigned int height) {
 void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
     glActiveTexture(GL_TEXTURE0);
     glGenTextures(1, &texture[index()]);
+    if (!texture[index()]) {
+        LOG_ERROR("failed to generate texture for FrameBuffer");
+    }
     checkForGlErrors("create framebuffer texture: %i %ix%i\n", texture[index()],
                      width, height);
 
@@ -60,6 +66,10 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
             GLuint &texture = resolvedTexture[index()];
             glBindFramebuffer(GL_FRAMEBUFFER, resolvedFb[index()]);
             glGenTextures(1, &texture);
+            if (!texture) {
+                LOG_ERROR(
+                    "failed to generate multisample texture for FrameBuffer");
+            }
 
             glBindTexture(GL_TEXTURE_2D, texture);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
@@ -114,8 +124,8 @@ void FrameBuffer::_resize() {
         _currentSize[index()].setTo(width, height);
         createTextures(width, height);
         glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
+        checkForGlErrors("resize framebuffer");
     }
-    checkForGlErrors("resize framebuffer");
 }
 
 GLuint FrameBuffer::getFramebuffer() {
@@ -149,12 +159,17 @@ GLuint FrameBuffer::getTexture() {
 void FrameBuffer::_markDirty() { this->dirty[index()] = true; }
 
 uint32_t FrameBuffer::readPixel(int x, int y) {
-    uint32_t pixelData;
+    uint8_t pixelData[4];
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
-    glReadPixels(x, size.y() - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8,
+    glReadPixels(x, size.y() - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
                  (void *)&pixelData);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    return pixelData;
+    checkForGlErrors("readPixels");
+    Color c(static_cast<float>(pixelData[0]) / 255,
+            static_cast<float>(pixelData[1]) / 255,
+            static_cast<float>(pixelData[2]) / 255,
+            static_cast<float>(pixelData[3]) / 255);
+    return c.rgba();
 }
 
 std::shared_ptr<ImageData> FrameBuffer::imageData() {

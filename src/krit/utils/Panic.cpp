@@ -8,6 +8,10 @@ namespace krit {
 void panic(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
+    vpanic(fmt, args);
+}
+
+void vpanic(const char *fmt, va_list args) {
     vfprintf(stderr, fmt, args);
     fputs("\n", stderr);
     ssize_t len = vsnprintf(NULL, 0, fmt, args);

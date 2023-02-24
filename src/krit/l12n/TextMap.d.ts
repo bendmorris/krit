@@ -5,5 +5,6 @@ declare class TextMap {
 
     registerLocale(key: string, path: string): void;
     setLocale(key: string): void;
+    setCurrentLocaleAsDefault(): void;
     getString(key: string): string;
 }

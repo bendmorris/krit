@@ -22,6 +22,7 @@
 /// <reference path="krit/render/SceneShader.d.ts"/>
 /// <reference path="krit/render/SmoothingMode.d.ts"/>
 /// <reference path="krit/render/SpriteShader.d.ts"/>
+/// <reference path="krit/script/FileDb.d.ts"/>
 /// <reference path="krit/script/ScriptBuiltins.d.ts"/>
 /// <reference path="krit/sound/AudioBackend.d.ts"/>
 /// <reference path="krit/Sprite.d.ts"/>

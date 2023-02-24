@@ -8,7 +8,7 @@ declare class Engine {
     readonly input: InputContext;
     readonly window: Window;
     readonly audio: AudioBackend;
-    readonly scriptContext: any;
+    get scriptContext(): any;
     speed: number;
     // elapsed: number;
     totalElapsed: number;

@@ -58,7 +58,7 @@ struct Shader {
 };
 
 struct UniformValueInfo {
-    int location;
+    int location = 0;
     UniformValue value;
 };
 

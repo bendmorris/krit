@@ -6,10 +6,12 @@
 namespace krit {
 
 struct IoFile : public Io {
-    char *read(const char *path, int *length = nullptr) override;
-    void write(const char *path, const char *buf, size_t size) override;
-    bool exists(const char *path) override;
-    bool rm(const char *path) override;
+    bool mkdir(const std::filesystem::path &path) override;
+    char *read(const std::filesystem::path &path, int *length = nullptr) override;
+    void write(const std::filesystem::path &path, const char *buf, size_t size) override;
+    bool exists(const std::filesystem::path &path) override;
+    bool isDirectory(const std::filesystem::path &path) override;
+    bool rm(const std::filesystem::path &path) override;
     void *alloc(size_t size) override;
     void *calloc(size_t size) override;
     void *realloc(void *p, size_t size) override;

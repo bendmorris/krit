@@ -5,10 +5,13 @@ namespace krit {
 /**
  * Adapted from http://www.nubaria.com/en/blog/?p=371
  */
-struct Utf8Iterator
-    : public std::iterator<std::bidirectional_iterator_tag, char32_t,
-                           std::string::difference_type, const char32_t *,
-                           const char32_t &> {
+struct Utf8Iterator {
+    using iterator_category = std::bidirectional_iterator_tag;
+    using value_type = char32_t;
+    using difference_type = std::string::difference_type;
+    using pointer = const char32_t *;
+    using reference = const char32_t &;
+
     const unsigned char kFirstBitMask = 0b10000000;
     const unsigned char kSecondBitMask = 0b01000000;
     const unsigned char kThirdBitMask = 0b00100000;

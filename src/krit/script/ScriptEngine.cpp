@@ -41,7 +41,9 @@ static std::string js_std_get_error(JSContext *ctx,
         // ...while an "Exception" is a native error type, and we must call
         // JS_GetException to find the actual error object
         JSValue err = JS_GetException(ctx);
-        return js_std_get_error(ctx, err);
+        auto result = js_std_get_error(ctx, err);
+        JS_FreeValue(ctx, err);
+        return result;
     } else {
         return js_serialize_obj(ctx, exception_val);
     }
@@ -63,15 +65,15 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
     }
 }
 
-static JSMallocFunctions allocFunctions{
-    .js_malloc = ScriptAllocator::alloc,
-    .js_free = ScriptAllocator::free,
-    .js_realloc = ScriptAllocator::realloc,
-};
+// static JSMallocFunctions allocFunctions{
+//     .js_malloc = ScriptAllocator::alloc,
+//     .js_free = ScriptAllocator::free,
+//     .js_realloc = ScriptAllocator::realloc,
+// };
 
 ScriptEngine::ScriptEngine() {
-    rt = JS_NewRuntime2(&allocFunctions, this);
-    // rt = JS_NewRuntime();
+    // rt = JS_NewRuntime2(&allocFunctions, this);
+    rt = JS_NewRuntime();
     // JS_SetRuntimeOpaque(rt, this);
     JS_SetHostPromiseRejectionTracker(rt, js_std_promise_rejection_tracker,
                                       NULL);
@@ -214,6 +216,7 @@ void ScriptEngine::dumpBacktrace(FILE *f) {
     JS_ThrowInternalError(ctx, "JS backtrace");
     JSValue exception_val = JS_GetException(ctx);
     checkForErrors(exception_val, f);
+    JS_FreeValue(ctx, exception_val);
 }
 
 }

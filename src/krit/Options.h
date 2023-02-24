@@ -15,7 +15,6 @@ struct KritOptions {
     int fullscreenWidth = -1;
     int fullscreenHeight = -1;
     bool fullscreen = false;
-    int framerate;
     int fixedFramerate;
     void *userData;
 
@@ -31,12 +30,7 @@ struct KritOptions {
         return *this;
     }
     KritOptions &setFrameRate(int rate) {
-        this->framerate = this->fixedFramerate = rate;
-        return *this;
-    }
-    KritOptions &setFrameRate(int free, int fixed) {
-        this->framerate = free;
-        this->fixedFramerate = fixed;
+        this->fixedFramerate = rate;
         return *this;
     }
     KritOptions &setFullscreen(bool val) {

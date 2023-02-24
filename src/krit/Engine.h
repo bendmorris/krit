@@ -7,9 +7,7 @@
 #include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/render/Renderer.h"
-#if KRIT_ENABLE_SCRIPT
 #include "krit/script/ScriptEngine.h"
-#endif
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/net/Net.h"
@@ -78,15 +76,11 @@ public:
     AudioBackend audio;
     InputContext input;
     AssetCache assets;
-#if KRIT_ENABLE_SCRIPT
     ScriptEngine script;
-    JSValue scriptContext = JS_UNDEFINED;
-#endif
     std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
         cursors;
 
     FramePhase phase = FramePhase::Inactive;
-    int framerate = 0;
     int fixedFramerate = 0;
     bool running = false;
     bool paused = false;
@@ -105,6 +99,10 @@ public:
 
     Engine(KritOptions &options);
     ~Engine();
+
+    JSValue &scriptContext() {
+        return _scriptContext;
+    }
 
     UpdateContext &updateCtx() {
         assert(phase != FramePhase::Inactive);
@@ -176,6 +174,7 @@ private:
     int32_t frameDelta, frameDelta2;
     TaskManager *taskManager = nullptr;
     SDL_Cursor *_cursor = nullptr;
+    JSValue _scriptContext = JS_UNDEFINED;
 
     void handleEvents();
     void cleanup();

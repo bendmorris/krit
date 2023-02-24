@@ -5,6 +5,7 @@
 #include "krit/utils/Panic.h"
 #include <AL/al.h>
 #include <AL/alc.h>
+#include <array>
 #include <memory>
 #include <string>
 
@@ -21,7 +22,7 @@ struct AudioSource {
 };
 
 struct AudioStream {
-    static const int NUM_BUFFERS = 4;
+    static const int NUM_BUFFERS = 8;
 
     bool repeat = false;
 
@@ -58,7 +59,7 @@ private:
     std::shared_ptr<MusicData> data = nullptr;
     std::shared_ptr<MusicData> onLoopData = nullptr;
     AudioSource *source = nullptr;
-    ALuint buffer[NUM_BUFFERS] = {0};
+    std::array<ALuint, NUM_BUFFERS> buffer;
     int bufferPtr = 0;
     int samplesPlayed = 0;
     float volume = 1;
@@ -82,6 +83,8 @@ struct AudioBackend {
     AudioSource *sourcePool = nullptr;
     AudioSource *activeSources = nullptr;
     float soundVolume = 1;
+    size_t bytesPerSample = 0;
+    bool streamFloats = false;
 
     AudioBackend();
     ~AudioBackend();
@@ -98,8 +101,8 @@ struct AudioBackend {
     void update();
 
 private:
-    AudioSource _sources[MAX_SOURCES];
-    AudioStream _streams[MAX_STREAMS];
+    std::array<AudioSource, MAX_SOURCES> _sources;
+    std::array<AudioStream, MAX_STREAMS> _streams;
 };
 
 }

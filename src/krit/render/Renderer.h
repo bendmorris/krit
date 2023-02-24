@@ -14,11 +14,15 @@
 #include <stddef.h>
 #include <vector>
 
+#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
+
 namespace krit {
 struct SpriteShader;
 struct FrameBuffer;
 
 struct Renderer {
+    static const int DUP_BUFFER_COUNT = 2;
+
     SDL_GLContext glContext;
 
     DrawCommandBuffer drawCommandBuffer;
@@ -37,14 +41,17 @@ struct Renderer {
 private:
     GLuint vao;
     GLuint sceneShaderVertexBuffer = 0;
-    GLuint vertexBuffer[3] = {0};
+    GLuint indexBuffer[DUP_BUFFER_COUNT] = {0};
+    GLuint vertexBuffer[DUP_BUFFER_COUNT] = {0};
     size_t vertexCapacity = 0;
     std::vector<Rectangle> clipStack;
+    std::vector<uint32_t> indexData;
     Window &window;
     FrameBuffer *currentRenderTarget = nullptr;
 
     int width = 0;
     int height = 0;
+    size_t indexBufferOffset = 0;
 
     template <size_t, typename T> void drawCall(RenderContext &ctx, T &);
     void setSmoothingMode(SmoothingMode mode, ImageData *img);

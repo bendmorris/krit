@@ -137,7 +137,6 @@ float SpineSprite::worldVertices[1024] = {0};
 
 float SpineSprite::setAnimation(size_t track, const std::string &name,
                                 bool loop, float speed, float mix) {
-    // printf("set animation: %s\n", name.c_str());
     auto trackEntry = this->animationState->setAnimation(
         track, spine::String(name.c_str()), loop);
     if (speed != 1) {
@@ -282,8 +281,10 @@ void SpineSprite::render(RenderContext &ctx) {
                 auto &rect = region->rect;
                 float uvx1 = rect.x / static_cast<float>(imageData->width());
                 float uvy1 = rect.y / static_cast<float>(imageData->height());
-                float uvx2 = (rect.x + rect.width) / static_cast<float>(imageData->width());
-                float uvy2 = (rect.y + rect.height) / static_cast<float>(imageData->height());
+                float uvx2 = (rect.x + rect.width) /
+                             static_cast<float>(imageData->width());
+                float uvy2 = (rect.y + rect.height) /
+                             static_cast<float>(imageData->height());
                 uvt2.p1.setTo(uvx1, uvy1);
                 uvt2.p2.setTo(uvx2, uvy1);
                 uvt2.p3.setTo(uvx2, uvy2);
@@ -302,7 +303,7 @@ void SpineSprite::render(RenderContext &ctx) {
                         worldVertices[3], worldVertices[4], worldVertices[5]);
             Triangle t2(worldVertices[4], worldVertices[5], worldVertices[6],
                         worldVertices[7], worldVertices[0], worldVertices[1]);
-            
+
             t1 = m * t1;
             t2 = m * t2;
             ctx.addTriangle(key, t1, uvt1, color, zIndex);
@@ -312,10 +313,18 @@ void SpineSprite::render(RenderContext &ctx) {
             float *worldVertices = SpineSprite::worldVertices;
             spine::MeshAttachment *meshAttachment =
                 static_cast<spine::MeshAttachment *>(attachment);
-            ImageRegion *region = static_cast<ImageRegion *>(
+            auto overridden = customAttachments.find(attachment);
+            ImageRegion *originalRegion = static_cast<ImageRegion *>(
                 (static_cast<spine::AtlasRegion *>(
                      meshAttachment->getRendererObject()))
                     ->page->getRendererObject());
+            ImageRegion *region;
+            if (overridden == customAttachments.end()) {
+                region = originalRegion;
+            } else {
+                region = overridden->second.get();
+            }
+
             // before rendering via spSkeleton_updateWorldTransform
             meshAttachment->computeWorldVertices(*slot, worldVertices);
             DrawKey key;
@@ -334,6 +343,25 @@ void SpineSprite::render(RenderContext &ctx) {
                            worldVertices[i2], worldVertices[i2 + 1]);
                 Triangle uvt(uvs[i0], uvs[i0 + 1], uvs[i1], uvs[i1 + 1],
                              uvs[i2], uvs[i2 + 1]);
+                if (originalRegion != region) {
+                    auto transformPoint = [&](Vec3f &p) {
+                        p.x() = (p.x() - static_cast<float>(
+                                             meshAttachment->getRegionU())) /
+                                    meshAttachment->getRegionWidth() *
+                                    region->rect.width +
+                                static_cast<float>(region->rect.x) /
+                                    region->img->width();
+                        p.y() = (p.y() - static_cast<float>(
+                                             meshAttachment->getRegionV())) /
+                                    meshAttachment->getRegionHeight() *
+                                    region->rect.height +
+                                static_cast<float>(region->rect.y) /
+                                    region->img->height();
+                    };
+                    transformPoint(uvt.p1);
+                    transformPoint(uvt.p2);
+                    transformPoint(uvt.p3);
+                }
                 t = m * t;
                 ctx.addTriangle(key, t, uvt, color, zIndex);
             }

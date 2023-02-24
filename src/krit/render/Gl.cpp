@@ -14,7 +14,7 @@ void _checkForGlErrors(const char *fmt, ...) {
         fprintf(stderr, "GL error: %i ", err);
         vfprintf(stderr, fmt, args);
         fputs("\n", stderr);
-        panic("GL error");
+        vpanic(fmt, args);
     }
 }
 

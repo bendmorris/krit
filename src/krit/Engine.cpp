@@ -39,28 +39,25 @@ struct UpdateContext;
 Engine *engine{0};
 
 #ifdef __EMSCRIPTEN__
-static void __doFrame(void *app) { ((App *)app)->doFrame(); }
+static void __doFrame() {
+    if (engine->running) {
+        engine->doFrame();
+    }
+}
 #endif
 
 Engine::Engine(KritOptions &options)
-    : _scope(this), io(krit::io()), net(krit::net()), platform(krit::platform()),
+    : _scope(this), io(krit::io()), net(krit::net()),
+      platform(krit::platform()), window(options), renderer(window),
+      fixedFramerate(options.fixedFramerate) {
 #ifdef __EMSCRIPTEN__
-      engine((emscripten_set_main_loop_arg(__doFrame, this, 0, 0), options)),
-#else
-      window(options), renderer(window),
+    emscripten_set_main_loop(__doFrame, 0, 0);
 #endif
-      framerate(options.framerate), fixedFramerate(options.fixedFramerate) {
-#if KRIT_ENABLE_SCRIPT
     script.userData = this;
-    scriptContext = JS_NewObject(script.ctx);
-#endif
+    _scriptContext = JS_NewObject(script.ctx);
 }
 
-Engine::~Engine() {
-#if KRIT_ENABLE_SCRIPT
-    JS_FreeValue(script.ctx, scriptContext);
-#endif
-}
+Engine::~Engine() { JS_FreeValue(script.ctx, _scriptContext); }
 
 Engine::EngineScope::EngineScope(Engine *engine) {
     if (krit::engine) {
@@ -79,16 +76,28 @@ float Engine::time() {
 }
 
 void Engine::run() {
+#ifdef __EMSCRIPTEN__
+    EM_ASM(
+        FS.mkdir('/data');
+        FS.mount(IDBFS, {}, '/data');
+        FS.syncfs(true, function () {});
+    );
+#endif
+
     CrashHandler::init();
 
     appStart = clock.now();
 
-    // // SDL_Image
-    // int flags = IMG_INIT_PNG;
-    // int result = IMG_Init(flags);
-    // if ((result & flags) != flags) {
-    //     panic("PNG support is required");
-    // }
+    // SDL_Image
+    int flags = IMG_INIT_PNG | IMG_INIT_JPG;
+    int result = IMG_Init(flags);
+#ifdef __EMSCRIPTEN__
+    (void)result;
+#else
+    if ((result & flags) != flags) {
+        panic("PNG/JPEG support is required");
+    }
+#endif
 
     frameDelta = 1000000 / fixedFramerate;
     frameDelta2 = 1000000 / (fixedFramerate + 2);
@@ -111,6 +120,7 @@ void Engine::run() {
     onBegin = nullptr;
 
     running = true;
+
 #ifndef __EMSCRIPTEN__
     while (running) {
         if (!doFrame()) {
@@ -128,6 +138,10 @@ void Engine::cleanup() {
 }
 
 bool Engine::doFrame() {
+    if (!running) {
+        return false;
+    }
+
     UpdateContext *update = &ctx;
     ++ctx.tickId;
 
@@ -353,9 +367,7 @@ void Engine::update(UpdateContext &ctx) {
 
     // actual update cycle
     invoke(onUpdate, &ctx);
-#if KRIT_ENABLE_SCRIPT
     script.update();
-#endif
     invoke(postUpdate, &ctx);
 }
 
@@ -364,8 +376,6 @@ void Engine::render(RenderContext &ctx) {
     ZoneScopedN("Engine::render");
 #endif
     checkForGlErrors("engine render");
-
-    fonts.commit();
 
     if (engine->window.skipFrames > 0) {
         --engine->window.skipFrames;
@@ -380,6 +390,7 @@ void Engine::render(RenderContext &ctx) {
                 continue;
             }
             invoke(camera.render, &ctx);
+            fonts.commit();
             renderer.renderFrame(ctx);
         }
 

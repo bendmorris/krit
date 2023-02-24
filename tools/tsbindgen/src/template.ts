@@ -47,6 +47,7 @@ export class Templatizer {
         });
         env.addGlobal('typename', typename);
         env.addGlobal('jsFuncName', jsFuncName);
+        env.addGlobal('JSON', JSON);
     }
 
     replaceIfDifferent(path: string, content: string) {

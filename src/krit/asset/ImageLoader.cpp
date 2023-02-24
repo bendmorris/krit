@@ -155,10 +155,10 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
     img->scale = scale;
 
 #ifdef __EMSCRIPTEN__
-    TaskManager::instance->push([info, img](UpdateContext &) {
-        SDL_Surface *surface = IMG_Load(info.path.c_str());
+    TaskManager::instance->push([pathToLoad, img](UpdateContext &) {
+        SDL_Surface *surface = IMG_Load(pathToLoad.c_str());
         if (!surface) {
-            panic("IMG_Load(%s) is null: %s\n", info.path.c_str(),
+            panic("IMG_Load(%s) is null: %s\n", pathToLoad.c_str(),
                   IMG_GetError());
         }
 #else
@@ -195,6 +195,9 @@ AssetLoader<ImageData>::loadAsset(const std::string &path) {
             glActiveTexture(GL_TEXTURE0);
             checkForGlErrors("active texture");
             glGenTextures(1, &texture);
+            if (!texture) {
+                LOG_ERROR("failed to generate texture for image %s", pathToLoad.c_str());
+            }
             checkForGlErrors("gen textures");
             glBindTexture(GL_TEXTURE_2D, texture);
             checkForGlErrors("bind texture");
@@ -217,7 +220,7 @@ template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
 }
 
 template <> size_t AssetLoader<ImageData>::cost(ImageData *img) {
-    return img->dimensions.x() * img->dimensions.y();
+    return (img->dimensions.x() * img->scale) * (img->dimensions.y() * img->scale) * 4;
 }
 
 template <> AssetType AssetLoader<ImageData>::type() { return ImageAsset; }

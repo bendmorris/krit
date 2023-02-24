@@ -8,6 +8,8 @@ interface ScriptClassProperty {
     name: string;
     readonly: boolean;
     type: string;
+    get?: boolean;
+    set?: boolean;
 }
 
 interface ScriptClass {
@@ -64,6 +66,7 @@ const validationTypes = {
     boolean: 'bool',
     void: 'void',
     any: 'JSValue',
+    ArrayBuffer: 'JSValue',
 };
 
 export class Bindgen {
@@ -94,6 +97,8 @@ export class Bindgen {
         if (ts.isArrayTypeNode(node)) {
             const elementType = this.parseType(node.elementType, access ? `${access}::value_type` : undefined);
             return { access, validationType: `std::vector<${elementType.validationType}>` };
+        } else if (ts.isFunctionTypeNode(node)) {
+            return { access, validationType: 'JSValue' };
         } else if (ts.isTypeReferenceNode(node) && node.typeName.getText() === 'Array') {
             if (node.typeArguments?.length !== 1) {
                 throw new TsError('invalid Array type: should have one type argument', node);
@@ -105,6 +110,16 @@ export class Bindgen {
         } else if (ts.isOptionalTypeNode(node)) {
             const elementType = this.parseType(node.type, access ? `${access}::value_type` : undefined);
             return { access, validationType: `std::optional<${elementType.validationType}>` };
+        } else if (ts.isUnionTypeNode(node)) {
+            if (node.types.length === 2) {
+                // optional
+                for (let i = 0; i < 2; ++i) {
+                    if (node.types[i].getText() === 'undefined') {
+                        const inner = this.parseType(node.types[1 - i], access ? `${access}::value_type` : undefined);
+                        return { access, validationType: `std::optional<${inner.validationType}>` };
+                    }
+                }
+            }
         } else if (ts.isTypeReferenceNode(node)) {
             const t = node.typeName.getText();
             if (validationTypes[t]) {
@@ -318,6 +333,7 @@ export class Bindgen {
                                 if (found) {
                                     if (p === 'set') {
                                         found.readonly = false;
+                                        found.set = true;
                                     }
                                 } else {
                                     cls.properties.push({ name, type, [p]: true, readonly: p === 'get' });

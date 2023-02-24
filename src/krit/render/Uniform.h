@@ -24,6 +24,7 @@ enum UniformValueType {
     UniformFbTexture,
 };
 
+// FIXME: use std::variant
 struct UniformValue {
     UniformValueType type;
 

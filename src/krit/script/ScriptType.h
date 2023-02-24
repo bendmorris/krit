@@ -12,7 +12,7 @@ namespace krit {
 
 template <typename T> struct prop_type {
     using type = typename std::conditional<
-        std::is_pointer<T>::value ||
+        std::is_pointer<T>::value || std::is_arithmetic<T>::value ||
             std::is_reference<typename std::remove_const<T>::type>::value,
         T, T &>::type;
 };

@@ -1,4 +1,4 @@
-R"(#version 330
+R"(#version 300 es
 // renderer.text.vert
 #ifdef GL_ES
 precision mediump float;

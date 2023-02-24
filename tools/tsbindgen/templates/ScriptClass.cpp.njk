@@ -20,6 +20,12 @@
 
 {% for cls in types.classes %}
 
+/**
+
+{{ JSON.stringify(cls, "\n") }}
+
+ */
+
 namespace {{namespace}} {
 
 {% if cls.partial %}
@@ -388,7 +394,7 @@ void init{{ enum.name }}(ScriptEngine *engine) {
     JSContext *ctx= engine->ctx;
     JSValue e = JS_NewObject(ctx);
     {% for member in enum.members %}
-    JS_SetPropertyStr(ctx, e, "{{ member }}", JS_NewInt32(ctx, {{ namespacedName(enum) }}::{{ member }}));
+    JS_SetPropertyStr(ctx, e, "{{ member }}", JS_NewInt32(ctx, static_cast<int>({{ namespacedName(enum) }}::{{ member }})));
     {% endfor %}
     const char *ns[] {{ namespaceArray(enum) }};
     engine->setAtNamespace(ns, "{{ enum.name }}", e);

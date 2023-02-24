@@ -70,6 +70,7 @@ JS_FUNC(exit) {
         if (s) {
             panic(s);
         }
+        JS_FreeCString(ctx, s);
     }
     abort();
 }

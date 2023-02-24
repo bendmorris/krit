@@ -30,7 +30,7 @@ static void errorHandler(const char *fmt, ...) {
     va_list args;
     va_start(args, fmt);
     if (inFallback) {
-        exit(2);
+        CrashHandler::exit(3);
     } else if (errorLog) {
         inFallback = true;
         fputs("hit a subsequent error during the error handler; aborting\n",
@@ -40,7 +40,7 @@ static void errorHandler(const char *fmt, ...) {
         if (errorLog != stderr) {
             readFileToStderr(errorLog);
         }
-        exit(1);
+        CrashHandler::exit(2);
     }
     errorLog = fopen("crash.log", "w");
     vfprintf(errorLog, fmt, args);
@@ -51,26 +51,26 @@ static void errorHandler(const char *fmt, ...) {
     size_t size = backtrace(array, 10);
     backtrace_symbols_fd(array, size, fileno(errorLog));
 #endif
-#if KRIT_ENABLE_SCRIPT
     if (engine && engine->script.ctx) {
         engine->script.dumpBacktrace(errorLog);
-        if (!JS_IsUndefined(engine->scriptContext)) {
+        if (!JS_IsUndefined(engine->scriptContext())) {
             JSValue stringified =
-                JS_JSONStringify(engine->script.ctx, engine->scriptContext,
+                JS_JSONStringify(engine->script.ctx, engine->scriptContext(),
                                  JS_UNDEFINED, JS_UNDEFINED);
             const char *s = JS_ToCString(engine->script.ctx, stringified);
             if (s) {
                 fprintf(errorLog, "Script context: %s\n", s);
             }
+            JS_FreeCString(engine->script.ctx, s);
         }
     }
-#endif
     fclose(errorLog);
     if (errorLog != stderr) {
         FILE *f = fopen("crash.log", "r");
         readFileToStderr(f);
         fclose(f);
     }
+    CrashHandler::exit(1);
 }
 
 static void signalHandler(int sig) {
@@ -111,6 +111,13 @@ void CrashHandler::init() {
         std::set_terminate(terminateHandler);
 #endif
     }
+}
+
+void CrashHandler::exit(int code) {
+    std::signal(SIGINT, SIG_DFL);
+    std::signal(SIGSEGV, SIG_DFL);
+    std::signal(SIGABRT, SIG_DFL);
+    std::exit(code);
 }
 
 }

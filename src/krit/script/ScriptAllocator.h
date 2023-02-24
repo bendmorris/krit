@@ -20,7 +20,7 @@ struct Cell {
     }
 
     template <size_t SIZE> static size_t cellSize() {
-        return offsetof(Cell, data[SIZE]);
+        return (offsetof(Cell, data[SIZE]) + 7) / 8 * 8;
     }
 
     void *getData() { return (void *)data; }
@@ -49,11 +49,11 @@ struct OversizedCell {
 };
 
 template <size_t SIZE> struct BlockAllocator {
-    static const size_t PAGE_SIZE = 0x100000;
+    static const size_t pageSize = 0x100000;
 
     BlockAllocator(uint8_t id) {
         this->id = id;
-        storage = Cell::alloc(PAGE_SIZE);
+        storage = Cell::alloc(pageSize);
         storage->next = nullptr;
     }
     ~BlockAllocator() {
@@ -68,11 +68,11 @@ template <size_t SIZE> struct BlockAllocator {
 
     void *alloc() {
         if (!next) {
-            static_assert(PAGE_SIZE > SIZE * 32,
+            static_assert(pageSize > SIZE * 32,
                           "page size is too small for this block size");
-            if (storageIndex + Cell::cellSize<SIZE>() > PAGE_SIZE) {
+            if (storageIndex + Cell::cellSize<SIZE>() > pageSize) {
                 // puts("need new storage");
-                Cell *newStorage = Cell::alloc(PAGE_SIZE);
+                Cell *newStorage = Cell::alloc(pageSize);
                 newStorage->next = storage;
                 storage = newStorage;
                 storageIndex = 0;
@@ -82,7 +82,7 @@ template <size_t SIZE> struct BlockAllocator {
                 newCell->next = next;
                 next = newCell;
                 storageIndex += Cell::cellSize<SIZE>();
-                if (storageIndex + Cell::cellSize<SIZE>() > PAGE_SIZE) {
+                if (storageIndex + Cell::cellSize<SIZE>() > pageSize) {
                     break;
                 }
             }

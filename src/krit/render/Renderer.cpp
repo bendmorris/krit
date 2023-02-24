@@ -175,8 +175,10 @@ Renderer::Renderer(Window &_window) : window(_window) {
     }
     SDL_GL_MakeCurrent(window, this->glContext);
     checkForGlErrors("context");
+#ifndef __EMSCRIPTEN__
     SDL_GL_SetSwapInterval(1);
     checkForGlErrors("swap interval");
+#endif
     glEnable(GL_BLEND);
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
@@ -214,6 +216,9 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glActiveTexture(GL_TEXTURE0);
     checkForGlErrors("imgui active texture");
     glGenTextures(1, &Editor::imguiTextureId);
+    if (!Editor::imguiTextureId) {
+        LOG_ERROR("failed to generate texture for imgui");
+    }
     checkForGlErrors("imgui gen textures");
     glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
     checkForGlErrors("imgui bind texture");
@@ -228,21 +233,20 @@ Renderer::Renderer(Window &_window) : window(_window) {
     Editor::imguiInitialized = true;
 #endif
 
-#ifndef __EMSCRIPTEN__
     glGenVertexArrays(1, &this->vao);
     glBindVertexArray(this->vao);
-#endif
-    glGenBuffers(3, this->vertexBuffer);
+    glGenBuffers(DUP_BUFFER_COUNT, this->vertexBuffer);
+    glGenBuffers(DUP_BUFFER_COUNT, this->indexBuffer);
     glGenBuffers(1, &this->sceneShaderVertexBuffer);
     glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
     glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[96]), _vertices,
                  GL_STATIC_DRAW);
-    // glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     drawCommandBuffer.defaultTextureShader = getDefaultTextureShader();
     drawCommandBuffer.defaultColorShader = getDefaultColorShader();
 
-    glDepthRange(-1000, 1000);
+    glDepthRangef(-1000, 1000);
 
     checkForGlErrors("renderer init");
 
@@ -275,7 +279,8 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
         checkForGlErrors("enable scissor test");
     }
     updateClip(ctx);
-    checkForGlErrors("push clip rect: %i,%i %ix%i", clipRect.x, clipRect.y, clipRect.width, clipRect.height);
+    checkForGlErrors("push clip rect: %i,%i %ix%i", clipRect.x, clipRect.y,
+                     clipRect.width, clipRect.height);
 }
 
 // template <>
@@ -422,7 +427,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
     // puts("draw");
     checkForGlErrors("drawCall");
 
-    int index = engine->updateCtx().tickId % 3;
+    int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
 
     setSize(ctx);
 
@@ -451,18 +456,21 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
                                 GL_CLAMP_TO_EDGE);
                 checkForGlErrors("bind texture");
+                setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
             }
-            setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
             if (shader->matrixIndex > -1) {
                 glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE,
                                    _ortho.data());
             }
             setBlendMode(drawCall.key.blend);
 
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer[index]);
             glDrawElements(GL_TRIANGLES, drawCall.indices.size(),
-                           GL_UNSIGNED_INT, drawCall.indices.data());
+                           GL_UNSIGNED_INT,
+                           BUFFER_OFFSET(indexBufferOffset * sizeof(uint32_t)));
             checkForGlErrors("drawElements");
 
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
             glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             shader->unbind();
@@ -471,6 +479,8 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             }
         }
     }
+
+    indexBufferOffset += drawCall.indices.size();
 }
 
 template <>
@@ -481,9 +491,10 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 #endif
     setSize(ctx, true);
     setBlendMode(shader->blend);
-    setSmoothingMode(SmoothLinear, nullptr);
+    // setSmoothingMode(SmoothLinear, nullptr);
 
     glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
+    // printf("%i\n", (int)this->sceneShaderVertexBuffer);
     checkForGlErrors("bindBuffer");
 
     shader->bind(ctx);
@@ -513,7 +524,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
 #endif
 
     setSize(ctx);
-    int index = engine->updateCtx().tickId % 3;
+    int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
 
     // upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
@@ -525,7 +536,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
                          sizeof(RenderFloat),
                      drawCommandBuffer.triangles.data(), GL_DYNAMIC_DRAW);
         vertexCapacity = drawCommandBuffer.triangles.capacity();
-        checkForGlErrors("glBufferData");
+        checkForGlErrors("array buffer glBufferData");
     } else if (!drawCommandBuffer.triangles.empty()) {
         glBufferData(GL_ARRAY_BUFFER,
                      drawCommandBuffer.triangles.capacity() *
@@ -535,10 +546,28 @@ void Renderer::renderFrame(RenderContext &ctx) {
                         drawCommandBuffer.triangles.size() *
                             sizeof(RenderFloat),
                         drawCommandBuffer.triangles.data());
-        checkForGlErrors("glBufferSubData");
+        checkForGlErrors("array buffer glBufferData");
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    indexBufferOffset = 0;
+    for (auto &drawCall : this->drawCommandBuffer.buf.get<DrawTriangles>()) {
+        indexBufferOffset += drawCall.indices.size();
+    }
+    indexData.resize(indexBufferOffset);
+    indexBufferOffset = 0;
+    for (auto &drawCall : this->drawCommandBuffer.buf.get<DrawTriangles>()) {
+        memcpy(&indexData.data()[indexBufferOffset], drawCall.indices.data(),
+               drawCall.indices.size() * sizeof(uint32_t));
+        indexBufferOffset += drawCall.indices.size();
+    }
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer[index]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(uint32_t),
+                 indexData.data(), GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    checkForGlErrors("element array buffer glBufferData");
+
+    indexBufferOffset = 0;
     dispatchCommands(ctx);
     // printf("triangles: %i\n", this->triangleCount);
 

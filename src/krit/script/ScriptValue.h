@@ -5,6 +5,7 @@
 #include "krit/script/ScriptType.h"
 #include "quickjs.h"
 #include <cassert>
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -26,7 +27,13 @@ struct ScriptEngine;
 //     }
 // }
 
-template <typename T> struct is_class_type {
+template <typename T> struct is_string_type {
+    static constexpr bool value =
+        std::is_same_v<std::decay_t<T>, std::string> ||
+        std::is_same_v<std::decay_t<T>, std::filesystem::path>;
+};
+
+template <typename T, typename enable = void> struct is_class_type {
     static constexpr bool value = std::is_class<T>::value;
 };
 
@@ -46,7 +53,8 @@ template <typename T> struct is_class_type<const std::vector<T>> {
     static constexpr bool value = false;
 };
 
-template <> struct is_class_type<std::string> {
+template <typename T>
+struct is_class_type<T, typename std::enable_if<is_string_type<T>::value>::type> {
     static constexpr bool value = false;
 };
 
@@ -125,30 +133,17 @@ struct ScriptValueFromJs<
 
 // c string from JS value
 template <> struct ScriptValueFromJs<const char *> {
-    static const char *valueFromJs(JSContext *ctx, JSValue val) {
-        return (const char *)JS_ToCString(ctx, val);
-    }
+    static const char *valueFromJs(JSContext *ctx, JSValue val);
 };
 
 // std::string from JS value
-template <> struct ScriptValueFromJs<std::string> {
+template <typename T>
+struct ScriptValueFromJs<T, typename std::enable_if<is_string_type<T>::value>::type> {
     static std::string valueFromJs(JSContext *ctx, JSValue val) {
-        return std::string(
-            ScriptValueFromJs<const char *>::valueFromJs(ctx, val));
-    }
-};
-
-template <> struct ScriptValueFromJs<std::string &> {
-    static std::string valueFromJs(JSContext *ctx, JSValue val) {
-        return std::string(
-            ScriptValueFromJs<const char *>::valueFromJs(ctx, val));
-    }
-};
-
-template <> struct ScriptValueFromJs<const std::string &> {
-    static std::string valueFromJs(JSContext *ctx, JSValue val) {
-        return std::string(
-            ScriptValueFromJs<const char *>::valueFromJs(ctx, val));
+        const char *s = JS_ToCString(ctx, val);
+        std::string result(s);
+        JS_FreeCString(ctx, s);
+        return result;
     }
 };
 
@@ -241,17 +236,11 @@ template <typename T, typename enable = void> struct ScriptValueToJs {
 };
 
 template <> struct ScriptValueToJs<JSValue> {
-    static JSValue valueToJs(JSContext *ctx, JSValue val) {
-        JS_DupValue(ctx, val);
-        return val;
-    }
+    static JSValue valueToJs(JSContext *ctx, JSValue val);
 };
 
 template <> struct ScriptValueToJs<JSValue &> {
-    static JSValue &valueToJs(JSContext *ctx, JSValue &val) {
-        JS_DupValue(ctx, val);
-        return val;
-    }
+    static JSValue &valueToJs(JSContext *ctx, JSValue &val);
 };
 
 template <typename T>
@@ -292,7 +281,7 @@ struct ScriptValueToJs<
                                (std::is_signed<T>::value &&
                                 std::is_integral<T>::value)>::type> {
     static JSValue valueToJs(JSContext *ctx, T val) {
-        return JS_NewInt32(ctx, val);
+        return JS_NewInt32(ctx, static_cast<int>(val));
     }
 };
 
@@ -322,17 +311,7 @@ template <> struct ScriptValueToJs<const char *> {
 };
 
 // std::string to JS value
-template <> struct ScriptValueToJs<std::string> {
-    static JSValue valueToJs(JSContext *ctx, const std::string &val) {
-        return JS_NewStringLen(ctx, val.c_str(), val.size());
-    }
-};
-template <> struct ScriptValueToJs<std::string &> {
-    static JSValue valueToJs(JSContext *ctx, const std::string &val) {
-        return JS_NewStringLen(ctx, val.c_str(), val.size());
-    }
-};
-template <> struct ScriptValueToJs<const std::string &> {
+template <typename T> struct ScriptValueToJs<T, typename std::enable_if<is_string_type<T>::value>::type> {
     static JSValue valueToJs(JSContext *ctx, const std::string &val) {
         return JS_NewStringLen(ctx, val.c_str(), val.size());
     }
