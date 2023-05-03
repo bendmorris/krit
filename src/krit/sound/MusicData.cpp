@@ -13,9 +13,6 @@ MusicData::~MusicData() {
     if (sndFile) {
         sf_close(sndFile);
     }
-    if (io.data) {
-        engine->io->free(io.data);
-    }
 }
 
 }

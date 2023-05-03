@@ -1,6 +1,7 @@
 declare class DrawContext {
     blend: BlendMode;
     smooth: SmoothingMode;
+    shader: SpriteShader;
     color: Color;
     alpha: number;
     lineThickness: number;

@@ -8,6 +8,7 @@ declare class Engine {
     readonly input: InputContext;
     readonly window: Window;
     readonly audio: AudioBackend;
+    readonly fonts: FontManager;
     get scriptContext(): any;
     speed: number;
     // elapsed: number;
@@ -15,7 +16,8 @@ declare class Engine {
     bgColor: Color;
 
     cameras: Array<Camera>;
-    setCursor(c: string): void;
+    addCursor(path: string, name: string, resolution: number): void;
+    setCursor(name: string): void;
 
     getImage(id: string): ImageData;
     getAtlas(id: string): TextureAtlas;

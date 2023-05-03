@@ -41,8 +41,7 @@ struct DrawCall {
     int zIndex = 0;
 
     DrawCall() {}
-
-    DrawCall(DrawKey &key) : key(key) { this->indices.reserve(0x1000); }
+    DrawCall(DrawKey &key) : key(key) { this->indices.reserve(0x100); }
 
     size_t length() { return this->indices.size(); }
 

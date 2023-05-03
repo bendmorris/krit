@@ -32,21 +32,19 @@ struct Shader {
     std::vector<UniformInfo> uniforms;
 
     template <typename T>
-    Shader(const T &vertexSource,
-           std::shared_ptr<std::string_view> fragmentSource)
+    Shader(const T &vertexSource, std::shared_ptr<std::string> fragmentSource)
         : vertexSource(vertexSource), fragmentSource(*fragmentSource) {}
 
     template <typename T>
-    Shader(std::shared_ptr<std::string_view> vertexSource,
-           const T &fragmentSource)
+    Shader(std::shared_ptr<std::string> vertexSource, const T &fragmentSource)
         : vertexSource(*vertexSource), fragmentSource(fragmentSource) {}
 
     template <typename T, typename U>
     Shader(const T &vertexSource, const U &fragmentSource)
         : vertexSource(vertexSource), fragmentSource(fragmentSource) {}
 
-    Shader(std::shared_ptr<std::string_view> vertexSource,
-           std::shared_ptr<std::string_view> fragmentSource)
+    Shader(std::shared_ptr<std::string> vertexSource,
+           std::shared_ptr<std::string> fragmentSource)
         : vertexSource(*vertexSource), fragmentSource(*fragmentSource) {}
 
     virtual ~Shader();
@@ -55,6 +53,7 @@ struct Shader {
     virtual void init();
     virtual void bind(RenderContext &ctx);
     virtual void unbind();
+    virtual size_t stride();
 };
 
 struct UniformValueInfo {
@@ -72,6 +71,7 @@ struct ShaderInstance {
     virtual void init() { shader.init(); }
     virtual void bind(RenderContext &ctx);
     virtual void unbind() { shader.unbind(); }
+    virtual size_t stride() { return shader.stride(); }
 
     void setUniform(const std::string &name, UniformValue value);
 

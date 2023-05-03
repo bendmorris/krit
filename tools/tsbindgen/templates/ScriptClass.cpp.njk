@@ -204,35 +204,7 @@ static const JSCFunctionListEntry protoFuncs{{ cls.name }}[] = {
 
 static JSClassDef classDefMain{{ cls.name }} = {
     .class_name = "{{ cls.name }}",
-    .finalizer = nullptr,
-};
-
-// finalizer definition
-
-static void finalize{{cls.name}}(JSRuntime *rt, JSValue val) {
-    {{ namespacedName(cls) }} *p = static_cast<{{ namespacedName(cls) }}*>(JS_GetOpaque(val, 0));
-    if (p) {
-        delete p;
-    }
-}
-
-static JSClassDef classDefFinalizer{{ cls.name }} = {
-    .class_name = "{{ cls.name }}Finalizer",
-    .finalizer = finalize{{cls.name}},
-};
-
-// shared finalizer definition
-
-static void sharedFinalize{{cls.name}}(JSRuntime *rt, JSValue val) {
-    std::shared_ptr<{{ namespacedName(cls) }}> *p = static_cast<std::shared_ptr<{{ namespacedName(cls) }}>*>(JS_GetOpaque(val, 0));
-    if (p) {
-        delete p;
-    }
-}
-
-static JSClassDef classDefSharedFinalizer{{ cls.name }} = {
-    .class_name = "{{ cls.name }}SharedFinalizer",
-    .finalizer = sharedFinalize{{cls.name}},
+    .finalizer = ScriptEngine::baseFinalizer,
 };
 
 // registration
@@ -298,24 +270,6 @@ template<> void ScriptClass<{{namespacedName(cls)}}>::init(ScriptEngine *engine)
             JS_SetPropertyStr(ctx, ctor, "{{ method.name }}", method);
         }
         {% endfor %}
-    }
-
-    {
-        // finalizer
-        JSValue proto = JS_NewObject(ctx);
-        JSClassID clsId = finalizerId();
-        JS_NewClass(rt, clsId, &classDefFinalizer{{ cls.name }});
-        JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
-        JS_SetClassProto(ctx, clsId, proto);
-    }
-
-    {
-        // shared finalizer
-        JSValue proto = JS_NewObject(ctx);
-        JSClassID clsId = sharedFinalizerId();
-        JS_NewClass(rt, clsId, &classDefSharedFinalizer{{ cls.name }});
-        JS_SetPropertyFunctionList(ctx, proto, nullptr, 0);
-        JS_SetClassProto(ctx, clsId, proto);
     }
 }
 

@@ -22,8 +22,8 @@ private:
     std::unordered_map<std::string, std::string> locales;
     std::unordered_map<std::string_view, std::string_view> strings;
     std::unordered_map<std::string_view, std::string_view> defaultStrings;
-    std::shared_ptr<std::string_view> loaded = nullptr;
-    std::shared_ptr<std::string_view> loadedDefault = nullptr;
+    std::shared_ptr<std::string> loaded = nullptr;
+    std::shared_ptr<std::string> loadedDefault = nullptr;
 };
 
 }

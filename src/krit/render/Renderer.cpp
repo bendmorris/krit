@@ -144,10 +144,11 @@ SpriteShader *Renderer::getDefaultTextShader() {
     return defaultTextSpriteShader;
 }
 
-// static void GLAPIENTRY messageCallback(GLenum source, GLenum type, GLuint id,
-//                                        GLenum severity, GLsizei length,
-//                                        const GLchar *message,
-//                                        const void *userParam) {
+// static void GLAPIENTRY glMessageCallback(GLenum source, GLenum type, GLuint
+// id,
+//                                          GLenum severity, GLsizei length,
+//                                          const GLchar *message,
+//                                          const void *userParam) {
 //     fprintf(stderr,
 //             "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n",
 //             (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : ""), type,
@@ -155,16 +156,6 @@ SpriteShader *Renderer::getDefaultTextShader() {
 // }
 
 Matrix4 _ortho;
-
-static RenderFloat _vertices[] = {
-    -1.0, -1.0, 0.0, 1.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,
-    0.0,  0.0,  1.0, -1.0, 0.0,  1.0, 1.0, 0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,
-    0.0,  0.0,  0.0, 0.0,  -1.0, 1.0, 0.0, 1.0,  0.0, 1.0, 0.0,  0.0, 0.0, 0.0,
-    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 1.0, -1.0, 0.0, 1.0, 1.0,  0.0, 0.0, 0.0,
-    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  1.0, 1.0, 0.0,  1.0, 1.0, 1.0,
-    0.0,  0.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, -1.0, 1.0, 0.0, 1.0,
-    0.0,  1.0,  0.0, 0.0,  0.0,  0.0, 0.0, 0.0,  0.0, 0.0, 0.0,  0.0,
-};
 
 Renderer::Renderer(Window &_window) : window(_window) {
     SDL_Window *window = _window.window;
@@ -190,6 +181,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
 #endif
 
 #if KRIT_USE_GLEW
+    LOG_INFO("glew init");
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
@@ -199,7 +191,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
 #endif
 
     // glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    // glDebugMessageCallback(messageCallback, 0);
+    // glDebugMessageCallback(glMessageCallback, 0);
 
 #if KRIT_ENABLE_TOOLS
     ImGui::CreateContext();
@@ -237,10 +229,6 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glBindVertexArray(this->vao);
     glGenBuffers(DUP_BUFFER_COUNT, this->vertexBuffer);
     glGenBuffers(DUP_BUFFER_COUNT, this->indexBuffer);
-    glGenBuffers(1, &this->sceneShaderVertexBuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(RenderFloat[96]), _vertices,
-                 GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     drawCommandBuffer.defaultTextureShader = getDefaultTextureShader();
@@ -427,8 +415,6 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
     // puts("draw");
     checkForGlErrors("drawCall");
 
-    int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
-
     setSize(ctx);
 
     if (drawCall.length() &&
@@ -441,9 +427,6 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                 shader = drawCall.key.image ? getDefaultTextureShader()
                                             : getDefaultColorShader();
             }
-
-            glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
-            checkForGlErrors("bind buffer");
 
             shader->bind(ctx);
             checkForGlErrors("bind shader");
@@ -464,14 +447,10 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             }
             setBlendMode(drawCall.key.blend);
 
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer[index]);
             glDrawElements(GL_TRIANGLES, drawCall.indices.size(),
                            GL_UNSIGNED_INT,
                            BUFFER_OFFSET(indexBufferOffset * sizeof(uint32_t)));
             checkForGlErrors("drawElements");
-
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-            glBindBuffer(GL_ARRAY_BUFFER, 0);
 
             shader->unbind();
             if (drawCall.key.image) {
@@ -493,10 +472,6 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     setBlendMode(shader->blend);
     // setSmoothingMode(SmoothLinear, nullptr);
 
-    glBindBuffer(GL_ARRAY_BUFFER, this->sceneShaderVertexBuffer);
-    // printf("%i\n", (int)this->sceneShaderVertexBuffer);
-    checkForGlErrors("bindBuffer");
-
     shader->bind(ctx);
     if (shader->matrixIndex > -1) {
         glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho.data());
@@ -505,12 +480,11 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 
     glDrawArrays(GL_TRIANGLES, 0, 6);
     checkForGlErrors("drawArrays");
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
     shader->unbind();
 }
 
 void Renderer::startFrame(RenderContext &ctx) {
+    LOG_DEBUG("start frame");
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::startFrame");
 #endif
@@ -530,25 +504,25 @@ void Renderer::renderFrame(RenderContext &ctx) {
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
     checkForGlErrors("glBindBuffer");
 
-    if (vertexCapacity < drawCommandBuffer.triangles.capacity()) {
+    if (vertexCapacity[index] < drawCommandBuffer.vertexData.capacity()) {
         glBufferData(GL_ARRAY_BUFFER,
-                     drawCommandBuffer.triangles.capacity() *
-                         sizeof(RenderFloat),
-                     drawCommandBuffer.triangles.data(), GL_DYNAMIC_DRAW);
-        vertexCapacity = drawCommandBuffer.triangles.capacity();
+                     drawCommandBuffer.vertexData.capacity() *
+                         sizeof(VertexData),
+                     drawCommandBuffer.vertexData.data(), GL_DYNAMIC_DRAW);
+        vertexCapacity[index] = drawCommandBuffer.vertexData.capacity();
         checkForGlErrors("array buffer glBufferData");
-    } else if (!drawCommandBuffer.triangles.empty()) {
+    } else if (!drawCommandBuffer.vertexData.empty()) {
         glBufferData(GL_ARRAY_BUFFER,
-                     drawCommandBuffer.triangles.capacity() *
-                         sizeof(RenderFloat),
+                     drawCommandBuffer.vertexData.capacity() *
+                         sizeof(VertexData),
                      nullptr, GL_DYNAMIC_DRAW);
-        glBufferSubData(GL_ARRAY_BUFFER, 0,
-                        drawCommandBuffer.triangles.size() *
-                            sizeof(RenderFloat),
-                        drawCommandBuffer.triangles.data());
         checkForGlErrors("array buffer glBufferData");
+        glBufferSubData(GL_ARRAY_BUFFER, 0,
+                        drawCommandBuffer.vertexData.size() *
+                            sizeof(VertexData),
+                        drawCommandBuffer.vertexData.data());
+        checkForGlErrors("array buffer glBufferSubData");
     }
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     indexBufferOffset = 0;
     for (auto &drawCall : this->drawCommandBuffer.buf.get<DrawTriangles>()) {
@@ -564,7 +538,6 @@ void Renderer::renderFrame(RenderContext &ctx) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->indexBuffer[index]);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexData.size() * sizeof(uint32_t),
                  indexData.data(), GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     checkForGlErrors("element array buffer glBufferData");
 
     indexBufferOffset = 0;
@@ -595,6 +568,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
         switch (commandType) {
 #define DISPATCH_COMMAND(cmd)                                                  \
     case cmd:                                                                  \
+        LOG_DEBUG("render command: " #cmd);                                    \
         this->drawCall<cmd>(ctx,                                               \
                             this->drawCommandBuffer.buf.get<cmd>()[index]);    \
         break;
@@ -611,10 +585,25 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 #undef DISPATCH_COMMAND
 
     this->drawCommandBuffer.clear();
+    this->drawCommandBuffer.vertexData.emplace_back(-1.0, -1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
+    this->drawCommandBuffer.vertexData.emplace_back(1.0, -1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
+    this->drawCommandBuffer.vertexData.emplace_back(-1.0, 1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
+    this->drawCommandBuffer.vertexData.emplace_back(1.0, -1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
+    this->drawCommandBuffer.vertexData.emplace_back(1.0, 1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
+    this->drawCommandBuffer.vertexData.emplace_back(-1.0, 1.0, 0.0, 1.0, 0.0,
+                                                    0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
 void Renderer::flip(RenderContext &ctx) {
+    LOG_DEBUG("flip");
     SDL_GL_SwapWindow(engine->window.window);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     // #if TRACY_ENABLE
     //     TracyGpuCollect;

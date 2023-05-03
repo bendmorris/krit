@@ -12,6 +12,9 @@
 #include <SDL2/SDL_pixels.h>
 #include <SDL2/SDL_surface.h>
 #include <cstdint>
+#include <filesystem>
+#include <jpeglib.h>
+#include <png.h>
 #include <string>
 
 namespace krit {
@@ -19,9 +22,36 @@ namespace krit {
 struct RenderContext;
 struct UpdateContext;
 
-static char *yamlStr(yaml_node_t *node) {
-    return static_cast<char *>(static_cast<void *>(node->data.scalar.value));
+struct PngData {
+    const char *data;
+    size_t length;
+};
+
+static void png_read_custom(png_structp png_ptr, png_bytep outBytes,
+                            png_size_t byteCountToRead) {
+    png_voidp io_ptr = png_get_io_ptr(png_ptr);
+    PngData *io = static_cast<PngData *>(io_ptr);
+    if (byteCountToRead > io->length) {
+        byteCountToRead = io->length;
+    }
+    if (io->length > 0) {
+        memcpy(outBytes, io->data, byteCountToRead);
+        io->length -= byteCountToRead;
+        io->data += byteCountToRead;
+    }
 }
+
+struct ImageResolutionInfo {
+    std::filesystem::path extension;
+    int resolution;
+};
+
+// FIXME: this should be dynamic
+static std::unordered_map<std::string, std::vector<ImageResolutionInfo>>
+    resolutions{
+        {".png", {{".720.png", 720}, {".1080.png", 1080}, {".png", 2160}}},
+        {".jpg", {{".720.jpg", 720}, {".1080.jpg", 1080}, {".jpg", 2160}}},
+    };
 
 struct ImageSize {
     int resolution;
@@ -39,178 +69,152 @@ struct ImageInfo {
         : dimensions(w, h), sizes(sizes) {}
 };
 
-static std::unordered_map<std::string, ImageInfo> imageManifest;
-
-void ImageLoader::parseManifest() {
-    if (!engine->io->exists("assets/images.yaml")) {
-        panic("couldn't find image manifest");
-    }
-
-    int len;
-    char *manifest = engine->io->read("assets/images.yaml", &len);
-    yaml_parser_t parser;
-    yaml_parser_initialize(&parser);
-    yaml_parser_set_input_string(&parser, (unsigned char *)manifest, len);
-
-    yaml_document_t doc;
-    if (!yaml_parser_load(&parser, &doc)) {
-        panic("failed to parse asset manifest");
-    }
-
-    yaml_node_t *root = yaml_document_get_root_node(&doc);
-    if (root->type != YAML_SEQUENCE_NODE) {
-        panic("asset manifest didn't contain a top-level list");
-    }
-    for (yaml_node_item_t *it = root->data.sequence.items.start;
-         it < root->data.sequence.items.top; ++it) {
-        yaml_node_t *node = yaml_document_get_node(&doc, *it);
-        if (node->type != YAML_MAPPING_NODE) {
-            panic("asset manifest expected list of maps");
-        }
-        std::string path;
-        int width = 0, height = 0;
-        std::vector<ImageSize> sizes;
-        for (yaml_node_pair_t *it = node->data.mapping.pairs.start;
-             it < node->data.mapping.pairs.top; ++it) {
-            yaml_node_t *keyNode = yaml_document_get_node(&doc, it->key);
-            char *keyName = yamlStr(keyNode);
-            yaml_node_t *value = yaml_document_get_node(&doc, it->value);
-            if (!strcmp("path", keyName)) {
-                path = yamlStr(value);
-            } else if (!strcmp("width", keyName)) {
-                width = atoi(yamlStr(value));
-            } else if (!strcmp("height", keyName)) {
-                height = atoi(yamlStr(value));
-            } else if (!strcmp("sizes", keyName)) {
-                for (yaml_node_pair_t *it = value->data.mapping.pairs.start;
-                     it < value->data.mapping.pairs.top; ++it) {
-                    yaml_node_t *keyNode =
-                        yaml_document_get_node(&doc, it->key);
-                    yaml_node_t *value =
-                        yaml_document_get_node(&doc, it->value);
-                    sizes.emplace_back(atoi(yamlStr(keyNode)), yamlStr(value));
-                }
-            } else {
-                panic("unrecognized asset manifest key: %s", keyName);
-            }
-        }
-        imageManifest.emplace(
-            std::piecewise_construct, std::forward_as_tuple(path),
-            std::forward_as_tuple(width, height, std::move(sizes)));
-    }
-
-    yaml_document_delete(&doc);
-    yaml_parser_delete(&parser);
-
-    engine->io->free(manifest);
-}
-
 template <>
 std::shared_ptr<ImageData>
-AssetLoader<ImageData>::loadAsset(const std::string &path) {
-    // resolve path based on manifest alternates
-    int width = 0, height = 0;
-    float scale = 1.0;
-    std::string pathToLoad;
-    auto mfst = imageManifest.find(path);
-    if (mfst == imageManifest.end()) {
-        pathToLoad = path;
-    } else {
-        auto &info = mfst->second;
-        int best, bestResolution;
-        if (info.dimensions.x() > 0 && info.dimensions.y() > 0) {
-            best = -1;
-            bestResolution = 2160;
-        } else {
-            best = 0;
-            bestResolution = info.sizes[0].resolution;
-        }
-        for (size_t i = 0; i < info.sizes.size(); ++i) {
-            auto &size = info.sizes[i];
-            if (size.resolution >= engine->window.y() &&
-                size.resolution < bestResolution) {
-                best = i;
-                bestResolution = size.resolution;
-            }
-        }
-        if (best < 0) {
+AssetLoader<ImageData>::loadAsset(const std::string &key) {
+    std::shared_ptr<ImageData> img = std::make_shared<ImageData>();
+
+    std::filesystem::path path = key;
+    std::string extension = path.extension().string();
+
+    int windowHeight = engine->window.y();
+
+    ImageResolutionInfo *found = nullptr;
+    std::filesystem::path pathToLoad;
+    std::filesystem::path foundArchive;
+    for (auto &res : resolutions[extension]) {
+        if ((!found || res.resolution >= windowHeight)) {
             pathToLoad = path;
-            width = info.dimensions.x();
-            height = info.dimensions.y();
-        } else {
-            pathToLoad = info.sizes[best].path;
-            scale = static_cast<float>(bestResolution) / 2160.0;
-            auto resolvedInfo = imageManifest.find(pathToLoad);
-            if (resolvedInfo == imageManifest.end()) {
-                panic("resolved image %s missing from manifest", pathToLoad.c_str());
-            } else {
-                width = resolvedInfo->second.dimensions.x() / scale;
-                height = resolvedInfo->second.dimensions.y() / scale;
+            pathToLoad.replace_extension();
+            pathToLoad += res.extension;
+            auto foundAsset = engine->io->find(pathToLoad);
+            if (foundAsset) {
+                found = &res;
+                foundArchive = std::move(*foundAsset);
+                if (res.resolution >= windowHeight) {
+                    break;
+                }
             }
         }
     }
+    if (!found) {
+        LOG_ERROR("Couldn't find a valid resolution for image: %s",
+                  key.c_str());
+        return img;
+    }
 
-    std::shared_ptr<ImageData> img = std::make_shared<ImageData>();
-    img->dimensions.setTo(width, height);
+    pathToLoad = path;
+    pathToLoad.replace_extension();
+    pathToLoad += found->extension;
+
+    float scale = found->resolution / 2160.0;
+
+    std::string s = engine->io->readFile(pathToLoad.c_str());
+
+    const char *imgType;
+    if (extension == ".png") {
+        imgType = "PNG";
+        // use libpng to get the dimensions
+        png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,
+                                                     nullptr, nullptr, nullptr);
+        if (!png_ptr) {
+            LOG_ERROR("Failed to initialize PNG read struct: %s", key.c_str());
+            return img;
+        }
+        png_infop info_ptr = png_create_info_struct(png_ptr);
+        if (!info_ptr) {
+            png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+            LOG_ERROR("Failed to initialize PNG info struct: %s", key.c_str());
+            return img;
+        }
+        PngData png{.data = s.c_str(), .length = s.size()};
+        png_set_read_fn(png_ptr, &png, png_read_custom);
+        png_read_info(png_ptr, info_ptr);
+        png_uint_32 width, height;
+        png_uint_32 ret =
+            png_get_IHDR(png_ptr, info_ptr, &width, &height, nullptr, nullptr,
+                         nullptr, nullptr, nullptr);
+        if (ret != 1) {
+            png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+            LOG_ERROR("Failed to read PNG header: %s", key.c_str());
+            return img;
+        }
+        img->dimensions.setTo(width / scale, height / scale);
+        png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
+    } else if (extension == ".jpg") {
+        imgType = "JPEG";
+        // use libjpeg to get the dimensions
+        static jpeg_error_mgr jerr;
+        jpeg_std_error(&jerr);
+        struct jpeg_decompress_struct cinfo;
+        cinfo.err = &jerr;
+        jpeg_create_decompress(&cinfo);
+        jpeg_mem_src(&cinfo, (const unsigned char *)(void *)s.c_str(),
+                     s.size());
+        int ret = jpeg_read_header(&cinfo, TRUE);
+        if (ret != JPEG_HEADER_OK) {
+            jpeg_destroy_decompress(&cinfo);
+            LOG_ERROR("Failed to read JPEG header: %s", key.c_str());
+            return img;
+        }
+        img->dimensions.setTo(cinfo.image_width / scale,
+                              cinfo.image_height / scale);
+        jpeg_destroy_decompress(&cinfo);
+    } else {
+        LOG_ERROR("Unrecognized image extension for image: %s", key.c_str());
+        return img;
+    }
+
     img->scale = scale;
 
 #ifdef __EMSCRIPTEN__
-    TaskManager::instance->push([pathToLoad, img](UpdateContext &) {
-        SDL_Surface *surface = IMG_Load(pathToLoad.c_str());
-        if (!surface) {
-            panic("IMG_Load(%s) is null: %s\n", pathToLoad.c_str(),
-                  IMG_GetError());
-        }
+    // emscripten loads images by path
+    (void)imgType;
+    TaskManager::instance->push(
+        [=, pathToLoad = std::move(pathToLoad)](UpdateContext &) mutable {
+            auto fullPathToLoad = foundArchive / pathToLoad;
+            SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
+            if (!surface) {
+                panic("IMG_Load(%s) is null: %s\n", fullPathToLoad.c_str(),
+                      IMG_GetError());
+            }
 #else
-    int len;
-    char *s = engine->io->read(pathToLoad.c_str(), &len);
-    size_t pos = pathToLoad.find_last_of('.');
-    const char *extension = &pathToLoad.c_str()[pos];
-    const char *imgType;
-    if (!strncmp(extension, ".png", 4)) {
-        imgType = "PNG";
-    } else if (!strncmp(extension, ".jpg", 4)) {
-        imgType = "JPEG";
-    } else {
-        panic("unrecognized image extension: %s\n", extension);
-    }
-
-    TaskManager::instance->push([=](UpdateContext &) {
-        SDL_RWops *rw = SDL_RWFromConstMem(s, len);
+    TaskManager::instance->push([=, s = std::move(s)](UpdateContext &) mutable {
+        SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
         if (!surface) {
             panic("IMG_Load(%s) is null: %s\n", pathToLoad.c_str(),
                   IMG_GetError());
         }
-        img->dimensions.setTo(surface->w / scale, surface->h / scale);
+        img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);
         SDL_RWclose(rw);
-        engine->io->free(s);
 #endif
-        unsigned int mode =
-            surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+            unsigned int mode =
+                surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
 
-        TaskManager::instance->pushRender([=](RenderContext &render) {
-            // upload texture
-            GLuint texture;
-            glActiveTexture(GL_TEXTURE0);
-            checkForGlErrors("active texture");
-            glGenTextures(1, &texture);
-            if (!texture) {
-                LOG_ERROR("failed to generate texture for image %s", pathToLoad.c_str());
-            }
-            checkForGlErrors("gen textures");
-            glBindTexture(GL_TEXTURE_2D, texture);
-            checkForGlErrors("bind texture");
-            glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
-                         mode, GL_UNSIGNED_BYTE, surface->pixels);
-            checkForGlErrors("texImage2D");
-            glGenerateMipmap(GL_TEXTURE_2D);
-            checkForGlErrors("asset load");
-            glBindTexture(GL_TEXTURE_2D, 0);
-            img->texture = texture;
-            SDL_FreeSurface(surface);
+            TaskManager::instance->pushRender([=](RenderContext &render) {
+                // upload texture
+                GLuint texture;
+                glActiveTexture(GL_TEXTURE0);
+                checkForGlErrors("active texture");
+                glGenTextures(1, &texture);
+                if (!texture) {
+                    LOG_ERROR("failed to generate texture for image %s",
+                              pathToLoad.c_str());
+                }
+                checkForGlErrors("gen textures");
+                glBindTexture(GL_TEXTURE_2D, texture);
+                checkForGlErrors("bind texture");
+                glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
+                             mode, GL_UNSIGNED_BYTE, surface->pixels);
+                checkForGlErrors("texImage2D");
+                glGenerateMipmap(GL_TEXTURE_2D);
+                checkForGlErrors("asset load");
+                glBindTexture(GL_TEXTURE_2D, 0);
+                img->texture = texture;
+                SDL_FreeSurface(surface);
+            });
         });
-    });
 
     return img;
 }
@@ -220,9 +224,9 @@ template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
 }
 
 template <> size_t AssetLoader<ImageData>::cost(ImageData *img) {
-    return (img->dimensions.x() * img->scale) * (img->dimensions.y() * img->scale) * 4;
+    return (img->dimensions.x() * img->scale) *
+           (img->dimensions.y() * img->scale) * 4;
 }
 
 template <> AssetType AssetLoader<ImageData>::type() { return ImageAsset; }
-
 }

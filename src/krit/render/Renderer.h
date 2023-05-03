@@ -21,7 +21,7 @@ struct SpriteShader;
 struct FrameBuffer;
 
 struct Renderer {
-    static const int DUP_BUFFER_COUNT = 2;
+    static const int DUP_BUFFER_COUNT = 1;
 
     SDL_GLContext glContext;
 
@@ -40,10 +40,9 @@ struct Renderer {
 
 private:
     GLuint vao;
-    GLuint sceneShaderVertexBuffer = 0;
     GLuint indexBuffer[DUP_BUFFER_COUNT] = {0};
     GLuint vertexBuffer[DUP_BUFFER_COUNT] = {0};
-    size_t vertexCapacity = 0;
+    size_t vertexCapacity[DUP_BUFFER_COUNT] = {0};
     std::vector<Rectangle> clipStack;
     std::vector<uint32_t> indexData;
     Window &window;

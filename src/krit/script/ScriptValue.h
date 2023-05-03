@@ -20,6 +20,9 @@ namespace krit {
 struct Promise;
 struct ScriptEngine;
 
+JSValue getCachedInstance(JSContext *ctx, int classId, const void *p);
+void setCachedInstance(JSContext *ctx, int classId, const void *p, JSValue val);
+
 // template <typename T> struct Partial<T> {
 //     static void init(JSContext *ctx, T *val, JSValue obj) {
 //         val = T();
@@ -54,7 +57,8 @@ template <typename T> struct is_class_type<const std::vector<T>> {
 };
 
 template <typename T>
-struct is_class_type<T, typename std::enable_if<is_string_type<T>::value>::type> {
+struct is_class_type<T,
+                     typename std::enable_if<is_string_type<T>::value>::type> {
     static constexpr bool value = false;
 };
 
@@ -138,7 +142,8 @@ template <> struct ScriptValueFromJs<const char *> {
 
 // std::string from JS value
 template <typename T>
-struct ScriptValueFromJs<T, typename std::enable_if<is_string_type<T>::value>::type> {
+struct ScriptValueFromJs<
+    T, typename std::enable_if<is_string_type<T>::value>::type> {
     static std::string valueFromJs(JSContext *ctx, JSValue val) {
         const char *s = JS_ToCString(ctx, val);
         std::string result(s);
@@ -311,7 +316,9 @@ template <> struct ScriptValueToJs<const char *> {
 };
 
 // std::string to JS value
-template <typename T> struct ScriptValueToJs<T, typename std::enable_if<is_string_type<T>::value>::type> {
+template <typename T>
+struct ScriptValueToJs<
+    T, typename std::enable_if<is_string_type<T>::value>::type> {
     static JSValue valueToJs(JSContext *ctx, const std::string &val) {
         return JS_NewStringLen(ctx, val.c_str(), val.size());
     }
@@ -329,9 +336,7 @@ struct ScriptValueToJs<T,
                        typename std::enable_if<is_class_type<T>::value>::type> {
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         assert(ScriptClass<T>::generated());
-        JSValue obj = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(obj, (void *)(&val));
-        return obj;
+        return ScriptValueToJs<T &>::valueToJs(ctx, val);
     }
 };
 
@@ -340,8 +345,14 @@ struct ScriptValueToJs<T &,
                        typename std::enable_if<is_class_type<T>::value>::type> {
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         assert(ScriptClass<T>::generated());
+        JSValue instance = getCachedInstance(ctx, ScriptClass<T>::classId(),
+                                             static_cast<const void *>(&val));
+        if (!JS_IsUndefined(instance)) {
+            return instance;
+        }
         JSValue obj = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(obj, (void *)(&val));
+        JS_SetOpaque(obj, const_cast<void *>(static_cast<const void *>(&val)));
+        setCachedInstance(ctx, ScriptClass<T>::classId(), &val, obj);
         return obj;
     }
 };
@@ -354,9 +365,7 @@ struct ScriptValueToJs<T *,
         if (!val) {
             return JS_NULL;
         }
-        JSValue obj = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(obj, (void *)(val));
-        return obj;
+        return ScriptValueToJs<T &>::valueToJs(ctx, *val);
     }
 };
 

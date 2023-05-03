@@ -1,14 +1,15 @@
 #!/bin/bash
-set -x
-ASSET_FILE=$2/assets.zip
+# zipfile_basename source_dir bin_dir
+
+# set -x
+
+ASSET_FILE=$3/$1.zip
 [ -f "$ASSET_FILE" ]
 EXISTS=$?
-RSYNC_CMD="rsync -i --delete -a $1/assets $2"
+RSYNC_CMD="rsync -i --delete -a $2/$1 $3"
 
 echo "running rsync command:" ${RSYNC_CMD}
 RSYNC_OUTPUT=$(${RSYNC_CMD} | grep ">")
-
-cd $2 && python3 $3/tools/asset_registry/asset_registry.py --input $1/assets.yaml --output-dir $2/assets
 
 if [ -n "${RSYNC_OUTPUT}" ] || (( EXISTS != 0 )); then
     # need to rebuild or update
@@ -16,16 +17,16 @@ if [ -n "${RSYNC_OUTPUT}" ] || (( EXISTS != 0 )); then
     if (( EXISTS == 0 )); then
         echo "updating existing assets.zip in place"
         for i in $FILES; do
-            echo "updating $i"
-            cd $2 && zip -r $ASSET_FILE $i
+            cd $3
+            FILE_PATH=`realpath $i`
+            echo "updating $i ($FILE_PATH)"
+            echo "zip $ASSET_FILE \`realpath --relative-to=$3/$1 $FILE_PATH\`"
+            cd $3/$1 && zip $ASSET_FILE `realpath --relative-to=$3/$1 $FILE_PATH`
         done
     else
         echo "rebuilding zip archive"
-        cd $2 && rm -f $ASSET_FILE && zip -r $ASSET_FILE assets
+        cd $2 && rm -f $ASSET_FILE && cd $2/$1 && zip -r $ASSET_FILE ./*
     fi
 else
     echo "no changes to assets"
 fi
-
-echo "updating image manifest"
-cd $2 && zip -r $ASSET_FILE assets/images.yaml

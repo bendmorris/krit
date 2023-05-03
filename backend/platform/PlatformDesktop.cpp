@@ -5,8 +5,7 @@ namespace krit {
 struct PlatformDesktop : public Platform {
     PlatformDesktop() {}
 
-    void mainLoop() override {}
-    const char *dataDir() override {
+    std::string dataDir() override {
         static std::string path;
         if (path.empty()) {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
@@ -26,9 +25,9 @@ struct PlatformDesktop : public Platform {
 #endif
         }
         // TODO: mkdir
-        return path.c_str();
+        return path;
     }
-    const char *configDir() override {
+    std::string configDir() override {
         static std::string path;
         if (path.empty()) {
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) || defined(__NT__)
@@ -48,7 +47,7 @@ struct PlatformDesktop : public Platform {
 #endif
         }
         // TODO: mkdir
-        return path.c_str();
+        return path;
     }
 
     const char *name() override {

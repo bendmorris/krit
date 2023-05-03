@@ -16,17 +16,18 @@ JS_FUNC(console_log) {
 
     for (int i = 0; i < argc; i++) {
         if (i) {
-            putchar(' ');
+            printf(" ");
         }
         str = JS_ToCStringLen(ctx, &len, argv[i]);
         if (!str) {
             return JS_EXCEPTION;
         }
-        fwrite(str, 1, len, stdout);
+        printf("%.*s", static_cast<int>(len), str);
         JS_FreeCString(ctx, str);
     }
 
-    putchar('\n');
+    puts("");
+    fflush(stdout);
     return JS_UNDEFINED;
 }
 
@@ -107,12 +108,9 @@ JS_FUNC(dumpMemoryUsage) {
 }
 
 JS_FUNC(readFile) {
-    int len;
-    char *content = engine->io->read(
-        ScriptValueFromJs<const char *>::valueFromJs(ctx, argv[0]), &len);
-    auto rt = JS_NewStringLen(ctx, content, len);
-    engine->io->free(content);
-    return rt;
+    std::string s = engine->io->readFile(
+        ScriptValueFromJs<const char *>::valueFromJs(ctx, argv[0]));
+    return ScriptValueToJs<std::string>::valueToJs(ctx, s);
 }
 
 JS_FUNC(getImage) {

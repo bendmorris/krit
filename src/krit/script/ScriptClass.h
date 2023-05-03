@@ -15,20 +15,6 @@ template <typename T> struct ScriptClass {
         }
         return id;
     }
-    static JSClassID finalizerId() {
-        static JSClassID id;
-        if (!id) {
-            JS_NewClassID(&id);
-        }
-        return id;
-    }
-    static JSClassID sharedFinalizerId() {
-        static JSClassID id;
-        if (!id) {
-            JS_NewClassID(&id);
-        }
-        return id;
-    }
 
     static void populateFromPartial(JSContext *ctx, T &val, JSValue partial);
     static void init(ScriptEngine *engine);

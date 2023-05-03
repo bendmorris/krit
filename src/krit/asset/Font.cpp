@@ -29,10 +29,9 @@ static FT_Stroker stroker;
 
 template <>
 std::shared_ptr<Font> AssetLoader<Font>::loadAsset(const std::string &path) {
-    int length;
-    char *content = engine->io->read(path.c_str(), &length);
+    std::string content = engine->io->readFile(path);
     // FIXME: do we leak content here, or does FT free it?
-    return std::make_shared<Font>(path, content, length);
+    return std::make_shared<Font>(path, content);
 }
 
 template <> AssetType AssetLoader<Font>::type() { return FontAsset; }
@@ -97,18 +96,17 @@ GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,
     return *found;
 }
 
-Font::Font(const std::string &path, const char *fontData, size_t fontDataLen)
-    : path(path) {
-    this->fontData = (void *)fontData;
+Font::Font(const std::string &path, const std::string &fontData) : path(path) {
     // harfbuzz face initialization
-    blob = hb_blob_create(fontData, fontDataLen, HB_MEMORY_MODE_READONLY,
-                          nullptr, nullptr);
+    this->fontData = fontData;
+    blob = hb_blob_create(this->fontData.c_str(), this->fontData.size(),
+                          HB_MEMORY_MODE_READONLY, nullptr, nullptr);
     face = hb_face_create(blob, 0);
     font = hb_font_create(face);
     hb_font_set_scale(font, 64, 64);
     // freetype face initialization
-    int error = FT_New_Memory_Face(ftLibrary, (const FT_Byte *)fontData,
-                                   fontDataLen, 0, (FT_Face *)&ftFace);
+    int error = FT_New_Memory_Face(ftLibrary, (const FT_Byte *)this->fontData.c_str(),
+                                   this->fontData.size(), 0, (FT_Face *)&ftFace);
     if (error) {
         panic("failed to initialize font: %s", path.c_str());
     }
@@ -126,9 +124,6 @@ Font::~Font() {
     }
     if (blob) {
         hb_blob_destroy(blob);
-    }
-    if (fontData) {
-        engine->io->free((char *)fontData);
     }
 }
 
@@ -243,7 +238,7 @@ void GlyphCache::commitChanges() {
                                FT_STROKER_LINEJOIN_ROUND, 0);
                 FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
             }
-            FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
+            FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_LIGHT, nullptr, true);
             FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
             for (unsigned int i = 0; i < bitmap->bitmap.rows; ++i) {
 #ifndef __EMSCRIPTEN__

@@ -76,14 +76,6 @@ float Engine::time() {
 }
 
 void Engine::run() {
-#ifdef __EMSCRIPTEN__
-    EM_ASM(
-        FS.mkdir('/data');
-        FS.mount(IDBFS, {}, '/data');
-        FS.syncfs(true, function () {});
-    );
-#endif
-
     CrashHandler::init();
 
     appStart = clock.now();
@@ -431,14 +423,12 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
 
 void Engine::addCursor(const std::string &cursorPath,
                        const std::string &cursorName, int resolution) {
-    int len;
-    char *s = engine->io->read(cursorPath.c_str(), &len);
+    std::string s = engine->io->readFile(cursorPath);
 
-    TaskManager::instance->push([=](UpdateContext &) {
-        SDL_RWops *rw = SDL_RWFromConstMem(s, len);
+    TaskManager::instance->push([=, s = std::move(s)](UpdateContext &) mutable {
+        SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
         SDL_RWclose(rw);
-        engine->io->free(s);
 
         SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 0, 0);
 

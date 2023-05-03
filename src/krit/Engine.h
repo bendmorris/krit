@@ -161,7 +161,7 @@ public:
     DECLARE_ASSET_GETTER(Spine, SpineData)
     DECLARE_ASSET_GETTER(Sound, SoundData)
     DECLARE_ASSET_GETTER(Music, MusicData)
-    DECLARE_ASSET_GETTER(Text, std::string_view)
+    DECLARE_ASSET_GETTER(Text, std::string)
     DECLARE_ASSET_GETTER(Particle, ParticleEffect)
 #undef DECLARE_ASSET_GETTER
 

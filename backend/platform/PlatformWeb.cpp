@@ -5,17 +5,10 @@ namespace krit {
 struct PlatformWeb : public Platform {
     PlatformWeb() {}
 
-    void mainLoop() override {}
-    const char *dataDir() override {
-        return "/data";
-    }
-    const char *configDir() override {
-        return "/config";
-    }
+    std::string dataDir() override { return "/data"; }
+    std::string configDir() override { return "/config"; }
 
-    const char *name() override {
-        return "web";
-    }
+    const char *name() override { return "web"; }
 };
 
 std::unique_ptr<Platform> platform() {

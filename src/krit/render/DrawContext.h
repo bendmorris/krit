@@ -17,6 +17,7 @@ struct DrawContext {
     RenderContext *context;
     BlendMode blend = BlendMode::Alpha;
     SmoothingMode smooth = SmoothingMode::SmoothLinear;
+    SpriteShader *shader = nullptr;
     Color color;
     float alpha = 1;
     float lineThickness = 1;

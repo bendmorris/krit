@@ -172,8 +172,19 @@ void AudioBackend::update() {
             alGetSourcei(stream.source->source, AL_BUFFERS_PROCESSED,
                          &buffersProcessed);
             checkForAlErrors("alGetSourcei");
+            bool needBuffers = buffersProcessed > 0;
             while (buffersProcessed--) {
                 stream.feed(false);
+            }
+            if (needBuffers && stream.playing) {
+                if (stream.playing) {
+                    ALenum state;
+                    alGetSourcei(stream.source->source, AL_SOURCE_STATE,
+                                 &state);
+                    if (state != AL_PLAYING) {
+                        alSourcePlay(stream.source->source);
+                    }
+                }
             }
         }
     }
@@ -226,6 +237,7 @@ void AudioStream::play() {
     if (source) {
         alSourcePlay(source->source);
         checkForAlErrors("alSourcePlay");
+        playing = true;
     }
 }
 
@@ -233,6 +245,7 @@ void AudioStream::pause() {
     if (source) {
         alSourcePause(source->source);
         checkForAlErrors("alSourcePause");
+        playing = false;
     }
 }
 
@@ -258,6 +271,7 @@ void AudioStream::stop() {
         bufferPtr = 0;
         source = nullptr;
         data = nullptr;
+        playing = false;
     }
 }
 

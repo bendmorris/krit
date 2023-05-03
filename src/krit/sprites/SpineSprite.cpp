@@ -23,30 +23,12 @@
 
 struct KritSpineExtension : public spine::DefaultSpineExtension {
     char *_readFile(const spine::String &path, int *length) override {
-        return krit::engine->io->read(path.buffer(), length);
-    }
-
-    void *_alloc(size_t size, const char *_1, int _2) override {
-        if (!size) {
-            return nullptr;
-        }
-        return krit::engine->io->alloc(size);
-    }
-
-    void *_calloc(size_t size, const char *file, int line) override {
-        if (!size) {
-            return nullptr;
-        }
-        return krit::engine->io->alloc(size);
-    }
-
-    void *_realloc(void *ptr, size_t size, const char *file,
-                   int line) override {
-        return krit::engine->io->realloc(ptr, size);
-    }
-
-    void _free(void *mem, const char *_1, int _2) override {
-        krit::engine->io->free(mem);
+        std::string s = krit::engine->io->readFile(path.buffer());
+        *length = s.size();
+        char *c = (char *)malloc(s.size() + 1);
+        memcpy(c, s.c_str(), s.size());
+        c[s.size()] = 0;
+        return c;
     }
 };
 
@@ -74,10 +56,9 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
         new spine::SkeletonBinary(data->atlas.get()));
     // data->json = std::unique_ptr<spine::SkeletonJson>(
     //     new spine::SkeletonJson(data->atlas.get()));
-    int length;
-    unsigned char *s = (unsigned char *)engine->io->read(path.c_str(), &length);
+    std::string s = engine->io->readFile(path.c_str());
     data->skeletonData = std::unique_ptr<spine::SkeletonData>(
-        data->binary->readSkeletonData(s, length));
+        data->binary->readSkeletonData((unsigned char *)s.c_str(), s.size()));
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
     //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
@@ -85,7 +66,6 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
-    engine->io->free((char *)s);
     return data;
 }
 

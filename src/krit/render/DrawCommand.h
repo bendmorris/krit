@@ -53,8 +53,19 @@ struct AutoClipBounds {
     size_t clipIndex;
 };
 
+struct VertexData {
+    Vec4f position;
+    Vec2f texCoord;
+    Color color;
+
+    VertexData() {}
+    VertexData(float x, float y, float z, float w, float uvx, float uvy,
+               float r, float g, float b, float a)
+        : position(x, y, z, w), texCoord(uvx, uvy), color(r, g, b, a) {}
+};
+
 struct DrawCommandBuffer {
-    std::vector<float> triangles;
+    std::vector<VertexData> vertexData;
     std::vector<AutoClipBounds> boundsStack;
     CommandBuffer<DrawCall, Rectangle, char, SetRenderTargetArgs, SceneShader *,
                   Color, ImDrawData *>
@@ -63,25 +74,15 @@ struct DrawCommandBuffer {
     SpriteShader *defaultTextureShader = nullptr;
     SpriteShader *defaultColorShader = nullptr;
 
-    DrawCommandBuffer() {
-        triangles.reserve(0x1000);
-        buf.get<DrawTriangles>().reserve(0x80);
-        buf.get<PushClipRect>().reserve(0x10);
-        buf.get<PopClipRect>().reserve(0x10);
-        buf.get<SetRenderTarget>().reserve(0x10);
-        buf.get<DrawSceneShader>().reserve(0x10);
-        buf.get<ClearColor>().reserve(0x10);
-    }
+    DrawCommandBuffer();
 
     virtual ~DrawCommandBuffer() {}
 
     DrawCall &getDrawCall(const DrawKey &key, int zIndex = 0);
 
-    void clear() {
-        triangles.clear();
-        buf.clear();
-        currentRenderTarget = nullptr;
-    }
+    DrawCommandBuffer &operator+=(DrawCommandBuffer &other);
+
+    void clear();
 
     void addTriangle(RenderContext &ctx, const DrawKey &key, const Triangle &t,
                      const Triangle &uv, const Color &color, int zIndex = 0);

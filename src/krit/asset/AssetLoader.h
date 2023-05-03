@@ -37,7 +37,7 @@ DECLARE_ASSET_LOADER2(Font)
 DECLARE_ASSET_LOADER2(SoundData)
 DECLARE_ASSET_LOADER2(MusicData)
 DECLARE_ASSET_LOADER2(ParticleEffect)
-DECLARE_ASSET_LOADER(std::string_view)
+DECLARE_ASSET_LOADER(std::string)
 
 struct ImageLoader {
     static void parseManifest();

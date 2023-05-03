@@ -164,11 +164,10 @@ static void parseParam(yaml_document_t *doc, yaml_node_t *node,
 }
 
 std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
-    int len;
-    char *manifest = engine->io->read(path.c_str(), &len);
+    std::string manifest = engine->io->readFile(path.c_str());
     yaml_parser_t parser;
     yaml_parser_initialize(&parser);
-    yaml_parser_set_input_string(&parser, (unsigned char *)manifest, len);
+    yaml_parser_set_input_string(&parser, (unsigned char *)manifest.c_str(), manifest.size());
     yaml_document_t doc;
     if (!yaml_parser_load(&parser, &doc)) {
         panic("failed to parse particle spec");
@@ -256,7 +255,6 @@ std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
 
     yaml_document_delete(&doc);
     yaml_parser_delete(&parser);
-    engine->io->free(manifest);
 
     return effect;
 }

@@ -25,6 +25,7 @@ struct AudioStream {
     static const int NUM_BUFFERS = 8;
 
     bool repeat = false;
+    bool playing = false;
 
     AudioStream(std::shared_ptr<MusicData> data = nullptr) : data(data) {}
 
@@ -51,6 +52,7 @@ struct AudioStream {
         onLoopData = nullptr;
         source = nullptr;
         bufferPtr = 0;
+        playing = false;
     }
 
 private:
@@ -68,9 +70,8 @@ private:
 };
 
 struct VirtualIo {
-    int length = 0;
     int cursor = 0;
-    char *data = nullptr;
+    std::string data;
 };
 
 struct AudioBackend {

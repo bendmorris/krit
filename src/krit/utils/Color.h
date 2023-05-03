@@ -48,6 +48,13 @@ struct Color {
     }
 
     void setTo(unsigned c) { *this = c; }
+    Color &copyFrom(const Color &other) {
+        r = other.r;
+        g = other.g;
+        b = other.b;
+        a = other.a;
+        return *this;
+    }
     // void setTo(float r, float g, float b) {
     //     this->r = r;
     //     this->g = g;

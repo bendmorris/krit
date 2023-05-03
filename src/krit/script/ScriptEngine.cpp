@@ -1,6 +1,7 @@
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptAllocator.h"
 #include "krit/script/ScriptClass.h"
+#include "krit/utils/Log.h"
 #include <cstring>
 #include <memory>
 #include <stdio.h>
@@ -12,6 +13,16 @@ extern Engine *engine;
 
 std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
     ScriptEngine::scriptClassInitializers;
+
+void ScriptEngine::baseFinalizer(JSRuntime *rt, JSValue val) {
+    void *p = JS_GetOpaque(val, 0);
+    if (p) {
+        LOG_DEBUG("remove cached instance %p", p);
+        ScriptEngine *engine =
+            static_cast<ScriptEngine *>(JS_GetRuntimeOpaque(rt));
+        engine->instances.erase(std::make_pair(JS_GetClassID(val), p));
+    }
+}
 
 static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
     const char *str = JS_ToCString(ctx, val);
@@ -98,6 +109,9 @@ ScriptEngine::ScriptEngine() {
     JS_FreeValue(ctx, finalizerName);
     JS_FreeValue(ctx, symbol);
     JS_FreeValue(ctx, globalObj);
+
+    JS_NewClassID(&finalizerId);
+    JS_NewClass(rt, finalizerId, &FinalizerData::classDefFinalizer);
 
     if (scriptClassInitializers) {
         for (auto &init : *scriptClassInitializers) {

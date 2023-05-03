@@ -104,19 +104,18 @@ struct FontManager {
 };
 
 struct Font {
-    Font(const std::string &path, const char *fontData, size_t fontDataLen);
+    Font(const std::string &path, const std::string &fontData);
     Font() {}
     ~Font();
     Font(Font &&other) {
         this->face = other.face;
         this->font = other.font;
         this->ftFace = other.ftFace;
-        this->fontData = other.fontData;
+        this->fontData = std::move(other.fontData);
         this->path = std::move(other.path);
         other.face = nullptr;
         other.font = nullptr;
         other.ftFace = nullptr;
-        other.fontData = nullptr;
     }
 
     bool ligatures = true;
@@ -131,7 +130,7 @@ private:
     hb_face_t *face = nullptr;
     hb_font_t *font = nullptr;
     void *ftFace = nullptr;
-    void *fontData = nullptr;
+    std::string fontData;
     friend struct GlyphCache;
     friend struct Text;
     friend struct TextParser;

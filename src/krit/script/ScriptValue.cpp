@@ -1,7 +1,25 @@
 #include "ScriptValue.h"
 #include "krit/Engine.h"
+#include "krit/utils/Log.h"
 
 namespace krit {
+
+JSValue getCachedInstance(JSContext *ctx, int classId, const void *p) {
+    ScriptEngine *engine =
+        static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+    auto found = engine->instances.find(std::make_pair(classId, p));
+    if (found == engine->instances.end()) {
+        return JS_UNDEFINED;
+    }
+    LOG_DEBUG("get cached instance %p = %p", p, JS_GetOpaque(found->second, 0));
+    return JS_DupValue(ctx, found->second);
+}
+void setCachedInstance(JSContext *ctx, int classId, const void *p, JSValue val) {
+    ScriptEngine *engine =
+        static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+    engine->instances[std::make_pair(classId, p)] = val;
+    LOG_DEBUG("set cached instance %p = %p", p, JS_GetOpaque(val, 0));
+}
 
 /**
  * If a function returns a JSValue by value, we assume it's a live, newly

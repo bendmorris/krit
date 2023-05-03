@@ -12,7 +12,7 @@
 namespace krit {
 
 static sf_count_t sf_vio_get_filelen(void *_io) {
-    return static_cast<VirtualIo *>(_io)->length;
+    return static_cast<VirtualIo *>(_io)->data.size();
 }
 static sf_count_t sf_vio_seek(sf_count_t offset, int whence, void *_io) {
     VirtualIo *io = static_cast<VirtualIo *>(_io);
@@ -26,7 +26,7 @@ static sf_count_t sf_vio_seek(sf_count_t offset, int whence, void *_io) {
             break;
         }
         case SEEK_END: {
-            io->cursor = io->length + offset;
+            io->cursor = io->data.size() + offset;
             break;
         }
     }
@@ -34,14 +34,15 @@ static sf_count_t sf_vio_seek(sf_count_t offset, int whence, void *_io) {
 }
 static sf_count_t sf_vio_read(void *buf, sf_count_t bytes, void *_io) {
     VirtualIo *io = static_cast<VirtualIo *>(_io);
-    int toRead = std::min(io->length - io->cursor, static_cast<int>(bytes));
-    memcpy(buf, &io->data[io->cursor], toRead);
+    int toRead = std::min<int>(static_cast<int>(io->data.size()) - io->cursor,
+                               static_cast<int>(bytes));
+    memcpy(buf, &io->data.c_str()[io->cursor], toRead);
     io->cursor += toRead;
     return toRead;
 }
 static sf_count_t sf_vio_write(const void *buf, sf_count_t bytes, void *_io) {
     VirtualIo *io = static_cast<VirtualIo *>(_io);
-    memcpy(&io->data[io->cursor], buf, bytes);
+    memcpy((void*)&io->data.c_str()[io->cursor], buf, bytes);
     io->cursor += bytes;
     return bytes;
 }
@@ -58,15 +59,12 @@ static SF_VIRTUAL_IO vio = (SF_VIRTUAL_IO){
 };
 
 static SNDFILE *loadSoundFile(VirtualIo &io, const std::string &path,
-                              SF_INFO &sfInfo, char **data) {
-    *data = engine->io->read(path.c_str(), &io.length);
-    io.data = *data;
+                              SF_INFO &sfInfo) {
+    io.data = engine->io->readFile(path);
     SNDFILE *sndFile = sf_open_virtual(&vio, SFM_READ, &sfInfo, &io);
     if (!sndFile) {
         Log::error("error loading sound asset %s: %s\n", path.c_str(),
                    sf_strerror(nullptr));
-        engine->io->free(*data);
-        *data = io.data = nullptr;
         return nullptr;
     }
     return sndFile;
@@ -89,8 +87,7 @@ AssetLoader<SoundData>::loadAsset(const std::string &path) {
     VirtualIo io;
     std::shared_ptr<SoundData> s = std::make_shared<SoundData>();
     SF_INFO sfInfo;
-    char *fileData;
-    SNDFILE *sndFile = loadSoundFile(io, path, sfInfo, &fileData);
+    SNDFILE *sndFile = loadSoundFile(io, path, sfInfo);
     if (!sndFile) {
         return nullptr;
     }
@@ -106,7 +103,6 @@ AssetLoader<SoundData>::loadAsset(const std::string &path) {
     int16_t *data = new int16_t[len];
     sf_read_short(sndFile, data, len);
     sf_close(sndFile);
-    engine->io->free(fileData);
 
     alGenBuffers(1, &s->buffer);
     alBufferData(s->buffer, format, data, len * 2, s->sampleRate);
@@ -130,8 +126,7 @@ std::shared_ptr<MusicData>
 AssetLoader<MusicData>::loadAsset(const std::string &path) {
     std::shared_ptr<MusicData> s = std::make_shared<MusicData>();
     SF_INFO sfInfo = {0};
-    char *data = nullptr;
-    SNDFILE *sndFile = loadSoundFile(s->io, path, sfInfo, &data);
+    SNDFILE *sndFile = loadSoundFile(s->io, path, sfInfo);
     if (!sndFile) {
         return nullptr;
     }

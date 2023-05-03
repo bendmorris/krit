@@ -122,7 +122,7 @@ template <typename... AssetTypes> struct AssetCacheBase {
 };
 
 struct AssetCache
-    : public AssetCacheBase<ImageData, TextureAtlas, Font, std::string_view,
+    : public AssetCacheBase<ImageData, TextureAtlas, Font, std::string,
                             SpineData, SoundData, MusicData, ParticleEffect> {
     void update();
 };

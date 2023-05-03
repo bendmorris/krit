@@ -14,7 +14,7 @@ void TextMap::setLocale(const std::string &key) {
     if (locale != key) {
         strings.clear();
         locale = key;
-        loaded = AssetLoader<std::string_view>::loadAsset(locales[key]);
+        loaded = AssetLoader<std::string>::loadAsset(locales[key]);
         const char *current = loaded->data();
         size_t remaining = loaded->length();
         const char *nextNewline, *nextTab;

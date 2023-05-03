@@ -32,11 +32,7 @@ std::pair<int, int> parseTuple(std::string &x) {
 }
 
 TextureAtlas::TextureAtlas(const std::string &path) {
-    int len;
-    char *data = engine->io->read(path.c_str(), &len);
-    std::string s(data, len);
-    engine->io->free(data);
-
+    std::string s = engine->io->readFile(path);
     std::istringstream input(s);
     std::string line;
     while (std::getline(input, line)) {

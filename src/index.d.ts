@@ -1,3 +1,4 @@
+/// <reference path="krit/asset/Font.d.ts"/>
 /// <reference path="krit/asset/TextureAtlas.d.ts"/>
 /// <reference path="krit/Camera.d.ts"/>
 /// <reference path="krit/data/DataModel.d.ts"/>

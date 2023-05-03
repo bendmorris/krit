@@ -10,6 +10,7 @@
 #include "krit/render/DrawCommand.h"
 #include "krit/render/Shader.h"
 #include "krit/utils/Color.h"
+#include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 
 namespace krit {
@@ -105,7 +106,9 @@ void Shader::init() {
     }
 }
 
-static void *offset(int n) { return (void *)(sizeof(RenderFloat) * n); }
+static void *offset(intptr_t n) { return (void *)n; }
+
+size_t Shader::stride() { return sizeof(VertexData); }
 
 void Shader::bind(RenderContext &ctx) {
     this->init();
@@ -113,41 +116,25 @@ void Shader::bind(RenderContext &ctx) {
     glUseProgram(this->program);
     checkForGlErrors("glUseProgram");
 
-    const size_t stride = 64;
-
+    size_t stride = this->stride();
     bool hasTexCoord = texCoordIndex > -1;
     bool hasColor = colorIndex > -1;
 
     glEnableVertexAttribArray(positionIndex);
     checkForGlErrors("glEnableVertexAttribArray");
-    if (hasTexCoord && hasColor) {
+    LOG_DEBUG("shader bind: pos=%i tex=%i col=%i", positionIndex, texCoordIndex,
+              colorIndex);
+    glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
+                          offset(offsetof(VertexData, position)));
+    if (hasTexCoord) {
         glEnableVertexAttribArray(texCoordIndex);
-        glEnableVertexAttribArray(colorIndex);
-        checkForGlErrors("1");
-        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(0));
-        checkForGlErrors("2");
         glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
-                              offset(4));
-        checkForGlErrors("2.5");
-        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(6));
-        checkForGlErrors("3");
-    } else if (hasColor) {
+                              offset(offsetof(VertexData, texCoord)));
+    }
+    if (hasColor) {
         glEnableVertexAttribArray(colorIndex);
-        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(0));
         glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(4));
-    } else if (hasTexCoord) {
-        glEnableVertexAttribArray(texCoordIndex);
-        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(0));
-        glVertexAttribPointer(texCoordIndex, 2, GL_FLOAT, GL_FALSE, stride,
-                              offset(4));
-    } else {
-        glVertexAttribPointer(positionIndex, 4, GL_FLOAT, GL_FALSE, stride,
-                              offset(0));
+                              offset(offsetof(VertexData, color)));
     }
     checkForGlErrors("attrib pointers");
 }
@@ -226,7 +213,9 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 } else if (uniformName == "uInverseMatrix") {
                     Matrix4 inverseMatrix;
                     inverseMatrix.identity();
-                    ctx.camera->getTransformationMatrix(inverseMatrix, ctx.camera->viewportWidth(), ctx.camera->viewportHeight());
+                    ctx.camera->getTransformationMatrix(
+                        inverseMatrix, ctx.camera->viewportWidth(),
+                        ctx.camera->viewportHeight());
                     inverseMatrix.invert();
                     glUniformMatrix4fv(i, 1, GL_FALSE, inverseMatrix.data());
                 }
@@ -241,8 +230,10 @@ void ShaderInstance::bind(RenderContext &ctx) {
                 glActiveTexture(GL_TEXTURE0 + textureIndex);
                 if (uniform.imgPtrValue->texture) {
                     glBindTexture(GL_TEXTURE_2D, uniform.imgPtrValue->texture);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                                    GL_REPEAT);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                                    GL_REPEAT);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
                                     GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER,

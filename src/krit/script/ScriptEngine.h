@@ -1,6 +1,7 @@
 #ifndef KRIT_SCRIPT_SCRIPTENGINE
 #define KRIT_SCRIPT_SCRIPTENGINE
 
+#include "krit/script/ScriptFinalizer.h"
 #include "krit/script/ScriptValue.h"
 #include "krit/utils/Panic.h"
 #include "quickjs.h"
@@ -12,6 +13,7 @@
 #include <type_traits>
 #include <unordered_map>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace krit {
@@ -19,6 +21,15 @@ namespace krit {
 template <class T, std::size_t = sizeof(T)>
 std::true_type is_complete_impl(T *);
 std::false_type is_complete_impl(...);
+
+struct hash_instance_pair {
+    template <class T1, class T2>
+    size_t operator()(const std::pair<T1, T2> &p) const {
+        // it's cheaper to just let multiple values for the same pointer land in the same bucket
+        // than always calculate and xor two hashes in an attempt to avoid collisions
+        return std::hash<T2>{}(p.second);
+    }
+};
 
 template <class T>
 using is_complete = decltype(is_complete_impl(std::declval<T *>()));
@@ -74,6 +85,8 @@ struct ScriptEngine {
         scriptClassInitializers->push_back(initializer);
     }
 
+    static void baseFinalizer(JSRuntime *rt, JSValue val);
+
     template <typename I>
     static std::string n2hexstr(I w, size_t hex_len = sizeof(I) << 1) {
         static const char *digits = "0123456789abcdef";
@@ -88,6 +101,9 @@ struct ScriptEngine {
     JSValue exports = JS_UNDEFINED;
     void *userData;
     JSValue finalizerSymbol = JS_UNDEFINED;
+    JSClassID finalizerId = 0;
+    std::unordered_map<std::pair<int, const void *>, JSValue, hash_instance_pair>
+        instances;
 
     ScriptEngine();
     ~ScriptEngine();
@@ -231,13 +247,26 @@ struct ScriptEngine {
         }
         JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
         JS_SetOpaque(val, data);
-        JSClassID finalizerId = ScriptClass<T>::finalizerId();
-        JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
-        JS_SetOpaque(finalizer, data);
+        tagOwned<T>(val, data);
+        return val;
+    }
+
+    template <typename T>
+    void tagOwned(JSValue val, void *data, bool explicitDestruct = false) {
+        JSValue finalizer =
+            JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
+        FinalizerData *f =
+            static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
+        new (f) FinalizerData();
+        if (explicitDestruct) {
+            f->ownExplicitDestruct<T>(data);
+        } else {
+            f->own<T>(data);
+        }
+        JS_SetOpaque(finalizer, f);
         JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
                        finalizer);
         JS_FreeValue(ctx, finalizerSymbol);
-        return val;
     }
 
     template <typename T> JSValue createShared(std::shared_ptr<T> data) {
@@ -246,14 +275,21 @@ struct ScriptEngine {
         }
         JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
         JS_SetOpaque(val, data.get());
-        JSClassID finalizerId = ScriptClass<T>::sharedFinalizerId();
-        JSValue finalizer = JS_NewObjectClass(ctx, finalizerId);
-        std::shared_ptr<T> *sharedCpy = new std::shared_ptr<T>(data);
-        JS_SetOpaque(finalizer, sharedCpy);
+        tagShared(val, data);
+        return val;
+    }
+
+    void tagShared(JSValue val, std::shared_ptr<void> data) {
+        JSValue finalizer =
+            JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
+        FinalizerData *f =
+            static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
+        new (f) FinalizerData();
+        f->share(data);
+        JS_SetOpaque(finalizer, f);
         JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
                        finalizer);
         JS_FreeValue(ctx, finalizerSymbol);
-        return val;
     }
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
@@ -294,9 +330,9 @@ template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {
     }
 };
 
-template <typename T> struct ScriptValueToJs<std::unique_ptr<T>&> {
+template <typename T> struct ScriptValueToJs<std::unique_ptr<T> &> {
     static JSValue valueToJs(JSContext *ctx, std::unique_ptr<T> &val) {
-        return ScriptValueToJs<T*>::valueToJs(ctx, val.get());
+        return ScriptValueToJs<T *>::valueToJs(ctx, val.get());
     }
 };
 
@@ -312,14 +348,18 @@ template <typename T> struct ScriptValueFromJs<std::shared_ptr<T>> {
         if (!JS_IsObject(finalizer)) {
             return nullptr;
         }
-        void *opaque =
-            JS_GetOpaque(finalizer, ScriptClass<T>::sharedFinalizerId());
-        if (!opaque) {
+        FinalizerData *f = static_cast<FinalizerData *>(
+            JS_GetOpaque(finalizer, engine->finalizerId));
+        if (!f) {
+            assert(false);
+            return nullptr;
+        }
+        if (!std::holds_alternative<SharedData>(f->data)) {
             assert(false);
             return nullptr;
         }
         JS_FreeValue(ctx, finalizer);
-        return *static_cast<std::shared_ptr<T> *>(opaque);
+        return std::static_pointer_cast<T>(std::get<SharedData>(f->data).p);
     }
 };
 

@@ -7,14 +7,17 @@ option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
 option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
+option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" ON)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\" -fno-omit-frame-pointer -fasynchronous-unwind-tables")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
-set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF} -DTRACY_ENABLE")
+set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
+
+# FIXME: -DTRACY_ENABLE when tracy is on...
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wall -ffunction-sections -fdata-sections -Os -fno-rtti")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
-set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -DTRACY_ENABLE -Wno-sometimes-uninitialized")
+set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -Wno-sometimes-uninitialized -g")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 set(CMAKE_CXX_FLAGS_ASAN "${CMAKE_CXX_FLAGS_DEBUG} ${CMAKE_CXX_FLAGS_ASAN} -fsanitize=address -fsanitize=undefined")
 
@@ -83,14 +86,17 @@ else()
     message(FATAL_ERROR "Unrecognized platform")
 endif()
 
+if(KRIT_USE_GLEW)
+    add_definitions(-DKRIT_USE_GLEW)
+    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/src/GL/glew.c)
+endif()
+
 if(KRIT_BACKEND_IO STREQUAL "File")
     list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/io/IoFileHelper.cpp
         ${KRIT_DIR}/backend/io/IoFile.cpp
     )
 elseif(KRIT_BACKEND_IO STREQUAL "Zip")
     list(APPEND KRIT_SRC_FILES
-        ${KRIT_DIR}/backend/io/IoFileHelper.cpp
         ${KRIT_DIR}/backend/io/IoZip.cpp
     )
 else()
@@ -146,10 +152,12 @@ file(GLOB_RECURSE KRIT_GENERATED_FILES
 
 if(CMAKE_BUILD_TYPE MATCHES PROF)
     message(STATUS "profiling enabled")
-    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
+    # list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
 endif()
 
-add_definitions(-DDUMP_LEAKS)
+if(KRIT_QUICKJS_DUMP_LEAKS)
+    add_definitions(-DDUMP_LEAKS)
+endif()
 
 list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/quickjs.h
@@ -208,15 +216,6 @@ target_link_libraries(${PROJECT_NAME}
     "-static-libgcc"
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
-
-if(KRIT_BUILD_ASSETS)
-    add_custom_target(
-        copy-assets ALL
-        COMMAND
-        ${KRIT_DIR}/tools/update_assets.sh ${CMAKE_SOURCE_DIR} ${CMAKE_BINARY_DIR} ${KRIT_DIR}
-        BYPRODUCTS assets.zip ${CMAKE_CURRENT_BINARY_DIR}/images.yaml
-    )
-endif()
 
 file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
     ${KRIT_DIR}/tools/tsbindgen/src/*.ts

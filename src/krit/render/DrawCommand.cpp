@@ -1,13 +1,28 @@
 #include "krit/render/DrawCommand.h"
-
-#include <memory>
-
+#include "imgui.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/ImageData.h"
+#include <memory>
 
 namespace krit {
 struct Triangle;
+
+DrawCommandBuffer::DrawCommandBuffer() {
+    vertexData.reserve(0x100);
+    buf.get<DrawTriangles>().reserve(0x80);
+    buf.get<PushClipRect>().reserve(0x10);
+    buf.get<PopClipRect>().reserve(0x10);
+    buf.get<SetRenderTarget>().reserve(0x10);
+    buf.get<DrawSceneShader>().reserve(0x10);
+    buf.get<ClearColor>().reserve(0x10);
+}
+
+void DrawCommandBuffer::clear() {
+    vertexData.clear();
+    buf.clear();
+    currentRenderTarget = nullptr;
+}
 
 DrawCall &DrawCommandBuffer::getDrawCall(const DrawKey &key, int zIndex) {
     auto &types = this->buf.commandTypes;
@@ -71,23 +86,31 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
     }
 }
 
+static inline void addVertex(VertexData &to, float x, float y, float z,
+                             float uvx, float uvy, const Color &c) {
+    to.position.setTo(x, y, z, 1.0);
+    to.texCoord.setTo(uvx, uvy);
+    to.color.copyFrom(c);
+}
+
+static inline void addVertex(VertexData &to, const Vec3f &t, const Vec3f &uv,
+                             const Color &c) {
+    to.position.setTo(t.x(), t.y(), t.z(), 1.0);
+    to.texCoord.setTo(uv.x(), uv.y());
+    to.color.copyFrom(c);
+}
+
 void DrawCommandBuffer::addTriangle(DrawCall &draw, const Triangle &t,
                                     const Triangle &uv, const Color &color1,
                                     const Color &color2, const Color &color3) {
-    size_t i = triangles.size();
-    triangles.resize(i + 48);
-    SpriteShader *s = draw.key.shader ? draw.key.shader
-                                      : draw.key.image ? defaultTextureShader
-                                                       : defaultColorShader;
-    s->prepareVertex(triangles.data() + i, t.p1.x(), t.p1.y(), t.p1.z(),
-                     uv.p1.x(), uv.p1.y(), color1);
-    s->prepareVertex(triangles.data() + i + 16, t.p2.x(), t.p2.y(), t.p2.z(),
-                     uv.p2.x(), uv.p2.y(), color2);
-    s->prepareVertex(triangles.data() + i + 32, t.p3.x(), t.p3.y(), t.p3.z(),
-                     uv.p3.x(), uv.p3.y(), color3);
-    draw.indices.push_back(i / 16);
-    draw.indices.push_back(i / 16 + 1);
-    draw.indices.push_back(i / 16 + 2);
+    size_t i = vertexData.size();
+    vertexData.resize(i + 3);
+    addVertex(vertexData[i], t.p1, uv.p1, color1);
+    addVertex(vertexData[i + 1], t.p2, uv.p2, color2);
+    addVertex(vertexData[i + 2], t.p3, uv.p3, color3);
+    draw.indices.push_back(i);
+    draw.indices.push_back(i + 1);
+    draw.indices.push_back(i + 2);
 
     if (boundsStack.size()) {
         float x1 = std::min({t.p1.x(), t.p2.x(), t.p3.x()});
@@ -107,17 +130,14 @@ void DrawCommandBuffer::addTriangle(DrawCall &draw, float x1, float y1,
                                     float x3, float y3, float z3, float uv1,
                                     float uv2, float uv3, float uv4, float uv5,
                                     float uv6, const Color &color) {
-    size_t i = triangles.size();
-    triangles.resize(i + 48);
-    SpriteShader *s = draw.key.shader ? draw.key.shader
-                                      : draw.key.image ? defaultTextureShader
-                                                       : defaultColorShader;
-    s->prepareVertex(triangles.data() + i, x1, y1, z1, uv1, uv2, color);
-    s->prepareVertex(triangles.data() + i + 16, x2, y2, z2, uv3, uv4, color);
-    s->prepareVertex(triangles.data() + i + 32, x3, y3, z3, uv5, uv6, color);
-    draw.indices.push_back(i / 16);
-    draw.indices.push_back(i / 16 + 1);
-    draw.indices.push_back(i / 16 + 2);
+    size_t i = vertexData.size();
+    vertexData.resize(i + 3);
+    addVertex(vertexData[i], x1, y1, z1, uv1, uv2, color);
+    addVertex(vertexData[i + 1], x2, y2, z2, uv3, uv4, color);
+    addVertex(vertexData[i + 2], x3, y3, z3, uv5, uv6, color);
+    draw.indices.push_back(i);
+    draw.indices.push_back(i + 1);
+    draw.indices.push_back(i + 2);
 
     if (boundsStack.size()) {
         float xmin = std::min({x1, x2, x3});
@@ -166,25 +186,19 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
     ll = matrix * ll;
     lr = matrix * lr;
 
-    size_t i = triangles.size();
-    triangles.resize(i + 64);
-    SpriteShader *s = draw.key.shader ? draw.key.shader
-                                      : draw.key.image ? defaultTextureShader
-                                                       : defaultColorShader;
-    s->prepareVertex(triangles.data() + i, ul.x(), ul.y(), ul.z(), uvx1, uvy1,
-                     color);
-    s->prepareVertex(triangles.data() + i + 16, ur.x(), ur.y(), ur.z(), uvx2,
-                     uvy1, color);
-    s->prepareVertex(triangles.data() + i + 32, ll.x(), ll.y(), ll.z(), uvx1,
-                     uvy2, color);
-    s->prepareVertex(triangles.data() + i + 48, lr.x(), lr.y(), lr.z(), uvx2,
-                     uvy2, color);
-    draw.indices.push_back(i / 16);
-    draw.indices.push_back(i / 16 + 1);
-    draw.indices.push_back(i / 16 + 2);
-    draw.indices.push_back(i / 16 + 2);
-    draw.indices.push_back(i / 16 + 1);
-    draw.indices.push_back(i / 16 + 3);
+    size_t i = vertexData.size();
+    vertexData.resize(i + 4);
+    addVertex(vertexData[i], ul.x(), ul.y(), ul.z(), uvx1, uvy1, color);
+    addVertex(vertexData[i + 1], ur.x(), ur.y(), ur.z(), uvx2, uvy1, color);
+    addVertex(vertexData[i + 2], ll.x(), ll.y(), ll.z(), uvx1, uvy2, color);
+    addVertex(vertexData[i + 3], lr.x(), lr.y(), lr.z(), uvx2, uvy2, color);
+
+    draw.indices.push_back(i);
+    draw.indices.push_back(i + 1);
+    draw.indices.push_back(i + 2);
+    draw.indices.push_back(i + 2);
+    draw.indices.push_back(i + 1);
+    draw.indices.push_back(i + 3);
 
     if (boundsStack.size()) {
         float x1 = std::min({ll.x(), lr.x(), ul.x(), ur.x()});
@@ -295,6 +309,65 @@ bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
 
     return r.width > 0 && r.height > 0 && r.x <= w && r.right() >= 0 &&
            r.y <= h && r.bottom() >= 0;
+}
+
+template <size_t e>
+static void copyCommands(DrawCommandBuffer &buf, DrawCommandBuffer &other) {
+    if (!other.buf.get<e>().empty()) {
+        size_t offset = buf.buf.get<e>().size();
+        buf.buf.get<e>().resize(offset + other.buf.get<e>().size());
+        memcpy(&buf.buf.get<e>().data()[offset], other.buf.get<e>().data(),
+               sizeof(decltype(other.buf.get<e>()[0])) *
+                   other.buf.get<e>().size());
+    }
+    copyCommands<e + 1>(buf, other);
+}
+
+template <>
+void copyCommands<DrawTriangles>(DrawCommandBuffer &buf,
+                                 DrawCommandBuffer &other) {
+    if (!other.buf.get<DrawTriangles>().empty()) {
+        size_t offset = buf.buf.get<DrawTriangles>().size();
+        buf.buf.get<DrawTriangles>().resize(
+            offset + other.buf.get<DrawTriangles>().size());
+        for (size_t i = 0; i < other.buf.get<DrawTriangles>().size(); ++i) {
+            buf.buf.get<DrawTriangles>()[offset + i] =
+                other.buf.get<DrawTriangles>()[i];
+        }
+    }
+    copyCommands<DrawTriangles + 1>(buf, other);
+}
+
+template <>
+void copyCommands<DrawCommandTypeCount>(DrawCommandBuffer &,
+                                        DrawCommandBuffer &) {}
+
+DrawCommandBuffer &DrawCommandBuffer::operator+=(DrawCommandBuffer &other) {
+    assert(this != &other);
+    size_t drawTrianglesCount = buf.get<DrawTriangles>().size();
+    // copy triangles
+    size_t triangleOffset = vertexData.size();
+    vertexData.resize(triangleOffset + other.vertexData.size());
+    memcpy(&vertexData.data()[triangleOffset], other.vertexData.data(),
+           other.vertexData.size() * sizeof(VertexData));
+    // copy indices
+    {
+        size_t offset = buf.commandTypes.size();
+        buf.commandTypes.resize(offset + other.buf.commandTypes.size());
+        memcpy(&buf.commandTypes[offset], other.buf.commandTypes.data(),
+               other.buf.commandTypes.size() * sizeof(size_t));
+    }
+    // copy commands
+    copyCommands<0>(*this, other);
+    // adjust triangle indices
+    for (size_t i = drawTrianglesCount; i < buf.get<DrawTriangles>().size();
+         ++i) {
+        auto &cmd = buf.get<DrawTriangles>()[i];
+        for (size_t j = 0; j < cmd.indices.size(); ++j) {
+            cmd.indices[j] += triangleOffset;
+        }
+    }
+    return *this;
 }
 
 }

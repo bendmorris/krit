@@ -103,12 +103,6 @@ void DbQuery::exec(JSValue callback) {
     JS_FreeValue(ctx, rowObj);
     JS_FreeValue(ctx, thisObj);
     sqlite3_reset(stmt);
-
-#ifdef __EMSCRIPTEN__
-    EM_ASM(
-        FS.syncfs(function() {});
-    );
-#endif
 }
 
 FileDb::FileDb(const std::string &path) {
@@ -150,6 +144,12 @@ void FileDb::exec(const std::string &query, JSValue callback) {
         JS_FreeValue(ctx, err);
         sqlite3_free(errorMessage);
     }
+
+#ifdef __EMSCRIPTEN__
+    EM_ASM(
+        FS.syncfs(function() {});
+    );
+#endif
 }
 
 int FileDb::returnRows(void *_db, int argc, char **argv, char **azColName) {
