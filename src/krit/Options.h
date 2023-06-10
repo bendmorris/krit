@@ -25,6 +25,11 @@ struct KritOptions {
         this->height = y;
         return *this;
     }
+    KritOptions &setFullScreenSize(int x, int y) {
+        this->fullscreenWidth = x;
+        this->fullscreenHeight = y;
+        return *this;
+    }
     KritOptions &setTitle(const std::string &t) {
         this->title = t;
         return *this;

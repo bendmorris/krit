@@ -50,7 +50,7 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
 #if KRIT_ENABLE_MULTISAMPLING
     if (multisample) {
         glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, texture[index()]);
-        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, GL_RGBA, width,
+        glTexImage2DMultisample(GL_TEXTURE_2D_MULTISAMPLE, 4, format, width,
                                 height, GL_TRUE);
         checkForGlErrors("glTexImage2DMultisample");
 
@@ -65,6 +65,7 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
         {
             GLuint &texture = resolvedTexture[index()];
             glBindFramebuffer(GL_FRAMEBUFFER, resolvedFb[index()]);
+            // glClear(0);
             glGenTextures(1, &texture);
             if (!texture) {
                 LOG_ERROR(
@@ -72,7 +73,7 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
             }
 
             glBindTexture(GL_TEXTURE_2D, texture);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+            glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
                          GL_UNSIGNED_BYTE, 0);
 
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -89,7 +90,7 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
     {
         GLuint &texture = this->texture[index()];
         glBindTexture(GL_TEXTURE_2D, texture);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+        glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, format,
                      GL_UNSIGNED_BYTE, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -113,6 +114,7 @@ void FrameBuffer::_resize() {
         GLint drawFboId = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
         glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
+        // glClear(0);
 
         if (texture[index()]) {
             glDeleteTextures(1, &texture[index()]);
@@ -124,6 +126,7 @@ void FrameBuffer::_resize() {
         _currentSize[index()].setTo(width, height);
         createTextures(width, height);
         glBindFramebuffer(GL_FRAMEBUFFER, drawFboId);
+        // glClear(0);
         checkForGlErrors("resize framebuffer");
     }
 }
@@ -142,12 +145,14 @@ GLuint FrameBuffer::getTexture() {
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
         glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer[index()]);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFb[index()]);
+        // glClear(0);
         checkForGlErrors("glBindFramebuffer");
         glBlitFramebuffer(0, 0, size.x(), size.y(), 0, 0, size.x(), size.y(),
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
         checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer[index()],
                          resolvedFb[index()]);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
+        // glClear(0);
     }
     if (multisample) {
         return resolvedTexture[index()];
@@ -161,9 +166,11 @@ void FrameBuffer::_markDirty() { this->dirty[index()] = true; }
 uint32_t FrameBuffer::readPixel(int x, int y) {
     uint8_t pixelData[4];
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer[index()]);
+    // glClear(0);
     glReadPixels(x, size.y() - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE,
                  (void *)&pixelData);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    // glClear(0);
     checkForGlErrors("readPixels");
     Color c(static_cast<float>(pixelData[0]) / 255,
             static_cast<float>(pixelData[1]) / 255,

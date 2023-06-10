@@ -158,13 +158,6 @@ SpriteShader *Renderer::getDefaultTextShader() {
 Matrix4 _ortho;
 
 Renderer::Renderer(Window &_window) : window(_window) {
-    SDL_Window *window = _window.window;
-
-    this->glContext = SDL_GL_CreateContext(window);
-    if (!this->glContext) {
-        panic(SDL_GetError());
-    }
-    SDL_GL_MakeCurrent(window, this->glContext);
     checkForGlErrors("context");
 #ifndef __EMSCRIPTEN__
     SDL_GL_SetSwapInterval(1);
@@ -195,7 +188,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
 
 #if KRIT_ENABLE_TOOLS
     ImGui::CreateContext();
-    ImGui_ImplSDL2_InitForOpenGL(window, glContext);
+    ImGui_ImplSDL2_InitForOpenGL(window.window, window.glContext);
     ImGui_ImplOpenGL3_Init(nullptr);
     checkForGlErrors("imgui init");
 
@@ -217,13 +210,13 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, pixels);
     checkForGlErrors("imgui texImage2D");
-    glBindTexture(GL_TEXTURE_2D, 0);
 
     // ImGui::StyleColorsClassic();
 
     io.Fonts->TexID = (void *)(intptr_t)Editor::imguiTextureId;
     Editor::imguiInitialized = true;
 #endif
+    SDL_GL_MakeCurrent(window.window, window.glContext);
 
     glGenVertexArrays(1, &this->vao);
     glBindVertexArray(this->vao);
@@ -243,10 +236,13 @@ Renderer::Renderer(Window &_window) : window(_window) {
     // #endif
 }
 
-Renderer::~Renderer() {
-    if (this->glContext) {
-        SDL_GL_DeleteContext(this->glContext);
-    }
+Renderer::~Renderer() {}
+
+template <>
+void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
+                                             Camera *&camera) {
+    ctx.camera = camera;
+    setSize(ctx);
 }
 
 template <>
@@ -358,6 +354,7 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     }
     glBindFramebuffer(GL_FRAMEBUFFER,
                       args.target ? args.target->getFramebuffer() : 0);
+    // glClear(0);
     checkForGlErrors("bind framebuffer");
     if (args.clear && args.target) {
         if (!clipStack.empty()) {
@@ -400,7 +397,7 @@ void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
 #if KRIT_ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(Editor::window);
+        ImGui_ImplSDL2_NewFrame(engine->window.window);
         ImGui_ImplOpenGL3_RenderDrawData(drawData);
     }
 #endif
@@ -453,9 +450,6 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
             checkForGlErrors("drawElements");
 
             shader->unbind();
-            if (drawCall.key.image) {
-                glBindTexture(GL_TEXTURE_2D, 0);
-            }
         }
     }
 
@@ -497,7 +491,6 @@ void Renderer::renderFrame(RenderContext &ctx) {
     ZoneScopedN("Renderer::renderFrame");
 #endif
 
-    setSize(ctx);
     int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
 
     // upload vertex data
@@ -573,6 +566,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
                             this->drawCommandBuffer.buf.get<cmd>()[index]);    \
         break;
 
+            DISPATCH_COMMAND(SetCamera)
             DISPATCH_COMMAND(DrawTriangles)
             DISPATCH_COMMAND(PushClipRect)
             DISPATCH_COMMAND(PopClipRect)

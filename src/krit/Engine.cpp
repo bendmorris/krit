@@ -87,7 +87,9 @@ void Engine::run() {
     (void)result;
 #else
     if ((result & flags) != flags) {
-        panic("PNG/JPEG support is required");
+        panic("PNG/JPEG support is required; png=%s jpg=%s",
+              result & IMG_INIT_PNG ? "y" : "n",
+              result & IMG_INIT_JPG ? "y" : "n");
     }
 #endif
 
@@ -137,8 +139,7 @@ bool Engine::doFrame() {
     UpdateContext *update = &ctx;
     ++ctx.tickId;
 
-    TaskManager::work(taskManager->mainQueue, *update);
-    TaskManager::work(taskManager->renderQueue, ctx);
+    phase = FramePhase::Update;
     // do {
     frameFinish = clock.now();
     elapsed = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -153,6 +154,8 @@ bool Engine::doFrame() {
     ctx.elapsed = ctx.frameCount = 0;
     totalElapsed += elapsed / 1000000.0;
 
+    TaskManager::work(taskManager->mainQueue, *update);
+
     input.startFrame();
     handleEvents();
     input.endFrame();
@@ -162,7 +165,6 @@ bool Engine::doFrame() {
         return false;
     }
 
-    phase = FramePhase::Update;
     while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
         accumulator -= frameDelta;
         if (accumulator < 0) {
@@ -186,6 +188,7 @@ bool Engine::doFrame() {
     frameStart = frameFinish;
 
     phase = FramePhase::Render;
+    TaskManager::work(taskManager->renderQueue, ctx);
     render(ctx);
     flip(ctx);
 
@@ -376,19 +379,20 @@ void Engine::render(RenderContext &ctx) {
         invoke(onRender, &ctx);
 
         for (auto &camera : cameras) {
+            ctx.drawCommandBuffer->buf.emplace_back<SetCamera>(&camera);
             ctx.camera = &camera;
             camera.update(ctx);
-            if (!(camera.dimensions.x() || camera.dimensions.y())) {
-                continue;
-            }
             invoke(camera.render, &ctx);
-            fonts.commit();
-            renderer.renderFrame(ctx);
         }
+        ctx.camera = nullptr;
+
+        fonts.commit();
+        checkForGlErrors("fonts commit");
+
+        renderer.renderFrame(ctx);
+        checkForGlErrors("after render frame");
 
         invoke(this->postRender, &ctx);
-
-        checkForGlErrors("after render frame");
     }
 }
 

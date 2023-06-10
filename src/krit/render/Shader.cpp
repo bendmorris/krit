@@ -147,7 +147,7 @@ void Shader::unbind() {
     if (colorIndex > -1) {
         glDisableVertexAttribArray(colorIndex);
     }
-    glUseProgram(0);
+    // glUseProgram(0);
     checkForGlErrors("unbind");
 }
 

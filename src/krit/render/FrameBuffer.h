@@ -9,6 +9,12 @@
 namespace krit {
 
 struct FrameBuffer {
+    enum class Quality {
+        Low,
+        Medium,
+        High,
+    };
+
     static const int BUFFER_COUNT = 2;
 
     static FrameBuffer *create(unsigned int width, unsigned int height,
@@ -22,6 +28,8 @@ struct FrameBuffer {
     bool doubleBuffer = false;
     bool allowSmoothing = true;
     bool cameraTransform = true;
+    GLint internalFormat = GL_RGBA;
+    GLint format = GL_RGBA;
 
     FrameBuffer(unsigned int width, unsigned int height,
                 bool multisample = false)

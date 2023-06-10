@@ -19,24 +19,14 @@ struct Window : public IntDimensions {
     int height() { return size().y(); }
 
     IntDimensions &size() {
-        int _x = x(), _y = y();
         getWindowSize(&x(), &y());
-        if (x() != _x || y() != _y) {
-            skipFrames = 3;
-        }
         return *this;
     }
 
     bool full = false;
 
     Window(KritOptions &options);
-
-    ~Window() {
-        if (window) {
-            SDL_DestroyWindow(window);
-        }
-        SDL_Quit();
-    }
+    ~Window();
 
     void setFullScreen(bool full);
     bool isFullScreen() { return full; }
@@ -53,6 +43,7 @@ struct Window : public IntDimensions {
 private:
     SDL_Window *window = nullptr;
     SDL_Surface *surface = nullptr;
+    SDL_GLContext glContext;
     IntDimensions fullScreenDimensions;
     int skipFrames = 0;
 

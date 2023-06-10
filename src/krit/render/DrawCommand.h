@@ -24,6 +24,7 @@ struct Shader;
 struct Triangle;
 
 enum DrawCommandType {
+    SetCamera,
     DrawTriangles,
     PushClipRect,
     PopClipRect,
@@ -67,8 +68,8 @@ struct VertexData {
 struct DrawCommandBuffer {
     std::vector<VertexData> vertexData;
     std::vector<AutoClipBounds> boundsStack;
-    CommandBuffer<DrawCall, Rectangle, char, SetRenderTargetArgs, SceneShader *,
-                  Color, ImDrawData *>
+    CommandBuffer<Camera *, DrawCall, Rectangle, char, SetRenderTargetArgs,
+                  SceneShader *, Color, ImDrawData *>
         buf;
     FrameBuffer *currentRenderTarget = nullptr;
     SpriteShader *defaultTextureShader = nullptr;

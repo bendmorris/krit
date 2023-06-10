@@ -79,7 +79,7 @@ struct Overlay : public DevTool {
 struct Editor : public Sprite {
     static bool imguiInitialized;
     static GLuint imguiTextureId;
-    static SDL_Window *window;
+    // static SDL_Window *window;
 
     ImGuiIO *io;
     std::shared_ptr<ImageData> texture;

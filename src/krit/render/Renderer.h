@@ -23,8 +23,6 @@ struct FrameBuffer;
 struct Renderer {
     static const int DUP_BUFFER_COUNT = 1;
 
-    SDL_GLContext glContext;
-
     DrawCommandBuffer drawCommandBuffer;
 
     Renderer(Window &window);
@@ -46,6 +44,7 @@ private:
     std::vector<Rectangle> clipStack;
     std::vector<uint32_t> indexData;
     Window &window;
+    Camera *currentCamera = nullptr;
     FrameBuffer *currentRenderTarget = nullptr;
 
     int width = 0;

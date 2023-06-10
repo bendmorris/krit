@@ -47,26 +47,24 @@ void Camera::update(RenderContext &) {
     double ratio = width / height;
     if (ratio < minRatio) {
         // too narrow; top and bottom letterboxing
-        float s = width / minRatio / dimensions.y();
         ratio = minRatio;
         offset.x() = 0;
         offset.y() = (height - (width / minRatio)) / 2;
         // printf("narrow: %.2f, %.2f, %i\n", s, ratio, offset.y());
-        scale.setTo(s, s);
     } else if (ratio > maxRatio) {
         // too wide; left and right letterboxing
-        float s = height / dimensions.y();
         ratio = maxRatio;
         offset.x() = (width - (height * maxRatio)) / 2;
         offset.y() = 0;
         // if (maxRatio > 1.8) {
-            // printf("wide: %.2f, %.2f, %i,%i\n", s, ratio, offset.x(), offset.y());
+        // printf("wide: %.2f, %.2f, %i,%i\n", s, ratio, offset.x(),
+        // offset.y());
         // }
-        scale.setTo(s, s);
     } else {
         offset.setTo(0, 0);
-        scale.setTo(height / dimensions.y(), height / dimensions.y());
     }
+    float s = height / dimensions.y();
+    scale.setTo(s, s);
     currentDimensions.setTo(ratio * dimensions.y(), dimensions.y());
 }
 

@@ -7,15 +7,16 @@ option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
 option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
-option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" ON)
+option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" OFF)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\" -fno-omit-frame-pointer -fasynchronous-unwind-tables")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
 # FIXME: -DTRACY_ENABLE when tracy is on...
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wall -ffunction-sections -fdata-sections -Os -fno-rtti")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -Wno-sometimes-uninitialized -g")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -193,24 +194,25 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
 
-message("==> ${KRIT_STATIC_LIBS}")
+message("==> static libs: ${KRIT_STATIC_LIBS}")
 
 if(KRIT_ENABLE_THREADS)
     list(APPEND KRIT_STATIC_LIBS "-lpthread")
 endif()
 
 if(KRIT_ENABLE_TOOLS)
-    find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
+    # find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    list(APPEND KRIT_STATIC_LIBS ${NFD_LIB})
+    # list(APPEND KRIT_STATIC_LIBS ${NFD_LIB})
     list(APPEND KRIT_LIBS ${GTK3_LIBRARIES})
 endif()
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
+    # "-Wl,-Bdynamic"
     ${KRIT_LIBS}
-    ${STATIC}
+    # "-Wl,-Bstatic"
     ${KRIT_STATIC_LIBS}
     "-Wl,--gc-sections"
     "-static-libgcc"

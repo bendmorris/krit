@@ -59,7 +59,7 @@ void Overlay::draw(krit::RenderContext &ctx) {
 
 bool Editor::imguiInitialized = false;
 GLuint Editor::imguiTextureId = 0;
-SDL_Window *Editor::window = nullptr;
+// SDL_Window *Editor::window = nullptr;
 
 Editor::Editor() {
     devTools.push_back(std::unique_ptr<DevTool>(new Overlay()));
