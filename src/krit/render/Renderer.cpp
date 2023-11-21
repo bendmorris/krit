@@ -239,13 +239,6 @@ Renderer::Renderer(Window &_window) : window(_window) {
 Renderer::~Renderer() {}
 
 template <>
-void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
-                                             Camera *&camera) {
-    ctx.camera = camera;
-    setSize(ctx);
-}
-
-template <>
 void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
                                                  Rectangle &clipRect) {
 #if TRACY_ENABLE
@@ -582,7 +575,6 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
             DISPATCH_COMMAND(DrawSceneShader)
             DISPATCH_COMMAND(ClearColor)
             DISPATCH_COMMAND(RenderImGui)
-            DISPATCH_COMMAND(SetCamera)
         }
     }
 #undef DISPATCH_COMMAND

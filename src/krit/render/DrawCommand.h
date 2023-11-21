@@ -32,7 +32,6 @@ enum DrawCommandType {
     DrawSceneShader,
     ClearColor,
     RenderImGui,
-    SetCamera,
 
     DrawCommandTypeCount
 };
