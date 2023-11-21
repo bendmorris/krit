@@ -1,7 +1,7 @@
 R"(#version 300 es
 // renderer.color.frag
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 // Krit color fragment shader
 in vec4 vColor;

@@ -29,7 +29,7 @@
 #include <emscripten.h>
 #endif
 #if TRACY_ENABLE
-#include "krit/tracy/Tracy.hpp"
+#include "tracy/Tracy.hpp"
 #endif
 
 namespace krit {
@@ -190,7 +190,7 @@ bool Engine::doFrame() {
     phase = FramePhase::Render;
     TaskManager::work(taskManager->renderQueue, ctx);
     render(ctx);
-    flip(ctx);
+    renderThread();
 
     phase = FramePhase::Inactive;
 
@@ -382,6 +382,7 @@ void Engine::render(RenderContext &ctx) {
             ctx.drawCommandBuffer->buf.emplace_back<SetCamera>(&camera);
             ctx.camera = &camera;
             camera.update(ctx);
+            ctx.drawCommandBuffer->setCamera(&camera);
             invoke(camera.render, &ctx);
         }
         ctx.camera = nullptr;
@@ -396,12 +397,16 @@ void Engine::render(RenderContext &ctx) {
     }
 }
 
-void Engine::flip(RenderContext &ctx) {
+void Engine::renderThread() {
+    TaskManager::work(taskManager->renderQueue, ctx);
+    flip();
+}
+
+void Engine::flip() {
 #if TRACY_ENABLE
     ZoneScopedN("Engine::flip");
 #endif
-    renderer.flip(ctx);
-    fonts.flush();
+    renderer.flip();
     checkForGlErrors("flush fonts");
 }
 

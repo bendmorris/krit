@@ -3,9 +3,10 @@ cmake_policy(SET CMP0072 NEW)
 cmake_policy(SET CMP0077 NEW)
 
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
-option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
-option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
+option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
+option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
+option(KRIT_ENABLE_TRACY "Dump any JS leaks on exit" OFF)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
 option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" OFF)
 
@@ -13,8 +14,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds 
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
-
-# FIXME: -DTRACY_ENABLE when tracy is on...
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
@@ -66,6 +65,11 @@ file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
     ${KRIT_DIR}/src/krit/script/*.cpp
 )
 list(APPEND KRIT_SRC_FILES ${KRIT_SCRIPT_FILES})
+if(KRIT_ENABLE_TRACY)
+    add_definitions(-DTRACY_ENABLE)
+    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/public/TracyClient.cpp)
+    include_directories(${KRIT_DIR}/tracy/public/)
+endif()
 
 if(KRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
@@ -150,11 +154,6 @@ file(GLOB_RECURSE KRIT_GENERATED_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
 )
-
-if(CMAKE_BUILD_TYPE MATCHES PROF)
-    message(STATUS "profiling enabled")
-    # list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
-endif()
 
 if(KRIT_QUICKJS_DUMP_LEAKS)
     add_definitions(-DDUMP_LEAKS)

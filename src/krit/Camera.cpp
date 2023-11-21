@@ -76,6 +76,9 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
     if (pitch) {
         m.pitch(pitch);
     }
+    if (roll) {
+        m.roll(roll);
+    }
     m.scale(scale.x(), scale.y(), 1.0);
     m.translate((anchor.x() * currentDimensions.x()) * scale.x(),
                 (anchor.y() * currentDimensions.y()) * scale.y());

@@ -180,7 +180,7 @@ struct Text : public VisibleSprite, public TextOptions {
     std::string text;
     std::string rawText;
     Dimensions textDimensions;
-    bool allowPixelPerfect = true;
+    bool allowPixelPerfect = false;
     bool dynamicSize = true;
     bool border = false;
     int borderThickness = 0;

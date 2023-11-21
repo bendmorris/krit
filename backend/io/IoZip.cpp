@@ -2,7 +2,7 @@
 #include "krit/io/Io.h"
 #include "krit/utils/Panic.h"
 #include <memory>
-#define ZIP_STATIC 1
+// #define ZIP_STATIC 1
 #include <zip.h>
 
 namespace krit {

@@ -8,14 +8,14 @@
 #include <cstdlib>
 #include <cstring>
 #if TRACY_ENABLE
-#include "krit/tracy/Tracy.hpp"
+#include "tracy/Tracy.hpp"
 #endif
 
 namespace krit {
 
 struct Cell {
     static Cell *alloc(size_t size) {
-        Cell *c = (Cell *)malloc(offsetof(Cell, data[size]));
+        Cell *c = (Cell *)malloc(offsetof(Cell, data) + size);
         return c;
     }
 
@@ -35,7 +35,7 @@ struct Cell {
 struct OversizedCell {
     static OversizedCell *alloc(size_t size) {
         OversizedCell *o =
-            (OversizedCell *)malloc(offsetof(OversizedCell, cell.data[size]));
+            (OversizedCell *)malloc(offsetof(OversizedCell, cell.data) + size);
         o->size = size;
         o->cell.block = 0xff;
         #if TRACY_ENABLE
@@ -227,7 +227,7 @@ struct ScriptAllocator {
                 TracyFree(o->cell.getData());
                 #endif
                 o = (OversizedCell *)::realloc(
-                    o, offsetof(OversizedCell, cell.data[size]));
+                    o, offsetof(OversizedCell, cell.data) + size);
                 #if TRACY_ENABLE
                 TracyAlloc(o->cell.getData(), size);
                 #endif

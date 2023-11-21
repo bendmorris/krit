@@ -1,7 +1,7 @@
 R"(#version 300 es
 // renderer.text.vert
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 // Krit text vertex shader
 uniform mat4 uMatrix;

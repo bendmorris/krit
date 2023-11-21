@@ -33,6 +33,7 @@ struct Camera {
 
     float rotation = 0;
     float pitch = 0;
+    float roll = 0;
 
     Camera(): dimensions(3840, 2160), currentDimensions(3840, 2160) {}
     virtual ~Camera();
@@ -58,6 +59,10 @@ struct Camera {
     void update(RenderContext &context);
 
     void screenToWorldCoords(Vec3f &screenCoords);
+
+    void resetRotation() {
+        rotation = pitch = roll = 0;
+    }
 };
 
 }

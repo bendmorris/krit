@@ -7,6 +7,7 @@ declare class Camera {
     currentDimensions: Vec2f;
     rotation: number;
     pitch: number;
+    roll: number;
     minRatio: number;
     maxRatio: number;
 
@@ -14,6 +15,7 @@ declare class Camera {
     update(ctx: RenderContext): void;
     transformPoint(p: Vec3f): void;
     untransformPoint(p: Vec3f): void;
+    resetRotation(): void;
     setLogicalSize(w: number, h: number): Camera;
     viewportWidth(): number;
     viewportHeight(): number;

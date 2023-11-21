@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <utility>
 #if TRACY_ENABLE
-#include "krit/tracy/Tracy.hpp"
+#include "tracy/Tracy.hpp"
 // #include "krit/tracy/TracyOpenGL.hpp"
 #endif
 
@@ -477,6 +477,14 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     shader->unbind();
 }
 
+template <> void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx, Camera *&camera) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<SetCamera>");
+#endif
+    ctx.camera = camera;
+    setSize(ctx);
+}
+
 void Renderer::startFrame(RenderContext &ctx) {
     LOG_DEBUG("start frame");
 #if TRACY_ENABLE
@@ -574,6 +582,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
             DISPATCH_COMMAND(DrawSceneShader)
             DISPATCH_COMMAND(ClearColor)
             DISPATCH_COMMAND(RenderImGui)
+            DISPATCH_COMMAND(SetCamera)
         }
     }
 #undef DISPATCH_COMMAND
@@ -593,7 +602,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
                                                     0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
-void Renderer::flip(RenderContext &ctx) {
+void Renderer::flip() {
     LOG_DEBUG("flip");
     SDL_GL_SwapWindow(engine->window.window);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

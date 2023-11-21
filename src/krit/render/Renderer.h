@@ -30,7 +30,7 @@ struct Renderer {
 
     void startFrame(RenderContext &ctx);
     void renderFrame(RenderContext &ctx);
-    void flip(RenderContext &ctx);
+    void flip();
 
     SpriteShader *getDefaultTextureShader();
     SpriteShader *getDefaultColorShader();

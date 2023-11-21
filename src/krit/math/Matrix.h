@@ -44,6 +44,8 @@ struct Matrix4 {
      */
     void pitch(float angle);
 
+    void roll(float angle);
+
     void translate(float x, float y, float z = 0);
 
     void scale(float sx = 1, float sy = 1, float sz = 1);

@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 #if TRACY_ENABLE
-#include "krit/tracy/Tracy.hpp"
+#include "tracy/Tracy.hpp"
 #endif
 
 namespace krit {

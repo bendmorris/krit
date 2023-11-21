@@ -126,6 +126,15 @@ void Matrix4::pitch(float angle) {
     }
 }
 
+/**
+ * Rotate around y-axis.
+ */
+void Matrix4::roll(float angle) {
+    if (angle) {
+        (*this) *= getAxisRotation(0, 1, 0, angle);
+    }
+}
+
 void Matrix4::translate(float x, float y, float z) {
     v[12] += x;
     v[13] += y;

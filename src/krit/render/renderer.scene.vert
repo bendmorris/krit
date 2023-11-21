@@ -1,7 +1,7 @@
 R"(#version 300 es
 // renderer.scene.vert
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 in vec4 aPosition;
 out vec2 vTexCoord;

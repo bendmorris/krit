@@ -32,6 +32,7 @@ enum DrawCommandType {
     DrawSceneShader,
     ClearColor,
     RenderImGui,
+    SetCamera,
 
     DrawCommandTypeCount
 };
@@ -124,6 +125,10 @@ struct DrawCommandBuffer {
 
     void updateBounds(AutoClipBounds &bounds, float x1, float y1, float x2,
                       float y2, float z1, float z2);
+
+    void setCamera(Camera *c) {
+        buf.emplace_back<SetCamera>(c);
+    }
 };
 
 }

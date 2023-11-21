@@ -1,7 +1,7 @@
 R"(#version 300 es
 // renderer.text.frag
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 // Krit text fragment shader
 uniform sampler2D uImage;

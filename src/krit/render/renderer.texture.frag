@@ -1,7 +1,7 @@
 R"(#version 300 es
 // renderer.texture.frag
 #ifdef GL_ES
-precision mediump float;
+precision highp float;
 #endif
 // Krit texture fragment shader
 uniform sampler2D uImage;

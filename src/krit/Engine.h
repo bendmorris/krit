@@ -138,7 +138,8 @@ public:
     void update(UpdateContext &ctx);
     void fixedUpdate(UpdateContext &ctx);
     void render(RenderContext &ctx);
-    void flip(RenderContext &ctx);
+    void renderThread();
+    void flip();
 
     void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
 
