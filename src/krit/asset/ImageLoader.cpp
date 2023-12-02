@@ -139,6 +139,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             LOG_ERROR("Failed to read PNG header: %s", key.c_str());
             return img;
         }
+        // printf("%s: %u x %u\n", pathToLoad.c_str(), width, height);
         img->dimensions.setTo(width / scale, height / scale);
         png_destroy_read_struct(&png_ptr, &info_ptr, nullptr);
     } else if (extension == ".jpg") {
@@ -189,8 +190,35 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
         img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);
         SDL_RWclose(rw);
 #endif
-            unsigned int mode =
-                surface->format->BytesPerPixel == 4 ? GL_RGBA : GL_RGB;
+            bool hasAlpha = surface->format->Amask;
+            // uint32_t desiredFormat =
+            //     hasAlpha ? SDL_PIXELFORMAT_ABGR8888 : SDL_PIXELFORMAT_BGR888;
+            // if (surface->format->format != desiredFormat) {
+            //     // convert the format
+            //     printf("convert: %s\n", pathToLoad.c_str());
+            //     SDL_Surface *oldSurface = surface;
+            //     surface = SDL_ConvertSurfaceFormat(oldSurface, desiredFormat,
+            //     0); SDL_FreeSurface(oldSurface);
+            // }
+            unsigned int mode;
+            if (hasAlpha) {
+                if (surface->format->Rmask == 0x000000ff) {
+                    mode = GL_RGBA;
+                } else {
+                    mode = GL_BGRA;
+                }
+            } else if (surface->format->BytesPerPixel == 3) {
+                if (surface->format->Rmask == 0x000000ff) {
+                    mode = GL_RGB;
+                } else {
+                    mode = GL_BGR;
+                }
+            } else if (surface->format->BytesPerPixel == 1) {
+                mode = GL_RED;
+            } else {
+                panic("IMAGE_Load(%s): BytesPerPixel=%u", pathToLoad.c_str(),
+                      surface->format->BytesPerPixel);
+            }
 
             TaskManager::instance->pushRender([=](RenderContext &render) {
                 // upload texture

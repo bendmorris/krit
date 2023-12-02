@@ -34,13 +34,13 @@ void Image::render(RenderContext &ctx) {
     Matrix4 matrix;
     matrix.identity();
     matrix.translate(-this->origin.x(), -this->origin.y());
+    matrix.scale(this->scale.x(), this->scale.y());
     if (this->angle) {
         matrix.rotate(this->angle);
     }
     if (this->pitch) {
         matrix.pitch(this->pitch);
     }
-    matrix.scale(this->scale.x(), this->scale.y());
     matrix.translate(this->position.x(), this->position.y(), this->position.z());
     DrawKey key;
     key.shader = this->shader;

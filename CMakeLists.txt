@@ -15,7 +15,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wno-c99-designator -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -Wno-sometimes-uninitialized -g")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")

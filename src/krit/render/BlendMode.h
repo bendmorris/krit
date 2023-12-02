@@ -10,6 +10,8 @@ enum BlendMode {
     Multiply,
     BlendScreen,
     Replace,
+    Min,
+    Max,
 };
 
 }

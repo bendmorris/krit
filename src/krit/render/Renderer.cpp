@@ -104,6 +104,16 @@ void Renderer::setBlendMode(BlendMode mode) {
             glBlendFunc(GL_ONE, GL_ZERO);
             break;
         }
+        case Min: {
+            glBlendEquation(GL_MIN);
+            glBlendFunc(GL_ONE, GL_ONE);
+            break;
+        }
+        case Max: {
+            glBlendEquation(GL_MAX);
+            glBlendFunc(GL_ONE, GL_ONE);
+            break;
+        }
         default: {
             assert(false);
         }
