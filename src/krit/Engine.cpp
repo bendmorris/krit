@@ -194,6 +194,8 @@ bool Engine::doFrame() {
 
     phase = FramePhase::Inactive;
 
+    fonts.flush();
+
 #if TRACY_ENABLE
     FrameMark;
 #endif

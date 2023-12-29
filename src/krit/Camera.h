@@ -58,6 +58,7 @@ struct Camera {
 
     void update(RenderContext &context);
 
+    void worldToScreenCoords(Vec3f &screenCoords);
     void screenToWorldCoords(Vec3f &screenCoords);
 
     void resetRotation() {

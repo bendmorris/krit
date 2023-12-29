@@ -94,15 +94,36 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
     m *= M;
 };
 
+void Camera::worldToScreenCoords(Vec3f &worldCoords) {
+    Matrix4 matrix;
+    matrix.identity();
+    getTransformationMatrix(matrix, viewportWidth(), viewportHeight());
+
+    Vec4f result(worldCoords.x(), worldCoords.y(), worldCoords.z(), 1.0f);
+    result = matrix * result;
+    result.x() /= result.w();
+    result.y() /= result.w();
+    result.z() /= result.w();
+    result.w() /= result.w();
+
+    result.x() =
+        ((result.x() + 1.0) / 2.0) * static_cast<double>(viewportWidth());
+    result.y() =
+        ((1.0 - result.y()) / 2.0) * static_cast<double>(viewportHeight());
+    result.x() += offset.x();
+    result.y() += offset.y();
+
+    worldCoords.setTo(result.x(), result.y(), result.z());
+};
+
 void Camera::screenToWorldCoords(Vec3f &screenCoords) {
-    auto &w = engine->window;
     // printf("%i, %i, %i\n", offset.x(), viewportWidth(), w.x());
     screenCoords.x() -= offset.x();
     screenCoords.y() -= offset.y();
-    screenCoords.x() /= static_cast<double>(viewportWidth()) / w.x();
-    screenCoords.y() /= static_cast<double>(viewportHeight()) / w.y();
-    screenCoords.x() = (screenCoords.x() / w.x()) * 2.0 - 1.0;
-    screenCoords.y() = 1.0 - (screenCoords.y() / w.y()) * 2.0;
+    screenCoords.x() =
+        (screenCoords.x() / static_cast<double>(viewportWidth())) * 2.0 - 1.0;
+    screenCoords.y() =
+        1.0 - (screenCoords.y() / static_cast<double>(viewportHeight())) * 2.0;
 
     // pick a W value and undo the perspective divide
     Vec4f p1{screenCoords.x(), screenCoords.y(), 0.0f, 1.0f};

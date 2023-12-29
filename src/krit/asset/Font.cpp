@@ -105,8 +105,9 @@ Font::Font(const std::string &path, const std::string &fontData) : path(path) {
     font = hb_font_create(face);
     hb_font_set_scale(font, 64, 64);
     // freetype face initialization
-    int error = FT_New_Memory_Face(ftLibrary, (const FT_Byte *)this->fontData.c_str(),
-                                   this->fontData.size(), 0, (FT_Face *)&ftFace);
+    int error =
+        FT_New_Memory_Face(ftLibrary, (const FT_Byte *)this->fontData.c_str(),
+                           this->fontData.size(), 0, (FT_Face *)&ftFace);
     if (error) {
         panic("failed to initialize font: %s", path.c_str());
     }
@@ -127,8 +128,7 @@ Font::~Font() {
     }
 }
 
-void Font::shape(hb_buffer_t *buf, size_t pointSize) {
-    hb_font_set_ppem(font, pointSize, pointSize);
+void Font::shape(hb_buffer_t *buf) {
     hb_feature_t userfeatures[1];
     userfeatures[0].tag = HB_TAG('l', 'i', 'g', 'a');
     userfeatures[0].value = ligatures ? 1 : 0;

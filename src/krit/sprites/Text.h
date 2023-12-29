@@ -54,7 +54,7 @@ using CustomTextRenderFunction =
 struct TextOptions {
     static TextOptions *create() { return new TextOptions(); }
 
-    Font *font = nullptr;
+    std::shared_ptr<Font> font;
     int size = 16;
     AlignType align = LeftAlign;
     bool wordWrap = false;
@@ -62,7 +62,7 @@ struct TextOptions {
 
     TextOptions() {}
 
-    TextOptions &setFontAsset(Font *font) {
+    TextOptions &setFontAsset(std::shared_ptr<Font> font) {
         this->font = font;
         return *this;
     }
@@ -96,11 +96,13 @@ struct TextFormatTagOptions {
     int charDelay = 0;
     CustomTextRenderFunction custom;
     VisibleSprite *sprite = nullptr;
+    std::shared_ptr<Font> font;
 
     TextFormatTagOptions() = default;
 
-    TextFormatTagOptions &setColor(Color c) {
-        this->color = c;
+    TextFormatTagOptions &setFont(const std::string &fontName);
+    TextFormatTagOptions &setColor(uint32_t c) {
+        this->color = Color(c, 1.0);
         return *this;
     }
     TextFormatTagOptions &setAlign(AlignType a) {
@@ -142,13 +144,22 @@ struct GlyphBlockData {
         : startIndex(a), glyphs(b), trailingWhitespace(c) {}
 };
 
+struct TextRunData {
+    std::shared_ptr<Font> font;
+    hb_buffer_t *hbBuf;
+    int lineHeight = 0;
+};
+
 enum TextOpcodeType : int {
+    // parse time only
+    RawText,
+    // render time only
+    StartTextRun,
+    // general
+    SetFont,
     SetColor,
     SetAlign,
     SetCustom,
-    PopColor,
-    PopAlign,
-    PopCustom,
     GlyphBlock,
     NewLine,
     RenderSprite,
@@ -160,8 +171,8 @@ enum TextOpcodeType : int {
 };
 
 using TextOpcode =
-    std::variant<Color, AlignType, CustomTextRenderFunction, std::monostate,
-                 std::monostate, std::monostate, GlyphBlockData, NewlineData,
+    std::variant<std::pair<size_t, size_t>, TextRunData, std::shared_ptr<Font>, Color, AlignType,
+                 CustomTextRenderFunction, GlyphBlockData, NewlineData,
                  VisibleSprite *, std::monostate, float, int, std::monostate,
                  std::monostate>;
 
@@ -178,7 +189,6 @@ struct Text : public VisibleSprite, public TextOptions {
     std::vector<float> tabStops;
     Color baseColor = Color::white();
     std::string text;
-    std::string rawText;
     Dimensions textDimensions;
     bool allowPixelPerfect = false;
     bool dynamicSize = true;
@@ -238,7 +248,6 @@ private:
     bool dirty = false;
     Dimensions renderedSize;
     bool hasBorderTags = false;
-    float lineHeight;
 
     friend struct TextParser;
 

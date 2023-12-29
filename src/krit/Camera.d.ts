@@ -13,12 +13,11 @@ declare class Camera {
 
     center(): void;
     update(ctx: RenderContext): void;
-    transformPoint(p: Vec3f): void;
-    untransformPoint(p: Vec3f): void;
     resetRotation(): void;
     setLogicalSize(w: number, h: number): Camera;
     viewportWidth(): number;
     viewportHeight(): number;
 
     screenToWorldCoords(p: Vec3f): void;
+    worldToScreenCoords(p: Vec3f): void;
 }

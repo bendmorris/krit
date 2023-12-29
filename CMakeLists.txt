@@ -1,6 +1,12 @@
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+
 project(krit)
 cmake_policy(SET CMP0072 NEW)
 cmake_policy(SET CMP0077 NEW)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_COLOR_DIAGNOSTICS ON)
 
 option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)

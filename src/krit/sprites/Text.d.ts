@@ -22,6 +22,7 @@ declare class GlyphRenderData {
 
 declare class TextFormatTagOptions {
     constructor();
+    setFont(f: string): void;
     setColor(c: number): void;
     setNewline(): void;
     setTab(): void;

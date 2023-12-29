@@ -47,12 +47,10 @@ void NineSlice::render(RenderContext &render) {
     float uh = this->ul.rect.height;
     float bh = this->bl.rect.height;
 
-    if (scaleBorder) {
-        lw *= render.camera->scale.x();
-        rw *= render.camera->scale.x();
-        bh *= render.camera->scale.y();
-        uh *= render.camera->scale.y();
-    }
+    lw *= borderScale.x();
+    rw *= borderScale.x();
+    bh *= borderScale.y();
+    uh *= borderScale.y();
 
     float cx = lw;
     float cw = w - lw - rw;

@@ -62,7 +62,7 @@ struct ColumnData {
 };
 
 struct GlyphCache {
-    static const int SIZE_PRECISION = 8;
+    static const int SIZE_PRECISION = 32;
     static const int PADDING = 4;
     static const int CACHE_TEXTURE_SIZE = 2048;
 
@@ -91,8 +91,8 @@ struct FontManager {
     void flush();
     std::shared_ptr<Font> registerFont(const std::string &name, const std::string &path);
 
-    Font *getFont(const std::string &name) {
-        Font *font = fontRegistry[name].get();
+    std::shared_ptr<Font> getFont(const std::string &name) {
+        auto font = fontRegistry[name];
         if (!font) {
             panic("missing font: %s\n", name.c_str());
         }
@@ -121,7 +121,7 @@ struct Font {
     bool ligatures = true;
 
     std::string path;
-    void shape(hb_buffer_t *buf, size_t pointSize);
+    void shape(hb_buffer_t *buf);
     void commitChanges();
     void flushCache();
 

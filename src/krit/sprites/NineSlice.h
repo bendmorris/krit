@@ -29,7 +29,7 @@ struct NineSlice : public VisibleSprite {
     ImageRegion bc;
     ImageRegion br;
 
-    bool scaleBorder = false;
+    Vec2f borderScale{1, 1};
 
     NineSlice() {}
 
