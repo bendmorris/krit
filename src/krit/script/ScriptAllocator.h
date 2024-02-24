@@ -8,7 +8,7 @@
 #include <cstdlib>
 #include <cstring>
 #if TRACY_ENABLE
-#include "tracy/Tracy.hpp"
+#include "Tracy.hpp"
 #endif
 
 namespace krit {

@@ -27,7 +27,7 @@
 #include <stdint.h>
 #include <utility>
 #if TRACY_ENABLE
-#include "tracy/Tracy.hpp"
+#include "Tracy.hpp"
 // #include "krit/tracy/TracyOpenGL.hpp"
 #endif
 
@@ -392,6 +392,15 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 }
 
 template <>
+void Renderer::drawCall<ReadPixel, ReadPixelArgs>(RenderContext &ctx,
+                                                  ReadPixelArgs &a) {
+#if TRACY_ENABLE
+    ZoneScopedN("Renderer::drawCall<ReadPixel>");
+#endif
+    a.fb->queueReadPixel(a.pos.x(), a.pos.y());
+}
+
+template <>
 void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
                                                    ImDrawData *&drawData) {
 #if TRACY_ENABLE
@@ -480,7 +489,9 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     shader->unbind();
 }
 
-template <> void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx, Camera *&camera) {
+template <>
+void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
+                                             Camera *&camera) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::drawCall<SetCamera>");
 #endif
@@ -488,19 +499,13 @@ template <> void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx, Cam
     setSize(ctx);
 }
 
-void Renderer::startFrame(RenderContext &ctx) {
-    LOG_DEBUG("start frame");
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::startFrame");
-#endif
-    clear(ctx);
-    checkForGlErrors("start frame");
-}
-
 void Renderer::renderFrame(RenderContext &ctx) {
 #if TRACY_ENABLE
     ZoneScopedN("Renderer::renderFrame");
 #endif
+
+    clear(ctx);
+    checkForGlErrors("start frame");
 
     int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
 
@@ -584,6 +589,7 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
             DISPATCH_COMMAND(SetRenderTarget)
             DISPATCH_COMMAND(DrawSceneShader)
             DISPATCH_COMMAND(ClearColor)
+            DISPATCH_COMMAND(ReadPixel)
             DISPATCH_COMMAND(RenderImGui)
         }
     }

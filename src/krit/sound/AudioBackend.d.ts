@@ -2,6 +2,7 @@ declare class AudioBackend {
     soundVolume: number;
 
     playSound(id: string): void;
+    playSoundAsset(data: SoundData): void;
     playMusic(id: string): AudioStream;
 }
 

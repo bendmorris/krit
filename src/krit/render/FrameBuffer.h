@@ -3,10 +3,15 @@
 
 #include "krit/render/Gl.h"
 #include "krit/render/ImageData.h"
+#include "krit/utils/Pool.h"
 #include <cstddef>
 #include <memory>
 
 namespace krit {
+
+struct FrameBuffer;
+
+// using FrameBufferPool = Pool<FrameBuffer>;
 
 struct FrameBuffer {
     enum class Quality {
@@ -14,8 +19,6 @@ struct FrameBuffer {
         Medium,
         High,
     };
-
-    static const int BUFFER_COUNT = 2;
 
     static FrameBuffer *create(unsigned int width, unsigned int height,
                                bool multisample = false) {
@@ -37,32 +40,19 @@ struct FrameBuffer {
         assert(width && height);
     }
 
-    virtual ~FrameBuffer() {
-        for (int i = 0; i < BUFFER_COUNT; ++i) {
-            if (texture[i]) {
-                glDeleteTextures(1, &texture[i]);
-            }
-            if (resolvedTexture[i]) {
-                glDeleteTextures(1, &resolvedTexture[i]);
-            }
-            if (frameBuffer[i]) {
-                glDeleteFramebuffers(1, &frameBuffer[i]);
-            }
-            if (resolvedFb[i]) {
-                glDeleteFramebuffers(1, &resolvedFb[i]);
-            }
-        }
-    }
+    virtual ~FrameBuffer();
 
     void init();
     void resize(unsigned int width, unsigned int height);
-    int index();
 
     void createTextures(unsigned int width, unsigned int height);
     GLuint getFramebuffer();
     GLuint getTexture();
 
-    uint32_t readPixel(int x, int y);
+    // uint32_t readPixel(int x, int y);
+
+    void queueReadPixel(int x, int y);
+    uint32_t readPixel();
 
     std::shared_ptr<ImageData> imageData();
 
@@ -70,12 +60,13 @@ struct FrameBuffer {
     friend struct ShaderInstance;
 
 private:
-    IntDimensions _currentSize[BUFFER_COUNT];
-    bool dirty[BUFFER_COUNT] = {0};
-    GLuint frameBuffer[BUFFER_COUNT] = {0};
-    GLuint texture[BUFFER_COUNT] = {0};
-    GLuint resolvedFb[BUFFER_COUNT] = {0};
-    GLuint resolvedTexture[BUFFER_COUNT] = {0};
+    IntDimensions _currentSize;
+    bool dirty = false;
+    GLuint frameBuffer {0};
+    GLuint texture {0};
+    GLuint resolvedFb {0};
+    GLuint resolvedTexture {0};
+    GLuint pbo {0};
 
     std::shared_ptr<ImageData> i;
 

@@ -31,6 +31,7 @@ enum DrawCommandType {
     SetRenderTarget,
     DrawSceneShader,
     ClearColor,
+    ReadPixel,
     RenderImGui,
 
     DrawCommandTypeCount
@@ -43,6 +44,14 @@ struct SetRenderTargetArgs {
     SetRenderTargetArgs() {}
     SetRenderTargetArgs(FrameBuffer *target, bool clear)
         : target(target), clear(clear) {}
+};
+
+struct ReadPixelArgs {
+    FrameBuffer *fb { nullptr };
+    Vec2i pos;
+
+    ReadPixelArgs() {}
+    ReadPixelArgs(FrameBuffer *fb, int x, int y): fb(fb), pos(x, y) {}
 };
 
 struct AutoClipBounds {
@@ -69,7 +78,7 @@ struct DrawCommandBuffer {
     std::vector<VertexData> vertexData;
     std::vector<AutoClipBounds> boundsStack;
     CommandBuffer<Camera *, DrawCall, Rectangle, char, SetRenderTargetArgs,
-                  SceneShader *, Color, ImDrawData *>
+                  SceneShader *, Color, ReadPixelArgs, ImDrawData *>
         buf;
     FrameBuffer *currentRenderTarget = nullptr;
     SpriteShader *defaultTextureShader = nullptr;
@@ -125,9 +134,9 @@ struct DrawCommandBuffer {
     void updateBounds(AutoClipBounds &bounds, float x1, float y1, float x2,
                       float y2, float z1, float z2);
 
-    void setCamera(Camera *c) {
-        buf.emplace_back<SetCamera>(c);
-    }
+    void setCamera(Camera *c) { buf.emplace_back<SetCamera>(c); }
+
+    void queueReadPixel(FrameBuffer *fb, int x, int y) { buf.emplace_back<ReadPixel>(fb, x, y); }
 };
 
 }

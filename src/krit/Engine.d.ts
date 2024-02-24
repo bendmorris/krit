@@ -21,4 +21,5 @@ declare class Engine {
 
     getImage(id: string): ImageData;
     getAtlas(id: string): TextureAtlas;
+    getSound(id: string): SoundData;
 }

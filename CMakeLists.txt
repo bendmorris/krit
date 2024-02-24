@@ -73,9 +73,11 @@ file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
 list(APPEND KRIT_SRC_FILES ${KRIT_SCRIPT_FILES})
 if(KRIT_ENABLE_TRACY)
     add_definitions(-DTRACY_ENABLE)
-    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/public/TracyClient.cpp)
-    include_directories(${KRIT_DIR}/tracy/public/)
-endif()
+    # list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/public/TracyClient.cpp)
+    # include_directories(${KRIT_DIR}/tracy/public/)
+    list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
+    include_directories(${KRIT_DIR}/tracy)
+    endif()
 
 if(KRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS

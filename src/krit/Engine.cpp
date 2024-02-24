@@ -29,7 +29,7 @@
 #include <emscripten.h>
 #endif
 #if TRACY_ENABLE
-#include "tracy/Tracy.hpp"
+#include "Tracy.hpp"
 #endif
 
 namespace krit {
@@ -377,7 +377,6 @@ void Engine::render(RenderContext &ctx) {
     if (engine->window.skipFrames > 0) {
         --engine->window.skipFrames;
     } else {
-        renderer.startFrame(ctx);
         invoke(onRender, &ctx);
 
         for (auto &camera : cameras) {

@@ -5,4 +5,5 @@ declare class DrawCommandBuffer {
     clearColor(c: Color): void;
     pushClip(rect: Partial<Rectangle>): void;
     popClip(): void;
+    queueReadPixel(fb: FrameBuffer, x: number, y: number): void;
 }

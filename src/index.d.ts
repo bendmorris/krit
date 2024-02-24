@@ -26,6 +26,7 @@
 /// <reference path="krit/script/FileDb.d.ts"/>
 /// <reference path="krit/script/ScriptBuiltins.d.ts"/>
 /// <reference path="krit/sound/AudioBackend.d.ts"/>
+/// <reference path="krit/sound/SoundData.d.ts"/>
 /// <reference path="krit/Sprite.d.ts"/>
 /// <reference path="krit/sprites/Backdrop.d.ts"/>
 /// <reference path="krit/sprites/Image.d.ts"/>

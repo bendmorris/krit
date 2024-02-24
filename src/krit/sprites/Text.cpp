@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 #if TRACY_ENABLE
-#include "tracy/Tracy.hpp"
+#include "Tracy.hpp"
 #endif
 
 namespace krit {
@@ -44,6 +44,9 @@ hb_buffer_t *getHbBuffer() {
         recycledBuffers.pop_back();
     }
     return hbBuf;
+}
+void recycleHbBuffer(hb_buffer_t *buf) {
+    recycledBuffers.push_back(buf);
 }
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
@@ -599,7 +602,7 @@ Text::Text(const TextOptions &options) : TextOptions(options) { assert(font); }
 Text::~Text() {
     if (hbBuf) {
         hb_buffer_clear_contents(hbBuf);
-        recycledBuffers.push_back(hbBuf);
+        recycleHbBuffer(hbBuf);
     }
 }
 
@@ -828,10 +831,10 @@ void Text::__render(RenderContext &ctx, bool border) {
                                 std::round(thickness * glyphScale));
                             matrix.tx() +=
                                 (borderGlyph.offset.x() - glyph.offset.x()) /
-                                glyphScale / cameraScale;
+                                glyphScale / fullScaleX;
                             matrix.ty() -=
                                 (borderGlyph.offset.y() - glyph.offset.y()) /
-                                glyphScale / cameraScale;
+                                glyphScale / fullScaleY;
                             if (pitch) {
                                 matrix.pitch(pitch);
                             }
