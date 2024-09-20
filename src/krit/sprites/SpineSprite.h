@@ -84,6 +84,7 @@ struct SpineSprite : public VisibleSprite {
 
     float setAnimation(size_t track, const std::string &name, bool loop = true,
                        float speed = 1, float mix = -1);
+    void stopAnimation(size_t track);
     float addAnimation(size_t track, const std::string &name, bool loop = true,
                        float delay = 0, float mix = -1);
     const char *getAnimation(size_t track);

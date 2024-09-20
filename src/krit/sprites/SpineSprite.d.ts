@@ -12,5 +12,6 @@ declare class SpineSprite extends VisibleSprite {
     setAnimation(track: number, name: string, loop: boolean, speed: number, mix: number): number;
     addAnimation(track: number, name: string, loop: boolean, delay: number, mix: number): number;
     getAnimation(track: number): string;
+    stopAnimation(track: number): void;
     advance(t: number): void;
 }

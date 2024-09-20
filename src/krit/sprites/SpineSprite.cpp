@@ -129,6 +129,13 @@ float SpineSprite::setAnimation(size_t track, const std::string &name,
     return std::max(1.0f / 60, trackEntry->getAnimationEnd());
 }
 
+void SpineSprite::stopAnimation(size_t track) {
+    spine::TrackEntry *t = animationState->getCurrent(track);
+    if (t) {
+        t->setLoop(false);
+    }
+}
+
 float SpineSprite::addAnimation(size_t track, const std::string &name,
                                 bool loop, float delay, float mix) {
     auto trackEntry = this->animationState->addAnimation(
