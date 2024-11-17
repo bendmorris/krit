@@ -12,7 +12,7 @@ struct SpriteShader : public ShaderInstance {
     SpriteShader(Shader *shader) : SpriteShader(*shader) {}
     virtual ~SpriteShader() {}
 
-    virtual void bind(RenderContext &ctx) override;
+    virtual void bind() override;
     virtual void unbind() override;
 
     void prepareVertex(RenderFloat *buf, RenderFloat x, RenderFloat y, RenderFloat z,

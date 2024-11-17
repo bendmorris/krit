@@ -1,4 +1,5 @@
 #include "krit/Window.h"
+#include "krit/Engine.h"
 #include "krit/TaskManager.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
@@ -42,11 +43,11 @@ Window::Window(KritOptions &options)
         options.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         options.width, options.height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
     if (!window) {
-        panic(SDL_GetError());
+        panic("SDL_CreateWindow failed: %s", SDL_GetError());
     }
     this->glContext = SDL_GL_CreateContext(window);
     if (!this->glContext) {
-        panic(SDL_GetError());
+        panic("SDL_GL_CreateContext failed: %s", SDL_GetError());
     }
     SDL_SetWindowSize(window, options.width, options.height);
 
@@ -58,6 +59,8 @@ Window::Window(KritOptions &options)
     SDL_GetGlobalMouseState(&x, &y);
     SDL_GetWindowPosition(this->window, &wx, &wy);
     SDL_WarpMouseInWindow(this->window, x - wx, y - wy);
+    
+    SDL_StopTextInput();
 }
 
 Window::~Window() {
@@ -71,18 +74,18 @@ Window::~Window() {
 }
 
 void Window::setFullScreen(bool full) {
-    TaskManager::instance->pushMain([=](UpdateContext &) {
+    TaskManager::instance->pushMain([=]() {
         if (this->full != full) {
             if ((this->full = full)) {
-                SDL_DisplayMode mode;
-                SDL_GetDesktopDisplayMode(0, &mode);
-                if (fullScreenDimensions.x() > 0 &&
-                    fullScreenDimensions.y() > 0) {
-                    mode.w = fullScreenDimensions.x();
-                    mode.h = fullScreenDimensions.y();
-                }
-                SDL_SetWindowDisplayMode(window, &mode);
-                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
+                // SDL_DisplayMode mode;
+                // SDL_GetDesktopDisplayMode(0, &mode);
+                // if (fullScreenDimensions.x() > 0 &&
+                //     fullScreenDimensions.y() > 0) {
+                //     mode.w = fullScreenDimensions.x();
+                //     mode.h = fullScreenDimensions.y();
+                // }
+                // SDL_SetWindowDisplayMode(window, &mode);
+                SDL_SetWindowFullscreen(window, engine->useSystemFullScreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
             } else {
                 SDL_SetWindowFullscreen(window, 0);
             }

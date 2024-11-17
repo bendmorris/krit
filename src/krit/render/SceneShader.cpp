@@ -18,7 +18,7 @@ SceneShader::SceneShader(Shader &shader) : ShaderInstance(shader) {
     matrixIndex = shader.getUniformLocation("uMatrix");
 }
 
-void SceneShader::bind(RenderContext &ctx) { ShaderInstance::bind(ctx); }
+void SceneShader::bind() { ShaderInstance::bind(); }
 
 void SceneShader::unbind() { ShaderInstance::unbind(); }
 

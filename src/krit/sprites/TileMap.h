@@ -66,7 +66,6 @@ struct TileMap : public VisibleSprite {
     void setTile(int x, int y, int16_t value) { this->getTile(x, y) = value; }
     void clearTile(int x, int y) { this->getTile(x, y) = -1; }
 
-    // void update(UpdateContext &ctx) override;
     void render(RenderContext &ctx) override;
 
 private:

@@ -15,7 +15,7 @@ struct SceneShader : public ShaderInstance {
     SceneShader(Shader *shader) : SceneShader(*shader) {}
     virtual ~SceneShader() {}
 
-    virtual void bind(RenderContext &ctx) override;
+    virtual void bind() override;
     virtual void unbind() override;
 };
 

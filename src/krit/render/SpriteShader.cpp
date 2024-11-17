@@ -15,7 +15,7 @@ SpriteShader::SpriteShader(Shader &shader) : ShaderInstance(shader) {
     matrixIndex = shader.getUniformLocation("uMatrix");
 }
 
-void SpriteShader::bind(RenderContext &ctx) { ShaderInstance::bind(ctx); }
+void SpriteShader::bind() { ShaderInstance::bind(); }
 
 void SpriteShader::unbind() { ShaderInstance::unbind(); }
 

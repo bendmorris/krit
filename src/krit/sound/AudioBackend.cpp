@@ -81,6 +81,9 @@ AudioBackend::~AudioBackend() {
         __sources[i] = _sources[i].source;
     }
     alDeleteSources(MAX_SOURCES, __sources);
+    for (int i = 0; i < MAX_STREAMS; ++i) {
+        alDeleteBuffers(AudioStream::NUM_BUFFERS, &_streams[i].buffer[0]);
+    }
     alcMakeContextCurrent(nullptr);
     if (context) {
         alcDestroyContext(context);

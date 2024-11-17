@@ -1,6 +1,6 @@
 declare class Sprite {
-    fixedUpdate(ctx: UpdateContext): void;
-    update(ctx: UpdateContext): void;
+    fixedUpdate(): void;
+    update(): void;
     render(ctx: RenderContext): void;
 }
 

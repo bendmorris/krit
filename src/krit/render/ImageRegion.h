@@ -8,7 +8,12 @@
 namespace krit {
 
 struct ImageRegion {
-    static ImageRegion *create(std::shared_ptr<ImageData> img) { return new ImageRegion(img); }
+    static ImageRegion empty;
+
+    static ImageRegion *create(std::shared_ptr<ImageData> img) {
+        return new ImageRegion(img);
+    }
+
     std::shared_ptr<ImageData> img;
     IntRectangle rect;
     std::string name;
@@ -25,6 +30,15 @@ struct ImageRegion {
     int &y() { return this->rect.y; }
     int &width() { return this->rect.width; }
     int &height() { return this->rect.height; }
+
+    float uvx1() { return static_cast<float>(rect.x) / img->dimensions.x(); }
+    float uvx2() {
+        return (static_cast<float>(rect.x) + rect.width) / img->dimensions.x();
+    }
+    float uvy1() { return static_cast<float>(rect.y) / img->dimensions.y(); }
+    float uvy2() {
+        return (static_cast<float>(rect.y) + rect.height) / img->dimensions.y();
+    }
 
     ImageRegion subRegion(int x, int y, int width, int height) {
         return ImageRegion(img, this->x() + x, this->y() + y, width, height);

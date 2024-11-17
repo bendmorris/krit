@@ -89,6 +89,7 @@ struct IoZip : public Io {
     }
 
     std::string readFile(const std::filesystem::path &path) override {
+        LOG_DEBUG("read file: %s", path.string().c_str());
         init();
         if (!archives.empty()) {
             auto s = path.string();
@@ -107,15 +108,15 @@ struct IoZip : public Io {
                 buffer.resize(stat.size);
                 zip_file_t *f = zip_fopen_index(archive.zip, index, 0);
                 if (!f) {
-                    panic("error opening file from archive: %s\n", s.c_str());
+                    panic("failed to open file in zip archive: %s\n", s.c_str());
                 }
                 int bytes = stat.size;
                 char *cur = buffer.data();
                 while (bytes) {
                     int read = zip_fread(f, cur, bytes);
                     if (read == -1) {
-                        panic("error reading file from archive: %s\n",
-                              s.c_str());
+                        panic("error reading file in zip archive: %s (error=%i)\n",
+                              s.c_str(), read);
                     }
                     bytes -= read;
                     cur += read;
@@ -125,7 +126,7 @@ struct IoZip : public Io {
             }
         }
         // FIXME: return optional instead of panic
-        panic("no such file");
+        panic("failed to find file in zip archives: %s", path.string().c_str());
     }
 
     std::optional<std::filesystem::path>

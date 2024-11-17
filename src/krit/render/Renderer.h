@@ -29,7 +29,7 @@ struct Renderer {
     ~Renderer();
 
     void renderFrame(RenderContext &ctx);
-    void flip();
+    void commit();
 
     SpriteShader *getDefaultTextureShader();
     SpriteShader *getDefaultColorShader();

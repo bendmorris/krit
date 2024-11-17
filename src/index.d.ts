@@ -40,3 +40,5 @@
 /// <reference path="krit/utils/Log.d.ts"/>
 /// <reference path="krit/utils/Parse.d.ts"/>
 /// <reference path="krit/Window.d.ts"/>
+
+/** @skip */ declare const features: Record<string, any>;

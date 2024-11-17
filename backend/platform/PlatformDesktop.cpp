@@ -1,4 +1,5 @@
 #include "krit/platform/Platform.h"
+#include "tinyfiledialogs.h"
 
 namespace krit {
 
@@ -58,6 +59,32 @@ struct PlatformDesktop : public Platform {
 #else
         return "linux";
 #endif
+    }
+
+    std::optional<std::string>
+    saveFileDialog(const std::string &title,
+                   std::vector<std::string> filters) override {
+        const char *desc = filters.empty() ? "" : filters[0].c_str();
+        std::vector<const char *> filterPtrs;
+        for (size_t i = 1; i < filters.size(); ++i) {
+            filterPtrs.push_back(filters[i].c_str());
+        }
+        const char *result = tinyfd_saveFileDialog(
+            title.c_str(), "", filterPtrs.size(), &filterPtrs[0], desc);
+        return result ? std::optional<std::string>(result) : std::nullopt;
+    }
+
+    std::optional<std::string>
+    openFileDialog(const std::string &title,
+                   std::vector<std::string> filters) override {
+        const char *desc = filters.empty() ? "" : filters[0].c_str();
+        std::vector<const char *> filterPtrs;
+        for (size_t i = 1; i < filters.size(); ++i) {
+            filterPtrs.push_back(filters[i].c_str());
+        }
+        const char *result = tinyfd_openFileDialog(
+            title.c_str(), "", filterPtrs.size(), &filterPtrs[0], desc, 0);
+        return result ? std::optional<std::string>(result) : std::nullopt;
     }
 };
 

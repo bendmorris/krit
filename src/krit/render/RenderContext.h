@@ -16,7 +16,7 @@ struct DrawCommandBuffer;
 struct Matrix;
 struct DrawKey;
 
-struct RenderContext : public UpdateContext {
+struct RenderContext {
     DrawCommandBuffer *drawCommandBuffer = nullptr;
     Camera *camera = nullptr;
     bool debugDraw = false;

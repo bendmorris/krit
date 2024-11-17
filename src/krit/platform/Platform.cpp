@@ -1,5 +1,6 @@
 #include "Platform.h"
 #include "krit/utils/Panic.h"
+#include <SDL2/SDL.h>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -56,8 +57,7 @@ bool Platform::createDir(const std::filesystem::path &path, bool recursive) {
     }
 }
 
-std::vector<std::string>
-Platform::readDir(const std::filesystem::path &path) {
+std::vector<std::string> Platform::readDir(const std::filesystem::path &path) {
     std::vector<std::string> results;
     for (auto &entry : std::filesystem::directory_iterator(path)) {
         results.push_back(entry.path().string());
@@ -71,6 +71,16 @@ bool Platform::remove(const std::filesystem::path &path, bool recursive) {
     } else {
         return std::filesystem::remove(path);
     }
+}
+
+std::string Platform::getClipboardText() {
+    auto result = SDL_GetClipboardText();
+    std::string out(result);
+    SDL_free(result);
+    return out;
+}
+void Platform::setClipboardText(const std::string &s) {
+    SDL_SetClipboardText(s.c_str());
 }
 
 }

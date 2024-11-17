@@ -11,7 +11,6 @@ in vec2 vTexCoord;
 out vec4 FragColor;
 
 void main(void) {
-    // gl_FragCoord = uDepth;
     vec4 color = texture(uImage, vTexCoord) * vColor;
     if (color.a == 0.0) {
         discard;

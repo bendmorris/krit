@@ -21,7 +21,7 @@ Image::Image(const std::string &id) : region(engine->getImage(id)) {
     dimensions.setTo(region.rect.width, region.rect.height);
 }
 
-void Image::update(UpdateContext &ctx) {
+void Image::update() {
     dimensions.setTo(region.rect.width * abs(scale.x()),
                      region.rect.height * abs(scale.y()));
 }

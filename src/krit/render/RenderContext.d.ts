@@ -1,4 +1,6 @@
-declare class RenderContext extends UpdateContext {
+/** @skip */ declare const render: RenderContext;
+
+declare class RenderContext {
     drawCommandBuffer: DrawCommandBuffer;
     camera: Camera;
 

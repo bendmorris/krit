@@ -10,11 +10,10 @@
 namespace krit {
 
 struct DrawContext {
-    static DrawContext *create(RenderContext &ctx) {
-        return new DrawContext(ctx);
+    static DrawContext *create() {
+        return new DrawContext();
     }
 
-    RenderContext *context;
     BlendMode blend = BlendMode::Alpha;
     SmoothingMode smooth = SmoothingMode::SmoothLinear;
     SpriteShader *shader = nullptr;
@@ -24,7 +23,7 @@ struct DrawContext {
     float pitch = 0;
     int zIndex = 0;
 
-    DrawContext(RenderContext &ctx) : context(&ctx) {}
+    DrawContext() {}
 
     void line(const Vec2f &p1, const Vec2f &p2);
 

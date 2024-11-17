@@ -3,5 +3,6 @@ declare enum LogLevel {
     Info,
     Warn,
     Error,
+    Output,
     Fatal,
 }

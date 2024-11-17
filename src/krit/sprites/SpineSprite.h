@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "krit/Engine.h"
-#include "krit/Engine.h"
 #include "krit/Sprite.h"
 #include "krit/asset/AssetCache.h"
 #include "krit/asset/AssetLoader.h"
@@ -63,6 +62,7 @@ struct SpineSprite : public VisibleSprite {
         return new SpineSprite(id);
     }
 
+    Vec2f origin;
     float angle = 0;
     float pitch = 0;
     float rate = 1;
@@ -71,8 +71,6 @@ struct SpineSprite : public VisibleSprite {
     std::unique_ptr<spine::Skeleton> skeleton;
     std::unique_ptr<spine::AnimationState> animationState;
     std::unique_ptr<spine::Skin> skin;
-    std::unordered_map<spine::Attachment *, std::unique_ptr<ImageRegion>>
-        customAttachments;
 
     spine::SkeletonData &skeletonData() { return *data->skeletonData; }
     spine::AnimationStateData &animationStateData() {
@@ -88,11 +86,13 @@ struct SpineSprite : public VisibleSprite {
     float addAnimation(size_t track, const std::string &name, bool loop = true,
                        float delay = 0, float mix = -1);
     const char *getAnimation(size_t track);
+    bool hasAnimation(const std::string &name);
 
     void setAttachment(const std::string &slot, const std::string &attachment) {
         this->skeleton->setAttachment(spine::String(slot.c_str()),
                                       spine::String(attachment.c_str()));
     }
+    std::vector<std::string> animationNames();
 
     void reset() {
         this->skeleton->setToSetupPose();
@@ -114,7 +114,7 @@ struct SpineSprite : public VisibleSprite {
      */
     void setDefaultMix(float t) { this->animationStateData().setDefaultMix(t); }
 
-    void update(UpdateContext &ctx) override;
+    void update() override;
     virtual void render(RenderContext &ctx) override;
     Dimensions getSize() override { return Dimensions(0, 0); }
     void resize(float w, float h) override {}

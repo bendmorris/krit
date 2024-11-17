@@ -14,15 +14,12 @@
 namespace krit {
 
 struct RenderContext;
-struct UpdateContext;
 
-template <typename T> using AsyncTask = std::function<void(T &)>;
-using UpdateTask = AsyncTask<UpdateContext>;
-using RenderTask = AsyncTask<RenderContext>;
+using AsyncTask = std::function<void(void)>;
 
 #if KRIT_ENABLE_THREADS
 
-template <typename T> struct AsyncQueue {
+struct AsyncQueue {
     SDL_mutex *lock;
     SDL_cond *available;
 
@@ -43,29 +40,29 @@ template <typename T> struct AsyncQueue {
         return result;
     }
 
-    void push(T job) {
+    void push(AsyncTask job) {
         SDL_LockMutex(lock);
         queue.push(job);
         SDL_CondBroadcast(available);
         SDL_UnlockMutex(lock);
     }
 
-    bool pop(T *to);
+    bool pop(AsyncTask *to);
 
 private:
-    std::queue<T> queue;
+    std::queue<AsyncTask> queue;
 };
 
 #else
 
-template <typename T> struct AsyncQueue {
+struct AsyncQueue {
     size_t size() { return queue.size(); }
-    void push(T job) { queue.push(job); }
+    void push(AsyncTask job) { queue.push(job); }
 
-    bool pop(T *to);
+    bool pop(AsyncTask *to);
 
 private:
-    std::queue<T> queue;
+    std::queue<AsyncTask> queue;
 };
 
 #endif
@@ -77,13 +74,12 @@ struct TaskManager {
      * Used only by the main/render threads who are the only owners of their
      * work queues. Not safe when multiple threads may perform work.
      */
-    template <typename T>
-    static void work(AsyncQueue<AsyncTask<T>> &queue, T &ctx) {
+    static void work(AsyncQueue &queue) {
         size_t len = queue.size();
-        AsyncTask<T> job;
+        AsyncTask job;
         for (size_t i = 0; i < len; ++i) {
             if (queue.pop(&job)) {
-                job(ctx);
+                job();
             }
         }
     }
@@ -92,17 +88,16 @@ struct TaskManager {
 #if KRIT_ENABLE_THREADS
     SDL_Thread **threads;
 #endif
-    UpdateContext &ctx;
 
-    AsyncQueue<UpdateTask> mainQueue;
-    AsyncQueue<RenderTask> renderQueue;
+    AsyncQueue mainQueue;
+    AsyncQueue renderQueue;
 #if KRIT_ENABLE_THREADS
-    AsyncQueue<UpdateTask> workQueue;
+    AsyncQueue workQueue;
 #endif
 
     bool killed = false;
 
-    TaskManager(UpdateContext &ctx, size_t size) : size(size), ctx(ctx) {
+    TaskManager(size_t size) : size(size) {
         instance = this;
 #if KRIT_ENABLE_THREADS
         threads = new SDL_Thread *[size];
@@ -124,12 +119,12 @@ struct TaskManager {
     }
 
 #if KRIT_ENABLE_THREADS
-    void push(UpdateTask task) { workQueue.push(task); }
+    void push(AsyncTask task) { workQueue.push(task); }
 #else
-    void push(UpdateTask task) { mainQueue.push(task); }
+    void push(AsyncTask task) { mainQueue.push(task); }
 #endif
-    void pushMain(UpdateTask task) { mainQueue.push(task); }
-    void pushRender(RenderTask task) { renderQueue.push(task); }
+    void pushMain(AsyncTask task) { mainQueue.push(task); }
+    void pushRender(AsyncTask task) { renderQueue.push(task); }
 
 private:
     static int workerFunc(void *raw) {

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
 project(krit)
 cmake_policy(SET CMP0072 NEW)
@@ -12,7 +12,7 @@ option(BUILD_WINDOWS "Cross-compile for Windows using mingw-w64" OFF)
 option(KRIT_ENABLE_MULTISAMPLING "Whether to use multisampling for framebuffers" ON)
 option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" ON)
 option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
-option(KRIT_ENABLE_TRACY "Dump any JS leaks on exit" OFF)
+option(KRIT_ENABLE_TRACY "Enable profiling hooks for Tracy" OFF)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
 option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" OFF)
 
@@ -21,7 +21,7 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wno-c99-designator -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-parentheses -Wno-unused-result -Wno-c99-designator -Wall -ffunction-sections -fdata-sections -Os -fno-rtti -falign-functions=1 -fmerge-all-constants -std=c++11")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -ffunction-sections -fdata-sections -DKRIT_RELEASE")
 set(CMAKE_CXX_FLAGS_PROF "${CMAKE_CXX_FLAGS_RELEASE} ${CMAKE_CXX_FLAGS_PROF} -Wno-sometimes-uninitialized -g")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
@@ -34,10 +34,6 @@ set(CMAKE_LINKER_FLAGS_PROF "${CMAKE_LINKER_FLAGS_RELEASE} ${CMAKE_LINKER_FLAGS_
 
 list(APPEND KRIT_LIBS)
 list(APPEND KRIT_STATIC_LIBS)
-
-if(NOT CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
-    find_package(OpenGL REQUIRED)
-endif()
 
 if(KRIT_ENABLE_TOOLS)
     message(STATUS "tools enabled")
@@ -77,7 +73,7 @@ if(KRIT_ENABLE_TRACY)
     # include_directories(${KRIT_DIR}/tracy/public/)
     list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tracy/TracyClient.cpp)
     include_directories(${KRIT_DIR}/tracy)
-    endif()
+endif()
 
 if(KRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
@@ -100,7 +96,7 @@ else()
 endif()
 
 if(KRIT_USE_GLEW)
-    add_definitions(-DKRIT_USE_GLEW)
+    add_definitions(-DKRIT_USE_GLEW -DGLEW_STATIC)
     list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/src/GL/glew.c)
 endif()
 
@@ -159,7 +155,6 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/..)
 file(GLOB_RECURSE KRIT_GENERATED_FILES
     CONFIGURE_DEPENDS
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
-    ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClassGenerated.cpp
     ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
 )
 
@@ -169,13 +164,11 @@ endif()
 
 list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/quickjs.h
-    ${KRIT_DIR}/quickjs/quickjs-libc.h
     ${KRIT_DIR}/quickjs/quickjs.c
     ${KRIT_DIR}/quickjs/libregexp.c
     ${KRIT_DIR}/quickjs/libunicode.c
     ${KRIT_DIR}/quickjs/libbf.c
     ${KRIT_DIR}/quickjs/cutils.c
-    ${KRIT_DIR}/quickjs/quickjs-libc.c
 )
 
 add_library(${PROJECT_NAME} OBJECT
@@ -201,11 +194,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
 
-message("==> static libs: ${KRIT_STATIC_LIBS}")
-
 if(KRIT_ENABLE_THREADS)
     list(APPEND KRIT_STATIC_LIBS "-lpthread")
 endif()
+
+message("==> static libs: ${KRIT_STATIC_LIBS}")
 
 if(KRIT_ENABLE_TOOLS)
     # find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
@@ -217,12 +210,12 @@ endif()
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
-    # "-Wl,-Bdynamic"
+    "-Wl,-Bdynamic"
     ${KRIT_LIBS}
-    # "-Wl,-Bstatic"
+    ${KRIT_STATIC}
     ${KRIT_STATIC_LIBS}
+    ${KRIT_PLATFORM_STATIC_LIBS}
     "-Wl,--gc-sections"
-    "-static-libgcc"
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 

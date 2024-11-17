@@ -5,6 +5,7 @@
 #include "krit/input/Key.h"
 #include "krit/input/Mouse.h"
 #include "krit/utils/Signal.h"
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -20,47 +21,6 @@ struct ActionEvent {
 };
 
 struct InputContext;
-
-struct KeyContext {
-    std::unordered_map<int, Action> keyMappings;
-    std::unordered_map<int, std::string> keyNames;
-
-    KeyContext() {}
-
-    void define(Key keyCode, Action action) {
-        this->keyMappings.insert(std::make_pair(keyCode, action));
-    }
-    void undefine(Key keyCode) { this->keyMappings.erase(keyCode); }
-    void registerKeyState(InputContext *ctx, Key keyCode, int state);
-
-    const std::string &keyName(Key keyCode) {
-        auto it = keyNames.find(keyCode);
-        if (it == keyNames.end()) {
-            auto x = keyNames.emplace(
-                std::make_pair(keyCode, SDL_GetScancodeName((SDL_Scancode)keyCode)));
-            return x.first->second;
-        }
-        return it->second;
-    }
-};
-
-struct MouseContext {
-    Vec3i mousePos;
-    bool mouseOver = false;
-
-    Action mappings[MouseButtonMax] = {0};
-    bool active[MouseButtonMax] = {0};
-
-    MouseContext() : mousePos(-1, -1) {}
-
-    void define(MouseButton btn, Action action) {
-        this->mappings[btn] = action;
-    }
-    void undefine(MouseButton btn) { this->mappings[btn] = 0; }
-    void registerMouseState(InputContext *ctx, MouseButton btn, int state);
-    void registerOver(bool over) { this->mouseOver = over; }
-    void registerPos(int x, int y) { this->mousePos.setTo(x, y); }
-};
 
 struct InputContext {
     KeyContext key;
@@ -109,8 +69,8 @@ struct InputContext {
         }
     }
 
-    void keyDown(Key key) { this->key.registerKeyState(this, key, 1); }
-    void keyUp(Key key) { this->key.registerKeyState(this, key, 0); }
+    void keyDown(KeyCode key) { this->key.registerKeyState(this, key, 1); }
+    void keyUp(KeyCode key) { this->key.registerKeyState(this, key, 0); }
     void mouseDown(MouseButton btn) {
         this->mouse.registerMouseState(this, btn, 1);
     }
@@ -122,7 +82,7 @@ struct InputContext {
         this->mouse.registerMouseState(this, MouseWheel, 0);
     }
 
-    void bindKey(Key key, Action action) { this->key.define(key, action); }
+    void bindKey(KeyCode key, Action action) { this->key.define(key, action); }
     void bindMouse(MouseButton btn, Action action) {
         this->mouse.define(btn, action);
     }

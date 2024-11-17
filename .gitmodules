@@ -10,3 +10,6 @@
 [submodule "tracy"]
 	path = tracy
 	url = https://github.com/wolfpld/tracy
+[submodule "argparse"]
+	path = argparse
+	url = https://github.com/p-ranav/argparse

@@ -16,10 +16,12 @@ declare namespace console {
 /** @skip */ declare function __date_clock(): number;
 
 declare namespace Log {
+    /** @jsfunc */ function addLogSink(sink: (s: string, level: LogLevel) => void): void;
     /** @jsfunc */ function setLogLevel(level: LogLevel): void;
     /** @jsfunc */ function debug(msg: string): void;
     /** @jsfunc */ function info(msg: string): void;
     /** @jsfunc */ function warn(msg: string): void;
     /** @jsfunc */ function error(msg: string): void;
+    /** @jsfunc */ function output(msg: string): void;
     /** @jsfunc */ function fatal(msg: string): void;
 }

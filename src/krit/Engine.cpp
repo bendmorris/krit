@@ -34,9 +34,11 @@
 
 namespace krit {
 
-struct UpdateContext;
-
 Engine *engine{0};
+RenderContext &render() {
+    assert(engine);
+    return engine->renderCtx();
+}
 
 #ifdef __EMSCRIPTEN__
 static void __doFrame() {
@@ -103,13 +105,10 @@ void Engine::run() {
     frameFinish = frameStart;
     // bool lockFramerate = true;
 
-    taskManager = new TaskManager(ctx, 3);
-
-    // generate an initial MouseMotion event; without this, SDL will return an
-    // invalid initial mouse position
+    taskManager = new TaskManager(3);
 
     phase = FramePhase::Begin;
-    invoke(onBegin, &updateCtx());
+    invoke(onBegin);
     phase = FramePhase::Inactive;
     onBegin = nullptr;
 
@@ -127,7 +126,8 @@ void Engine::run() {
 }
 
 void Engine::cleanup() {
-    invoke(onEnd, &ctx);
+    invoke(onEnd);
+    onEnd = nullptr;
     TaskManager::instance->cleanup();
 }
 
@@ -136,8 +136,8 @@ bool Engine::doFrame() {
         return false;
     }
 
-    UpdateContext *update = &ctx;
-    ++ctx.tickId;
+    ++frame.tickId;
+    LOG_DEBUG("starting tick %u", frame.tickId);
 
     phase = FramePhase::Update;
     // do {
@@ -151,11 +151,13 @@ bool Engine::doFrame() {
     //     printf("%.2f\n", 1.0 / elapsed);
     // }
     accumulator += elapsed;
-    ctx.elapsed = ctx.frameCount = 0;
+    frame.elapsed = frame.frameCount = 0;
     totalElapsed += elapsed / 1000000.0;
 
-    TaskManager::work(taskManager->mainQueue, *update);
+    LOG_DEBUG("handling work queue");
+    TaskManager::work(taskManager->mainQueue);
 
+    LOG_DEBUG("handling input");
     input.startFrame();
     handleEvents();
     input.endFrame();
@@ -165,41 +167,49 @@ bool Engine::doFrame() {
         return false;
     }
 
-    while (accumulator >= frameDelta2 && ctx.frameCount < MAX_FRAMES) {
+    while (accumulator >= frameDelta2 && frame.frameCount < MAX_FRAMES) {
         accumulator -= frameDelta;
         if (accumulator < 0) {
             accumulator = 0;
         }
-        ++ctx.frameCount;
-        ++ctx.frameId;
-        ctx.elapsed = frameDelta / 1000000.0;
-        fixedUpdate(ctx);
+        ++frame.frameCount;
+        ++frame.frameId;
+        LOG_DEBUG("fixed update frame %u", frame.frameId);
+        frame.elapsed = frameDelta / 1000000.0;
+        fixedUpdate();
     }
     if (accumulator > frameDelta2) {
         accumulator = fmod(accumulator, frameDelta2);
     }
 
-    ctx.elapsed = elapsed / 1000000.0;
-    this->update(ctx);
+    frame.elapsed = elapsed / 1000000.0;
+    LOG_DEBUG("update; elapsed: %.3f", frame.elapsed);
+    this->update();
     if (!running) {
         quit();
         return false;
     }
     frameStart = frameFinish;
 
+    LOG_DEBUG("render");
     phase = FramePhase::Render;
-    TaskManager::work(taskManager->renderQueue, ctx);
-    render(ctx);
-    renderThread();
+    TaskManager::work(taskManager->renderQueue);
+    render();
+    LOG_DEBUG("handling render work queue");
+    TaskManager::work(taskManager->renderQueue);
+    LOG_DEBUG("committing render");
+    renderer.commit();
 
     phase = FramePhase::Inactive;
 
+    LOG_DEBUG("flush fonts");
     fonts.flush();
 
 #if TRACY_ENABLE
     FrameMark;
 #endif
 
+    LOG_DEBUG("tick finished");
     return true;
 }
 
@@ -253,14 +263,14 @@ void Engine::handleEvents() {
                 if (!event.key.repeat) {
                     if (handleKey) {
                         input.keyDown(
-                            static_cast<Key>(event.key.keysym.scancode));
+                            static_cast<KeyCode>(event.key.keysym.scancode));
                     }
                 }
                 break;
             }
             case SDL_KEYUP: {
                 if (handleKey) {
-                    input.keyUp(static_cast<Key>(event.key.keysym.scancode));
+                    input.keyUp(static_cast<KeyCode>(event.key.keysym.scancode));
                 }
                 break;
             }
@@ -291,6 +301,10 @@ void Engine::handleEvents() {
                 }
                 break;
             }
+            case SDL_TEXTINPUT: {
+                input.key.inputText += event.text.text;
+                break;
+            }
         }
     }
 
@@ -305,17 +319,17 @@ void Engine::handleEvents() {
     }
 }
 
-void Engine::fixedUpdate(UpdateContext &ctx) {
+void Engine::fixedUpdate() {
 #if TRACY_ENABLE
     ZoneScopedN("Engine::fixedUpdate");
 #endif
     if (this->paused) {
         return;
     }
-    invoke(onFixedUpdate, &ctx);
+    invoke(onFixedUpdate);
 }
 
-void Engine::update(UpdateContext &ctx) {
+void Engine::update() {
 #if TRACY_ENABLE
     ZoneScopedN("Engine::update");
 #endif
@@ -335,12 +349,12 @@ void Engine::update(UpdateContext &ctx) {
     // handle setTimeout events
     static std::list<TimedEvent> requeue;
     if (!this->events.empty()) {
-        float elapsed = ctx.elapsed;
+        float elapsed = frame.elapsed;
         elapsed -= this->events.front().delay;
-        this->events.front().delay -= ctx.elapsed;
+        this->events.front().delay -= frame.elapsed;
         while (!this->events.empty() && this->events.front().delay < 0) {
             TimedEvent &event = this->events.front();
-            if (invoke(event.signal, false, &ctx, event.userData)) {
+            if (invoke(event.signal, false, event.userData)) {
                 requeue.emplace_back(event.interval, event.interval,
                                      event.signal, event.userData);
             }
@@ -363,12 +377,12 @@ void Engine::update(UpdateContext &ctx) {
     assets.update();
 
     // actual update cycle
-    invoke(onUpdate, &ctx);
+    invoke(onUpdate);
     script.update();
-    invoke(postUpdate, &ctx);
+    invoke(postUpdate);
 }
 
-void Engine::render(RenderContext &ctx) {
+void Engine::render() {
 #if TRACY_ENABLE
     ZoneScopedN("Engine::render");
 #endif
@@ -377,14 +391,14 @@ void Engine::render(RenderContext &ctx) {
     if (engine->window.skipFrames > 0) {
         --engine->window.skipFrames;
     } else {
-        invoke(onRender, &ctx);
+        invoke(onRender);
 
         for (auto &camera : cameras) {
             ctx.drawCommandBuffer->buf.emplace_back<SetCamera>(&camera);
             ctx.camera = &camera;
-            camera.update(ctx);
+            camera.update();
             ctx.drawCommandBuffer->setCamera(&camera);
-            invoke(camera.render, &ctx);
+            invoke(camera.render);
         }
         ctx.camera = nullptr;
 
@@ -394,24 +408,11 @@ void Engine::render(RenderContext &ctx) {
         renderer.renderFrame(ctx);
         checkForGlErrors("after render frame");
 
-        invoke(this->postRender, &ctx);
+        invoke(postRender);
     }
 }
 
-void Engine::renderThread() {
-    TaskManager::work(taskManager->renderQueue, ctx);
-    flip();
-}
-
-void Engine::flip() {
-#if TRACY_ENABLE
-    ZoneScopedN("Engine::flip");
-#endif
-    renderer.flip();
-    checkForGlErrors("flush fonts");
-}
-
-void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
+void Engine::setTimeout(TimedEvent::SignalType s, float delay, void *userData) {
     bool inserted = false;
     float interval = delay;
     for (auto it = this->events.begin(); it != this->events.end(); ++it) {
@@ -432,21 +433,21 @@ void Engine::setTimeout(CustomSignal s, float delay, void *userData) {
 }
 
 void Engine::addCursor(const std::string &cursorPath,
-                       const std::string &cursorName, int resolution) {
+                       const std::string &cursorName, int resolution, int x,
+                       int y) {
     std::string s = engine->io->readFile(cursorPath);
 
-    TaskManager::instance->push([=, s = std::move(s)](UpdateContext &) mutable {
-        SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
-        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
-        SDL_RWclose(rw);
+    // TaskManager::instance->push([=, s = std::move(s)]() mutable {
+    SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
+    SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
+    SDL_RWclose(rw);
 
-        SDL_Cursor *cursor = SDL_CreateColorCursor(surface, 0, 0);
-
-        TaskManager::instance->pushRender([=](RenderContext &) {
-            this->cursors[cursorName].push_back(
-                std::make_pair(resolution, cursor));
-        });
-    });
+    SDL_Cursor *cursor = SDL_CreateColorCursor(surface, x, y);
+    this->cursors[cursorName].push_back(std::make_pair(resolution, cursor));
+    if (this->cursor == cursorName) {
+        chooseCursor();
+    }
+    // });
 }
 
 void Engine::setCursor(const std::string &cursor) {
@@ -470,6 +471,11 @@ void Engine::chooseCursor() {
     if (candidate && candidate != _cursor) {
         SDL_SetCursor(_cursor = candidate);
     }
+}
+
+Camera &Engine::addCamera() {
+    cameras.emplace_back();
+    return cameras.back();
 }
 
 }

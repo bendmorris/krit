@@ -18,24 +18,28 @@ struct Camera {
     Point anchor;
     Dimensions dimensions;
     Dimensions currentDimensions;
-    Vec2f scale { 1, 1 };
+    Vec2f scale{1, 1};
     double minRatio = 16.0 / 9;
     double maxRatio = 16.0 / 9;
     FrameBuffer *fb = nullptr;
 
-    RenderSignal render;
+    Signal render;
 
     float &width() { return this->dimensions.x(); }
     float &height() { return this->dimensions.y(); }
 
-    int viewportWidth() { return round(this->currentDimensions.x() * scale.x()); }
-    int viewportHeight() { return round(this->currentDimensions.y() * scale.y()); }
+    int viewportWidth() {
+        return round(this->currentDimensions.x() * scale.x());
+    }
+    int viewportHeight() {
+        return round(this->currentDimensions.y() * scale.y());
+    }
 
     float rotation = 0;
     float pitch = 0;
     float roll = 0;
 
-    Camera(): dimensions(3840, 2160), currentDimensions(3840, 2160) {}
+    Camera() : dimensions(3840, 2160), currentDimensions(3840, 2160) {}
     virtual ~Camera();
 
     Camera &center() {
@@ -49,21 +53,27 @@ struct Camera {
     }
 
     Camera &move(float x, float y);
+    /**
+     * Apply the Camera's transformation to a given point in camera space,
+     * converting it to screen coordinates.
+     */
     void transformPoint(Point &p);
+    /**
+     * Apply the inverse of the Camera's transformation to a given point in
+     * screen space, converting it to camera-local coordinates.
+     */
     void untransformPoint(Point &p);
     void scaleDimensions(Dimensions &d);
     void unscaleDimensions(Dimensions &d);
 
     void getTransformationMatrix(Matrix4 &m, int width, int height);
 
-    void update(RenderContext &context);
+    void update();
 
     void worldToScreenCoords(Vec3f &screenCoords);
     void screenToWorldCoords(Vec3f &screenCoords);
 
-    void resetRotation() {
-        rotation = pitch = roll = 0;
-    }
+    void resetRotation() { rotation = pitch = roll = 0; }
 };
 
 }

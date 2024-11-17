@@ -56,6 +56,10 @@ template <typename T> struct is_class_type<const std::vector<T>> {
     static constexpr bool value = false;
 };
 
+template <typename T> struct is_class_type<std::optional<T>> {
+    static constexpr bool value = false;
+};
+
 template <typename T>
 struct is_class_type<T,
                      typename std::enable_if<is_string_type<T>::value>::type> {
@@ -234,6 +238,26 @@ template <typename T0> struct ScriptValueFromPartial {
     }
 };
 
+// optional
+
+template <typename T> struct ScriptValueFromJs<std::optional<T>> {
+    static std::optional<T> valueFromJs(JSContext *ctx, JSValue arr) {
+        if (JS_IsUndefined(arr)) {
+            return {};
+        }
+        return ScriptValueFromJs<T>::valueFromJs(ctx, arr);
+    }
+};
+
+template <typename T> struct ScriptValueFromJs<std::optional<T> &&> {
+    static std::optional<T> &&valueFromJs(JSContext *ctx, JSValue arr) {
+        if (JS_IsUndefined(arr)) {
+            return {};
+        }
+        return ScriptValueFromJs<T &&>::valueFromJs(ctx, arr);
+    }
+};
+
 // valueToJs is defined for: basic types, basic type references, basic type
 // pointers, class type references, class type pointers, promises
 template <typename T, typename enable = void> struct ScriptValueToJs {
@@ -392,6 +416,25 @@ template <typename T> struct ScriptValueToJs<const std::vector<T> &> {
         }
         JS_FreeValue(ctx, push);
         return arr;
+    }
+};
+
+// optional
+template <typename T> struct ScriptValueToJs<std::optional<T>> {
+    static JSValue valueToJs(JSContext *ctx, std::optional<T> v) {
+        return v ? ScriptValueToJs<T>::valueToJs(ctx, *v) : JS_UNDEFINED;
+    }
+};
+
+template <typename T> struct ScriptValueToJs<std::optional<T> &> {
+    static JSValue valueToJs(JSContext *ctx, std::optional<T> &v) {
+        return v ? ScriptValueToJs<T>::valueToJs(ctx, *v) : JS_UNDEFINED;
+    }
+};
+
+template <typename T> struct ScriptValueToJs<std::optional<T> &&> {
+    static JSValue valueToJs(JSContext *ctx, std::optional<T> &&v) {
+        return v ? ScriptValueToJs<T>::valueToJs(ctx, *v) : JS_UNDEFINED;
     }
 };
 

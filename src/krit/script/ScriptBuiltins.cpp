@@ -15,19 +15,34 @@ JS_FUNC(console_log) {
     size_t len;
 
     for (int i = 0; i < argc; i++) {
-        if (i) {
-            printf(" ");
-        }
         str = JS_ToCStringLen(ctx, &len, argv[i]);
         if (!str) {
             return JS_EXCEPTION;
         }
-        printf("%.*s", static_cast<int>(len), str);
+        Log::output(i ? " %.*s" : "%.*s", static_cast<int>(len), str);
         JS_FreeCString(ctx, str);
     }
 
-    puts("");
-    fflush(stdout);
+    return JS_UNDEFINED;
+}
+
+char buf[10*1024];
+JS_FUNC(Log_addLogSink) {
+    JSValue func = argv[0];
+    engine->script.holdValue(func);
+    Log::addLogSink([=](LogLevel level, const char *fmt, va_list args) {
+        size_t len = vsnprintf(buf, sizeof(buf), fmt, args);
+        if (len >= sizeof(buf)) {
+            // oh no
+            len = sizeof(buf) - 1;
+        }
+        JSValue s = JS_NewStringLen(ctx, buf, len);
+        JSValue jsLevel = JS_NewUint32(ctx, static_cast<uint32_t>(level));
+        JSValue callArgs[2] { s, jsLevel };
+        JS_FreeValue(ctx, JS_Call(ctx, func, JS_UNDEFINED, 2, callArgs));
+        JS_FreeValue(ctx, s);
+        JS_FreeValue(ctx, jsLevel);
+    });
     return JS_UNDEFINED;
 }
 
@@ -49,6 +64,7 @@ DEFINE_LOG_METHOD(debug)
 DEFINE_LOG_METHOD(info)
 DEFINE_LOG_METHOD(warn)
 DEFINE_LOG_METHOD(error)
+DEFINE_LOG_METHOD(output)
 DEFINE_LOG_METHOD(fatal)
 #undef DEFINE_LOG_METHOD
 

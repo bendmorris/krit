@@ -2,25 +2,26 @@
 #define KRIT_ENGINE
 
 #include "krit/Camera.h"
+#include "krit/Options.h"
 #include "krit/Window.h"
 #include "krit/asset/AssetCache.h"
 #include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
-#include "krit/render/Renderer.h"
-#include "krit/script/ScriptEngine.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
 #include "krit/net/Net.h"
 #include "krit/platform/Platform.h"
 #include "krit/render/Renderer.h"
+#include "krit/script/ScriptEngine.h"
 #include "krit/sound/AudioBackend.h"
 #include "krit/utils/Color.h"
+#include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
 #include <chrono>
 #include <string>
 
 namespace krit {
-struct KritOptions;
+
 struct TaskManager;
 struct RenderContext;
 struct UpdateContext;
@@ -44,16 +45,19 @@ struct Engine {
     enum class FramePhase { Inactive, Begin, Update, Render };
 
     struct TimedEvent {
+        using SignalType = ReturnSignal<bool, void *>;
         float delay;
         float interval;
-        CustomSignal signal;
+        SignalType signal;
         void *userData;
 
-        TimedEvent(float delay, float interval, CustomSignal signal,
+        TimedEvent(float delay, float interval, SignalType signal,
                    void *userData)
             : delay(delay), interval(interval), signal(signal),
               userData(userData) {}
     };
+
+    bool isRenderPhase() { return phase == FramePhase::Render; }
 
 private:
     struct EngineScope {
@@ -62,7 +66,6 @@ private:
     };
 
     EngineScope _scope;
-    RenderContext ctx;
 
 public:
     // backends
@@ -70,6 +73,7 @@ public:
     std::unique_ptr<Net> net;
     std::unique_ptr<Platform> platform;
 
+    RenderContext ctx;
     Window window;
     Renderer renderer;
     FontManager fonts;
@@ -88,29 +92,25 @@ public:
     float speed = 1;
     double totalElapsed = 0;
 
-    UpdateSignal onBegin = nullptr;
-    UpdateSignal onEnd = nullptr;
-    UpdateSignal onUpdate = nullptr;
-    UpdateSignal onFixedUpdate = nullptr;
-    UpdateSignal postUpdate = nullptr;
-    RenderSignal onRender = nullptr;
-    RenderSignal postRender = nullptr;
+    Signal onBegin;
+    Signal onEnd;
+    Signal onUpdate;
+    Signal onFixedUpdate;
+    Signal postUpdate;
+    Signal onRender;
+    Signal postRender;
     std::list<TimedEvent> events;
 
     Engine(KritOptions &options);
     ~Engine();
 
-    JSValue &scriptContext() {
-        return _scriptContext;
-    }
-
-    UpdateContext &updateCtx() {
-        assert(phase != FramePhase::Inactive);
-        return ctx;
-    }
+    JSValue &scriptContext() { return _scriptContext; }
 
     RenderContext &renderCtx() {
-        assert(phase == FramePhase::Render);
+        if (phase != FramePhase::Render) {
+            panic("the render context can only be accessed during the render "
+                  "phase");
+        }
         return ctx;
     }
 
@@ -135,22 +135,20 @@ public:
 
     std::string cursor;
 
-    void update(UpdateContext &ctx);
-    void fixedUpdate(UpdateContext &ctx);
-    void render(RenderContext &ctx);
-    void renderThread();
-    void flip();
+    bool useSystemFullScreen{false};
 
-    void setTimeout(CustomSignal s, float delay = 0, void *userData = nullptr);
+    void update();
+    void fixedUpdate();
+    void render();
+
+    void setTimeout(TimedEvent::SignalType s, float delay = 0,
+                    void *userData = nullptr);
 
     void addCursor(const std::string &cursorPath, const std::string &cursor,
-                   int resolution);
+                   int resolution = 0, int x = 0, int y = 0);
     void setCursor(const std::string &cursor);
 
-    Camera &addCamera() {
-        cameras.emplace_back();
-        return cameras.back();
-    }
+    Camera &addCamera();
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 
@@ -184,6 +182,12 @@ private:
     friend struct Editor;
     friend struct Renderer;
 };
+
+RenderContext &render();
+
+/** these hooks are defined by the application */
+void gameOptions(KritOptions &);
+void gameBootstrap(Engine &);
 
 }
 

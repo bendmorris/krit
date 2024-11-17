@@ -12,7 +12,7 @@ declare class Camera {
     maxRatio: number;
 
     center(): void;
-    update(ctx: RenderContext): void;
+    update(): void;
     resetRotation(): void;
     setLogicalSize(w: number, h: number): Camera;
     viewportWidth(): number;

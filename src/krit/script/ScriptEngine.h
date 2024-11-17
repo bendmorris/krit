@@ -101,6 +101,7 @@ struct ScriptEngine {
     JSValue exports = JS_UNDEFINED;
     void *userData;
     JSValue finalizerSymbol = JS_UNDEFINED;
+    JSValue features = JS_UNDEFINED;
     JSClassID finalizerId = 0;
     std::unordered_map<std::pair<int, const void *>, JSValue, hash_instance_pair>
         instances;
@@ -230,7 +231,7 @@ struct ScriptEngine {
     void update();
     void handleDelays(float elapsed);
     void checkForErrors();
-    void checkForErrors(JSValue, FILE *f = stderr);
+    void checkForErrors(JSValue);
 
     template <typename T> JSValue create(void *data) {
         if (!data) {
@@ -315,8 +316,14 @@ struct ScriptEngine {
 
     void dumpBacktrace(FILE *);
 
+    void holdValue(JSValue val) {
+        JS_DupValue(ctx, val);
+        heldValues.push_back(val);
+    }
+
 private:
     std::vector<DelayRequest> delayPromises;
+    std::vector<JSValue> heldValues;
 };
 
 template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {

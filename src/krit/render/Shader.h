@@ -51,7 +51,7 @@ struct Shader {
 
     GLint getUniformLocation(const std::string &);
     virtual void init();
-    virtual void bind(RenderContext &ctx);
+    virtual void bind();
     virtual void unbind();
     virtual size_t stride();
 };
@@ -69,7 +69,7 @@ struct ShaderInstance {
     ShaderInstance(Shader *shader) : ShaderInstance(*shader) {}
 
     virtual void init() { shader.init(); }
-    virtual void bind(RenderContext &ctx);
+    virtual void bind();
     virtual void unbind() { shader.unbind(); }
     virtual size_t stride() { return shader.stride(); }
 

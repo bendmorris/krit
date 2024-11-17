@@ -2,6 +2,8 @@
 
 namespace krit {
 
+RenderContext &render();
+
 void DrawContext::line(const Vec2f &p1, const Vec2f &p2) {
     // create perpendicular delta vector
     Vec2f a(p2.x() - p1.x(), p2.y() - p1.y());
@@ -167,7 +169,7 @@ void DrawContext::circleFilled(const Vec2f &center, float radius,
         float theta = segment * radians;
         float x2 = x + sin(theta) * radius;
         float y2 = y + cos(theta) * radius;
-        this->addTriangle(x, y, x1, y1, x2, y2, c, c, c);
+        addTriangle(x, y, x1, y1, x2, y2, c, c, c);
         x1 = x2;
         y1 = y2;
     }
@@ -196,10 +198,10 @@ void DrawContext::arc(const Vec2f &center, float radius, float startRads,
         outer.setTo(x + cosv * outerRadius, y - sinv * outerRadius);
 
         if (segment != 0) {
-            this->addTriangle(lastInner.x(), lastInner.y(), lastOuter.x(),
-                              lastOuter.y(), outer.x(), outer.y(), ci, co, co);
-            this->addTriangle(lastInner.x(), lastInner.y(), outer.x(),
-                              outer.y(), inner.x(), inner.y(), ci, co, ci);
+            addTriangle(lastInner.x(), lastInner.y(), lastOuter.x(),
+                        lastOuter.y(), outer.x(), outer.y(), ci, co, co);
+            addTriangle(lastInner.x(), lastInner.y(), outer.x(), outer.y(),
+                        inner.x(), inner.y(), ci, co, ci);
         }
 
         lastOuter = outer;
@@ -216,8 +218,8 @@ void DrawContext::drawTriangle(const Vec2f &v1, const Vec2f &v2,
 void DrawContext::drawQuad(float x1, float y1, float x2, float y2, float x3,
                            float y3, float x4, float y4) {
     auto c = this->color.withAlpha(this->alpha);
-    this->addTriangle(x1, y1, x2, y2, x3, y3, c, c, c);
-    this->addTriangle(x1, y1, x3, y3, x4, y4, c, c, c);
+    addTriangle(x1, y1, x2, y2, x3, y3, c, c, c);
+    addTriangle(x1, y1, x3, y3, x4, y4, c, c, c);
 }
 
 void DrawContext::addTriangle(float tx1, float ty1, float tx2, float ty2,
@@ -229,7 +231,7 @@ void DrawContext::addTriangle(float tx1, float ty1, float tx2, float ty2,
     key.shader = this->shader;
     Triangle t(tx1, ty1, tx2, ty2, tx3, ty3);
     Triangle uv;
-    this->context->addTriangle(key, t, uv, c1, c2, c3, this->zIndex);
+    krit::render().addTriangle(key, t, uv, c1, c2, c3, this->zIndex);
 }
 
 }

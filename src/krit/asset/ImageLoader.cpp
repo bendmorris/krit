@@ -172,7 +172,8 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
     // emscripten loads images by path
     (void)imgType;
     TaskManager::instance->push(
-        [=, pathToLoad = std::move(pathToLoad)](UpdateContext &) mutable {
+        [=, pathToLoad = std::move(pathToLoad)]() mutable {
+            LOG_DEBUG("load image %s", pathToLoad.c_str());
             auto fullPathToLoad = foundArchive / pathToLoad;
             SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
             if (!surface) {
@@ -180,7 +181,9 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
                       IMG_GetError());
             }
 #else
-    TaskManager::instance->push([=, s = std::move(s)](UpdateContext &) mutable {
+    TaskManager::instance->push([=, pathToLoad = std::move(pathToLoad),
+                                 s = std::move(s)]() mutable {
+        LOG_DEBUG("load image %s", pathToLoad.c_str());
         SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
         if (!surface) {
@@ -195,7 +198,6 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             //     hasAlpha ? SDL_PIXELFORMAT_ABGR8888 : SDL_PIXELFORMAT_BGR888;
             // if (surface->format->format != desiredFormat) {
             //     // convert the format
-            //     printf("convert: %s\n", pathToLoad.c_str());
             //     SDL_Surface *oldSurface = surface;
             //     surface = SDL_ConvertSurfaceFormat(oldSurface, desiredFormat,
             //     0); SDL_FreeSurface(oldSurface);
@@ -220,7 +222,10 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
                       surface->format->BytesPerPixel);
             }
 
-            TaskManager::instance->pushRender([=](RenderContext &render) {
+            TaskManager::instance->pushRender([=]() {
+                LOG_DEBUG("callback: load image %s",
+                          pathToLoad.c_str(), surface->format->format,
+                          (int)surface->format->BitsPerPixel, surface->pitch);
                 // upload texture
                 GLuint texture;
                 glActiveTexture(GL_TEXTURE0);
@@ -233,6 +238,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
                 checkForGlErrors("gen textures");
                 glBindTexture(GL_TEXTURE_2D, texture);
                 checkForGlErrors("bind texture");
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
                 glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
                              mode, GL_UNSIGNED_BYTE, surface->pixels);
                 checkForGlErrors("texImage2D");

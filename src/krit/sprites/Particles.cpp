@@ -1,6 +1,7 @@
 #include "krit/sprites/Particles.h"
 #include "krit/Engine.h"
 #include "krit/Math.h"
+#include "krit/UpdateContext.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/io/Io.h"
 #include "krit/utils/Panic.h"
@@ -15,17 +16,19 @@ ParticleEmitter::ParticleEmitter()
       rotation(M_PI * -2, M_PI * 2, -M_PI, M_PI, true), lifetime(1), count(5),
       start(0), duration(0) {}
 
-EffectInstance &ParticleSystem::emit(const std::string &name, const Point &at, bool loop) {
+EffectInstance &ParticleSystem::emit(const std::string &name, const Point &at,
+                                     bool loop) {
     auto &effect = effects[name];
     _effects.emplace_back(effect, at, loop);
     return _effects.back();
 }
 
-void ParticleSystem::update(UpdateContext &ctx) {
+void ParticleSystem::update() {
     size_t i = 0;
+    float elapsed = frame.elapsed;
     while (i < this->_particles.size()) {
         auto &it = this->_particles[i];
-        it.decay += ctx.elapsed / it.duration;
+        it.decay += elapsed / it.duration;
         if (it.decay >= 1) {
             if (this->_particles.size() > 1) {
                 std::iter_swap(this->_particles.begin() + i,
@@ -40,7 +43,7 @@ void ParticleSystem::update(UpdateContext &ctx) {
     while (i < this->_effects.size()) {
         auto &instance = this->_effects[i];
         float oldTime = instance.time;
-        instance.time += ctx.elapsed;
+        instance.time += elapsed;
         for (auto &emitter : instance.effect->emitters) {
             int oldParticles = emitter.countAt(oldTime);
             int curParticles = emitter.countAt(instance.time);
@@ -81,11 +84,13 @@ void ParticleSystem::render(RenderContext &ctx) {
         auto &image = particle.emitter->image;
         float t = particle.decay;
         image->position = particle.origin;
-        image->position += Vec3f(particle.xOffset.eval(t), particle.yOffset.eval(t));
+        image->position +=
+            Vec3f(particle.xOffset.eval(t), particle.yOffset.eval(t));
         float distance = particle.distance.eval(t);
         float angle = particle.angle.eval(t);
         if (distance) {
-            image->position += Vec3f(cos(angle) * distance, -sin(angle) * distance);
+            image->position +=
+                Vec3f(cos(angle) * distance, -sin(angle) * distance);
         }
         image->color = particle.color.eval(t);
         image->color.a = particle.alpha.eval(t);
@@ -167,7 +172,8 @@ std::shared_ptr<ParticleEffect> ParticleEffect::load(const std::string &path) {
     std::string manifest = engine->io->readFile(path.c_str());
     yaml_parser_t parser;
     yaml_parser_initialize(&parser);
-    yaml_parser_set_input_string(&parser, (unsigned char *)manifest.c_str(), manifest.size());
+    yaml_parser_set_input_string(&parser, (unsigned char *)manifest.c_str(),
+                                 manifest.size());
     yaml_document_t doc;
     if (!yaml_parser_load(&parser, &doc)) {
         panic("failed to parse particle spec");

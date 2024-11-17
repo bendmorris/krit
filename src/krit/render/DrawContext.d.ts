@@ -7,7 +7,7 @@ declare class DrawContext {
     lineThickness: number;
     zIndex: number;
 
-    constructor(ctx: RenderContext);
+    constructor();
 
     line(p1: Partial<Vec2f>, p2: Partial<Vec2f>): void;
     rect(r: Rectangle): void;

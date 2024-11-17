@@ -17,7 +17,6 @@ std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
 void ScriptEngine::baseFinalizer(JSRuntime *rt, JSValue val) {
     void *p = JS_GetOpaque(val, 0);
     if (p) {
-        LOG_DEBUG("remove cached instance %p", p);
         ScriptEngine *engine =
             static_cast<ScriptEngine *>(JS_GetRuntimeOpaque(rt));
         engine->instances.erase(std::make_pair(JS_GetClassID(val), p));
@@ -60,10 +59,9 @@ static std::string js_std_get_error(JSContext *ctx,
     }
 }
 
-static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val,
-                              FILE *f) {
+static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
     std::string err = js_std_get_error(ctx, exception_val);
-    fprintf(f, "%s", err.c_str());
+    LOG_ERROR("%s", err.c_str());
 }
 
 static void js_std_promise_rejection_tracker(JSContext *ctx,
@@ -71,8 +69,8 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
                                              JSValueConst reason,
                                              int is_handled, void *opaque) {
     if (!is_handled) {
-        fprintf(stderr, "Possibly unhandled promise rejection: ");
-        js_std_dump_error(ctx, reason, stderr);
+        std::string err = js_std_get_error(ctx, reason);
+        LOG_ERROR("Possibly unhandled promise rejection: %s", err.c_str());
     }
 }
 
@@ -95,10 +93,9 @@ ScriptEngine::ScriptEngine() {
 
     ctx = JS_NewContext(rt);
     JS_SetContextOpaque(ctx, this);
-    exports = JS_NewObject(ctx);
     JSValue globalObj = JS_GetGlobalObject(ctx);
-
-    JS_SetPropertyStr(ctx, globalObj, "exports", JS_DupValue(ctx, exports));
+    JS_SetPropertyStr(ctx, globalObj, "exports", JS_DupValue(ctx, exports = JS_NewObject(ctx)));
+    JS_SetPropertyStr(ctx, globalObj, "features", JS_DupValue(ctx, features = JS_NewObject(ctx)));
 
     // finalizers
     JSValue symbol = JS_GetPropertyStr(ctx, globalObj, "Symbol");
@@ -124,7 +121,11 @@ ScriptEngine::ScriptEngine() {
 }
 
 ScriptEngine::~ScriptEngine() {
+    for (auto &val : heldValues) {
+        JS_FreeValue(ctx, val);
+    }
     JS_FreeValue(ctx, exports);
+    JS_FreeValue(ctx, features);
     JS_FreeValue(ctx, finalizerSymbol);
     JS_FreeContext(ctx);
     JS_RunGC(rt);
@@ -135,8 +136,8 @@ ScriptEngine::~ScriptEngine() {
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
     JSValue result = JS_Eval(ctx, src, len, scriptName, JS_EVAL_TYPE_MODULE);
     if (JS_IsException(result) || JS_IsError(ctx, result)) {
-        printf("error evaluating script: %s\n", scriptName);
-        js_std_dump_error(ctx, result, stderr);
+        LOG_ERROR("error evaluating script: %s", scriptName);
+        js_std_dump_error(ctx, result);
     }
     JS_FreeValue(ctx, result);
 }
@@ -166,9 +167,9 @@ void ScriptEngine::checkForErrors() {
     JS_FreeValue(ctx, exception_val);
 }
 
-void ScriptEngine::checkForErrors(JSValue exception_val, FILE *f) {
+void ScriptEngine::checkForErrors(JSValue exception_val) {
     if (JS_IsError(ctx, exception_val) || JS_IsException(exception_val)) {
-        js_std_dump_error(ctx, exception_val, f);
+        js_std_dump_error(ctx, exception_val);
     }
 }
 
@@ -229,7 +230,8 @@ void ScriptEngine::dumpBacktrace(FILE *f) {
     assert(ctx);
     JS_ThrowInternalError(ctx, "JS backtrace");
     JSValue exception_val = JS_GetException(ctx);
-    checkForErrors(exception_val, f);
+    std::string err = js_std_get_error(ctx, exception_val);
+    LOG_ERROR("%s", err.c_str());
     JS_FreeValue(ctx, exception_val);
 }
 

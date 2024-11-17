@@ -21,6 +21,7 @@ struct TextureAtlas {
         if (found == this->regions.end()) {
             Log::fatal("couldn't find texture atlas region: %s\n",
                        region.c_str());
+            return ImageRegion::empty;
         }
         return found->second;
     }

@@ -57,14 +57,14 @@ struct AudioStream {
 
 private:
     std::unique_ptr<char[]> ringBuffer;
-    AudioBackend *backend;
-    std::shared_ptr<MusicData> data = nullptr;
-    std::shared_ptr<MusicData> onLoopData = nullptr;
-    AudioSource *source = nullptr;
-    std::array<ALuint, NUM_BUFFERS> buffer;
-    int bufferPtr = 0;
-    int samplesPlayed = 0;
-    float volume = 1;
+    AudioBackend *backend { nullptr };
+    std::shared_ptr<MusicData> data;
+    std::shared_ptr<MusicData> onLoopData;
+    AudioSource *source { nullptr };
+    std::array<ALuint, NUM_BUFFERS> buffer { 0 };
+    int bufferPtr { 0 };
+    int samplesPlayed { 0 };
+    float volume { 1 };
 
     friend struct AudioBackend;
 };

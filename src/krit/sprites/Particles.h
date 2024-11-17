@@ -163,7 +163,7 @@ struct ParticleSystem : public VisibleSprite {
         return _particles.size() > 0;
     }
 
-    void update(UpdateContext &ctx) override;
+    void update() override;
     void render(RenderContext &ctx) override;
 
 private:

@@ -4,6 +4,8 @@
 #include <cstdarg>
 #include <cstdio>
 #include <unistd.h>
+#include <functional>
+#include <vector>
 
 namespace krit {
 
@@ -23,6 +25,10 @@ namespace krit {
     if (krit::Log::level <= LogLevel::Error) {                                 \
         Log::error(__VA_ARGS__);                                               \
     }
+#define LOG_OUTPUT(...)                                                        \
+    if (krit::Log::level <= LogLevel::Output) {                                \
+        Log::output(__VA_ARGS__);                                              \
+    }
 #define LOG_FATAL(...)                                                         \
     if (krit::Log::level <= LogLevel::Fatal) {                                 \
         Log::fatal(__VA_ARGS__);                                               \
@@ -33,17 +39,21 @@ enum LogLevel {
     Info,
     Warn,
     Error,
+    Output,
     Fatal,
     LogLevelCount,
 };
 
+using LogSink = std::function<void(LogLevel level, const char *fmt, va_list args)>;
+
 struct Log {
-    static const char *abbreviations[LogLevelCount];
-    static const char *logOpen[LogLevelCount];
-    static const char *logClose;
     static LogLevel level;
 
+    static std::vector<LogSink> logSinks;
+
     static void log(LogLevel level, const char *fmt, va_list args);
+    static void consoleLog(LogLevel level, const char *fmt, va_list args);
+    static void addLogSink(LogSink sink) { logSinks.push_back(sink); }
 
 #define DEFINE_LOG_METHOD(name, level)                                         \
     static void name(const char *fmt, ...) {                                   \
@@ -56,6 +66,7 @@ struct Log {
     DEFINE_LOG_METHOD(info, Info)
     DEFINE_LOG_METHOD(warn, Warn)
     DEFINE_LOG_METHOD(error, Error)
+    DEFINE_LOG_METHOD(output, Output)
     DEFINE_LOG_METHOD(fatal, Fatal)
 #undef DEFINE_LOG_METHOD
 };

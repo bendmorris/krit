@@ -20,7 +20,7 @@ Shader::~Shader() {
     GLuint program = this->program;
     if (program) {
         TaskManager::instance->pushRender(
-            [program](RenderContext &) { glDeleteProgram(program); });
+            [program]() { glDeleteProgram(program); });
     }
 }
 
@@ -110,7 +110,7 @@ static void *offset(intptr_t n) { return (void *)n; }
 
 size_t Shader::stride() { return sizeof(VertexData); }
 
-void Shader::bind(RenderContext &ctx) {
+void Shader::bind() {
     this->init();
     checkForGlErrors("shader init");
     glUseProgram(this->program);
@@ -180,8 +180,9 @@ void ShaderInstance::setUniform(const std::string &name, UniformValue value) {
     }
 }
 
-void ShaderInstance::bind(RenderContext &ctx) {
-    shader.bind(ctx);
+void ShaderInstance::bind() {
+    auto &ctx = render();
+    shader.bind();
     int textureIndex = 1;
     for (size_t idx = 0; idx < uniforms.size(); ++idx) {
         auto &info = uniforms[idx];

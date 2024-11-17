@@ -14,8 +14,8 @@ struct SpriteShader;
 
 struct Sprite {
     virtual void render(RenderContext &) {}
-    virtual void update(UpdateContext &) {}
-    virtual void fixedUpdate(UpdateContext &) {}
+    virtual void update() {}
+    virtual void fixedUpdate() {}
 
     virtual ~Sprite() = default;
 };

@@ -62,7 +62,8 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
     //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
-        Log::error("failed to load skeleton data: %s", path.c_str());
+        Log::error("failed to load skeleton data %s: %s", path.c_str(),
+                   data->binary->getError().buffer());
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
@@ -84,7 +85,7 @@ void SpineTextureLoader::load(spine::AtlasPage &page,
     std::string assetName(path.buffer());
     std::shared_ptr<ImageData> texture = engine->getImage(assetName);
     ImageRegion *region = new ImageRegion(texture);
-    page.setRendererObject(region);
+    page.texture = region;
     page.width = texture->width();
     page.height = texture->height();
 }
@@ -110,7 +111,7 @@ SpineSprite::SpineSprite(const std::string &id) {
     this->skeleton->update(0);
     this->animationState->update(0);
     this->animationState->apply(*this->skeleton);
-    this->skeleton->updateWorldTransform();
+    this->skeleton->updateWorldTransform(spine::Physics::Physics_None);
 }
 
 float SpineSprite::worldVertices[1024] = {0};
@@ -162,7 +163,7 @@ void SpineSprite::advance(float t) {
         this->skeleton->update(t);
         this->animationState->update(t);
         this->animationState->apply(*this->skeleton);
-        this->skeleton->updateWorldTransform();
+        this->skeleton->updateWorldTransform(spine::Physics::Physics_None);
     }
 }
 
@@ -189,171 +190,109 @@ void SpineSprite::removeSkin(const std::string &name) {
     }
 }
 
-void SpineSprite::update(UpdateContext &ctx) {
+void SpineSprite::update() {
     animationState->setTimeScale(this->rate);
-    float elapsed = ctx.elapsed;
-    if (elapsed > 0) {
+    float elapsed = frame.elapsed;
+    if ((this->rate * elapsed) > 0) {
         this->advance(elapsed);
     }
 }
 
+static spine::SkeletonRenderer skeletonRenderer;
+
 void SpineSprite::render(RenderContext &ctx) {
     spine::Skeleton &skeleton = *this->skeleton;
-    spine::Vector<spine::Slot *> &drawOrder = skeleton.getDrawOrder();
-    size_t size = drawOrder.size();
 
     Matrix4 m;
     m.identity();
+    m.translate(-origin.x(), -origin.y());
     m.scale(scale.x(), scale.y());
     m.rotate(angle);
     m.pitch(pitch);
     m.translate(position.x(), position.y(), position.z());
 
-    for (size_t i = 0; i < size; ++i) {
-        spine::Slot *slot = drawOrder[i];
-        Color color;
-        color.r = this->color.r * skeleton.getColor().r * slot->getColor().r;
-        color.g = this->color.g * skeleton.getColor().g * slot->getColor().g;
-        color.b = this->color.b * skeleton.getColor().b * slot->getColor().b;
-        color.a = this->color.a * skeleton.getColor().a * slot->getColor().a;
-        spine::Attachment *attachment = slot->getAttachment();
-        if (!attachment) {
-            continue;
+    DrawKey key;
+    key.shader = this->shader;
+    key.smooth = this->smooth;
+    // key.blend = this->blend;
+
+    spine::RenderCommand *command = skeletonRenderer.render(skeleton);
+    while (command) {
+        assert(command->texture);
+        float *positions = command->positions;
+        float *uvs = command->uvs;
+        uint32_t *colors = command->colors;
+        uint16_t *indices = command->indices;
+        key.image = static_cast<ImageRegion *>(command->texture)->img;
+        float uvOffsetX = 0, uvOffsetY = 0;
+        auto region = static_cast<ImageRegion *>(command->texture);
+        if (region->uvx1() || region->uvy1() ||
+            std::abs(region->uvx2() - 1) > 0.000001 ||
+            std::abs(region->uvy2() - 1) > 0.000001) {
+            uvOffsetX = region->uvx1();
+            uvOffsetY = region->uvy1();
         }
-        BlendMode blendMode = Alpha;
-        // switch (slot->getData().getBlendMode()) {
-        //     case spine::BlendMode_Normal: {
-        //         blendMode = Add;
-        //         break;
-        //     }
-        //     case spine::BlendMode_Multiply: {
-        //         blendMode = Multiply;
-        //         break;
-        //     }
-        //     case spine::BlendMode_Screen: {
-        //         blendMode = BlendScreen;
-        //         break;
-        //     }
-        //     default: {
-        //         blendMode = Alpha;
-        //     }
-        // }
-        // var tintR: Float = skeleton.r * slot.r;
-        // var tintG: Float = skeleton.g * slot.g;
-        // var tintB: Float = skeleton.b * slot.b;
-        // var tintA: Float = skeleton.a * slot.a;
-        if (attachment->getRTTI().isExactly(spine::RegionAttachment::rtti)) {
-            float *worldVertices = SpineSprite::worldVertices;
-            spine::RegionAttachment *regionAttachment =
-                static_cast<spine::RegionAttachment *>(attachment);
-            auto overridden = customAttachments.find(attachment);
-            ImageRegion *region;
-            Triangle uvt1;
-            Triangle uvt2;
-            if (overridden == customAttachments.end()) {
-                region = static_cast<ImageRegion *>(
-                    (static_cast<spine::AtlasRegion *>(
-                         regionAttachment->getRendererObject()))
-                        ->page->getRendererObject());
-                spine::Vector<float> &uvs = regionAttachment->getUVs();
-                uvt1.p1.setTo(uvs[0], uvs[1]);
-                uvt1.p2.setTo(uvs[2], uvs[3]);
-                uvt1.p3.setTo(uvs[4], uvs[5]);
-                uvt2.p1.setTo(uvs[4], uvs[5]);
-                uvt2.p2.setTo(uvs[6], uvs[7]);
-                uvt2.p3.setTo(uvs[0], uvs[1]);
-            } else {
-                region = overridden->second.get();
-                auto &imageData = region->img;
-                auto &rect = region->rect;
-                float uvx1 = rect.x / static_cast<float>(imageData->width());
-                float uvy1 = rect.y / static_cast<float>(imageData->height());
-                float uvx2 = (rect.x + rect.width) /
-                             static_cast<float>(imageData->width());
-                float uvy2 = (rect.y + rect.height) /
-                             static_cast<float>(imageData->height());
-                uvt2.p1.setTo(uvx1, uvy1);
-                uvt2.p2.setTo(uvx2, uvy1);
-                uvt2.p3.setTo(uvx2, uvy2);
-                uvt1.p1.setTo(uvx2, uvy2);
-                uvt1.p2.setTo(uvx1, uvy2);
-                uvt1.p3.setTo(uvx1, uvy1);
+        switch (command->blendMode) {
+            case spine::BlendMode_Additive: {
+                key.blend = Add;
+                break;
             }
-            regionAttachment->computeWorldVertices(slot->getBone(),
-                                                   worldVertices, 0, 2);
-            DrawKey key;
-            key.shader = this->shader;
-            key.image = region->img;
-            key.smooth = this->smooth;
-            key.blend = blendMode;
-            Triangle t1(worldVertices[0], worldVertices[1], worldVertices[2],
-                        worldVertices[3], worldVertices[4], worldVertices[5]);
-            Triangle t2(worldVertices[4], worldVertices[5], worldVertices[6],
-                        worldVertices[7], worldVertices[0], worldVertices[1]);
-
-            t1 = m * t1;
-            t2 = m * t2;
-            ctx.addTriangle(key, t1, uvt1, color, zIndex);
-            ctx.addTriangle(key, t2, uvt2, color, zIndex);
-        } else if (attachment->getRTTI().isExactly(
-                       spine::MeshAttachment::rtti)) {
-            float *worldVertices = SpineSprite::worldVertices;
-            spine::MeshAttachment *meshAttachment =
-                static_cast<spine::MeshAttachment *>(attachment);
-            auto overridden = customAttachments.find(attachment);
-            ImageRegion *originalRegion = static_cast<ImageRegion *>(
-                (static_cast<spine::AtlasRegion *>(
-                     meshAttachment->getRendererObject()))
-                    ->page->getRendererObject());
-            ImageRegion *region;
-            if (overridden == customAttachments.end()) {
-                region = originalRegion;
-            } else {
-                region = overridden->second.get();
+            case spine::BlendMode_Multiply: {
+                key.blend = Multiply;
+                break;
             }
-
-            // before rendering via spSkeleton_updateWorldTransform
-            meshAttachment->computeWorldVertices(*slot, worldVertices);
-            DrawKey key;
-            key.shader = this->shader;
-            key.image = region->img;
-            key.smooth = this->smooth;
-            key.blend = blendMode;
-            float *uvs = meshAttachment->getUVs().buffer();
-            auto &triangles = meshAttachment->getTriangles();
-            for (size_t i = 0; i < triangles.size() / 3; ++i) {
-                int i0 = triangles[i * 3] << 1;
-                int i1 = triangles[i * 3 + 1] << 1;
-                int i2 = triangles[i * 3 + 2] << 1;
-                Triangle t(worldVertices[i0], worldVertices[i0 + 1],
-                           worldVertices[i1], worldVertices[i1 + 1],
-                           worldVertices[i2], worldVertices[i2 + 1]);
-                Triangle uvt(uvs[i0], uvs[i0 + 1], uvs[i1], uvs[i1 + 1],
-                             uvs[i2], uvs[i2 + 1]);
-                if (originalRegion != region) {
-                    auto transformPoint = [&](Vec3f &p) {
-                        p.x() = (p.x() - static_cast<float>(
-                                             meshAttachment->getRegionU())) /
-                                    meshAttachment->getRegionWidth() *
-                                    region->rect.width +
-                                static_cast<float>(region->rect.x) /
-                                    region->img->width();
-                        p.y() = (p.y() - static_cast<float>(
-                                             meshAttachment->getRegionV())) /
-                                    meshAttachment->getRegionHeight() *
-                                    region->rect.height +
-                                static_cast<float>(region->rect.y) /
-                                    region->img->height();
-                    };
-                    transformPoint(uvt.p1);
-                    transformPoint(uvt.p2);
-                    transformPoint(uvt.p3);
-                }
-                t = m * t;
-                ctx.addTriangle(key, t, uvt, color, zIndex);
+            case spine::BlendMode_Screen: {
+                key.blend = BlendScreen;
+                break;
+            }
+            default: {
+                key.blend = Alpha;
             }
         }
+        Color c;
+        for (int i = 0; i < command->numIndices;) {
+            Triangle t, uv;
+            uint16_t i1 = indices[i++];
+            uint16_t i2 = indices[i++];
+            uint16_t i3 = indices[i++];
+            t.p1.setTo(positions[i1 * 2], positions[i1 * 2 + 1]);
+            t.p2.setTo(positions[i2 * 2], positions[i2 * 2 + 1]);
+            t.p3.setTo(positions[i3 * 2], positions[i3 * 2 + 1]);
+            uv.p1.setTo(uvs[i1 * 2], uvs[i1 * 2 + 1]);
+            uv.p2.setTo(uvs[i2 * 2], uvs[i2 * 2 + 1]);
+            uv.p3.setTo(uvs[i3 * 2], uvs[i3 * 2 + 1]);
+            if (uvOffsetX) {
+                uv.p1.x() += uvOffsetX;
+                uv.p2.x() += uvOffsetX;
+                uv.p3.x() += uvOffsetX;
+            }
+            if (uvOffsetY) {
+                uv.p1.y() += uvOffsetY;
+                uv.p2.y() += uvOffsetY;
+                uv.p3.y() += uvOffsetY;
+            }
+            c.setTo(colors[i1] & 0xffffff);
+            c.a = ((colors[i1] >> 24) & 0xff) / 0xff;
+
+            t = m * t;
+            // t.debugPrint();
+            ctx.addTriangle(key, t, uv, c.multiply(color), zIndex);
+        }
+        command = command->next;
     }
+}
+
+bool SpineSprite::hasAnimation(const std::string &name) {
+    return !!this->skeletonData().findAnimation(spine::String(name.c_str()));
+}
+
+std::vector<std::string> SpineSprite::animationNames() {
+    std::vector<std::string> result;
+    auto all = this->skeletonData().getAnimations();
+    for (size_t i = 0; i < all.size(); ++i) {
+        result.emplace_back(all[i]->getName().buffer());
+    }
+    return result;
 }
 
 }

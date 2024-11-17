@@ -45,9 +45,7 @@ hb_buffer_t *getHbBuffer() {
     }
     return hbBuf;
 }
-void recycleHbBuffer(hb_buffer_t *buf) {
-    recycledBuffers.push_back(buf);
-}
+void recycleHbBuffer(hb_buffer_t *buf) { recycledBuffers.push_back(buf); }
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
     {"\n", TextFormatTagOptions().setNewline()},
@@ -92,55 +90,55 @@ static void debugPrint(const std::vector<TextOpcode> &ops) {
     for (auto &op : ops) {
         switch (op.index()) {
             case RawText: {
-                LOG_INFO("RawText");
+                LOG_DEBUG("RawText");
                 break;
             }
             case StartTextRun: {
-                LOG_INFO("StartTextRun");
+                LOG_DEBUG("StartTextRun");
                 break;
             }
             case SetColor: {
-                LOG_INFO("SetColor");
+                LOG_DEBUG("SetColor");
                 break;
             }
             case SetAlign: {
-                LOG_INFO("SetAlign");
+                LOG_DEBUG("SetAlign");
                 break;
             }
             case SetCustom: {
-                LOG_INFO("SetCustom");
+                LOG_DEBUG("SetCustom");
                 break;
             }
             case GlyphBlock: {
-                LOG_INFO("GlyphBlock");
+                LOG_DEBUG("GlyphBlock");
                 break;
             }
             case NewLine: {
-                LOG_INFO("NewLine");
+                LOG_DEBUG("NewLine");
                 break;
             }
             case RenderSprite: {
-                LOG_INFO("RenderSprite");
+                LOG_DEBUG("RenderSprite");
                 break;
             }
             case Tab: {
-                LOG_INFO("Tab");
+                LOG_DEBUG("Tab");
                 break;
             }
             case Whitespace: {
-                LOG_INFO("Whitespace");
+                LOG_DEBUG("Whitespace");
                 break;
             }
             case CharDelay: {
-                LOG_INFO("CharDelay");
+                LOG_DEBUG("CharDelay");
                 break;
             }
             case EnableBorder: {
-                LOG_INFO("EnableBorder");
+                LOG_DEBUG("EnableBorder");
                 break;
             }
             case DisableBorder: {
-                LOG_INFO("DisableBorder");
+                LOG_DEBUG("DisableBorder");
                 break;
             }
         }
@@ -365,7 +363,7 @@ struct TextParser {
 
         // pass 2: shape and layout
         size_t glyphCost = 0;
-        for (int i = 0; i < runs.size(); ++i) {
+        for (size_t i = 0; i < runs.size(); ++i) {
             auto &run = runs[i];
             // shape the text
             auto &hbBuf = run.hbBuf;
@@ -427,7 +425,8 @@ struct TextParser {
                                     break;
                                 }
                                 default: {
-                                    glyphCost += 1;//std::max(charDelays[c], 1);
+                                    glyphCost +=
+                                        1; // std::max(charDelays[c], 1);
                                     if (!word.empty() &&
                                         word.back().index() == GlyphBlock &&
                                         std::get<GlyphBlock>(word.back())
@@ -661,7 +660,7 @@ void Text::__render(RenderContext &ctx, bool border) {
     float fontScale = size / cameraScale / 64.0;
     bool pixelPerfect = allowPixelPerfect && fontScale < 20;
 
-    hb_buffer_t *hbBuf;
+    hb_buffer_t *hbBuf = nullptr;
     std::shared_ptr<Font> font = this->font;
     int lineHeight = 0;
 
@@ -719,7 +718,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                         this->position.y() +
                             renderData.position.y() * fontScale +
                             (lineHeight * scale.y() * fontScale - size.y()) -
-                            lineHeight * fontScale);
+                            lineHeight * fontScale,
+                        this->position.z());
                     Color originalColor(sprite->color);
                     sprite->color = sprite->color * color;
                     sprite->render(ctx);
@@ -777,7 +777,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                     DrawKey key;
                     if (pixelPerfect) {
                         key.smooth = SmoothingMode::SmoothNearest;
-                        matrix.translate(position.x(), position.y());
+                        matrix.translate(position.x(), position.y(),
+                                         position.z());
                         matrix.tx() =
                             std::round(matrix.tx() * fullScaleX) / fullScaleX;
                         matrix.ty() =
@@ -802,8 +803,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                                          ? SmoothingMode::SmoothLinear
                                          : this->smooth;
                         matrix.translate(position.x() + renderData.position.x(),
-                                         position.y() +
-                                             renderData.position.y());
+                                         position.y() + renderData.position.y(),
+                                         position.z());
                         matrix.a() = ctx.camera->scale.x() /
                                      ctx.camera->scale.y() / glyphScale /
                                      fullScaleX;

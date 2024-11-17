@@ -16,13 +16,13 @@ Camera::~Camera() {
 }
 
 Camera &Camera::move(float x, float y) {
-    this->position.setTo(x, y);
+    this->position.setTo(x, y, this->position.z());
     return *this;
 }
 
 void Camera::transformPoint(Point &p) {
     Point position = this->position;
-    p += Vec3f(-position.x(), -position.y());
+    p += Vec3f(-position.x(), -position.y(), -position.z());
     p += Vec3f(anchor.x() * dimensions.x(), anchor.y() * dimensions.y());
     p *= Vec3f(scale.x(), scale.y(), 1.0);
 }
@@ -31,7 +31,7 @@ void Camera::untransformPoint(Point &p) {
     Point position = this->position;
     p /= Vec3f(scale.x(), scale.y(), 1.0);
     p -= Vec3f(anchor.x() * dimensions.x(), anchor.y() * dimensions.y());
-    p -= Vec3f(-position.x(), -position.y());
+    p -= Vec3f(-position.x(), -position.y(), -position.z());
 }
 
 void Camera::scaleDimensions(Dimensions &d) {
@@ -42,7 +42,7 @@ void Camera::unscaleDimensions(Dimensions &d) {
     d.setTo(d.x() / scale.x(), d.y() / scale.y());
 }
 
-void Camera::update(RenderContext &) {
+void Camera::update() {
     double width = engine->window.x(), height = engine->window.y();
     double ratio = width / height;
     if (ratio < minRatio) {
@@ -50,21 +50,20 @@ void Camera::update(RenderContext &) {
         ratio = minRatio;
         offset.x() = 0;
         offset.y() = (height - (width / minRatio)) / 2;
-        // printf("narrow: %.2f, %.2f, %i\n", s, ratio, offset.y());
-    } else if (ratio > maxRatio) {
-        // too wide; left and right letterboxing
-        ratio = maxRatio;
-        offset.x() = (width - (height * maxRatio)) / 2;
-        offset.y() = 0;
-        // if (maxRatio > 1.8) {
-        // printf("wide: %.2f, %.2f, %i,%i\n", s, ratio, offset.x(),
-        // offset.y());
-        // }
+        float s = width / dimensions.x();
+        scale.setTo(s, s);
     } else {
-        offset.setTo(0, 0);
+        if (ratio > maxRatio) {
+            // too wide; left and right letterboxing
+            ratio = maxRatio;
+            offset.x() = (width - (height * maxRatio)) / 2;
+            offset.y() = 0;
+        } else {
+            offset.setTo(0, 0);
+        }
+        float s = height / dimensions.y();
+        scale.setTo(s, s);
     }
-    float s = height / dimensions.y();
-    scale.setTo(s, s);
     currentDimensions.setTo(ratio * dimensions.y(), dimensions.y());
 }
 
@@ -79,6 +78,7 @@ void Camera::getTransformationMatrix(Matrix4 &m, int width, int height) {
     if (roll) {
         m.roll(roll);
     }
+    m.translate(0, 0, -position.z());
     m.scale(scale.x(), scale.y(), 1.0);
     m.translate((anchor.x() * currentDimensions.x()) * scale.x(),
                 (anchor.y() * currentDimensions.y()) * scale.y());

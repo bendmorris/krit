@@ -5,3 +5,7 @@ declare enum MouseButton {
     MouseWheel,
     MouseButtonMax,
 }
+
+interface MouseContext {
+    mousePos: Vec3i;
+}

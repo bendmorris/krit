@@ -43,7 +43,7 @@ struct Image : public VisibleSprite {
         this->scale.setTo(w / this->width(), h / this->height());
     }
 
-    void update(UpdateContext &ctx) override;
+    void update() override;
     void render(RenderContext &ctx) override;
 };
 

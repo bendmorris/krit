@@ -13,4 +13,10 @@ declare class Platform {
     createDir(path: string, recursive?: boolean): boolean;
     readDir(path: string): Array<string>;
     remove(path: string, recursive?: boolean): boolean;
+
+    saveFileDialog(title: string, filters: string[]): string | undefined;
+    openFileDialog(title: string, filters: string[]): string | undefined;
+
+    getClipboardText(): string;
+    setClipboardText(content: string): void;
 }

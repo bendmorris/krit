@@ -437,7 +437,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                             : getDefaultColorShader();
             }
 
-            shader->bind(ctx);
+            shader->bind();
             checkForGlErrors("bind shader");
 
             if (drawCall.key.image) {
@@ -478,7 +478,7 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
     setBlendMode(shader->blend);
     // setSmoothingMode(SmoothLinear, nullptr);
 
-    shader->bind(ctx);
+    shader->bind();
     if (shader->matrixIndex > -1) {
         glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE, _ortho.data());
     }
@@ -507,7 +507,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
     clear(ctx);
     checkForGlErrors("start frame");
 
-    int index = engine->updateCtx().tickId % DUP_BUFFER_COUNT;
+    int index = frame.tickId % DUP_BUFFER_COUNT;
 
     // upload vertex data
     glBindBuffer(GL_ARRAY_BUFFER, this->vertexBuffer[index]);
@@ -610,11 +610,14 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
                                                     0.0, 0.0, 0.0, 0.0, 0.0);
 }
 
-void Renderer::flip() {
-    LOG_DEBUG("flip");
+void Renderer::commit() {
+#if TRACY_ENABLE
+    ZoneScopedN("Engine::commitRender");
+#endif
     SDL_GL_SwapWindow(engine->window.window);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    checkForGlErrors("commitRender");
 
     // #if TRACY_ENABLE
     //     TracyGpuCollect;
