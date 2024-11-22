@@ -2,7 +2,9 @@
 #define KRIT_PLATFORM
 
 #include <filesystem>
+
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace krit {
