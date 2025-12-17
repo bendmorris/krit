@@ -6,6 +6,7 @@ set(KRIT_BACKEND_RENDERER Gl CACHE STRING "Renderer backend")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
 
 add_definitions(-DKRIT_DESKTOP)
+add_definitions(-DKRIT_SOUND_THREAD)
 include_directories(${KRIT_DIR}/argparse/include)
 include_directories(${KRIT_DIR}/tinyfiledialogs)
 list(APPEND KRIT_SRC_FILES ${KRIT_DIR}/tinyfiledialogs/tinyfiledialogs.c)
