@@ -13,7 +13,7 @@
 #include "krit/platform/Platform.h"
 #include "krit/render/Renderer.h"
 #include "krit/script/ScriptEngine.h"
-#include "krit/sound/AudioBackend.h"
+#include "krit/audio/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
@@ -30,9 +30,8 @@ struct TextureAtlas;
 struct Font;
 struct ParticleEffect;
 struct SkeletonBinaryData;
-struct SoundData;
+struct AudioData;
 struct SpineData;
-struct MusicData;
 
 const int MAX_FRAMES = 5;
 const int FPS = 60;
@@ -158,8 +157,7 @@ public:
     DECLARE_ASSET_GETTER(Atlas, TextureAtlas)
     DECLARE_ASSET_GETTER(Font, Font)
     DECLARE_ASSET_GETTER(Spine, SpineData)
-    DECLARE_ASSET_GETTER(Sound, SoundData)
-    DECLARE_ASSET_GETTER(Music, MusicData)
+    DECLARE_ASSET_GETTER(Audio, AudioData)
     DECLARE_ASSET_GETTER(Text, std::string)
     DECLARE_ASSET_GETTER(Particle, ParticleEffect)
 #undef DECLARE_ASSET_GETTER

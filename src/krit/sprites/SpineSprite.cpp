@@ -62,7 +62,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     // data->skeletonData = std::unique_ptr<spine::SkeletonData>(
     //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
-        Log::error("failed to load skeleton data %s: %s", path.c_str(),
+        LOG_ERROR("failed to load skeleton data %s: %s", path.c_str(),
                    data->binary->getError().buffer());
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(

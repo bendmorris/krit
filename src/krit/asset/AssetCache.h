@@ -51,8 +51,8 @@ template <typename... AssetTypes> struct AssetCacheBase {
     template <int A>
     using SharedPtrT = decltype(std::get<A>(preserved)[0].asset);
     template <int A>
-    using AssetT = typename std::remove_reference<decltype(
-        *std::get<A>(preserved)[0].asset.get())>::type;
+    using AssetT = typename std::remove_reference<
+        decltype(*std::get<A>(preserved)[0].asset.get())>::type;
     template <int A> using AssetLoaderT = AssetLoader<AssetT<A>>;
 
     template <typename T> std::shared_ptr<T> get(const std::string &path) {
@@ -69,14 +69,14 @@ template <typename... AssetTypes> struct AssetCacheBase {
                 // we can reuse a global reference
                 std::shared_ptr<void> v = it->second.lock();
                 if (v) {
-                    Log::debug("reuse asset: %s", id.c_str());
+                    AREA_LOG_DEBUG("asset", "reuse asset: %s", id.c_str());
                     SharedPtrT<A> ptr = std::static_pointer_cast<AssetT<A>>(v);
                     return ptr;
                 }
             }
         }
         // we need to load this asset
-        Log::info("load asset: %s", id.c_str());
+        AREA_LOG_INFO("asset", "load asset: %s", id.c_str());
         SharedPtrT<A> asset = AssetLoaderT<A>::loadAsset(id);
         if (!asset) {
             return nullptr;
@@ -88,16 +88,19 @@ template <typename... AssetTypes> struct AssetCacheBase {
         auto &it = sizes;
         it.first += cost;
         if (it.second > 0 && it.first > it.second) {
-            LOG_DEBUG("we need space (%i); need %zu, %zu total, %zu limit", A,
-                      cost, it.first, it.second);
+            AREA_LOG_DEBUG("asset",
+                           "we need space (%i); need %zu, %zu total, %zu limit",
+                           A, cost, it.first, it.second);
             // purge assets to make room
             std::sort(preserved.begin(), preserved.end(), lru<AssetT<A>>);
             while (it.first > it.second) {
                 if (preserved.size() > 0) {
-                    LOG_DEBUG("I have a preserved asset in the back, %s, with "
-                              "unused count %zu",
-                              preserved.back().id.c_str(),
-                              preserved.back().unusedFrames);
+                    AREA_LOG_DEBUG(
+                        "asset",
+                        "I have a preserved asset in the back, %s, with "
+                        "unused count %zu",
+                        preserved.back().id.c_str(),
+                        preserved.back().unusedFrames);
                 }
                 if (preserved.size() > 0 &&
                     preserved.back().asset.use_count() == 1 &&
@@ -105,8 +108,8 @@ template <typename... AssetTypes> struct AssetCacheBase {
                     auto &dropped = preserved.back();
                     size_t reclaimed =
                         AssetLoaderT<A>::cost(dropped.asset.get());
-                    LOG_INFO("drop asset: %s (reclaimed %zu)",
-                             preserved.back().id.c_str(), reclaimed);
+                    AREA_LOG_INFO("asset", "drop asset: %s (reclaimed %zu)",
+                                  preserved.back().id.c_str(), reclaimed);
                     it.first -= reclaimed;
                     preserved.pop_back();
                 } else {
@@ -123,7 +126,7 @@ template <typename... AssetTypes> struct AssetCacheBase {
 
 struct AssetCache
     : public AssetCacheBase<ImageData, TextureAtlas, Font, std::string,
-                            SpineData, SoundData, MusicData, ParticleEffect> {
+                            SpineData, AudioData, ParticleEffect> {
     void update();
 };
 

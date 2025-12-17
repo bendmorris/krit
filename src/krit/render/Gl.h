@@ -4,6 +4,7 @@
 #if KRIT_USE_GLEW
 #include <GL/glew.h>
 #else
+#define GL_GLEXT_PROTOTYPES
 #include <GLES3/gl3.h>
 #include <GL/gl.h>
 #include <GL/glext.h>

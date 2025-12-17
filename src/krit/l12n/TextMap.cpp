@@ -24,7 +24,7 @@ void TextMap::setLocale(const std::string &key) {
             size_t lineLength = nextNewline - current;
             nextTab = (const char *)memchr(current, '\t', lineLength);
             if (!nextTab) {
-                Log::error("no tab in line %i: %.*s\n", line, (int)lineLength - 1, current);
+                LOG_ERROR("no tab in line %i: %.*s\n", line, (int)lineLength - 1, current);
                 current = nextNewline + 1;
                 remaining -= lineLength + 1;
                 continue;

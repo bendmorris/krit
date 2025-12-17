@@ -14,6 +14,7 @@
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
 #include "krit/utils/Panic.h"
+#include "krit/utils/Profiling.h"
 #include "krit/utils/Signal.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_error.h>
@@ -270,7 +271,8 @@ void Engine::handleEvents() {
             }
             case SDL_KEYUP: {
                 if (handleKey) {
-                    input.keyUp(static_cast<KeyCode>(event.key.keysym.scancode));
+                    input.keyUp(
+                        static_cast<KeyCode>(event.key.keysym.scancode));
                 }
                 break;
             }
@@ -320,9 +322,7 @@ void Engine::handleEvents() {
 }
 
 void Engine::fixedUpdate() {
-#if TRACY_ENABLE
-    ZoneScopedN("Engine::fixedUpdate");
-#endif
+    ProfileZone("Engine::fixedUpdate");
     if (this->paused) {
         return;
     }
@@ -330,14 +330,14 @@ void Engine::fixedUpdate() {
 }
 
 void Engine::update() {
-#if TRACY_ENABLE
-    ZoneScopedN("Engine::update");
-#endif
+    ProfileZone("Engine::update");
     if (this->paused) {
         return;
     }
 
+#if !KRIT_SOUND_THREAD
     audio.update();
+#endif
     // refresh window size
     int height = window.y();
     window.size();
@@ -383,9 +383,7 @@ void Engine::update() {
 }
 
 void Engine::render() {
-#if TRACY_ENABLE
-    ZoneScopedN("Engine::render");
-#endif
+    ProfileZone("Engine::render");
     checkForGlErrors("engine render");
 
     if (engine->window.skipFrames > 0) {

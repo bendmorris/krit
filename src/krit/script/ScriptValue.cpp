@@ -4,6 +4,11 @@
 
 namespace krit {
 
+ScriptValue::ScriptValue(JSContext *ctx, JSValue val) : value(val) {
+    JS_DupValue(ctx, val);
+}
+ScriptValue::~ScriptValue() { JS_FreeValue(ctx, value); }
+
 JSValue getCachedInstance(JSContext *ctx, int classId, const void *p) {
     ScriptEngine *engine =
         static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
@@ -13,7 +18,8 @@ JSValue getCachedInstance(JSContext *ctx, int classId, const void *p) {
     }
     return JS_DupValue(ctx, found->second);
 }
-void setCachedInstance(JSContext *ctx, int classId, const void *p, JSValue val) {
+void setCachedInstance(JSContext *ctx, int classId, const void *p,
+                       JSValue val) {
     ScriptEngine *engine =
         static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
     engine->instances[std::make_pair(classId, p)] = val;

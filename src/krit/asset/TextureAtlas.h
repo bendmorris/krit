@@ -19,7 +19,7 @@ struct TextureAtlas {
     ImageRegion &getRegion(const std::string &region) {
         auto found = this->regions.find(region);
         if (found == this->regions.end()) {
-            Log::fatal("couldn't find texture atlas region: %s\n",
+            LOG_FATAL("couldn't find texture atlas region: %s\n",
                        region.c_str());
             return ImageRegion::empty;
         }

@@ -19,7 +19,7 @@ JS_FUNC(console_log) {
         if (!str) {
             return JS_EXCEPTION;
         }
-        Log::output(i ? " %.*s" : "%.*s", static_cast<int>(len), str);
+        AREA_LOG_OUTPUT("script", i ? " %.*s" : "%.*s", static_cast<int>(len), str);
         JS_FreeCString(ctx, str);
     }
 
@@ -30,17 +30,19 @@ char buf[10*1024];
 JS_FUNC(Log_addLogSink) {
     JSValue func = argv[0];
     engine->script.holdValue(func);
-    Log::addLogSink([=](LogLevel level, const char *fmt, va_list args) {
+    Log::addLogSink([=](LogLevel level, std::string_view area, const char *fmt, va_list args) {
         size_t len = vsnprintf(buf, sizeof(buf), fmt, args);
         if (len >= sizeof(buf)) {
             // oh no
             len = sizeof(buf) - 1;
         }
-        JSValue s = JS_NewStringLen(ctx, buf, len);
+        JSValue jsArea = JS_NewStringLen(ctx, area.data(), area.size());
+        JSValue jsFmt = JS_NewStringLen(ctx, buf, len);
         JSValue jsLevel = JS_NewUint32(ctx, static_cast<uint32_t>(level));
-        JSValue callArgs[2] { s, jsLevel };
-        JS_FreeValue(ctx, JS_Call(ctx, func, JS_UNDEFINED, 2, callArgs));
-        JS_FreeValue(ctx, s);
+        JSValue callArgs[3] { jsArea, jsFmt, jsLevel };
+        JS_FreeValue(ctx, JS_Call(ctx, func, JS_UNDEFINED, 3, callArgs));
+        JS_FreeValue(ctx, jsArea);
+        JS_FreeValue(ctx, jsFmt);
         JS_FreeValue(ctx, jsLevel);
     });
     return JS_UNDEFINED;
@@ -49,14 +51,14 @@ JS_FUNC(Log_addLogSink) {
 JS_FUNC(Log_setLogLevel) {
     int level;
     JS_ToInt32(ctx, &level, argv[0]);
-    Log::level = (LogLevel)level;
+    Log::defaultLevel = (LogLevel)level;
     return JS_UNDEFINED;
 }
 
 #define DEFINE_LOG_METHOD(level)                                               \
     JS_FUNC(Log_##level) {                                                     \
         const char *s = JS_ToCString(ctx, argv[0]);                            \
-        Log::level(s);                                                         \
+        Log::level("script", s);                                               \
         JS_FreeCString(ctx, s);                                                \
         return JS_UNDEFINED;                                                   \
     }

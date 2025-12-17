@@ -5,7 +5,8 @@
 #include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
 #include <stdlib.h>
-#include <string.h>
+#include <string>
+#include <string_view>
 #include <vector>
 #ifdef KRIT_DESKTOP
 #include "argparse/argparse.hpp"
@@ -39,6 +40,10 @@ void gameMain(int argc, char *argv[]) {
         .action([&](const std::string &s) { options.features.push_back(s); })
         .append()
         .help("set feature values");
+    program.add_argument("-l", "--log")
+        .action([&](const std::string &s) { options.logAreas.push_back(s); })
+        .append()
+        .help("enable log areas");
     program.add_argument("-e", "--eval")
         .action([&](const std::string &s) { options.jsFiles.push_back(s); })
         .append()
@@ -46,7 +51,7 @@ void gameMain(int argc, char *argv[]) {
 
     program.parse_args(argc, argv);
 
-    Log::level = options.logLevel;
+    Log::defaultLevel = options.logLevel;
 #endif
 
     _engine = std::unique_ptr<Engine>(new Engine(options));
@@ -128,6 +133,57 @@ void gameMain(int argc, char *argv[]) {
 
                 JS_SetPropertyStr(jsCtx, target, featureName.c_str(), val);
                 JS_FreeValue(jsCtx, target);
+            }
+        }
+        {
+            // parse log areas
+            for (auto &l : options.logAreas) {
+                std::optional<LogLevel> level;
+                size_t eqIdx = l.find("=");
+                size_t key;
+                if (eqIdx && eqIdx < l.size() - 1) {
+                    key = std::hash<std::string_view>()(
+                        std::string_view(l.c_str(), eqIdx));
+                    std::string_view levelName = std::string_view(
+                        l.c_str() + eqIdx + 1, l.size() - eqIdx - 1);
+                    switch (levelName[0]) {
+                        case 'd':
+                            level = LogLevel::Debug;
+                            break;
+                        case 'i':
+                            level = LogLevel::Info;
+                            break;
+                        case 'w':
+                            level = LogLevel::Warn;
+                            break;
+                        case 'e':
+                            level = LogLevel::Error;
+                            break;
+                        case 'o':
+                            level = LogLevel::Output;
+                            break;
+                        case 'f':
+                            level = LogLevel::Fatal;
+                            break;
+                        default: {
+                            LOG_ERROR("unrecognized log level: %.*s; "
+                                      "defaulting to 'error'",
+                                      levelName.size(), levelName.data());
+                            level = LogLevel::Error;
+                            break;
+                        }
+                    }
+                } else {
+                    key = std::hash<std::string_view>()(l.c_str());
+                }
+                auto it = Log::levelMap.find(key);
+                if (it == Log::levelMap.end()) {
+                    Log::levelMap.emplace(
+                        std::make_pair(key, level.value_or(LogLevel::Warn)));
+                } else {
+                    it->second = level.value_or(static_cast<LogLevel>(
+                        static_cast<int>(it->second) - 1));
+                }
             }
         }
 

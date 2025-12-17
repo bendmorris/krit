@@ -21,6 +21,9 @@ FinalizerData::~FinalizerData() {
             owned.dtor(owned.p);
             break;
         }
+        case FinalizerMode::Shared: {
+            break;
+        }
         default: {}
     }
     data = std::monostate();

@@ -94,8 +94,10 @@ ScriptEngine::ScriptEngine() {
     ctx = JS_NewContext(rt);
     JS_SetContextOpaque(ctx, this);
     JSValue globalObj = JS_GetGlobalObject(ctx);
-    JS_SetPropertyStr(ctx, globalObj, "exports", JS_DupValue(ctx, exports = JS_NewObject(ctx)));
-    JS_SetPropertyStr(ctx, globalObj, "features", JS_DupValue(ctx, features = JS_NewObject(ctx)));
+    JS_SetPropertyStr(ctx, globalObj, "exports",
+                      JS_DupValue(ctx, exports = JS_NewObject(ctx)));
+    JS_SetPropertyStr(ctx, globalObj, "features",
+                      JS_DupValue(ctx, features = JS_NewObject(ctx)));
 
     // finalizers
     JSValue symbol = JS_GetPropertyStr(ctx, globalObj, "Symbol");
@@ -233,6 +235,17 @@ void ScriptEngine::dumpBacktrace(FILE *f) {
     std::string err = js_std_get_error(ctx, exception_val);
     LOG_ERROR("%s", err.c_str());
     JS_FreeValue(ctx, exception_val);
+}
+
+void ScriptEngine::tagShared(JSValue val, std::shared_ptr<void> data) {
+    JSValue finalizer =
+        JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
+    FinalizerData *f = static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
+    new (f) FinalizerData();
+    f->share(data);
+    JS_SetOpaque(finalizer, f);
+    JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol), finalizer);
+    JS_FreeValue(ctx, finalizerSymbol);
 }
 
 }

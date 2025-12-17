@@ -21,9 +21,7 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#if TRACY_ENABLE
-#include "Tracy.hpp"
-#endif
+#include "krit/utils/Profiling.h"
 
 namespace krit {
 
@@ -90,55 +88,55 @@ static void debugPrint(const std::vector<TextOpcode> &ops) {
     for (auto &op : ops) {
         switch (op.index()) {
             case RawText: {
-                LOG_DEBUG("RawText");
+                AREA_LOG_DEBUG("text", "RawText");
                 break;
             }
             case StartTextRun: {
-                LOG_DEBUG("StartTextRun");
+                AREA_LOG_DEBUG("text", "StartTextRun");
                 break;
             }
             case SetColor: {
-                LOG_DEBUG("SetColor");
+                AREA_LOG_DEBUG("text", "SetColor");
                 break;
             }
             case SetAlign: {
-                LOG_DEBUG("SetAlign");
+                AREA_LOG_DEBUG("text", "SetAlign");
                 break;
             }
             case SetCustom: {
-                LOG_DEBUG("SetCustom");
+                AREA_LOG_DEBUG("text", "SetCustom");
                 break;
             }
             case GlyphBlock: {
-                LOG_DEBUG("GlyphBlock");
+                AREA_LOG_DEBUG("text", "GlyphBlock");
                 break;
             }
             case NewLine: {
-                LOG_DEBUG("NewLine");
+                AREA_LOG_DEBUG("text", "NewLine");
                 break;
             }
             case RenderSprite: {
-                LOG_DEBUG("RenderSprite");
+                AREA_LOG_DEBUG("text", "RenderSprite");
                 break;
             }
             case Tab: {
-                LOG_DEBUG("Tab");
+                AREA_LOG_DEBUG("text", "Tab");
                 break;
             }
             case Whitespace: {
-                LOG_DEBUG("Whitespace");
+                AREA_LOG_DEBUG("text", "Whitespace");
                 break;
             }
             case CharDelay: {
-                LOG_DEBUG("CharDelay");
+                AREA_LOG_DEBUG("text", "CharDelay");
                 break;
             }
             case EnableBorder: {
-                LOG_DEBUG("EnableBorder");
+                AREA_LOG_DEBUG("text", "EnableBorder");
                 break;
             }
             case DisableBorder: {
-                LOG_DEBUG("DisableBorder");
+                AREA_LOG_DEBUG("text", "DisableBorder");
                 break;
             }
         }
@@ -179,9 +177,7 @@ struct TextParser {
     hb_buffer_t *hbBuf;
 
     void parseText(Text &txt, const std::string &s, bool rich) {
-#if TRACY_ENABLE
-        ZoneScopedN("TextParser::parseText");
-#endif
+        ProfileZone("TextParser::parseText");
         txt.opcodes.clear();
         txt.textDimensions.setTo(0, 0);
         txt.maxChars = 0;
@@ -475,7 +471,7 @@ struct TextParser {
             }
         }
 
-        if (krit::Log::level <= LogLevel::Info) {
+        if (krit::Log::level("text") <= LogLevel::Debug) {
             debugPrint(txt.opcodes);
         }
     }
@@ -649,7 +645,7 @@ void Text::__render(RenderContext &ctx, bool border) {
     CustomTextRenderFunction custom = nullptr;
     float totalWidth =
         this->wordWrap ? this->dimensions.x() : this->textDimensions.x();
-    int charCount = this->charCount;
+    float charCount = this->charCount;
     size_t tabIndex = 0;
 
     float cameraScale =
@@ -839,15 +835,36 @@ void Text::__render(RenderContext &ctx, bool border) {
                             if (pitch) {
                                 matrix.pitch(pitch);
                             }
-                            ctx.addRect(key, borderGlyph.region.rect, matrix,
-                                        borderColor, zIndex);
+                            if (charCount > 0 && charCount < 1) {
+                                // rare case: partial last character
+                                float fraction = fmod(charCount, 1);
+                                IntRectangle newRect(borderGlyph.region.rect);
+                                newRect.width =
+                                    thickness + (borderGlyph.region.rect.width -
+                                                 thickness) *
+                                                    fraction;
+                                ctx.addRect(key, newRect, matrix, borderColor,
+                                            zIndex);
+                            } else {
+                                ctx.addRect(key, borderGlyph.region.rect,
+                                            matrix, borderColor, zIndex);
+                            }
                         }
                     } else {
                         if (pitch) {
                             matrix.pitch(pitch);
                         }
-                        ctx.addRect(key, glyph.region.rect, matrix,
-                                    renderData.color, zIndex);
+                        if (charCount > 0 && charCount < 1) {
+                            // rare case: partial last character
+                            float fraction = fmod(charCount, 1);
+                            IntRectangle newRect(glyph.region.rect);
+                            newRect.width *= fraction;
+                            ctx.addRect(key, newRect, matrix, renderData.color,
+                                        zIndex);
+                        } else {
+                            ctx.addRect(key, glyph.region.rect, matrix,
+                                        renderData.color, zIndex);
+                        }
                     }
 
                     cursor.x() += _pos.x_advance * renderData.scale.x();

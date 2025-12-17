@@ -20,6 +20,14 @@ namespace krit {
 struct Promise;
 struct ScriptEngine;
 
+struct ScriptValue {
+    ScriptValue(JSContext *ctx, JSValue val = JS_UNDEFINED);
+    ~ScriptValue();
+
+    JSContext *ctx;
+    JSValue value;
+};
+
 JSValue getCachedInstance(JSContext *ctx, int classId, const void *p);
 void setCachedInstance(JSContext *ctx, int classId, const void *p, JSValue val);
 
@@ -97,6 +105,12 @@ template <> struct ScriptValueFromJs<JSValue> {
 template <> struct ScriptValueFromJs<bool> {
     static bool valueFromJs(JSContext *ctx, JSValue val) {
         return JS_ToBool(ctx, val);
+    }
+};
+
+template <> struct ScriptValueFromJs<ScriptValue> {
+    static ScriptValue valueFromJs(JSContext *ctx, JSValue val) {
+        return ScriptValue(ctx, val);
     }
 };
 
@@ -258,6 +272,19 @@ template <typename T> struct ScriptValueFromJs<std::optional<T> &&> {
     }
 };
 
+template <typename T>
+struct ScriptValueFromJs<
+    std::shared_ptr<T>, typename std::enable_if<std::is_base_of<
+                            T, std::enable_shared_from_this<T>>::value>::type> {
+    static std::shared_ptr<T> valueFromJs(JSContext *ctx, JSValue arr) {
+        if (JS_IsUndefined(arr)) {
+            return {};
+        }
+        return ScriptValueFromJs<T *>::valueFromJs(ctx, arr)
+            ->shared_from_this();
+    }
+};
+
 // valueToJs is defined for: basic types, basic type references, basic type
 // pointers, class type references, class type pointers, promises
 template <typename T, typename enable = void> struct ScriptValueToJs {
@@ -270,6 +297,12 @@ template <> struct ScriptValueToJs<JSValue> {
 
 template <> struct ScriptValueToJs<JSValue &> {
     static JSValue &valueToJs(JSContext *ctx, JSValue &val);
+};
+
+template <> struct ScriptValueToJs<ScriptValue> {
+    static JSValue valueToJs(JSContext *ctx, ScriptValue val) {
+        return val.value;
+    }
 };
 
 template <typename T>

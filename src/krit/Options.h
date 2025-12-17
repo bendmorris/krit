@@ -24,6 +24,7 @@ struct KritOptions {
     std::vector<std::string> jsFiles;
     LogLevel logLevel { LogLevel::Error };
     std::vector<std::string> features;
+    std::vector<std::string> logAreas;
 
     KritOptions() {}
 

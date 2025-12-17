@@ -184,7 +184,7 @@ struct Text : public VisibleSprite, public TextOptions {
         return new Text(options);
     }
 
-    int charCount = -1;
+    float charCount = -1;
     int maxChars = 0;
     std::vector<float> tabStops;
     Color baseColor = Color::white();

@@ -20,16 +20,13 @@
 #include "krit/render/Uniform.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
+#include "krit/utils/Profiling.h"
 #include <SDL2/SDL_error.h>
 #include <algorithm>
 #include <cassert>
 #include <memory>
 #include <stdint.h>
 #include <utility>
-#if TRACY_ENABLE
-#include "Tracy.hpp"
-// #include "krit/tracy/TracyOpenGL.hpp"
-#endif
 
 namespace krit {
 
@@ -240,10 +237,6 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glDepthRangef(-1000, 1000);
 
     checkForGlErrors("renderer init");
-
-    // #if TRACY_ENABLE
-    //     TracyGpuContext;
-    // #endif
 }
 
 Renderer::~Renderer() {}
@@ -251,9 +244,7 @@ Renderer::~Renderer() {}
 template <>
 void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
                                                  Rectangle &clipRect) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<PushClipRect>");
-#endif
+    ProfileZone("Renderer::drawCall<PushClipRect>");
     clipStack.emplace_back();
     Rectangle &newClip = clipStack.back();
     if (clipStack.size() > 1) {
@@ -274,7 +265,7 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
 // void Renderer::drawCall<PushDynamicClipRect, Rectangle *>(
 //     RenderContext &ctx, Rectangle *&clipRect) {
 // #if TRACY_ENABLE
-//     ZoneScopedN("Renderer::drawCall<PushClipRect>");
+//     ProfileZone("Renderer::drawCall<PushClipRect>");
 // #endif
 //     Vec4f ul = Vec4f(clipRect->x, clipRect->y, 0, 1);
 //     Vec4f ur = Vec4f(clipRect->x + clipRect->height, clipRect->y, 0, 1);
@@ -323,9 +314,7 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
 
 template <>
 void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<PopClipRect>");
-#endif
+    ProfileZone("Renderer::drawCall<PopClipRect>");
     clipStack.pop_back();
     if (clipStack.empty()) {
         glDisable(GL_SCISSOR_TEST);
@@ -338,9 +327,7 @@ void Renderer::drawCall<PopClipRect, char>(RenderContext &ctx, char &_) {
 template <>
 void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
     RenderContext &ctx, SetRenderTargetArgs &args) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<SetRenderTarget>");
-#endif
+    ProfileZone("Renderer::drawCall<SetRenderTarget>");
 // printf("RENDER TARGET: %i\n", fb ? fb->frameBuffer : 0);
 #if KRIT_ENABLE_MULTISAMPLING
 // if (args.clear && args.target && args.target->resolvedTexture) {
@@ -378,9 +365,7 @@ void Renderer::drawCall<SetRenderTarget, SetRenderTargetArgs>(
 
 template <>
 void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<ClearColor>");
-#endif
+    ProfileZone("Renderer::drawCall<ClearColor>");
     if (!clipStack.empty()) {
         glDisable(GL_SCISSOR_TEST);
     }
@@ -394,18 +379,14 @@ void Renderer::drawCall<ClearColor, Color>(RenderContext &ctx, Color &c) {
 template <>
 void Renderer::drawCall<ReadPixel, ReadPixelArgs>(RenderContext &ctx,
                                                   ReadPixelArgs &a) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<ReadPixel>");
-#endif
+    ProfileZone("Renderer::drawCall<ReadPixel>");
     a.fb->queueReadPixel(a.pos.x(), a.pos.y());
 }
 
 template <>
 void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
                                                    ImDrawData *&drawData) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<RenderImGui>");
-#endif
+    ProfileZone("Renderer::drawCall<RenderImGui>");
 #if KRIT_ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
@@ -418,9 +399,7 @@ void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                                  DrawCall &drawCall) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<DrawTriangles>");
-#endif
+    ProfileZone("Renderer::drawCall<DrawTriangles>");
     // puts("draw");
     checkForGlErrors("drawCall");
 
@@ -471,9 +450,7 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
                                                         SceneShader *&shader) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<DrawSceneShader>");
-#endif
+    ProfileZone("Renderer::drawCall<DrawSceneShader>");
     setSize(ctx, true);
     setBlendMode(shader->blend);
     // setSmoothingMode(SmoothLinear, nullptr);
@@ -492,17 +469,13 @@ void Renderer::drawCall<DrawSceneShader, SceneShader *>(RenderContext &ctx,
 template <>
 void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
                                              Camera *&camera) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::drawCall<SetCamera>");
-#endif
+    ProfileZone("Renderer::drawCall<SetCamera>");
     ctx.camera = camera;
     setSize(ctx);
 }
 
 void Renderer::renderFrame(RenderContext &ctx) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::renderFrame");
-#endif
+    ProfileZone("Renderer::renderFrame");
 
     clear(ctx);
     checkForGlErrors("start frame");
@@ -568,9 +541,7 @@ void Renderer::clear(RenderContext &ctx) {
 }
 
 void Renderer::dispatchCommands(RenderContext &ctx) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::dispatchCommands");
-#endif
+    ProfileZone("Renderer::dispatchCommands");
     size_t indices[DrawCommandTypeCount] = {0};
     for (auto commandType : this->drawCommandBuffer.buf.commandTypes) {
         size_t index = indices[commandType]++;
@@ -611,23 +582,15 @@ void Renderer::dispatchCommands(RenderContext &ctx) {
 }
 
 void Renderer::commit() {
-#if TRACY_ENABLE
-    ZoneScopedN("Engine::commitRender");
-#endif
+    ProfileZone("Engine::commitRender");
     SDL_GL_SwapWindow(engine->window.window);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     checkForGlErrors("commitRender");
-
-    // #if TRACY_ENABLE
-    //     TracyGpuCollect;
-    // #endif
 }
 
 void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
-#if TRACY_ENABLE
-    ZoneScopedN("Renderer::setSize");
-#endif
+    ProfileZone("Renderer::setSize");
     IntDimensions size =
         currentRenderTarget ? currentRenderTarget->size : ctx.size();
     Vec2f scale =

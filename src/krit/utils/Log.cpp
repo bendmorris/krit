@@ -17,30 +17,39 @@ static const char *bold = "\u001b[1m";
 static const auto start_time = std::chrono::high_resolution_clock::now();
 static bool logToTty = isatty(fileno(stdout));
 
-LogLevel Log::level = LogLevel::Error;
+LogLevel Log::defaultLevel = LogLevel::Error;
+std::unordered_map<size_t, LogLevel> Log::levelMap;
 std::vector<LogSink> Log::logSinks{Log::consoleLog};
 
-void Log::log(LogLevel level, const char *fmt, va_list args) {
-    if (Log::level > level) {
+LogLevel Log::level(std::string_view area) {
+    return level(std::hash<std::string_view>()(area));
+}
+
+LogLevel Log::level(size_t area) {
+    auto it = levelMap.find(area);
+    return it == levelMap.end() ? defaultLevel : it->second;
+}
+
+void Log::log(LogLevel level, std::string_view area, const char *fmt,
+              va_list args) {
+    if (Log::level(area) > level) {
         return;
     }
     for (size_t i = 0; i < logSinks.size(); ++i) {
         auto &sink = logSinks[i];
         if (i == logSinks.size() - 1) {
-            sink(level, fmt, args);
+            sink(level, area, fmt, args);
         } else {
             va_list argsCopy;
             va_copy(argsCopy, args);
-            sink(level, fmt, argsCopy);
+            sink(level, area, fmt, argsCopy);
             va_end(argsCopy);
         }
     }
 }
 
-void Log::consoleLog(LogLevel level, const char *fmt, va_list args) {
-    if (Log::level > level) {
-        return;
-    }
+void Log::consoleLog(LogLevel level, std::string_view area, const char *fmt,
+                     va_list args) {
     double s = std::chrono::duration<double, std::milli>(
                    std::chrono::high_resolution_clock::now() - start_time)
                    .count() /
@@ -57,7 +66,7 @@ void Log::consoleLog(LogLevel level, const char *fmt, va_list args) {
         printf("%s", logOpen[level]);
     }
 
-    printf("[%s] ", abbreviations[level]);
+    printf("<%.*s> [%s]:", (int)area.size(), area.data(), abbreviations[level]);
     if (logToTty) {
         printf("%s%s", reset, logOpen[level]);
     }

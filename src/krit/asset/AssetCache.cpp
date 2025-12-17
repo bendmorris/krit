@@ -7,10 +7,10 @@ template <int A> static void bumpPreserved(AssetCache &cache) {
         if (it.asset.use_count() == 1) {
             // we have the only reference to this
             ++it.unusedFrames;
-            // Log::debug("unused asset this frame: %s for %zu frames", it.id.c_str(), it.unusedFrames);
+            // LOG_DEBUG("unused asset this frame: %s for %zu frames", it.id.c_str(), it.unusedFrames);
         } else {
             it.unusedFrames = 0;
-            // Log::debug("asset %s has use count of %zu", it.id.c_str(), it.asset.use_count());
+            // LOG_DEBUG("asset %s has use count of %zu", it.id.c_str(), it.asset.use_count());
         }
     }
     bumpPreserved<A + 1>(cache);

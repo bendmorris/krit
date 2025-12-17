@@ -280,18 +280,7 @@ struct ScriptEngine {
         return val;
     }
 
-    void tagShared(JSValue val, std::shared_ptr<void> data) {
-        JSValue finalizer =
-            JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
-        FinalizerData *f =
-            static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
-        new (f) FinalizerData();
-        f->share(data);
-        JS_SetOpaque(finalizer, f);
-        JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
-                       finalizer);
-        JS_FreeValue(ctx, finalizerSymbol);
-    }
+    void tagShared(JSValue val, std::shared_ptr<void> data);
 
     template <typename T> T *data() { return static_cast<T *>(this->userData); }
 

@@ -1,5 +1,8 @@
 /// <reference path="krit/asset/Font.d.ts"/>
 /// <reference path="krit/asset/TextureAtlas.d.ts"/>
+/// <reference path="krit/audio/AudioBackend.d.ts"/>
+/// <reference path="krit/audio/AudioData.d.ts"/>
+/// <reference path="krit/audio/AudioSource.d.ts"/>
 /// <reference path="krit/Camera.d.ts"/>
 /// <reference path="krit/data/DataModel.d.ts"/>
 /// <reference path="krit/Engine.d.ts"/>
@@ -25,8 +28,6 @@
 /// <reference path="krit/render/SpriteShader.d.ts"/>
 /// <reference path="krit/script/FileDb.d.ts"/>
 /// <reference path="krit/script/ScriptBuiltins.d.ts"/>
-/// <reference path="krit/sound/AudioBackend.d.ts"/>
-/// <reference path="krit/sound/SoundData.d.ts"/>
 /// <reference path="krit/Sprite.d.ts"/>
 /// <reference path="krit/sprites/Backdrop.d.ts"/>
 /// <reference path="krit/sprites/Image.d.ts"/>
