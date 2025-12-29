@@ -1,5 +1,4 @@
 declare class ParticleSystem extends VisibleSprite {
-    static from(value: Sprite): ParticleSystem;
     static clone(value: ParticleSystem): ParticleSystem;
     constructor();
     loadAtlas(path: string): void;

@@ -32,7 +32,6 @@ declare class TextFormatTagOptions {
 }
 
 declare class Text extends VisibleSprite {
-    static from(value: Sprite): Text;
     static addFormatTag(name: string, options: TextFormatTagOptions): void;
 
     constructor(options: TextOptions);

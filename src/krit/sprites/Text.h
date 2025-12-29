@@ -59,6 +59,7 @@ struct TextOptions {
     AlignType align = LeftAlign;
     bool wordWrap = false;
     float lineSpacing = 0;
+    float charSpacing = 0;
 
     TextOptions() {}
 
@@ -81,6 +82,10 @@ struct TextOptions {
     }
     TextOptions &setLineSpacing(float spacing) {
         this->lineSpacing = spacing;
+        return *this;
+    }
+    TextOptions &setCharSpacing(float spacing) {
+        this->charSpacing = spacing;
         return *this;
     }
 };

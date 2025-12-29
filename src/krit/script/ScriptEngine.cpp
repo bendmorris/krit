@@ -1,4 +1,5 @@
 #include "krit/script/ScriptEngine.h"
+#include "krit/script/ObjectHeader.h"
 #include "krit/script/ScriptAllocator.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/utils/Log.h"
@@ -11,57 +12,64 @@ namespace krit {
 struct Engine;
 extern Engine *engine;
 
-std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
+std::optional<std::vector<void (*)(ScriptEngine *)>>
     ScriptEngine::scriptClassInitializers;
 
 void ScriptEngine::baseFinalizer(JSRuntime *rt, JSValue val) {
-    void *p = JS_GetOpaque(val, 0);
+    JSClassID _id;
+    void *p = JS_GetAnyOpaque(val, &_id);
     if (p) {
+        ObjectHeader *hdr = static_cast<ObjectHeader *>(p);
         ScriptEngine *engine =
             static_cast<ScriptEngine *>(JS_GetRuntimeOpaque(rt));
-        engine->instances.erase(std::make_pair(JS_GetClassID(val), p));
+        engine->instances.erase(std::make_pair(_id, hdr->get()));
+        ObjectHeader::recycle(hdr);
     }
 }
 
-static std::string js_serialize_obj(JSContext *ctx, JSValueConst val) {
-    const char *str = JS_ToCString(ctx, val);
-    if (str) {
-        std::string result(str);
-        JS_FreeCString(ctx, str);
-        return result;
+std::string ScriptEngine::serializeValue(JSContext *ctx, JSValueConst val) {
+    std::string s;
+    if (JS_IsString(val)) {
+        size_t len;
+        const char *serialized = JS_ToCStringLen(ctx, &len, val);
+        s.append(serialized, len);
+        JS_FreeCString(ctx, serialized);
     } else {
-        return "(atom: " +
-               std::string(JS_AtomToCString(ctx, JS_ValueToAtom(ctx, val))) +
-               ")";
+        JSPrintValueOptions options;
+        JS_PrintValueSetDefaultOptions(&options);
+        options.show_hidden = true;
+        JS_PrintValue(
+            ctx,
+            [](void *opaque, const char *buf, size_t len) {
+                std::string *s = static_cast<std::string *>(opaque);
+                s->append(buf, len);
+            },
+            &s, val, &options);
     }
+    return s;
+}
+
+std::string ScriptEngine::serializeValue(JSValue val) {
+    return serializeValue(ctx, val);
 }
 
 static std::string js_std_get_error(JSContext *ctx,
                                     JSValueConst exception_val) {
-    JSValue val;
-    if (JS_IsError(ctx, exception_val)) {
-        // an "Error" is an object of the Error type
-        val = JS_GetPropertyStr(ctx, exception_val, "stack");
-        if (!JS_IsUndefined(val)) {
-            return js_serialize_obj(ctx, exception_val) + "\n" +
-                   js_serialize_obj(ctx, val);
-        }
-        return "[Error]";
-    } else if (JS_IsException(exception_val)) {
-        // ...while an "Exception" is a native error type, and we must call
-        // JS_GetException to find the actual error object
+    if (JS_IsException(exception_val)) {
+        // an "Exception" is not an Error, but a native error type, and we must
+        // call JS_GetException to find the actual error object
         JSValue err = JS_GetException(ctx);
         auto result = js_std_get_error(ctx, err);
         JS_FreeValue(ctx, err);
         return result;
     } else {
-        return js_serialize_obj(ctx, exception_val);
+        return ScriptEngine::serializeValue(ctx, exception_val);
     }
 }
 
 static void js_std_dump_error(JSContext *ctx, JSValueConst exception_val) {
     std::string err = js_std_get_error(ctx, exception_val);
-    LOG_ERROR("%s", err.c_str());
+    AREA_LOG_ERROR("script", "%s", err.c_str());
 }
 
 static void js_std_promise_rejection_tracker(JSContext *ctx,
@@ -70,7 +78,8 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
                                              int is_handled, void *opaque) {
     if (!is_handled) {
         std::string err = js_std_get_error(ctx, reason);
-        LOG_ERROR("Possibly unhandled promise rejection: %s", err.c_str());
+        AREA_LOG_ERROR("script", "Possibly unhandled promise rejection: %s",
+                       err.c_str());
     }
 }
 
@@ -99,18 +108,7 @@ ScriptEngine::ScriptEngine() {
     JS_SetPropertyStr(ctx, globalObj, "features",
                       JS_DupValue(ctx, features = JS_NewObject(ctx)));
 
-    // finalizers
-    JSValue symbol = JS_GetPropertyStr(ctx, globalObj, "Symbol");
-    JSValue finalizerName = JS_NewString(ctx, "__finalizer");
-    finalizerSymbol = JS_Call(ctx, symbol, JS_UNDEFINED, 1, &finalizerName);
-    JS_SetPropertyStr(ctx, globalObj, "__finalizerSymbol",
-                      JS_DupValue(ctx, finalizerSymbol));
-    JS_FreeValue(ctx, finalizerName);
-    JS_FreeValue(ctx, symbol);
     JS_FreeValue(ctx, globalObj);
-
-    JS_NewClassID(&finalizerId);
-    JS_NewClass(rt, finalizerId, &FinalizerData::classDefFinalizer);
 
     if (scriptClassInitializers) {
         for (auto &init : *scriptClassInitializers) {
@@ -119,16 +117,13 @@ ScriptEngine::ScriptEngine() {
     }
 
     JS_SetPropertyStr(ctx, globalObj, "krit",
-                      ScriptValueToJs<Engine *>::valueToJs(ctx, krit::engine));
+                      TypeConverter<Engine *>::valueToJs(ctx, krit::engine));
 }
 
 ScriptEngine::~ScriptEngine() {
-    for (auto &val : heldValues) {
-        JS_FreeValue(ctx, val);
-    }
+    instances.clear();
     JS_FreeValue(ctx, exports);
     JS_FreeValue(ctx, features);
-    JS_FreeValue(ctx, finalizerSymbol);
     JS_FreeContext(ctx);
     JS_RunGC(rt);
     // this will fail an assertion if values are still referenced
@@ -138,7 +133,7 @@ ScriptEngine::~ScriptEngine() {
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
     JSValue result = JS_Eval(ctx, src, len, scriptName, JS_EVAL_TYPE_MODULE);
     if (JS_IsException(result) || JS_IsError(ctx, result)) {
-        LOG_ERROR("error evaluating script: %s", scriptName);
+        AREA_LOG_ERROR("script", "error evaluating script: %s", scriptName);
         js_std_dump_error(ctx, result);
     }
     JS_FreeValue(ctx, result);
@@ -233,19 +228,26 @@ void ScriptEngine::dumpBacktrace(FILE *f) {
     JS_ThrowInternalError(ctx, "JS backtrace");
     JSValue exception_val = JS_GetException(ctx);
     std::string err = js_std_get_error(ctx, exception_val);
-    LOG_ERROR("%s", err.c_str());
+    AREA_LOG_ERROR("script", "%s", err.c_str());
     JS_FreeValue(ctx, exception_val);
 }
 
 void ScriptEngine::tagShared(JSValue val, std::shared_ptr<void> data) {
-    JSValue finalizer =
-        JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
-    FinalizerData *f = static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
-    new (f) FinalizerData();
-    f->share(data);
-    JS_SetOpaque(finalizer, f);
-    JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol), finalizer);
-    JS_FreeValue(ctx, finalizerSymbol);
+    auto header = ObjectHeader::create();
+    header->setShared(data);
+    JS_SetOpaque(val, header);
+}
+
+JSValue ScriptEngine::getCachedInstance(int classId, const void *p) {
+    auto found = instances.find(std::make_pair(classId, p));
+    if (found == instances.end()) {
+        return JS_UNDEFINED;
+    }
+    return JS_DupValue(ctx, *found->second);
+}
+void ScriptEngine::setCachedInstance(int classId, const void *p, JSValue val) {
+    instances.emplace(
+        std::make_pair(std::make_pair(classId, p), OwnedValue(ctx, val)));
 }
 
 }

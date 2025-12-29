@@ -5,8 +5,6 @@ declare class Sprite {
 }
 
 declare class VisibleSprite extends Sprite {
-    static from(value: Sprite): VisibleSprite;
-
     position: Vec3f;
     dimensions: Vec2f;
     scale: Vec2f;

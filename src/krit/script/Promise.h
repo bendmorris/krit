@@ -37,19 +37,19 @@ struct Promise {
     }
 
     template <typename T> void resolve(T arg) const {
-        JSValue args = ScriptValueToJs<T>::valueToJs(ctx, arg);
+        JSValue args = TypeConverter<T>::valueToJs(ctx, arg);
         JS_FreeValue(ctx,
                      JS_Call(ctx, resolvingFuncs[0], JS_UNDEFINED, 1, &args));
     }
 
     template <typename T> void reject(T err) const {
-        JSValue args = ScriptValueToJs<T>::valueToJs(ctx, err);
+        JSValue args = TypeConverter<T>::valueToJs(ctx, err);
         JS_FreeValue(ctx,
                      JS_Call(ctx, resolvingFuncs[1], JS_UNDEFINED, 1, &args));
     }
 };
 
-template <> struct ScriptValueToJs<Promise> {
+template <> struct TypeConverter<Promise> {
     static JSValue valueToJs(JSContext *ctx, const Promise &v) {
         return JS_DupValue(ctx, v.promise);
     }

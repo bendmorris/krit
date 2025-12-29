@@ -24,7 +24,7 @@ export class Templatizer {
                 .map((param, i) =>
                     param.partial
                         ? `ScriptValueFromPartial<${typename(param.type)}>::valueFromPartial(ctx, argv[${i}])`
-                        : `ScriptValueFromJs<${typename(param.type)}>::valueFromJs(ctx, argv[${i}])`,
+                        : `TypeConverter<${typename(param.type)}>::valueFromJs(ctx, argv[${i}])`,
                 )
                 .join(', ')})`;
         }

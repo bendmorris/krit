@@ -407,16 +407,16 @@ struct TextParser {
                             switch (c) {
                                 case ' ': {
                                     flushWord(txt);
-                                    cursor.x() += _glyphPos.x_advance;
+                                    cursor.x() += _glyphPos.x_advance + txt.charSpacing;
                                     if (txt.opcodes.back().index() ==
                                         Whitespace) {
                                         std::get<Whitespace>(
                                             txt.opcodes.back()) +=
-                                            _glyphPos.x_advance;
+                                            _glyphPos.x_advance + txt.charSpacing;
                                     } else {
                                         txt.opcodes.emplace_back(
                                             std::in_place_index_t<Whitespace>(),
-                                            _glyphPos.x_advance);
+                                            _glyphPos.x_advance + txt.charSpacing);
                                     }
                                     break;
                                 }
@@ -434,13 +434,13 @@ struct TextParser {
                                         auto &back = word.back();
                                         // add this glyph to the existing opcode
                                         ++std::get<GlyphBlock>(back).glyphs;
-                                        wordLength += _glyphPos.x_advance;
+                                        wordLength += _glyphPos.x_advance + txt.charSpacing;
                                         // cursor.x += _glyphPos.x_advance;
                                     } else {
                                         word.emplace_back(
                                             std::in_place_index_t<GlyphBlock>(),
                                             glyphCursor, 1, 0);
-                                        wordLength += _glyphPos.x_advance;
+                                        wordLength += _glyphPos.x_advance + txt.charSpacing;
                                     }
                                 }
                             }
@@ -867,7 +867,7 @@ void Text::__render(RenderContext &ctx, bool border) {
                         }
                     }
 
-                    cursor.x() += _pos.x_advance * renderData.scale.x();
+                    cursor.x() += _pos.x_advance * renderData.scale.x() + charSpacing;
                     if (charCount > -1) {
                         // FIXME: charDelays
                         --charCount; //   -= std::max(charDelays[*it], 1);

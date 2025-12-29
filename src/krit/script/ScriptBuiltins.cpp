@@ -1,6 +1,7 @@
 #include "krit/Engine.h"
 #include "krit/asset/TextureAtlas.h"
 #include "krit/io/Io.h"
+#include "krit/script/OwnedValue.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/utils/Log.h"
@@ -11,36 +12,30 @@
 namespace krit {
 
 JS_FUNC(console_log) {
-    const char *str;
-    size_t len;
-
     for (int i = 0; i < argc; i++) {
-        str = JS_ToCStringLen(ctx, &len, argv[i]);
-        if (!str) {
-            return JS_EXCEPTION;
-        }
-        AREA_LOG_OUTPUT("script", i ? " %.*s" : "%.*s", static_cast<int>(len), str);
-        JS_FreeCString(ctx, str);
+        std::string s = ScriptEngine::serializeValue(ctx, argv[i]);
+        AREA_LOG_OUTPUT("script", i ? " %.*s" : "%.*s",
+                        static_cast<int>(s.size()), s.c_str());
     }
-
     return JS_UNDEFINED;
 }
 
-char buf[10*1024];
+char buf[10 * 1024];
 JS_FUNC(Log_addLogSink) {
-    JSValue func = argv[0];
-    engine->script.holdValue(func);
-    Log::addLogSink([=](LogLevel level, std::string_view area, const char *fmt, va_list args) {
+    OwnedValue func(ctx, argv[0]);
+    Log::addLogSink([=](LogLevel level, std::string_view area, const char *fmt,
+                        va_list args) {
         size_t len = vsnprintf(buf, sizeof(buf), fmt, args);
         if (len >= sizeof(buf)) {
             // oh no
             len = sizeof(buf) - 1;
+            buf[len] = 0;
         }
         JSValue jsArea = JS_NewStringLen(ctx, area.data(), area.size());
         JSValue jsFmt = JS_NewStringLen(ctx, buf, len);
         JSValue jsLevel = JS_NewUint32(ctx, static_cast<uint32_t>(level));
-        JSValue callArgs[3] { jsArea, jsFmt, jsLevel };
-        JS_FreeValue(ctx, JS_Call(ctx, func, JS_UNDEFINED, 3, callArgs));
+        JSValue callArgs[3]{jsArea, jsFmt, jsLevel};
+        JS_FreeValue(ctx, JS_Call(ctx, *func, JS_UNDEFINED, 3, callArgs));
         JS_FreeValue(ctx, jsArea);
         JS_FreeValue(ctx, jsFmt);
         JS_FreeValue(ctx, jsLevel);
@@ -127,8 +122,8 @@ JS_FUNC(dumpMemoryUsage) {
 
 JS_FUNC(readFile) {
     std::string s = engine->io->readFile(
-        ScriptValueFromJs<const char *>::valueFromJs(ctx, argv[0]));
-    return ScriptValueToJs<std::string>::valueToJs(ctx, s);
+        TypeConverter<std::string>::valueFromJs(ctx, argv[0]).c_str());
+    return TypeConverter<std::string>::valueToJs(ctx, s);
 }
 
 JS_FUNC(getImage) {
@@ -149,5 +144,32 @@ JS_FUNC(getAtlasRegion) {
     JS_FreeCString(ctx, s);
     return engine->createOwned<ImageRegion>(img);
 }
+
+JS_FUNC(encodeString) {
+    if (argc < 1 || !JS_IsString(argv[0])) {
+        return JS_ThrowTypeError(ctx, "invalid arguments to encodeString");
+    }
+    size_t len;
+    const char *s = JS_ToCStringLen(ctx, &len, argv[0]);
+    auto buf = JS_NewArrayBufferCopy(ctx, (uint8_t *)s, len);
+    JS_FreeCString(ctx, s);
+    auto uint8Array = JS_NewTypedArray(ctx, 1, &buf, JS_TYPED_ARRAY_UINT8);
+    JS_FreeValue(ctx, buf);
+    return uint8Array;
+}
+
+JS_FUNC(decodeString) {
+    if (argc < 1 || !JS_IsString(argv[0])) {
+        return JS_ThrowTypeError(ctx, "invalid arguments to decodeString");
+    }
+    size_t pbyte_offset, pbyte_length, pbytes_per_element;
+    JSValue buf = JS_GetTypedArrayBuffer(ctx, argv[0], &pbyte_offset, &pbyte_length, &pbytes_per_element);
+    size_t psize;
+    uint8_t *bytes = JS_GetArrayBuffer(ctx, &psize, buf);
+    JSValue s = JS_NewStringLen(ctx, (char*)(bytes + pbyte_offset), pbyte_length);
+    JS_FreeValue(ctx, buf);
+    return s;
+}
+
 
 }

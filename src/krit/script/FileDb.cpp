@@ -78,20 +78,19 @@ void DbQuery::bindBlob(int index, JSValue value) {
     sqlite3_bind_blob(stmt, index, buf, size, SQLITE_TRANSIENT);
 }
 
-void DbQuery::exec(JSValue callback) {
+void DbQuery::exec(std::optional<std::function<void(JSValue)>> callback) {
     int status = 0;
     DbRow row(stmt);
     auto ctx = engine->script.ctx;
-    JSValue thisObj = JS_UNDEFINED, rowObj = JS_UNDEFINED;
-    if (!JS_IsUndefined(callback)) {
-        thisObj = ScriptValueToJs<DbQuery *>::valueToJs(ctx, this);
-        rowObj = ScriptValueToJs<DbRow *>::valueToJs(ctx, &row);
+    JSValue rowObj = JS_UNDEFINED;
+    if (callback) {
+        rowObj = TypeConverter<DbRow *>::valueToJs(ctx, &row);
     }
     while (true) {
         status = sqlite3_step(stmt);
         if (status == SQLITE_ROW) {
-            if (!JS_IsUndefined(callback)) {
-                JS_FreeValue(ctx, JS_Call(ctx, callback, thisObj, 1, &rowObj));
+            if (callback) {
+                (*callback)(rowObj);
             }
         } else if (status == SQLITE_DONE) {
             break;
@@ -101,7 +100,6 @@ void DbQuery::exec(JSValue callback) {
         }
     }
     JS_FreeValue(ctx, rowObj);
-    JS_FreeValue(ctx, thisObj);
     sqlite3_reset(stmt);
 }
 
@@ -114,27 +112,22 @@ FileDb::FileDb(const std::string &path) {
         return;
     }
     valid = true;
-    auto ctx = engine->script.ctx;
-    thisObj = ScriptValueToJs<FileDb *>::valueToJs(ctx, this);
 }
 
 FileDb::~FileDb() {
     if (db) {
         sqlite3_close(db);
     }
-    auto ctx = engine->script.ctx;
-    JS_FreeValue(ctx, thisObj);
 }
 
-void FileDb::exec(const std::string &query, JSValue callback) {
+void FileDb::exec(const std::string &query,
+                  std::optional<std::function<void(JSValue)>> callback) {
     if (!db) {
         return;
     }
-    resultCallback = callback;
     char *errorMessage = nullptr;
-    sqlite3_exec(db, query.c_str(),
-                 JS_IsUndefined(callback) ? nullptr : FileDb::returnRows, this,
-                 &errorMessage);
+    sqlite3_exec(db, query.c_str(), callback ? nullptr : FileDb::returnRows,
+                 callback ? &callback : nullptr, &errorMessage);
     if (errorMessage) {
         LOG_ERROR("db query returned error: %s", errorMessage);
         auto ctx = engine->script.ctx;
@@ -146,21 +139,20 @@ void FileDb::exec(const std::string &query, JSValue callback) {
     }
 
 #ifdef __EMSCRIPTEN__
-    EM_ASM(
-        FS.syncfs(function() {});
-    );
+    EM_ASM(FS.syncfs(function(){}););
 #endif
 }
 
-int FileDb::returnRows(void *_db, int argc, char **argv, char **azColName) {
-    FileDb *db = (FileDb *)_db;
-    auto ctx = engine->script.ctx;
+int FileDb::returnRows(void *_fn, int argc, char **argv, char **azColName) {
+    auto fn = static_cast<std::function<void(JSValue)> *>(_fn);
+    JSContext *ctx = engine->script.ctx;
     JSValue obj = JS_NewObject(ctx);
     for (int i = 0; i < argc; ++i) {
         JS_SetPropertyStr(ctx, obj, azColName[i],
                           argv[i] ? JS_NewString(ctx, argv[i]) : JS_NULL);
     }
-    JS_FreeValue(ctx, JS_Call(ctx, db->resultCallback, db->thisObj, 1, &obj));
+    (*fn)(obj);
+    JS_FreeValue(ctx, obj);
     return 0;
 }
 

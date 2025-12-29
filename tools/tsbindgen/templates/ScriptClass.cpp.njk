@@ -19,6 +19,38 @@
 // classes
 
 {% for cls in types.classes %}
+namespace krit {
+// script class type
+template<> {{namespace}}::{{cls.name}} &TypeConverter<{{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
+    {{namespace}}::{{cls.name}} *p = ObjectHeader::data<{{namespace}}::{{cls.name}}>(val);
+    return *p;
+}
+template<> const {{namespace}}::{{cls.name}} &TypeConverter<const {{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
+    {{namespace}}::{{cls.name}} *p = ObjectHeader::data<{{namespace}}::{{cls.name}}>(val);
+    return *p;
+}
+
+template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(JSContext *ctx, const {{namespace}}::{{cls.name}} &val) {
+    GET_ENGINE;
+    JSValue instance = engine->getCachedInstance(
+        ScriptClass<{{namespace}}::{{cls.name}}>::classId(), static_cast<const void *>(&val));
+    if (!JS_IsUndefined(instance)) {
+        return instance;
+    }
+    JSValue obj = JS_NewObjectClass(ctx, ScriptClass<{{namespace}}::{{cls.name}}>::classId());
+    auto header = ObjectHeader::create();
+    header->setRaw((void *)&val);
+    JS_SetOpaque(obj, header);
+    engine->setCachedInstance(ScriptClass<{{namespace}}::{{cls.name}}>::classId(), &val, obj);
+    return obj;
+}
+template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}>::valueToJs(JSContext *ctx, const {{namespace}}::{{cls.name}} &val) {
+    return TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(ctx, val);
+}
+}
+{% endfor %}
+
+{% for cls in types.classes %}
 
 /**
 
@@ -36,9 +68,9 @@ template<> void krit::ScriptClass<{{namespacedName(cls)}}>::populateFromPartial(
         JSValue val = JS_GetPropertyStr(ctx, partial, "{{ prop.name }}");
         if (!JS_IsUndefined(val)) {
             {% if prop.set %}
-            o.{{ prop.name }}() = krit::ScriptValueFromJs<std::remove_reference<decltype(o.{{ prop.name }}())>::type>::valueFromJs(ctx, val);
+            o.{{ prop.name }}() = krit::TypeConverter<std::remove_reference<decltype(o.{{ prop.name }}())>::type>::valueFromJs(ctx, val);
             {% else %}
-            o.{{ prop.name }} = krit::ScriptValueFromJs<decltype(o.{{ prop.name }})>::valueFromJs(ctx, val);
+            o.{{ prop.name }} = krit::TypeConverter<decltype(o.{{ prop.name }})>::valueFromJs(ctx, val);
             {% endif %}
         }
         JS_FreeValue(ctx, val);
@@ -51,38 +83,39 @@ template<> void krit::ScriptClass<{{namespacedName(cls)}}>::populateFromPartial(
 namespace {
 
 static JSValue js_{{ cls.name }}_get_internal_id(JSContext *ctx, JSValueConst this_val) {
-    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    JSClassID _id;
+    void *p = JS_GetAnyOpaque(this_val, &_id);
     if (!p) {
         return JS_UNDEFINED;
     }
-    return JS_NewInt64(ctx, (int64_t)p);
+    return JS_NewInt64(ctx, (int64_t)static_cast<ObjectHeader*>(p)->get());
 }
 
 {% for prop in cls.properties %}
 static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
     static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
-    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
         return JS_EXCEPTION;
     }
     {% if prop.get %}
-    return krit::ScriptValueToJs<prop_type<decltype(p->{{prop.name}}())>::type>::valueToJs(ctx, p->{{ prop.name }}());
+    return krit::TypeConverter<prop_type<decltype(p->{{prop.name}}())>::type>::valueToJs(ctx, p->{{ prop.name }}());
     {% else %}
-    return krit::ScriptValueToJs<prop_type<decltype(p->{{prop.name}})>::type>::valueToJs(ctx, p->{{ prop.name }});
+    return krit::TypeConverter<prop_type<decltype(p->{{prop.name}})>::type>::valueToJs(ctx, p->{{ prop.name }});
     {% endif %}
 }
 
 {% if not prop.readonly %}
 static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
     static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
-    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
         return JS_EXCEPTION;
     }
     {% if prop.set %}
-    p->{{ prop.name }}() = krit::ScriptValueFromJs<std::remove_reference<decltype(p->{{ prop.name }}())>::type>::valueFromJs(ctx, val);
+    p->{{ prop.name }}() = krit::TypeConverter<std::remove_reference<decltype(p->{{ prop.name }}())>::type>::valueFromJs(ctx, val);
     {% else %}
-    p->{{ prop.name }} = krit::ScriptValueFromJs<decltype(p->{{ prop.name }})>::valueFromJs(ctx, val);
+    p->{{ prop.name }} = krit::TypeConverter<decltype(p->{{ prop.name }})>::valueFromJs(ctx, val);
     {% endif %}
     return JS_UNDEFINED;
 }
@@ -90,35 +123,10 @@ static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst 
 {% endfor %}
 
 static JS_FUNC({{cls.name}}_toString) {
-    void *p = JS_GetOpaque(this_val, 0);
+    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     std::string s = "<{{cls.name}}@" + ScriptEngine::n2hexstr((int64_t)p) + ">";
     return JS_NewString(ctx, s.c_str());
 }
-
-{% if cls.from %}
-static JS_FUNC({{cls.name}}___from__) {
-    if (JS_IsUndefined(argv[0])) {
-        return JS_UNDEFINED;
-    }
-    ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    void *p = JS_GetOpaque(argv[0], 0);
-    JSValue finalizerSymbol = engine->finalizerSymbol;
-    JSAtom atom = JS_ValueToAtom(ctx, finalizerSymbol);
-    bool owned = false;
-    if (!JS_IsUndefined(finalizerSymbol) && JS_HasProperty(ctx, argv[0], atom)) {
-        // if this was owned, we'll transfer ownership to the return value
-        //Log::debug("transfer finalizer: {{cls.name}}");
-        owned = true;
-        JSValue finalizer = JS_GetProperty(ctx, argv[0], atom);
-        JS_SetOpaque(finalizer, nullptr);
-        JS_DeleteProperty(ctx, argv[0], atom, 0);
-        JS_FreeValue(ctx, finalizer);
-    }
-    JS_FreeValue(ctx, finalizerSymbol);
-    JSValue val = owned ? engine->createOwned<{{ namespacedName(cls) }}>(p) : engine->create<{{ namespacedName(cls) }}>(p);
-    return val;
-}
-{% endif %}
 
 {% if cls.clone %}
 static JS_FUNC({{cls.name}}___clone__) {
@@ -126,7 +134,7 @@ static JS_FUNC({{cls.name}}___clone__) {
         return JS_UNDEFINED;
     }
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
-    void *p = JS_GetOpaque(argv[0], 0);
+    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(argv[0]);
     {{ namespacedName(cls) }} *cloned = new {{ namespacedName(cls) }}(*static_cast<{{ cls.name }}*>(p));
     JSValue val = engine->createOwned<{{ namespacedName(cls) }}>(cloned);
     return val;
@@ -155,7 +163,7 @@ static JS_FUNC({{cls.name}}_{{method.name}}) {
     {% endfor %}
     {% set comma = joiner() %}
     {% if method.returnType.validationType !== 'void' %}
-    return krit::ScriptValueToJs<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(method) }});
+    return krit::TypeConverter<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(method) }});
     {% else %}
     {{ cls.name + '::' + method.name | call(method) }};
     return JS_UNDEFINED;
@@ -169,10 +177,10 @@ static JS_FUNC({{cls.name}}_{{ method.name }}) {
     {% for arg in method.args %}
     static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
     {% endfor %}
-    {{ cls.name }} *p = static_cast<{{ cls.name }}*>(JS_GetOpaque(this_val, 0));
+    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     {% set comma = joiner() %}
     {% if method.returnType.validationType !== 'void' %}
-    return krit::ScriptValueToJs<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ ("p->" + method.name) | call(method) }});
+    return krit::TypeConverter<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ ("p->" + method.name) | call(method) }});
     {% else %}
     {{ ("p->" + method.name) | call(method) }};
     return JS_UNDEFINED;
@@ -252,12 +260,6 @@ template<> void ScriptClass<{{namespacedName(cls)}}>::init(ScriptEngine *engine)
         {% endif %}
         const char *ns[] {{ namespaceArray(cls) }};
         engine->setAtNamespace(ns, "{{ cls.name }}", ctor);
-        {% if cls.from %}
-        {
-            JSValue from = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}___from__, "from", 0);
-            JS_SetPropertyStr(ctx, ctor, "from", from);
-        }
-        {% endif %}
         {% if cls.clone %}
         {
             JSValue clone = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}___clone__, "clone", 0);
@@ -279,16 +281,6 @@ bool register{{ cls.name }}() {
 }
 static bool _registered{{cls.name}} = register{{ cls.name }}();
 
-{# static ScriptClassDef _cls = {
-    .registerClass = registerClass,
-    .classDef = &classDef,
-};
-
-static ScriptClassDef _finalizer = {
-    .registerClass = registerFinalizer,
-    .classDef = &classDefFinalizer,
-}; #}
-
 }
 
 {% endfor %}
@@ -309,7 +301,7 @@ static JS_FUNC({{ jsFuncName(fn) }}) {
     {% endfor %}
     {% set comma = joiner() %}
     {% if fn.returnType.validationType !== 'void' %}
-    return krit::ScriptValueToJs<{{ typename(fn.returnType) }}>::valueToJs(ctx, {{ fn.name | call(fn) }});
+    return krit::TypeConverter<{{ typename(fn.returnType) }}>::valueToJs(ctx, {{ fn.name | call(fn) }});
     {% else %}
     return JS_UNDEFINED;
     {% endif %}

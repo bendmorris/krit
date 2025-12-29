@@ -173,8 +173,8 @@ list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/quickjs.c
     ${KRIT_DIR}/quickjs/libregexp.c
     ${KRIT_DIR}/quickjs/libunicode.c
-    ${KRIT_DIR}/quickjs/libbf.c
     ${KRIT_DIR}/quickjs/cutils.c
+    ${KRIT_DIR}/quickjs/dtoa.c
 )
 
 add_library(${PROJECT_NAME} OBJECT

@@ -1,6 +1,4 @@
 declare class Image extends VisibleSprite {
-    static from(value: Sprite): Image;
-
     constructor(region: ImageRegion);
 
     origin: Vec3f;

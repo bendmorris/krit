@@ -24,6 +24,8 @@ JS_FUNC(dumpMemoryUsage);
 JS_FUNC(readFile);
 JS_FUNC(getImage);
 JS_FUNC(getAtlasRegion);
+JS_FUNC(encodeString);
+JS_FUNC(decodeString);
 
 }
 

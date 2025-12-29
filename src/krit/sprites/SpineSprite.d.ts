@@ -1,5 +1,4 @@
 declare class SpineSprite extends VisibleSprite {
-    static from(value: Sprite): SpineSprite;
     static setAtlasPath(path: string): void;
 
     origin: Vec2f;

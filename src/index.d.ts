@@ -9,6 +9,7 @@
 /// <reference path="krit/input/InputContext.d.ts"/>
 /// <reference path="krit/input/Key.d.ts"/>
 /// <reference path="krit/input/Mouse.d.ts"/>
+/// <reference path="krit/io/Io.d.ts"/>
 /// <reference path="krit/l12n/TextMap.d.ts"/>
 /// <reference path="krit/math/Measurement.d.ts"/>
 /// <reference path="krit/math/Rectangle.d.ts"/>

@@ -65,9 +65,9 @@ void gameMain(int argc, char *argv[]) {
             JSValue global = JS_GetGlobalObject(jsCtx);
             JS_SetPropertyStr(
                 jsCtx, global, "frame",
-                ScriptValueToJs<UpdateContext *>::valueToJs(jsCtx, &frame));
+                TypeConverter<UpdateContext *>::valueToJs(jsCtx, &frame));
             JS_SetPropertyStr(jsCtx, global, "render",
-                              ScriptValueToJs<RenderContext *>::valueToJs(
+                              TypeConverter<RenderContext *>::valueToJs(
                                   jsCtx, &engine.ctx));
             JS_FreeValue(jsCtx, global);
         }

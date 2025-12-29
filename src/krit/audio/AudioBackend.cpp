@@ -268,12 +268,26 @@ void AudioBackend::update() {
 #endif
     for (int i = active.size() - 1; i >= 0; --i) {
         if (active[i]->state == AudioSource::PlaybackState::Stopped) {
+#if !KRIT_SOUND_THREAD
             AREA_LOG_DEBUG("audio", "remove stopped audio source");
             active.erase(active.begin() + i);
+#endif
         } else {
             active[i]->update(this);
         }
     }
+#if KRIT_SOUND_THREAD
+    _currentActive.clear();
+    {
+        ScopedMutex _lock(&soundThreadMutex);
+        for (int i = active.size() - 1; i >= 0; --i) {
+            if (active[i]->state == AudioSource::PlaybackState::Stopped) {
+                AREA_LOG_DEBUG("audio", "remove stopped audio source");
+                active.erase(active.begin() + i);
+            }
+        }
+    }
+#endif
     AREA_LOG_DEBUG("audio", "audio update complete");
 }
 

@@ -280,7 +280,6 @@ export class Bindgen {
                             ctor: undefined,
                             partial: false,
                             clone: false,
-                            from: false,
                             parent: undefined,
                         };
                         if (!cls.isInterface && node.heritageClauses?.length) {
@@ -340,9 +339,7 @@ export class Bindgen {
                                 }
                             } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
                                 // method
-                                if (node.name.getText() === 'from') {
-                                    cls.from = true;
-                                } else if (node.name.getText() === 'clone') {
+                                if (node.name.getText() === 'clone') {
                                     cls.clone = true;
                                 } else {
                                     const method = this.parseMethod(

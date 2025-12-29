@@ -1,4 +1,4 @@
-#include "quickjs.h"
+#include "../script/ScriptEngine.h"
 #include <memory>
 #include <optional>
 #include <string>
@@ -26,7 +26,8 @@ struct DbQuery {
     ~DbQuery();
     std::vector<std::string> columnNames();
     int columnCount();
-    void exec(JSValue callback = JS_UNDEFINED);
+    void
+    exec(std::optional<std::function<void(JSValue)>> callback = std::nullopt);
     void bindInt(int index, int value);
     void bindString(int index, const std::string &s);
     void bindBlob(int index, JSValue value);
@@ -44,7 +45,9 @@ struct FileDb {
     FileDb(const std::string &path);
     virtual ~FileDb();
 
-    void exec(const std::string &query, JSValue callback = JS_UNDEFINED);
+    void
+    exec(const std::string &query,
+         std::optional<std::function<void(JSValue)>> callback = std::nullopt);
     std::unique_ptr<DbQuery> prepare(const std::string &query);
 
 private:

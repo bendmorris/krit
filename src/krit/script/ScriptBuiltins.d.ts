@@ -16,7 +16,7 @@ declare namespace console {
 /** @skip */ declare function __date_clock(): number;
 
 declare namespace Log {
-    /** @jsfunc */ function addLogSink(sink: (s: string, level: LogLevel) => void): void;
+    /** @jsfunc */ function addLogSink(sink: (area: string, s: string, level: LogLevel) => void): void;
     /** @jsfunc */ function setLogLevel(level: LogLevel): void;
     /** @jsfunc */ function debug(msg: string): void;
     /** @jsfunc */ function info(msg: string): void;
@@ -25,3 +25,6 @@ declare namespace Log {
     /** @jsfunc */ function output(msg: string): void;
     /** @jsfunc */ function fatal(msg: string): void;
 }
+
+/** @jsfunc */ declare function encodeString(s: string): Uint8Array;
+/** @jsfunc */ declare function decodeString(b: Uint8Array): string;

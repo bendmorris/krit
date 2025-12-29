@@ -1,7 +1,7 @@
-#ifndef KRIT_SCRIPT_SCRIPTENGINE
-#define KRIT_SCRIPT_SCRIPTENGINE
+#pragma once
 
-#include "krit/script/ScriptFinalizer.h"
+#include "krit/script/ObjectHeader.h"
+#include "krit/script/OwnedValue.h"
 #include "krit/script/ScriptValue.h"
 #include "krit/utils/Panic.h"
 #include "quickjs.h"
@@ -25,8 +25,9 @@ std::false_type is_complete_impl(...);
 struct hash_instance_pair {
     template <class T1, class T2>
     size_t operator()(const std::pair<T1, T2> &p) const {
-        // it's cheaper to just let multiple values for the same pointer land in the same bucket
-        // than always calculate and xor two hashes in an attempt to avoid collisions
+        // it's cheaper to just let multiple values for the same pointer land in
+        // the same bucket than always calculate and xor two hashes in an
+        // attempt to avoid collisions
         return std::hash<T2>{}(p.second);
     }
 };
@@ -49,11 +50,10 @@ using is_complete = decltype(is_complete_impl(std::declval<T *>()));
 
 template <typename Head>
 void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head) {
-    args[0] = ScriptValueToJs<Head>::valueToJs(ctx, head);
+    args[0] = TypeConverter<Head>::valueToJs(ctx, head);
 }
 template <typename Head, typename... Tail>
-void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head,
-                     Tail &... tail) {
+void _unpackCallArgs(JSContext *ctx, JSValue *args, Head &head, Tail &...tail) {
     _unpackCallArgs<Head>(ctx, args, head);
     _unpackCallArgs<Tail...>(ctx, &args[1], tail...);
 }
@@ -74,18 +74,17 @@ struct DelayRequest {
  * methods.
  */
 struct ScriptEngine {
-    static std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>
+    static std::optional<std::vector<void (*)(ScriptEngine *)>>
         scriptClassInitializers;
     static void pushInitializer(void (*initializer)(ScriptEngine *)) {
         if (!scriptClassInitializers) {
-            scriptClassInitializers =
-                std::unique_ptr<std::vector<void (*)(ScriptEngine *)>>(
-                    new std::vector<void (*)(ScriptEngine *)>());
+            scriptClassInitializers = std::vector<void (*)(ScriptEngine *)>();
         }
         scriptClassInitializers->push_back(initializer);
     }
 
     static void baseFinalizer(JSRuntime *rt, JSValue val);
+    static std::string serializeValue(JSContext *ctx, JSValue val);
 
     template <typename I>
     static std::string n2hexstr(I w, size_t hex_len = sizeof(I) << 1) {
@@ -100,10 +99,9 @@ struct ScriptEngine {
     JSContext *ctx = nullptr;
     JSValue exports = JS_UNDEFINED;
     void *userData;
-    JSValue finalizerSymbol = JS_UNDEFINED;
     JSValue features = JS_UNDEFINED;
-    JSClassID finalizerId = 0;
-    std::unordered_map<std::pair<int, const void *>, JSValue, hash_instance_pair>
+    std::unordered_map<std::pair<int, const void *>, OwnedValue,
+                       hash_instance_pair>
         instances;
 
     ScriptEngine();
@@ -124,20 +122,19 @@ struct ScriptEngine {
     void callPut(ReturnValue &dest, JSValue func) {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors();
-        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
+        TypeConverter<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
     }
     template <typename ReturnValue, typename Arg, typename... ArgTypes>
-    void callPut(ReturnValue &dest, JSValue func, Arg &arg,
-                 ArgTypes &... args) {
+    void callPut(ReturnValue &dest, JSValue func, Arg &arg, ArgTypes &...args) {
         JSValue jsArgs[1 + sizeof...(ArgTypes)];
         _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
 
         JSValue jsResult =
             JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
         checkForErrors();
-        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
+        TypeConverter<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
             JS_FreeValue(ctx, jsArgs[i]);
@@ -146,14 +143,14 @@ struct ScriptEngine {
     }
     template <typename ReturnValue, typename... ArgTypes>
     void callPut(const char *functionName, ReturnValue &dest,
-                 ArgTypes &... args) {
+                 ArgTypes &...args) {
         JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
         this->callPut<ReturnValue, ArgTypes...>(func, dest, args...);
         JS_FreeValue(ctx, func);
     }
     template <typename ReturnValue, typename... ArgTypes>
     void callPut(const std::string &functionName, ReturnValue &dest,
-                 ArgTypes &... args) {
+                 ArgTypes &...args) {
         return this->callPut<ReturnValue, ArgTypes...>(functionName.c_str(),
                                                        dest, args...);
     }
@@ -162,29 +159,29 @@ struct ScriptEngine {
         JSValue jsResult = JS_Call(ctx, func, JS_UNDEFINED, 0, nullptr);
         checkForErrors();
         ReturnValue dest;
-        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
+        TypeConverter<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
         update();
         return dest;
     }
-    template <typename ReturnValue, typename Arg, typename... ArgTypes>
-    ReturnValue callReturn(JSValue func, Arg &arg, ArgTypes &... args) {
-        JSValue jsArgs[1 + sizeof...(ArgTypes)];
-        _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
+    template <typename ReturnValue, typename... ArgTypes>
+    ReturnValue callReturn(JSValue func, ArgTypes &...args) {
+        JSValue jsArgs[sizeof...(ArgTypes)];
+        _unpackCallArgs<ArgTypes...>(this->ctx, jsArgs, args...);
         JSValue jsResult =
-            JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
+            JS_Call(ctx, func, JS_UNDEFINED, sizeof...(ArgTypes), jsArgs);
         checkForErrors();
         ReturnValue dest;
-        ScriptValueFromJs<ReturnValue>::valueFromJs(ctx, dest, jsResult);
+        TypeConverter<ReturnValue>::valueFromJs(ctx, dest, jsResult);
         JS_FreeValue(ctx, jsResult);
-        for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
+        for (long unsigned int i = 0; i < sizeof...(ArgTypes); ++i) {
             JS_FreeValue(ctx, jsArgs[i]);
         }
         update();
         return dest;
     }
     template <typename ReturnValue, typename... ArgTypes>
-    ReturnValue callReturn(const char *functionName, ArgTypes &... args) {
+    ReturnValue callReturn(const char *functionName, ArgTypes &...args) {
         JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
         ReturnValue result =
             this->callReturn<ReturnValue, ArgTypes...>(func, args...);
@@ -192,8 +189,7 @@ struct ScriptEngine {
         return result;
     }
     template <typename ReturnValue, typename... ArgTypes>
-    ReturnValue callReturn(const std::string &functionName,
-                           ArgTypes &... args) {
+    ReturnValue callReturn(const std::string &functionName, ArgTypes &...args) {
         return this->callReturn<ReturnValue, ArgTypes...>(functionName.c_str(),
                                                           args...);
     }
@@ -204,27 +200,27 @@ struct ScriptEngine {
         JS_FreeValue(ctx, jsResult);
         update();
     }
-    template <typename Arg, typename... ArgTypes>
-    void callVoid(JSValue func, Arg &arg, ArgTypes &... args) {
-        JSValue jsArgs[1 + sizeof...(ArgTypes)];
-        _unpackCallArgs<Arg, ArgTypes...>(this->ctx, jsArgs, arg, args...);
+    template <typename... ArgTypes>
+    void callVoid(JSValue func, ArgTypes &...args) {
+        JSValue jsArgs[sizeof...(ArgTypes)];
+        _unpackCallArgs<ArgTypes...>(this->ctx, jsArgs, args...);
         JSValue jsResult =
-            JS_Call(ctx, func, JS_UNDEFINED, 1 + sizeof...(ArgTypes), jsArgs);
+            JS_Call(ctx, func, JS_UNDEFINED, sizeof...(ArgTypes), jsArgs);
         checkForErrors();
         JS_FreeValue(ctx, jsResult);
-        for (long unsigned int i = 0; i < 1 + sizeof...(ArgTypes); ++i) {
+        for (long unsigned int i = 0; i < sizeof...(ArgTypes); ++i) {
             JS_FreeValue(ctx, jsArgs[i]);
         }
         update();
     }
     template <typename... ArgTypes>
-    void callVoid(const char *functionName, ArgTypes &... args) {
+    void callVoid(const char *functionName, ArgTypes &...args) {
         JSValue func = JS_GetPropertyStr(ctx, exports, functionName);
         this->callVoid<ArgTypes...>(func, args...);
         JS_FreeValue(ctx, func);
     }
     template <typename... ArgTypes>
-    void callVoid(const std::string &functionName, ArgTypes &... args) {
+    void callVoid(const std::string &functionName, ArgTypes &...args) {
         this->callVoid<ArgTypes...>(functionName.c_str(), args...);
     }
 
@@ -238,36 +234,26 @@ struct ScriptEngine {
             return JS_NULL;
         }
         JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(val, data);
+        auto header = ObjectHeader::create();
+        header->setRaw(data);
+        JS_SetOpaque(val, header);
         return val;
     }
 
-    template <typename T> JSValue createOwned(void *data) {
+    template <typename T> JSValue createOwned(T *data) {
         if (!data) {
             return JS_NULL;
         }
         JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(val, data);
-        tagOwned<T>(val, data);
+        tagOwned<T>(val, std::unique_ptr<T>(data));
         return val;
     }
 
     template <typename T>
-    void tagOwned(JSValue val, void *data, bool explicitDestruct = false) {
-        JSValue finalizer =
-            JS_NewObjectClassInline(ctx, finalizerId, sizeof(FinalizerData));
-        FinalizerData *f =
-            static_cast<FinalizerData *>(JS_GetOpaque(finalizer, 0));
-        new (f) FinalizerData();
-        if (explicitDestruct) {
-            f->ownExplicitDestruct<T>(data);
-        } else {
-            f->own<T>(data);
-        }
-        JS_SetOpaque(finalizer, f);
-        JS_SetProperty(ctx, val, JS_ValueToAtom(ctx, finalizerSymbol),
-                       finalizer);
-        JS_FreeValue(ctx, finalizerSymbol);
+    void tagOwned(JSValue val, std::unique_ptr<T> &&data) {
+        auto header = ObjectHeader::create();
+        header->setUnique(std::move(data));
+        JS_SetOpaque(val, header);
     }
 
     template <typename T> JSValue createShared(std::shared_ptr<T> data) {
@@ -275,7 +261,6 @@ struct ScriptEngine {
             return JS_NULL;
         }
         JSValue val = JS_NewObjectClass(ctx, ScriptClass<T>::classId());
-        JS_SetOpaque(val, data.get());
         tagShared(val, data);
         return val;
     }
@@ -305,17 +290,16 @@ struct ScriptEngine {
 
     void dumpBacktrace(FILE *);
 
-    void holdValue(JSValue val) {
-        JS_DupValue(ctx, val);
-        heldValues.push_back(val);
-    }
+    std::string serializeValue(JSValue val);
+
+    JSValue getCachedInstance(int classId, const void *p);
+    void setCachedInstance(int classId, const void *p, JSValue val);
 
 private:
     std::vector<DelayRequest> delayPromises;
-    std::vector<JSValue> heldValues;
 };
 
-template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {
+template <typename T> struct TypeConverter<std::unique_ptr<T>> {
     static JSValue valueToJs(JSContext *ctx, std::unique_ptr<T> &&val) {
         if (!val) {
             return JS_NULL;
@@ -326,40 +310,13 @@ template <typename T> struct ScriptValueToJs<std::unique_ptr<T>> {
     }
 };
 
-template <typename T> struct ScriptValueToJs<std::unique_ptr<T> &> {
+template <typename T> struct TypeConverter<std::unique_ptr<T> &> {
     static JSValue valueToJs(JSContext *ctx, std::unique_ptr<T> &val) {
-        return ScriptValueToJs<T *>::valueToJs(ctx, val.get());
+        return TypeConverter<T *>::valueToJs(ctx, val.get());
     }
 };
 
-template <typename T> struct ScriptValueFromJs<std::shared_ptr<T>> {
-    static std::shared_ptr<T> valueFromJs(JSContext *ctx, JSValue val) {
-        if (JS_IsNull(val) || !JS_IsObject(val)) {
-            return nullptr;
-        }
-        ScriptEngine *engine =
-            static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
-        JSValue finalizer = JS_GetProperty(
-            ctx, val, JS_ValueToAtom(ctx, engine->finalizerSymbol));
-        if (!JS_IsObject(finalizer)) {
-            return nullptr;
-        }
-        FinalizerData *f = static_cast<FinalizerData *>(
-            JS_GetOpaque(finalizer, engine->finalizerId));
-        if (!f) {
-            assert(false);
-            return nullptr;
-        }
-        if (!std::holds_alternative<SharedData>(f->data)) {
-            assert(false);
-            return nullptr;
-        }
-        JS_FreeValue(ctx, finalizer);
-        return std::static_pointer_cast<T>(std::get<SharedData>(f->data).p);
-    }
-};
-
-template <typename T> struct ScriptValueToJs<std::shared_ptr<T>> {
+template <typename T> struct TypeConverter<std::shared_ptr<T>> {
     static JSValue valueToJs(JSContext *ctx, const std::shared_ptr<T> &val) {
         if (!val) {
             return JS_NULL;
@@ -368,8 +325,44 @@ template <typename T> struct ScriptValueToJs<std::shared_ptr<T>> {
             static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
         return engine->createShared<T>(val);
     }
+    static std::shared_ptr<T> valueFromJs(JSContext *ctx, JSValue val) {
+        if (JS_IsNull(val) || !JS_IsObject(val)) {
+            return nullptr;
+        }
+        auto header = ObjectHeader::header(val);
+        switch (header->type()) {
+            case ObjectHeader::OwnershipType::Shared: {
+                return header->getShared<T>();
+            }
+            default: {
+                assert(false);
+                return {};
+            }
+        }
+    }
+};
+
+template <typename ReturnT, typename... Args>
+struct TypeConverter<std::function<ReturnT(Args...)>> {
+    using FnT = std::function<ReturnT(Args...)>;
+    static FnT valueFromJs(JSContext *ctx, JSValue val) {
+        OwnedValue ownedFn(ctx, val);
+        return [=](Args... args) {
+            GET_ENGINE;
+            return engine->callReturn<ReturnT, Args...>(*ownedFn, args...);
+        };
+    }
+};
+
+template <typename... Args> struct TypeConverter<std::function<void(Args...)>> {
+    using FnT = std::function<void(Args...)>;
+    static FnT valueFromJs(JSContext *ctx, JSValue val) {
+        OwnedValue ownedFn(ctx, val);
+        return [=](Args... args) {
+            GET_ENGINE;
+            engine->callVoid<Args...>(*ownedFn, args...);
+        };
+    }
 };
 
 }
-
-#endif
