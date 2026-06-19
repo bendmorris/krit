@@ -9,6 +9,7 @@
 #include "krit/render/RenderContext.h"
 #include "krit/render/Renderer.h"
 #include "krit/render/SmoothingMode.h"
+#include "krit/utils/Profiling.h"
 #include "krit/utils/Utf8.h"
 #include <algorithm>
 #include <cassert>
@@ -21,7 +22,6 @@
 #include <string>
 #include <string_view>
 #include <utility>
-#include "krit/utils/Profiling.h"
 
 namespace krit {
 
@@ -407,16 +407,19 @@ struct TextParser {
                             switch (c) {
                                 case ' ': {
                                     flushWord(txt);
-                                    cursor.x() += _glyphPos.x_advance + txt.charSpacing;
+                                    cursor.x +=
+                                        _glyphPos.x_advance + txt.charSpacing;
                                     if (txt.opcodes.back().index() ==
                                         Whitespace) {
                                         std::get<Whitespace>(
                                             txt.opcodes.back()) +=
-                                            _glyphPos.x_advance + txt.charSpacing;
+                                            _glyphPos.x_advance +
+                                            txt.charSpacing;
                                     } else {
                                         txt.opcodes.emplace_back(
                                             std::in_place_index_t<Whitespace>(),
-                                            _glyphPos.x_advance + txt.charSpacing);
+                                            _glyphPos.x_advance +
+                                                txt.charSpacing);
                                     }
                                     break;
                                 }
@@ -434,13 +437,15 @@ struct TextParser {
                                         auto &back = word.back();
                                         // add this glyph to the existing opcode
                                         ++std::get<GlyphBlock>(back).glyphs;
-                                        wordLength += _glyphPos.x_advance + txt.charSpacing;
+                                        wordLength += _glyphPos.x_advance +
+                                                      txt.charSpacing;
                                         // cursor.x += _glyphPos.x_advance;
                                     } else {
                                         word.emplace_back(
                                             std::in_place_index_t<GlyphBlock>(),
                                             glyphCursor, 1, 0);
-                                        wordLength += _glyphPos.x_advance + txt.charSpacing;
+                                        wordLength += _glyphPos.x_advance +
+                                                      txt.charSpacing;
                                     }
                                 }
                             }
@@ -457,7 +462,7 @@ struct TextParser {
 
         if (txt.wordWrap) {
             txt.renderedSize.copyFrom(txt.dimensions);
-            txt.dimensions.y() = txt.textDimensions.y();
+            txt.dimensions.y = txt.textDimensions.y;
         } else {
             txt.dimensions.copyFrom(txt.textDimensions);
         }
@@ -488,15 +493,15 @@ struct TextParser {
         if (!word.empty()) {
             addInitialNewline(txt);
         }
-        if (txt.wordWrap && (cursor.x() + wordLength) * txt.size / FONT_SCALE >
-                                txt.dimensions.x()) {
+        if (txt.wordWrap && (cursor.x + wordLength) * txt.size / FONT_SCALE >
+                                txt.dimensions.x) {
             newLine(txt, false);
         }
         txt.opcodes.insert(txt.opcodes.end(),
                            std::make_move_iterator(word.begin()),
                            std::make_move_iterator(word.end()));
         word.clear();
-        cursor.x() += wordLength;
+        cursor.x += wordLength;
         wordLength = 0;
     }
 
@@ -514,9 +519,9 @@ struct TextParser {
             // txt.opcodes[this->newLineIndex].data.newLine; update the size of
             // the preceding line
             float add = this->newLineIndex == 0 ? 0 : txt.lineSpacing;
-            this->cursor.y() += lineHeight + add;
+            this->cursor.y += lineHeight + add;
             std::get<NewLine>(txt.opcodes[this->newLineIndex])
-                .first.setTo(this->cursor.x() - trailingWhitespace,
+                .first.setTo(this->cursor.x - trailingWhitespace,
                              lineHeight + add);
             std::get<NewLine>(txt.opcodes[this->newLineIndex]).second =
                 this->currentAlign;
@@ -526,10 +531,10 @@ struct TextParser {
         this->newLineIndex = txt.opcodes.size() - 1;
         this->tabIndex = 0;
         txt.textDimensions.setTo(
-            std::max(txt.textDimensions.x(),
-                     (cursor.x() - trailingWhitespace) * txt.size / FONT_SCALE),
-            cursor.y() * txt.size / FONT_SCALE);
-        cursor.x() = 0;
+            std::max(txt.textDimensions.x,
+                     (cursor.x - trailingWhitespace) * txt.size / FONT_SCALE),
+            cursor.y * txt.size / FONT_SCALE);
+        cursor.x = 0;
     }
 
     void addOp(Text &txt, TextOpcode op) {
@@ -545,7 +550,7 @@ struct TextParser {
             }
             case SetAlign: {
                 AlignType &v = std::get<SetAlign>(op);
-                if (this->cursor.x() + wordLength > 0) {
+                if (this->cursor.x + wordLength > 0) {
                     this->newLine(txt);
                 }
                 this->currentAlign = v;
@@ -553,8 +558,8 @@ struct TextParser {
             }
             case RenderSprite: {
                 auto sprite = std::get<RenderSprite>(op);
-                auto size = sprite->getSize();
-                float imageWidth = size.x();
+                auto &size = sprite->dimensions;
+                float imageWidth = size.x;
                 word.push_back(op);
                 wordLength += imageWidth;
                 break;
@@ -562,7 +567,7 @@ struct TextParser {
             case Tab: {
                 if (this->tabIndex < txt.tabStops.size()) {
                     flushWord(txt);
-                    cursor.x() = txt.tabStops[this->tabIndex];
+                    cursor.x = txt.tabStops[this->tabIndex];
                     word.push_back(op);
                 }
                 break;
@@ -601,20 +606,19 @@ Text::~Text() {
     }
 }
 
-Text &Text::refresh() {
-    if (this->dirty || (this->wordWrap && dimensions.x() != renderedSize.x())) {
+void Text::refresh() {
+    if (this->dirty || (this->wordWrap && dimensions.x != renderedSize.x)) {
         // TODO: reuse static parser...
         TextParser parser;
         parser.parseText(*this, this->text, this->rich);
         this->dirty = false;
     }
-    return *this;
 }
 
 void Text::resize(float w, float h) {
     if (this->wordWrap) {
-        if ((this->dimensions.x() != static_cast<int>(w)) ||
-            (this->dimensions.y() != static_cast<int>(h))) {
+        if ((this->dimensions.x != static_cast<int>(w)) ||
+            (this->dimensions.y != static_cast<int>(h))) {
             this->dirty = true;
             this->dimensions.setTo(w, h);
         }
@@ -644,13 +648,12 @@ void Text::__render(RenderContext &ctx, bool border) {
     Point cursor;
     CustomTextRenderFunction custom = nullptr;
     float totalWidth =
-        this->wordWrap ? this->dimensions.x() : this->textDimensions.x();
+        this->wordWrap ? this->dimensions.x : this->textDimensions.x;
     float charCount = this->charCount;
     size_t tabIndex = 0;
 
     float cameraScale =
-        dynamicSize ? std::max(ctx.camera->scale.x(), ctx.camera->scale.y())
-                    : 1;
+        dynamicSize ? std::max(ctx.camera->scale.x, ctx.camera->scale.y) : 1;
 
     float size = this->size * cameraScale;
     float fontScale = size / cameraScale / 64.0;
@@ -695,33 +698,31 @@ void Text::__render(RenderContext &ctx, bool border) {
                         align = 1;
                         break;
                 }
-                cursor.setTo((totalWidth / fontScale - dims.x()) * align,
-                             cursor.y() + lineHeight);
+                cursor.setTo((totalWidth / fontScale - dims.x) * align,
+                             cursor.y + lineHeight);
                 break;
             }
             case RenderSprite: {
                 auto sprite = std::get<RenderSprite>(op);
-                auto size = sprite->getSize();
+                auto &size = sprite->dimensions;
                 if (!border) {
                     GlyphRenderData renderData(cursor);
                     if (custom) {
                         custom(&ctx, this, &renderData);
                     }
-                    sprite->scale.copyFrom(scale);
+                    // sprite->scale.copyFrom(scale);
                     sprite->position.setTo(
-                        this->position.x() +
-                            renderData.position.x() * fontScale,
-                        this->position.y() +
-                            renderData.position.y() * fontScale +
-                            (lineHeight * scale.y() * fontScale - size.y()) -
+                        this->position.x + renderData.position.x * fontScale,
+                        this->position.y + renderData.position.y * fontScale +
+                            (lineHeight * scale.y * fontScale - size.y) -
                             lineHeight * fontScale,
-                        this->position.z());
+                        this->position.z);
                     Color originalColor(sprite->color);
                     sprite->color = sprite->color * color;
                     sprite->render(ctx);
                     sprite->color = originalColor;
                 }
-                cursor.x() += size.x();
+                cursor.x += size.x;
                 break;
             }
             case CharDelay: {
@@ -761,54 +762,51 @@ void Text::__render(RenderContext &ctx, bool border) {
                     GlyphRenderData renderData(
                         _info.codepoint, color,
                         scale, // FIXME
-                        Point((cursor.x() + _pos.x_offset) * fontScale,
-                              (cursor.y() - _pos.y_offset) * fontScale));
+                        Point((cursor.x + _pos.x_offset) * fontScale,
+                              (cursor.y - _pos.y_offset) * fontScale));
                     if (custom) {
                         custom(&ctx, this, &renderData);
                     }
-                    float fullScaleX = cameraScale / renderData.scale.x(),
-                          fullScaleY = cameraScale / renderData.scale.y();
+                    float fullScaleX = cameraScale / renderData.scale.x,
+                          fullScaleY = cameraScale / renderData.scale.y;
                     Matrix4 matrix;
                     matrix.identity();
                     DrawKey key;
                     if (pixelPerfect) {
                         key.smooth = SmoothingMode::SmoothNearest;
-                        matrix.translate(position.x(), position.y(),
-                                         position.z());
+                        matrix.translate(position.x, position.y, position.z);
                         matrix.tx() =
                             std::round(matrix.tx() * fullScaleX) / fullScaleX;
                         matrix.ty() =
                             std::round(matrix.ty() * fullScaleY) / fullScaleY;
                         matrix.a() = 1.0 / glyphScale / fullScaleX;
                         matrix.d() = 1.0 / glyphScale / fullScaleY;
-                        matrix.a() *=
-                            ctx.camera->scale.x() / ctx.camera->scale.y();
+                        matrix.a() *= ctx.camera->scale.x / ctx.camera->scale.y;
                         matrix.b() = matrix.c() = 0;
                         matrix.translate(
-                            std::round(renderData.position.x() * fullScaleX) /
+                            std::round(renderData.position.x * fullScaleX) /
                                 fullScaleX,
-                            std::round(renderData.position.y() * fullScaleY) /
+                            std::round(renderData.position.y * fullScaleY) /
                                 fullScaleY);
                         matrix.translate(
-                            std::round(glyph.offset.x() / glyphScale) /
+                            std::round(glyph.offset.x / glyphScale) /
                                 fullScaleX,
-                            std::round(-glyph.offset.y() / glyphScale) /
+                            std::round(-glyph.offset.y / glyphScale) /
                                 fullScaleY);
                     } else {
                         key.smooth = smooth == SmoothingMode::SmoothMipmap
                                          ? SmoothingMode::SmoothLinear
                                          : this->smooth;
-                        matrix.translate(position.x() + renderData.position.x(),
-                                         position.y() + renderData.position.y(),
-                                         position.z());
-                        matrix.a() = ctx.camera->scale.x() /
-                                     ctx.camera->scale.y() / glyphScale /
-                                     fullScaleX;
+                        matrix.translate(position.x + renderData.position.x,
+                                         position.y + renderData.position.y,
+                                         position.z);
+                        matrix.a() = ctx.camera->scale.x / ctx.camera->scale.y /
+                                     glyphScale / fullScaleX;
                         matrix.d() = 1.0 / glyphScale / fullScaleY;
                         matrix.b() = matrix.c() = 0;
                         matrix.translate(
-                            glyph.offset.x() / glyphScale / fullScaleX,
-                            -glyph.offset.y() / glyphScale / fullScaleY);
+                            glyph.offset.x / glyphScale / fullScaleX,
+                            -glyph.offset.y / glyphScale / fullScaleY);
                     }
                     key.image = glyph.region.img;
                     key.blend = blendMode;
@@ -827,10 +825,10 @@ void Text::__render(RenderContext &ctx, bool border) {
                                 std::round(size * glyphScale),
                                 std::round(thickness * glyphScale));
                             matrix.tx() +=
-                                (borderGlyph.offset.x() - glyph.offset.x()) /
+                                (borderGlyph.offset.x - glyph.offset.x) /
                                 glyphScale / fullScaleX;
                             matrix.ty() -=
-                                (borderGlyph.offset.y() - glyph.offset.y()) /
+                                (borderGlyph.offset.y - glyph.offset.y) /
                                 glyphScale / fullScaleY;
                             if (pitch) {
                                 matrix.pitch(pitch);
@@ -867,7 +865,8 @@ void Text::__render(RenderContext &ctx, bool border) {
                         }
                     }
 
-                    cursor.x() += _pos.x_advance * renderData.scale.x() + charSpacing;
+                    cursor.x +=
+                        _pos.x_advance * renderData.scale.x + charSpacing;
                     if (charCount > -1) {
                         // FIXME: charDelays
                         --charCount; //   -= std::max(charDelays[*it], 1);
@@ -885,11 +884,11 @@ void Text::__render(RenderContext &ctx, bool border) {
                         return;
                     }
                 }
-                cursor.x() += std::get<Whitespace>(op);
+                cursor.x += std::get<Whitespace>(op);
                 break;
             }
             case Tab: {
-                cursor.x() = this->tabStops[tabIndex++];
+                cursor.x = this->tabStops[tabIndex++];
                 break;
             }
             // other opcodes (e.g. the Pop variants) are removed during parsing
@@ -924,6 +923,14 @@ void Text::setTabStops(const std::string &stops) {
     while (getline(stream, token, ',')) {
         int stop = atoi(token.c_str());
         tabStops.push_back(stop);
+    }
+}
+
+void Text::setFont(const std::string &fontName) {
+    auto font = engine->fonts.getFont(fontName);
+    if (font != this->font) {
+        this->dirty = true;
+        this->font = font;
     }
 }
 

@@ -4,23 +4,39 @@ import { TsError } from './error';
 import { BindgenOptions, namespacedName } from './utils';
 import { Templatizer } from './template';
 
+interface TypeName {
+    access?: string,
+    validationType: string,
+}
+
 interface ScriptClassProperty {
     name: string;
+    static: boolean;
     readonly: boolean;
-    type: string;
+    writeonly: boolean;
+    type: TypeName;
     get?: boolean;
     set?: boolean;
+}
+
+interface NameReference {
+    name: string;
+    file: string;
 }
 
 interface ScriptClass {
     namespace: string[];
     file: string;
     name: string;
+    parent?: NameReference;
     isInterface: boolean;
-    ctor?: ScriptConstructor;
+    ctor?: ScriptFunction;
     partial: boolean;
+    clone: boolean;
+    staticProperties: ScriptClassProperty[];
     properties: ScriptClassProperty[];
-    methods: ScriptMethod[];
+    staticMethods: ScriptFunction[];
+    methods: ScriptFunction[];
 }
 
 interface ScriptEnum {
@@ -30,28 +46,26 @@ interface ScriptEnum {
     members: string[];
 }
 
-interface ScriptFunctionArg {
+export interface ScriptFunctionArg {
     name: string;
-    type: string;
+    type: TypeName;
     partial: boolean;
+    optional: boolean;
 }
 
-interface ScriptConstructor {
+export interface FunctionOverload {
     params: ScriptFunctionArg[];
+    requiredArgs: number;
+    returnType: TypeName;
 }
 
-interface ScriptMethod {
+export interface ScriptFunction {
     name: string;
-    params: ScriptFunctionArg[];
-    optionalArgs?: number;
-    returnType: string;
+    namespace?: string[];
+    overloads: FunctionOverload[],
+    static: boolean,
+    jsfunc: boolean,
 }
-
-type ScriptFunction = ScriptMethod & {
-    namespace: string[];
-    file: string;
-    jsfunc?: boolean;
-};
 
 export interface ScriptTypes {
     classes: ScriptClass[];
@@ -60,13 +74,27 @@ export interface ScriptTypes {
     hasDeclarations: boolean;
 }
 
-const validationTypes = {
+const validationTypes: Record<string, string> = {
     string: 'std::string',
     number: 'double',
     boolean: 'bool',
     void: 'void',
     any: 'JSValue',
+    object: 'JSValue',
     ArrayBuffer: 'JSValue',
+    StringView: 'std::string_view',
+    int: 'int',
+    float: 'float',
+    double: 'double',
+    int8_t: 'int8_t',
+    int16_t: 'int16_t',
+    int32_t: 'int32_t',
+    int64_t: 'int64_t',
+    uint8_t: 'uint8_t',
+    uint16_t: 'uint16_t',
+    uint32_t: 'uint32_t',
+    uint64_t: 'uint64_t',
+    size_t: 'size_t',
 };
 
 export class Bindgen {
@@ -93,12 +121,20 @@ export class Bindgen {
         return namespacedName(this.options, o);
     }
 
-    parseType(node: ts.TypeNode, access?: string) {
+    parseType(node: ts.TypeNode, access?: string): TypeName {
         if (ts.isArrayTypeNode(node)) {
             const elementType = this.parseType(node.elementType, access ? `${access}::value_type` : undefined);
             return { access, validationType: `std::vector<${elementType.validationType}>` };
         } else if (ts.isFunctionTypeNode(node)) {
-            return { access, validationType: 'JSValue' };
+            const rt = this.parseType(node.type).validationType;
+            const args = node.parameters.map((x) => {
+                const argType = this.parseType(x.type!).validationType;
+                if (x.questionToken) {
+                    return `std::optional<${argType}>`
+                }
+                return argType;
+            });
+            return { access, validationType: `std::function<${rt}(${args.join(',')})>` };
         } else if (ts.isTypeReferenceNode(node) && node.typeName.getText() === 'Array') {
             if (node.typeArguments?.length !== 1) {
                 throw new TsError('invalid Array type: should have one type argument', node);
@@ -130,6 +166,37 @@ export class Bindgen {
             if (intrinsicName === 'error') {
                 throw new TsError(`type resolution failed`, node);
             }
+            if (node.typeArguments?.length) {
+                const base = t;
+                switch (base) {
+                    case 'SharedPtr': {
+                        const inner = this.parseType(node.typeArguments[0]);
+                        return { validationType: `std::shared_ptr<${inner.validationType}>` };
+                    }
+                    case 'UniquePtr': {
+                        const inner = this.parseType(node.typeArguments[0]);
+                        return { validationType: `std::unique_ptr<${inner.validationType}>` };
+                    }
+                    case 'Ptr': {
+                        const inner = this.parseType(node.typeArguments[0]);
+                        return { validationType: `${inner.validationType} *` };
+                    }
+                    case 'Const': {
+                        const inner = this.parseType(node.typeArguments[0]);
+                        return { validationType: `const ${inner.validationType}` };
+                    }
+                    case 'Ref': {
+                        const inner = this.parseType(node.typeArguments[0]);
+                        return { validationType: `${inner.validationType}&` };
+                    }
+                    case 'Promise': {
+                        return { validationType: `krit::Promise` };
+                    }
+                    default: {
+                        throw new TsError(`unknown parameterized type: ${base}`, node);
+                    }
+                }
+            }
             if (type.symbol) {
                 return { access, validationType: type.symbol.getName() };
             }
@@ -141,7 +208,7 @@ export class Bindgen {
         throw new TsError(`unsupported type (node kind: ${node.kind})`, node);
     }
 
-    parseProperty(node: ts.PropertyDeclaration | ts.PropertySignature, access?: string) {
+    parseProperty(node: ts.PropertyDeclaration | ts.PropertySignature, access?: string): ScriptClassProperty {
         let isStatic = false;
         let isReadOnly = false;
         if (node.modifiers) {
@@ -162,11 +229,12 @@ export class Bindgen {
             name: node.name.getText(),
             type: this.parseType(node.type, access),
             readonly: isReadOnly,
+            writeonly: false,
             static: isStatic,
         };
     }
 
-    parseFunctionArg(node: ts.ParameterDeclaration, access?: string) {
+    parseFunctionArg(node: ts.ParameterDeclaration, access?: string): ScriptFunctionArg {
         let type = node.type;
         let partial = false;
         if (ts.isTypeReferenceNode(type) && type.typeName.getText() === 'Partial') {
@@ -177,14 +245,19 @@ export class Bindgen {
                 throw new TsError('invalid Partial type; should have one type argument', node);
             }
         }
+        const argType = this.parseType(type, access);
+        if (node.questionToken && !this.hasTag(node, 'defaultValue')) {
+            argType.validationType = `std::optional<${argType.validationType}>`;
+        }
         return {
             name: node.name.getText(),
-            type: this.parseType(type, access),
+            type: argType,
             partial,
+            optional: !!node.questionToken,
         };
     }
 
-    parseMethod(node: ts.FunctionDeclaration | ts.MethodDeclaration | ts.MethodSignature, access?: string) {
+    parseMethod(node: ts.FunctionDeclaration | ts.MethodDeclaration | ts.MethodSignature, access?: string, jsFunc: boolean = false): ScriptFunction {
         let isStatic = false;
         if (node.modifiers) {
             for (const mod of node.modifiers) {
@@ -198,38 +271,45 @@ export class Bindgen {
         }
         return {
             name: node.name.getText(),
-            optionalArgs: node.parameters.reduce((a, b) => a + (b.questionToken ? 1 : 0), 0),
-            params: node.parameters.map((arg, i) =>
-                this.parseFunctionArg(
-                    arg,
-                    access ? `std::tuple_element<${i}, FunctionInfo<${access}>::ArgTypes>::type` : undefined,
+            overloads: [{
+                requiredArgs: jsFunc ? 0 : node.parameters.reduce((a, b) => a + (b.questionToken ? 0 : 1), 0),
+                params: jsFunc ? [] : node.parameters.map((arg, i) =>
+                    this.parseFunctionArg(
+                        arg,
+                        access ? `std::tuple_element<${i}, FunctionInfo<${access}>::ArgTypes>::type` : undefined,
+                    ),
                 ),
-            ),
-            returnType: this.parseType(node.type, access ? `FunctionInfo<${access}>::ReturnType` : undefined),
+                returnType: this.parseType(node.type, access ? `FunctionInfo<${access}>::ReturnType` : undefined),
+            }],
             static: isStatic,
+            jsfunc: jsFunc,
         };
     }
 
-    parseFunction(node: ts.FunctionDeclaration | ts.MethodDeclaration, access?: string) {
+    parseFunction(node: ts.FunctionDeclaration | ts.MethodDeclaration, access?: string): ScriptFunction {
+        const jsFunc = this.hasTag(node, 'jsfunc');
         const f: ScriptFunction = {
-            ...this.parseMethod(node, access),
+            ...this.parseMethod(node, access, jsFunc),
             namespace: this.getNamespace(),
-            file: node.getSourceFile().fileName,
         };
-        if (this.hasTag(node, 'jsfunc')) {
-            f.jsfunc = true;
-        }
         return f;
     }
 
-    parseConstructor(node: ts.ConstructorDeclaration, access?: string) {
+    parseConstructor(node: ts.ConstructorDeclaration, access?: string): ScriptFunction {
         return {
-            params: node.parameters.map((arg, i) =>
-                this.parseFunctionArg(
-                    arg,
-                    access ? `std::tuple_element<${i}, FunctionInfo<${access}>::ArgTypes>::type` : undefined,
+            name: "constructor",
+            static: false,
+            jsfunc: false,
+            overloads: [{
+                returnType: { validationType: 'void' },
+                requiredArgs: node.parameters.reduce((a, b) => a + (b.questionToken ? 0 : 1), 0),
+                params: node.parameters.map((arg, i) =>
+                    this.parseFunctionArg(
+                        arg,
+                        access ? `std::tuple_element<${i}, FunctionInfo<${access}>::ArgTypes>::type` : undefined,
+                    ),
                 ),
-            ),
+            }]
         };
     }
 
@@ -268,7 +348,7 @@ export class Bindgen {
                         this.currentNamespace.pop();
                     } else if (ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)) {
                         // classes and interfaces: generate a new script class
-                        const cls = {
+                        const cls: ScriptClass = {
                             namespace: this.getNamespace(),
                             file: file.fileName,
                             name: node.name.text,
@@ -333,9 +413,11 @@ export class Bindgen {
                                     if (p === 'set') {
                                         found.readonly = false;
                                         found.set = true;
+                                    } else {
+                                        found.writeonly = false;
                                     }
                                 } else {
-                                    cls.properties.push({ name, type, [p]: true, readonly: p === 'get' });
+                                    cls.properties.push({ name, type, static: false, [p]: true, readonly: p === 'get', writeonly: p === 'set' });
                                 }
                             } else if (ts.isMethodDeclaration(node) || ts.isMethodSignature(node)) {
                                 // method
@@ -346,7 +428,19 @@ export class Bindgen {
                                         node,
                                         `decltype(&${this.namespacedName(cls)}::${node.name.getText()})`,
                                     );
-                                    (method.static ? cls.staticMethods : cls.methods).push(method);
+                                    const methods = (method.static ? cls.staticMethods : cls.methods);
+                                    let pushed = false;
+                                    for (let i = 0; i < methods.length; ++i) {
+                                        const m = methods[i];
+                                        if (m.name === method.name) {
+                                            methods[i].overloads.push(method.overloads[0]);
+                                            methods[i].overloads.sort((a, b) => b.params.length - a.params.length);
+                                            pushed = true;
+                                        }
+                                    }
+                                    if (!pushed) {
+                                        methods.push(method);
+                                    }
                                 }
                             } else if (ts.isConstructorDeclaration(node)) {
                                 const isPartial =
@@ -358,19 +452,22 @@ export class Bindgen {
                                     cls.partial = true;
                                 } else {
                                     // constructor
-                                    if (cls.ctor) {
-                                        throw new TsError('multiple constructors are not supported', node);
-                                    }
-                                    cls.ctor = this.parseConstructor(
+                                    const ctor = this.parseConstructor(
                                         node,
                                         `decltype(&${this.namespacedName(cls)}::create)`,
                                     );
+                                    if (cls.ctor) {
+                                        cls.ctor.overloads.push(ctor.overloads[0]);
+                                        cls.ctor.overloads.sort((a, b) => b.params.length - a.params.length);
+                                    } else {
+                                        cls.ctor = ctor;
+                                    }
                                 }
                             }
                         });
                         if (cls.partial && !cls.ctor) {
                             // must have a default constructor
-                            cls.ctor = { params: [] };
+                            cls.ctor = { name: 'constructor', static: false, jsfunc: false, overloads: [] };
                         }
                         for (const prop of cls.properties) {
                             if (prop.get && !prop.set) {
@@ -388,14 +485,15 @@ export class Bindgen {
                         types.enums.push(e);
                     } else if (ts.isFunctionDeclaration(node)) {
                         // functions
+                        // FIXME: support overloads
                         const f = this.parseFunction(
                             node,
                             this.hasTag(node, 'jsfunc')
                                 ? undefined
                                 : `decltype(&${this.namespacedName({
-                                      file: file.fileName,
-                                      name: node.name.getText(),
-                                  })})`,
+                                    file: file.fileName,
+                                    name: node.name.getText(),
+                                })})`,
                         );
                         types.functions.push(f);
                     }

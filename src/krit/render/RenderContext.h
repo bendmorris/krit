@@ -25,19 +25,19 @@ struct RenderContext {
 
     IntDimensions size();
 
-    int width() { return size().x(); }
-    int height() { return size().y(); }
+    int width() { return size().x; }
+    int height() { return size().y; }
 
     void pushClip(Rectangle &rect);
     void popClip();
     void startAutoClip(float xBuffer = 0, float yBuffer = 0);
     bool endAutoClip();
 
-    void addRect(const DrawKey &key, IntRectangle &rect, Matrix4 &matrix,
-                 Color color, int zIndex = 0);
-    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv, Color color,
-                     int zIndex = 0);
-    void addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
+    void addRect(const DrawKey &key, const IntRectangle &rect,
+                 const Matrix4 &matrix, const Color color, int zIndex = 0);
+    void addTriangle(const DrawKey &key, const Triangle &t, const Triangle &uv,
+                     const Color color, int zIndex = 0);
+    void addTriangle(const DrawKey &key, const Triangle &t, const Triangle &uv,
                      const Color &c1, const Color &c2, const Color &c3,
                      int zIndex = 0);
 
@@ -61,7 +61,7 @@ struct RenderContext {
             Dimensions d(rect.width, rect.height);
             this->transformPoint(p);
             this->transformDimensions(d);
-            rect.setTo(p.x(), p.y(), d.x(), d.y());
+            rect.setTo(p.x, p.y, d.x, d.y);
         }
         return rect;
     }

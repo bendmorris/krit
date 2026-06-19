@@ -1,4 +1,5 @@
-declare class Backdrop extends VisibleSprite {
+declare class Backdrop extends Sprite {
+    angle: number;
     pitch: number;
 
     constructor(id: ImageRegion);

@@ -52,7 +52,7 @@ struct SpineData {
     std::unique_ptr<spine::AnimationStateData> animationStateData;
 };
 
-struct SpineSprite : public VisibleSprite {
+struct SpineSprite : public Sprite {
     static float worldVertices[1024];
     static std::string defaultAtlasPath;
 
@@ -63,6 +63,7 @@ struct SpineSprite : public VisibleSprite {
     }
 
     Vec2f origin;
+    Vec2f scale {1, 1};
     float angle = 0;
     float pitch = 0;
     float rate = 1;
@@ -116,7 +117,6 @@ struct SpineSprite : public VisibleSprite {
 
     void update() override;
     virtual void render(RenderContext &ctx) override;
-    Dimensions getSize() override { return Dimensions(0, 0); }
     void resize(float w, float h) override {}
     void advance(float time);
 };

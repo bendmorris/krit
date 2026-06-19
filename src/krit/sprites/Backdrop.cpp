@@ -26,25 +26,23 @@ void Backdrop::render(RenderContext &ctx) {
     // CameraTransform *oldTransform = ctx.transform;
     // ctx.transform = &transform;
 
-    Dimensions scaledDimensions(this->width(), this->height());
-    scaledDimensions *= this->scale;
     Point pos = this->position;
     int xi = 1, yi = 1;
     if (this->repeatX) {
-        pos.x() = fmod(pos.x(), scaledDimensions.x());
-        if (pos.x() > 0) {
-            pos.x() -= scaledDimensions.x();
+        pos.x = fmod(pos.x, dimensions.x);
+        if (pos.x > 0) {
+            pos.x -= dimensions.x;
         }
         xi = static_cast<int>(
-            ceil(engine->window.x() - pos.x()) / scaledDimensions.x() + 1);
+            ceil(engine->window.x - pos.x) / dimensions.x + 1);
     }
     if (this->repeatY) {
-        pos.y() = fmod(pos.y(), scaledDimensions.y());
-        if (pos.y() > 0) {
-            pos.y() -= scaledDimensions.y();
+        pos.y = fmod(pos.y, dimensions.y);
+        if (pos.y > 0) {
+            pos.y -= dimensions.y;
         }
         yi = static_cast<int>(
-            ceil(engine->window.y() - pos.y()) / scaledDimensions.y() + 1);
+            ceil(engine->window.y - pos.y) / dimensions.y + 1);
     }
     DrawKey key;
     key.image = this->region.img;
@@ -53,15 +51,15 @@ void Backdrop::render(RenderContext &ctx) {
     key.shader = this->shader;
     Matrix4 m;
     m.identity();
-    m.a() = static_cast<float>(scaledDimensions.x()) / this->width();
-    m.d() = static_cast<float>(scaledDimensions.y()) / this->height();
+    m.a() = static_cast<float>(dimensions.x) / this->region.rect.width;
+    m.d() = static_cast<float>(dimensions.y) / this->region.rect.height;
     if (this->pitch) {
         m.pitch(this->pitch);
     }
     for (int y = 0; y < yi; ++y) {
         for (int x = 0; x < xi; ++x) {
-            m.tx() = pos.x() + scaledDimensions.x() * x;
-            m.ty() = pos.y() + scaledDimensions.y() * y;
+            m.tx() = pos.x + dimensions.x * x;
+            m.ty() = pos.y + dimensions.y * y;
             ctx.addRect(key, this->region.rect, m, this->color);
         }
     }

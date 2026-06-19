@@ -93,7 +93,7 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
                       NUM_BUFFERS, audioData->channels);
     }
     auto streamBufferSize = sampleRingBuffer->streamBufferSize;
-    alSource3f(alSource, AL_POSITION, position.x(), position.y(), position.z());
+    alSource3f(alSource, AL_POSITION, position.x, position.y, position.z);
     AREA_LOG_DEBUG("audio", "rendering stream %s as source %u with gain=%.2f",
                    audioData->path.c_str(), alSource, gain);
     // check if we've finished playing any of our buffers

@@ -14,7 +14,7 @@
 namespace krit {
 struct RenderContext;
 
-struct Backdrop : public VisibleSprite {
+struct Backdrop : public Sprite {
     static Backdrop *create(ImageRegion region) { return new Backdrop(region); }
 
     float angle = 0;
@@ -26,13 +26,6 @@ struct Backdrop : public VisibleSprite {
 
     Backdrop(const std::string &id);
     Backdrop(ImageRegion region) : region(region) {}
-
-    int &width() { return this->region.rect.width; }
-    int &height() { return this->region.rect.height; }
-
-    void resize(float w, float h) override {
-        this->scale.setTo(w / this->width(), h / this->height());
-    }
 
     void render(RenderContext &ctx) override;
 };

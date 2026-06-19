@@ -1,3 +1,4 @@
+/// <reference path="../tools/tsbindgen/global.d.ts" />
 /// <reference path="krit/asset/Font.d.ts"/>
 /// <reference path="krit/asset/TextureAtlas.d.ts"/>
 /// <reference path="krit/audio/AudioBackend.d.ts"/>

@@ -95,8 +95,8 @@ static inline void addVertex(VertexData &to, float x, float y, float z,
 
 static inline void addVertex(VertexData &to, const Vec3f &t, const Vec3f &uv,
                              const Color &c) {
-    to.position.setTo(t.x(), t.y(), t.z(), 1.0);
-    to.texCoord.setTo(uv.x(), uv.y());
+    to.position.setTo(t.x, t.y, t.z, 1.0);
+    to.texCoord.setTo(uv.x, uv.y);
     to.color.copyFrom(c);
 }
 
@@ -113,12 +113,12 @@ void DrawCommandBuffer::addTriangle(DrawCall &draw, const Triangle &t,
     draw.indices.push_back(i + 2);
 
     if (boundsStack.size()) {
-        float x1 = std::min({t.p1.x(), t.p2.x(), t.p3.x()});
-        float x2 = std::max({t.p1.x(), t.p2.x(), t.p3.x()});
-        float y1 = std::min({t.p1.y(), t.p2.y(), t.p3.y()});
-        float y2 = std::max({t.p1.y(), t.p2.y(), t.p3.y()});
-        float z1 = std::min({t.p1.z(), t.p2.z(), t.p3.z()});
-        float z2 = std::max({t.p1.z(), t.p2.z(), t.p3.z()});
+        float x1 = std::min({t.p1.x, t.p2.x, t.p3.x});
+        float x2 = std::max({t.p1.x, t.p2.x, t.p3.x});
+        float y1 = std::min({t.p1.y, t.p2.y, t.p3.y});
+        float y2 = std::max({t.p1.y, t.p2.y, t.p3.y});
+        float z1 = std::min({t.p1.z, t.p2.z, t.p3.z});
+        float z2 = std::max({t.p1.z, t.p2.z, t.p3.z});
         for (auto &b : boundsStack) {
             updateBounds(b, x1, y1, x2, y2, z1, z2);
         }
@@ -188,10 +188,10 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
 
     size_t i = vertexData.size();
     vertexData.resize(i + 4);
-    addVertex(vertexData[i], ul.x(), ul.y(), ul.z(), uvx1, uvy1, color);
-    addVertex(vertexData[i + 1], ur.x(), ur.y(), ur.z(), uvx2, uvy1, color);
-    addVertex(vertexData[i + 2], ll.x(), ll.y(), ll.z(), uvx1, uvy2, color);
-    addVertex(vertexData[i + 3], lr.x(), lr.y(), lr.z(), uvx2, uvy2, color);
+    addVertex(vertexData[i], ul.x, ul.y, ul.z, uvx1, uvy1, color);
+    addVertex(vertexData[i + 1], ur.x, ur.y, ur.z, uvx2, uvy1, color);
+    addVertex(vertexData[i + 2], ll.x, ll.y, ll.z, uvx1, uvy2, color);
+    addVertex(vertexData[i + 3], lr.x, lr.y, lr.z, uvx2, uvy2, color);
 
     draw.indices.push_back(i);
     draw.indices.push_back(i + 1);
@@ -201,12 +201,12 @@ void DrawCommandBuffer::addRect(RenderContext &ctx, const DrawKey &key,
     draw.indices.push_back(i + 3);
 
     if (boundsStack.size()) {
-        float x1 = std::min({ll.x(), lr.x(), ul.x(), ur.x()});
-        float x2 = std::max({ll.x(), lr.x(), ul.x(), ur.x()});
-        float y1 = std::min({ll.y(), lr.y(), ul.y(), ur.y()});
-        float y2 = std::max({ll.y(), lr.y(), ul.y(), ur.y()});
-        float z1 = std::min({ll.z(), lr.z(), ul.z(), ur.z()});
-        float z2 = std::max({ll.z(), lr.z(), ul.z(), ur.z()});
+        float x1 = std::min({ll.x, lr.x, ul.x, ur.x});
+        float x2 = std::max({ll.x, lr.x, ul.x, ur.x});
+        float y1 = std::min({ll.y, lr.y, ul.y, ur.y});
+        float y2 = std::max({ll.y, lr.y, ul.y, ur.y});
+        float z1 = std::min({ll.z, lr.z, ul.z, ur.z});
+        float z2 = std::max({ll.z, lr.z, ul.z, ur.z});
         for (auto &b : boundsStack) {
             updateBounds(b, x1, y1, x2, y2, z1, z2);
         }
@@ -280,7 +280,7 @@ bool DrawCommandBuffer::endAutoClip(RenderContext &ctx) {
                 }
                 Vec4f v(xi, yi, zi, 1);
                 v = m * v;
-                float px = v.x() / v.w(), py = v.y() / v.w();
+                float px = v.x / v.w, py = v.y / v.w;
                 if (std::isnan(x1) || px < x1) {
                     x1 = px;
                 }

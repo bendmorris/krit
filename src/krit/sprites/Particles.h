@@ -130,7 +130,7 @@ struct EffectInstance {
         : effect(effect), origin(at), loop(loop) {}
 };
 
-struct ParticleSystem : public VisibleSprite {
+struct ParticleSystem : public Sprite {
     static ParticleSystem *create() { return new ParticleSystem(); }
 
     ParticleSystem() {}

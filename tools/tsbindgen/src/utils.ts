@@ -32,9 +32,9 @@ export function namespacedName(options: BindgenOptions, o: { file: string; name:
 }
 
 export function typename(o: { validationType: string; access?: string }) {
-    return o.access ?? o.validationType;
+    return o.validationType;
 }
 
 export function jsFuncName(o: { namespace: string[]; name: string }) {
-    return [...o.namespace, o.name].join('_');
+    return [...(o.namespace ?? []), o.name].join('_');
 }

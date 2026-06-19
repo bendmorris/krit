@@ -1,7 +1,8 @@
-declare class SpineSprite extends VisibleSprite {
+declare class SpineSprite extends Sprite {
     static setAtlasPath(path: string): void;
 
     origin: Vec2f;
+    scale: Vec2f;
     rate: number;
     angle: number;
     pitch: number;

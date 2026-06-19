@@ -8,7 +8,7 @@ namespace krit {
 ImageData::ImageData(uint8_t *data, size_t width, size_t height)
     : dimensions(width, height) {
     TaskManager::instance->pushRender([this, data]() {
-        int width = this->dimensions.x(), height = this->dimensions.y();
+        int width = this->dimensions.x, height = this->dimensions.y;
         LOG_DEBUG("callback: create image data (%ix%i)", width, height);
         // upload texture
         GLuint texture;

@@ -1,7 +1,6 @@
 #include <memory>
 
 #include "krit/Engine.h"
-#include "krit/Engine.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/RenderContext.h"
@@ -10,38 +9,37 @@
 
 namespace krit {
 
-Image::Image(std::shared_ptr<ImageData> img) : region(img) {
-    dimensions.setTo(region.rect.width, region.rect.height);
-}
+Image::Image() {}
+
 Image::Image(ImageRegion region) : region(region) {
     dimensions.setTo(region.rect.width, region.rect.height);
 }
 
-Image::Image(const std::string &id) : region(engine->getImage(id)) {
+Image::Image(const std::string &id) : Image(engine->getImage(id)) {}
+Image::Image(std::shared_ptr<ImageData> img) : Image(ImageRegion(img)) {}
+
+void Image::setSrc(const ImageRegion &region) {
+    this->region = region;
     dimensions.setTo(region.rect.width, region.rect.height);
 }
 
-void Image::update() {
-    dimensions.setTo(region.rect.width * abs(scale.x()),
-                     region.rect.height * abs(scale.y()));
-}
-
 void Image::render(RenderContext &ctx) {
-    if (this->color.a <= 0 && !shader) {
+    if (!region.img || (this->color.a <= 0 && !shader)) {
         return;
     }
     // ctx.transform = (struct RenderTransform) {scroll: this->scroll};
     Matrix4 matrix;
     matrix.identity();
-    matrix.translate(-this->origin.x(), -this->origin.y());
-    matrix.scale(this->scale.x(), this->scale.y());
+    matrix.translate(-this->origin.x, -this->origin.y);
+    matrix.scale(this->dimensions.x / region.rect.width,
+                 this->dimensions.y / region.rect.height);
     if (this->angle) {
         matrix.rotate(this->angle);
     }
     if (this->pitch) {
         matrix.pitch(this->pitch);
     }
-    matrix.translate(this->position.x(), this->position.y(), this->position.z());
+    matrix.translate(this->position.x, this->position.y, this->position.z);
     DrawKey key;
     key.shader = this->shader;
     key.image = this->region.img;

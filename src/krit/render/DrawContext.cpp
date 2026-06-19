@@ -6,13 +6,12 @@ RenderContext &render();
 
 void DrawContext::line(const Vec2f &p1, const Vec2f &p2) {
     // create perpendicular delta vector
-    Vec2f a(p2.x() - p1.x(), p2.y() - p1.y());
+    Vec2f a(p2.x - p1.x, p2.y - p1.y);
     a.normalize(this->lineThickness / 2);
     Vec2f b = a.perpendicular();
-    this->drawQuad(p1.x() + b.x() - a.x(), p1.y() + b.y() - a.y(),
-                   p1.x() - b.x() - a.x(), p1.y() - b.y() - a.y(),
-                   p2.x() - b.x() + a.x(), p2.y() - b.y() + a.y(),
-                   p2.x() + b.x() + a.x(), p2.y() + b.y() + a.y());
+    this->drawQuad(p1.x + b.x - a.x, p1.y + b.y - a.y, p1.x - b.x - a.x,
+                   p1.y - b.y - a.y, p2.x - b.x + a.x, p2.y - b.y + a.y,
+                   p2.x + b.x + a.x, p2.y + b.y + a.y);
 }
 
 void DrawContext::polyline(const Vec2f *points, size_t pointsLength,
@@ -25,7 +24,7 @@ void DrawContext::polyline(const Vec2f *points, size_t pointsLength,
     Vec2f a;
     Vec2f b;
     Vec2f pos = points[0];
-    Vec2f prev(pos.x() - points[1].x(), pos.y() - points[1].y());
+    Vec2f prev(pos.x - points[1].x, pos.y - points[1].y);
     Vec2f inner;
     Vec2f outer;
     Vec2f nextPrev;
@@ -159,8 +158,8 @@ void DrawContext::ring(const Vec2f &center, float radius, size_t segments) {
 
 void DrawContext::circleFilled(const Vec2f &center, float radius,
                                size_t segments) {
-    float x = center.x();
-    float y = center.y();
+    float x = center.x;
+    float y = center.y;
     float radians = (2 * M_PI) / segments;
     float x1 = x;
     float y1 = y + radius;
@@ -177,8 +176,8 @@ void DrawContext::circleFilled(const Vec2f &center, float radius,
 
 void DrawContext::arc(const Vec2f &center, float radius, float startRads,
                       float angleRads, size_t segments, float innerAlpha) {
-    float x = center.x();
-    float y = center.y();
+    float x = center.x;
+    float y = center.y;
     float radians = angleRads / segments;
     float halfThick = this->lineThickness / 2;
     float innerRadius = radius - halfThick;
@@ -198,10 +197,10 @@ void DrawContext::arc(const Vec2f &center, float radius, float startRads,
         outer.setTo(x + cosv * outerRadius, y - sinv * outerRadius);
 
         if (segment != 0) {
-            addTriangle(lastInner.x(), lastInner.y(), lastOuter.x(),
-                        lastOuter.y(), outer.x(), outer.y(), ci, co, co);
-            addTriangle(lastInner.x(), lastInner.y(), outer.x(), outer.y(),
-                        inner.x(), inner.y(), ci, co, ci);
+            addTriangle(lastInner.x, lastInner.y, lastOuter.x, lastOuter.y,
+                        outer.x, outer.y, ci, co, co);
+            addTriangle(lastInner.x, lastInner.y, outer.x, outer.y, inner.x,
+                        inner.y, ci, co, ci);
         }
 
         lastOuter = outer;
@@ -212,7 +211,7 @@ void DrawContext::arc(const Vec2f &center, float radius, float startRads,
 void DrawContext::drawTriangle(const Vec2f &v1, const Vec2f &v2,
                                const Vec2f &v3) {
     auto c = this->color.withAlpha(this->alpha);
-    addTriangle(v1.x(), v1.y(), v2.x(), v2.y(), v3.x(), v3.y(), c, c, c);
+    addTriangle(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, c, c, c);
 }
 
 void DrawContext::drawQuad(float x1, float y1, float x2, float y2, float x3,

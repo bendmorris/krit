@@ -95,7 +95,7 @@ void ParticleSystem::render(RenderContext &ctx) {
         image->color = particle.color.eval(t);
         image->color.a = particle.alpha.eval(t);
         float scale = particle.scale.eval(t);
-        image->scale = Vec2f(scale, scale);
+        image->setScale(scale);
         image->angle =
             particle.rotation.eval(t) - (particle.emitter->aligned ? angle : 0);
         image->zIndex = particle.emitter->zIndex;

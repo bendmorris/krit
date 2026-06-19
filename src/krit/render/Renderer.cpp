@@ -185,6 +185,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
+        LOG_FATAL("glew init failed");
         panic("%s\n", glewGetErrorString(err));
     }
     checkForGlErrors("glew init");
@@ -279,19 +280,19 @@ void Renderer::drawCall<PushClipRect, Rectangle>(RenderContext &ctx,
 //     ur = m * ur;
 //     ll = m * ll;
 //     lr = m * lr;
-//     ul.x() = (ul.x() / ul.w() + 1.0) / 2.0 * width;
-//     ul.y() = (1.0 - ul.y() / ul.w()) / 2.0 * height;
-//     ur.x() = (ur.x() / ur.w() + 1.0) / 2.0 * width;
-//     ur.y() = (1.0 - ur.y() / ur.w()) / 2.0 * height;
-//     ll.x() = (ll.x() / ll.w() + 1.0) / 2.0 * width;
-//     ll.y() = (1.0 - ll.y() / ll.w()) / 2.0 * height;
-//     lr.x() = (lr.x() / lr.w() + 1.0) / 2.0 * width;
-//     lr.y() = (1.0 - lr.y() / lr.w()) / 2.0 * height;
+//     ul.x = (ul.x / ul.w + 1.0) / 2.0 * width;
+//     ul.y = (1.0 - ul.y / ul.w) / 2.0 * height;
+//     ur.x = (ur.x / ur.w + 1.0) / 2.0 * width;
+//     ur.y = (1.0 - ur.y / ur.w) / 2.0 * height;
+//     ll.x = (ll.x / ll.w + 1.0) / 2.0 * width;
+//     ll.y = (1.0 - ll.y / ll.w) / 2.0 * height;
+//     lr.x = (lr.x / lr.w + 1.0) / 2.0 * width;
+//     lr.y = (1.0 - lr.y / lr.w) / 2.0 * height;
 
-//     float left = std::min({ul.x(), ur.x(), ll.x(), lr.x()});
-//     float width = std::max({ul.x(), ur.x(), ll.x(), lr.x()}) - left;
-//     float top = std::min({ul.y(), ur.y(), ll.y(), lr.y()});
-//     float height = std::max({ul.y(), ur.y(), ll.y(), lr.y()}) - top;
+//     float left = std::min({ul.x, ur.x, ll.x, lr.x});
+//     float width = std::max({ul.x, ur.x, ll.x, lr.x}) - left;
+//     float top = std::min({ul.y, ur.y, ll.y, lr.y});
+//     float height = std::max({ul.y, ur.y, ll.y, lr.y}) - top;
 
 //     Rectangle clip(left, top, width, height);
 //     clipStack.emplace_back();
@@ -380,7 +381,7 @@ template <>
 void Renderer::drawCall<ReadPixel, ReadPixelArgs>(RenderContext &ctx,
                                                   ReadPixelArgs &a) {
     ProfileZone("Renderer::drawCall<ReadPixel>");
-    a.fb->queueReadPixel(a.pos.x(), a.pos.y());
+    a.fb->queueReadPixel(a.pos.x, a.pos.y);
 }
 
 template <>
@@ -534,7 +535,7 @@ void Renderer::renderFrame(RenderContext &ctx) {
 void Renderer::clear(RenderContext &ctx) {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     auto &bgColor = engine->bgColor;
-    glScissor(0, 0, engine->window.x(), engine->window.y());
+    glScissor(0, 0, engine->window.x, engine->window.y);
     glClearColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a);
     glClear(GL_COLOR_BUFFER_BIT);
     // this->triangleCount = 0;
@@ -595,8 +596,8 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
         currentRenderTarget ? currentRenderTarget->size : ctx.size();
     Vec2f scale =
         currentRenderTarget ? currentRenderTarget->scale : Vec2f(1, 1);
-    width = size.x() * scale.x();
-    height = size.y() * scale.y();
+    width = size.x * scale.x;
+    height = size.y * scale.y;
 
     _ortho.identity();
     if (!sceneShader &&
@@ -621,9 +622,9 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
     }
 
     if (currentRenderTarget) {
-        glViewport(0, 0, width / scale.x(), height / scale.y());
+        glViewport(0, 0, width / scale.x, height / scale.y);
     } else {
-        glViewport(ctx.camera->offset.x(), ctx.camera->offset.y(), width,
+        glViewport(ctx.camera->offset.x, ctx.camera->offset.y, width,
                    height);
     }
 
@@ -639,8 +640,8 @@ void Renderer::updateClip(RenderContext &ctx) {
     auto &newClip = clipStack.back();
     int ox = 0, oy = 0;
     if (!currentRenderTarget) {
-        ox = ctx.camera->offset.x();
-        oy = ctx.camera->offset.y();
+        ox = ctx.camera->offset.x;
+        oy = ctx.camera->offset.y;
     }
     glScissor(newClip.x + ox, this->height - newClip.y - newClip.height + oy,
               newClip.width, newClip.height);

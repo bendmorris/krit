@@ -103,7 +103,7 @@ public:
     Engine(KritOptions &options);
     ~Engine();
 
-    JSValue &scriptContext() { return _scriptContext; }
+    JSValue scriptContext { JS_UNDEFINED };
 
     RenderContext &renderCtx() {
         if (phase != FramePhase::Render) {
@@ -171,7 +171,6 @@ private:
     int32_t frameDelta, frameDelta2;
     TaskManager *taskManager = nullptr;
     SDL_Cursor *_cursor = nullptr;
-    JSValue _scriptContext = JS_UNDEFINED;
 
     void handleEvents();
     void cleanup();

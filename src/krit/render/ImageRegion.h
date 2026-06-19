@@ -10,34 +10,33 @@ namespace krit {
 struct ImageRegion {
     static ImageRegion empty;
 
-    static ImageRegion *create(std::shared_ptr<ImageData> img) {
-        return new ImageRegion(img);
-    }
-
     std::shared_ptr<ImageData> img;
     IntRectangle rect;
     std::string name;
 
     ImageRegion() : img(nullptr) {}
-    ImageRegion(std::shared_ptr<ImageData> img, IntRectangle rect)
+    ImageRegion(std::shared_ptr<ImageData> img, const IntRectangle &rect)
         : img(img), rect(rect) {}
     ImageRegion(std::shared_ptr<ImageData> img, int x, int y, int w, int h)
         : img(img), rect(x, y, w, h) {}
     ImageRegion(std::shared_ptr<ImageData> img)
         : img(img), rect(IntRectangle(0, 0, img->width(), img->height())) {}
+    ImageRegion(const std::string &id);
+    ImageRegion(const std::string &id, const IntRectangle &rect);
+    ImageRegion(const std::string &id, int x, int y, int w, int h);
 
     int &x() { return this->rect.x; }
     int &y() { return this->rect.y; }
     int &width() { return this->rect.width; }
     int &height() { return this->rect.height; }
 
-    float uvx1() { return static_cast<float>(rect.x) / img->dimensions.x(); }
+    float uvx1() { return static_cast<float>(rect.x) / img->dimensions.x; }
     float uvx2() {
-        return (static_cast<float>(rect.x) + rect.width) / img->dimensions.x();
+        return (static_cast<float>(rect.x) + rect.width) / img->dimensions.x;
     }
-    float uvy1() { return static_cast<float>(rect.y) / img->dimensions.y(); }
+    float uvy1() { return static_cast<float>(rect.y) / img->dimensions.y; }
     float uvy2() {
-        return (static_cast<float>(rect.y) + rect.height) / img->dimensions.y();
+        return (static_cast<float>(rect.y) + rect.height) / img->dimensions.y;
     }
 
     ImageRegion subRegion(int x, int y, int width, int height) {

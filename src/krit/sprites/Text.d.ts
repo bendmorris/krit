@@ -5,12 +5,11 @@ declare enum AlignType {
 }
 
 declare class TextOptions {
+    constructor();
     setFont(font: string): void;
     setSize(size: number): void;
     setWordWrap(wrap: boolean): void;
     setAlign(align: AlignType): void;
-
-    constructor();
 }
 
 declare class GlyphRenderData {
@@ -26,22 +25,21 @@ declare class TextFormatTagOptions {
     setColor(c: number): void;
     setNewline(): void;
     setTab(): void;
-    setSprite(s: VisibleSprite): void;
+    setSprite(s: Ptr<Sprite>): void;
     setDelay(delay: number): void;
     setBorder(): void;
 }
 
-declare class Text extends VisibleSprite {
+declare class Text extends Sprite {
     static addFormatTag(name: string, options: TextFormatTagOptions): void;
 
     constructor(options: TextOptions);
+    constructor();
 
-    get width(): number;
-    get height(): number;
-    charCount: number;
+    readonly content: string;
     readonly maxChars: number;
-    readonly text: string;
     readonly textDimensions: Vec2f;
+    charCount: number;
     baseColor: Color;
     allowPixelPerfect: boolean;
     dynamicSize: boolean;
@@ -50,12 +48,15 @@ declare class Text extends VisibleSprite {
     borderColor: Color;
     glyphScale: number;
     pitch: number;
+    scale: Vec2f;
+    wordWrap: boolean;
 
     refresh(): void;
     invalidate(): void;
-    setText(s: string): void;
-    setRichText(s: string): void;
-    setTabStops(s: string): void;
-    setFontSize(s: number): void;
-    setAlign(align: AlignType): void;
+    set font(s: string);
+    set text(s: string);
+    set richText(s: string);
+    set tabStops(s: string);
+    set fontSize(s: number);
+    set align(align: AlignType);
 }

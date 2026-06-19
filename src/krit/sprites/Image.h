@@ -1,8 +1,6 @@
 #ifndef KRIT_SPRITES_IMAGE
 #define KRIT_SPRITES_IMAGE
 
-#include <string>
-
 #include "krit/Math.h"
 #include "krit/Sprite.h"
 #include "krit/math/Dimensions.h"
@@ -11,39 +9,39 @@
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/utils/Color.h"
+#include <optional>
+#include <string>
 
 namespace krit {
 struct RenderContext;
 
-struct Image : public VisibleSprite {
-    static Image *create(ImageRegion &id) { return new Image(id); }
-
+struct Image : public Sprite {
     Point origin;
     Point scroll;
     float angle = 0;
     float pitch = 0;
     ImageRegion region;
 
+    Image();
     Image(const std::string &id);
     Image(std::shared_ptr<ImageData> img);
     Image(ImageRegion region);
 
-    int &width() { return this->region.rect.width; }
-    int &height() { return this->region.rect.height; }
+    void setSrc(const ImageRegion &id);
+    void setScale(float sx, std::optional<float> sy = {}) {
+        setScaleX(sx);
+        setScaleY(sy.value_or(sx));
+    }
+    float getScaleX() { return dimensions.x / region.rect.width; }
+    void setScaleX(float s) { dimensions.x = region.rect.width * s; }
+    float getScaleY() { return dimensions.y / region.rect.height; }
+    void setScaleY(float s) { dimensions.y = region.rect.height * s; }
 
     void centerOrigin() {
-        this->origin.setTo(this->width() / 2.0, this->height() / 2.0);
+        this->origin.setTo(this->region.rect.width / 2.0,
+                           this->region.rect.height / 2.0);
     }
 
-    Dimensions getSize() override {
-        return Dimensions(this->width() * abs(this->scale.x()),
-                          this->height() * abs(this->scale.y()));
-    }
-    void resize(float w, float h) override {
-        this->scale.setTo(w / this->width(), h / this->height());
-    }
-
-    void update() override;
     void render(RenderContext &ctx) override;
 };
 

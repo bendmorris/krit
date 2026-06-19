@@ -9,7 +9,9 @@
 namespace krit {
 
 template <typename T, typename Self> struct BaseRectangle {
-    static Self *create(T x, T y, T width, T height) { return new Self(x, y, width, height); }
+    static Self *create(T x, T y, T width, T height) {
+        return new Self(x, y, width, height);
+    }
 
     T x = 0, y = 0, width = 0, height = 0;
 
@@ -97,7 +99,7 @@ struct Rectangle : public BaseRectangle<float, Rectangle> {
     Rectangle(float x, float y, float width, float height)
         : BaseRectangle<float, Rectangle>(x, y, width, height) {}
     template <typename T, typename U>
-    Rectangle(Vec2f &p, Vec2f &d) : Rectangle(p.x(), p.y(), d.x(), d.y()) {}
+    Rectangle(Vec2f &p, Vec2f &d) : Rectangle(p.x, p.y, d.x, d.y) {}
 };
 
 struct IntRectangle : public BaseRectangle<int, IntRectangle> {

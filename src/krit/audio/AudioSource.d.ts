@@ -23,10 +23,10 @@ declare class SequenceAudioSource extends AudioSource {
     readonly parts: Array<AudioStream>;
     loopStart: number;
 
-    addPart(data: AudioData): SequenceAudioSource;
+    addPart(data: SharedPtr<AudioData>): SharedPtr<SequenceAudioSource>;
 }
 
 declare class LayeredAudioSource extends AudioSource {
     readonly layers: Array<AudioSource>;
-    addLayer(source: AudioSource): LayeredAudioSource;
+    addLayer(source: SharedPtr<AudioSource>): SharedPtr<LayeredAudioSource>;
 }

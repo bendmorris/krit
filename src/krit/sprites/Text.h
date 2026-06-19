@@ -52,8 +52,6 @@ using CustomTextRenderFunction =
     std::function<void(RenderContext *, Text *, GlyphRenderData *)>;
 
 struct TextOptions {
-    static TextOptions *create() { return new TextOptions(); }
-
     std::shared_ptr<Font> font;
     int size = 16;
     AlignType align = LeftAlign;
@@ -91,8 +89,6 @@ struct TextOptions {
 };
 
 struct TextFormatTagOptions {
-    static TextFormatTagOptions *create() { return new TextFormatTagOptions(); }
-
     std::optional<Color> color;
     std::optional<AlignType> align;
     bool newline = false;
@@ -100,7 +96,7 @@ struct TextFormatTagOptions {
     bool border = false;
     int charDelay = 0;
     CustomTextRenderFunction custom;
-    VisibleSprite *sprite = nullptr;
+    Sprite *sprite = nullptr;
     std::shared_ptr<Font> font;
 
     TextFormatTagOptions() = default;
@@ -126,7 +122,7 @@ struct TextFormatTagOptions {
         this->custom = c;
         return *this;
     }
-    TextFormatTagOptions &setSprite(VisibleSprite *s) {
+    TextFormatTagOptions &setSprite(Sprite *s) {
         this->sprite = s;
         return *this;
     }
@@ -176,18 +172,15 @@ enum TextOpcodeType : int {
 };
 
 using TextOpcode =
-    std::variant<std::pair<size_t, size_t>, TextRunData, std::shared_ptr<Font>, Color, AlignType,
-                 CustomTextRenderFunction, GlyphBlockData, NewlineData,
-                 VisibleSprite *, std::monostate, float, int, std::monostate,
-                 std::monostate>;
+    std::variant<std::pair<size_t, size_t>, TextRunData, std::shared_ptr<Font>,
+                 Color, AlignType, CustomTextRenderFunction, GlyphBlockData,
+                 NewlineData, Sprite *, std::monostate, float, int,
+                 std::monostate, std::monostate>;
 
-struct Text : public VisibleSprite, public TextOptions {
+struct Text : public Sprite, public TextOptions {
     static std::unordered_map<std::string, TextFormatTagOptions> formatTags;
 
     static void addFormatTag(std::string, TextFormatTagOptions);
-    static Text *create(const TextOptions &options) {
-        return new Text(options);
-    }
 
     float charCount = -1;
     int maxChars = 0;
@@ -202,6 +195,7 @@ struct Text : public VisibleSprite, public TextOptions {
     float glyphScale = 1;
     Color borderColor = Color::black();
     float pitch = 0;
+    Vec2f scale{1, 1};
 
     Text() = default;
     Text(const TextOptions &options);
@@ -214,27 +208,16 @@ struct Text : public VisibleSprite, public TextOptions {
 
     Text &setText(const std::string &text);
     Text &setRichText(const std::string &text);
-    Text &refresh();
+    void refresh();
     void invalidate() { dirty = true; }
 
-    const std::string &getText() { return this->text; }
+    const std::string &content() { return this->text; }
     const Dimensions &getTextDimensions() {
         refresh();
         return this->textDimensions;
     }
 
-    Dimensions getSize() override {
-        this->refresh();
-        return textDimensions;
-    }
-    float &width() {
-        refresh();
-        return textDimensions.x();
-    }
-    float &height() {
-        refresh();
-        return textDimensions.y();
-    }
+    void setFont(const std::string &fontName);
     void setFontSize(int size) {
         if (this->size != size) {
             this->dirty = true;

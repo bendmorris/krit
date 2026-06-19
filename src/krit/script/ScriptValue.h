@@ -22,7 +22,10 @@ struct ScriptEngine;
 
 template <typename T, typename enable_if = void> struct TypeConverter {
     static JSValue valueToJs(JSContext *ctx, const T &val);
-    static T valueFromJs(JSContext *ctx, const JSValue &val);
+    static T valueFromJs(JSContext *ctx, JSValue val);
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return false;
+    }
 };
 
 template <typename T> struct has_reference_specialization : std::false_type {};
@@ -52,10 +55,13 @@ struct convertible_from_js<T,
  */
 
 template <> struct TypeConverter<JSValue> {
-    static JSValue valueFromJs(JSContext *ctx, const JSValue &val) {
+    static JSValue valueFromJs(JSContext *ctx, JSValue val) {
         return val;
     }
     static JSValue valueToJs(JSContext *ctx, const JSValue &val) { return val; }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return true;
+    }
 };
 
 /**
@@ -63,11 +69,14 @@ template <> struct TypeConverter<JSValue> {
  * the reference count before returning.
  */
 template <> struct TypeConverter<JSValue &> {
-    static JSValue valueFromJs(JSContext *ctx, const JSValue &val) {
+    static JSValue valueFromJs(JSContext *ctx, JSValue val) {
         return val;
     }
     static JSValue valueToJs(JSContext *ctx, const JSValue &val) {
         return JS_DupValue(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return true;
     }
 };
 
@@ -77,6 +86,9 @@ template <> struct TypeConverter<bool> {
     }
     static JSValue valueToJs(JSContext *ctx, const bool &val) {
         return JS_NewBool(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return true;
     }
 };
 
@@ -94,6 +106,9 @@ struct TypeConverter<
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         return JS_NewInt32(ctx, static_cast<int32_t>(val));
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsNumber(val);
+    }
 };
 
 // unsigned integral type
@@ -108,6 +123,9 @@ struct TypeConverter<
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         return JS_NewUint32(ctx, static_cast<uint32_t>(val));
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsNumber(val);
+    }
 };
 
 // float type
@@ -117,10 +135,13 @@ struct TypeConverter<
     static T valueFromJs(JSContext *ctx, JSValue val) {
         double n;
         JS_ToFloat64(ctx, &n, val);
-        return n;
+        return static_cast<T>(n);
     }
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         return JS_NewFloat64(ctx, static_cast<double>(val));
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsNumber(val);
     }
 };
 
@@ -186,6 +207,9 @@ struct TypeConverter<std::shared_ptr<T>,
         }
         return TypeConverter<T *>::valueFromJs(ctx, arr)->shared_from_this();
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
+    }
 };
 
 // default implementation for reference types; we can't make these from JS
@@ -207,8 +231,11 @@ struct TypeConverter<
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         return TypeConverter<std::decay_t<T>>::valueToJs(ctx, val);
     }
-    static T valueFromJs(JSContext *ctx, const JSValue &val) {
+    static const T &valueFromJs(JSContext *ctx, const JSValue &val) {
         return TypeConverter<std::decay_t<T>>::valueFromJs(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
     }
 };
 
@@ -220,6 +247,9 @@ struct TypeConverter<
                      std::is_class_v<std::decay_t<T>>>> {
     static JSValue valueToJs(JSContext *ctx, const T &val);
     static T &valueFromJs(JSContext *ctx, const JSValue &val);
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
+    }
 };
 
 // copy instance from reference
@@ -231,9 +261,10 @@ struct TypeConverter<
     static JSValue valueToJs(JSContext *ctx, const T &val) {
         return TypeConverter<T &>::valueToJs(ctx, val);
     }
-    static T valueFromJs(JSContext *ctx, const JSValue &val) {
+    static T &valueFromJs(JSContext *ctx, const JSValue &val) {
         return TypeConverter<T &>::valueFromJs(ctx, val);
     }
+    static bool isConvertible(JSContext *ctx, JSValue val);
 };
 
 // default implementation for pointers which have a reference implementation
@@ -245,6 +276,9 @@ struct TypeConverter<
     }
     static T *valueFromJs(JSContext *ctx, const JSValue &val) {
         return &TypeConverter<T &>::valueFromJs(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
     }
 };
 
@@ -276,10 +310,16 @@ template <> struct TypeConverter<std::string> {
         JS_FreeCString(ctx, s);
         return result;
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsString(val);
+    }
 };
 template <> struct TypeConverter<std::string &> {
     static JSValue valueToJs(JSContext *ctx, const std::string &val) {
         return TypeConverter<std::string>::valueToJs(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsString(val);
     }
 };
 template <> struct TypeConverter<const std::string &> {
@@ -288,6 +328,9 @@ template <> struct TypeConverter<const std::string &> {
     }
     static std::string valueFromJs(JSContext *ctx, JSValue val) {
         return TypeConverter<std::string>::valueFromJs(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsString(val);
     }
 };
 
@@ -301,6 +344,9 @@ template <> struct TypeConverter<std::filesystem::path> {
         JS_FreeCString(ctx, s);
         return result;
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsString(val);
+    }
 };
 template <> struct TypeConverter<std::filesystem::path &> {
     static JSValue valueToJs(JSContext *ctx, const std::filesystem::path &val) {
@@ -313,6 +359,9 @@ template <> struct TypeConverter<const std::filesystem::path &> {
     }
     static std::filesystem::path valueFromJs(JSContext *ctx, JSValue val) {
         return TypeConverter<std::filesystem::path>::valueFromJs(ctx, val);
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsString(val);
     }
 };
 
@@ -333,6 +382,9 @@ template <typename T> struct TypeConverter<std::optional<T>> {
             return std::nullopt;
         }
         return std::optional<T>{TypeConverter<T>::valueFromJs(ctx, val)};
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsUndefined(val) || TypeConverter<T>::isConvertible(ctx, val);
     }
 };
 

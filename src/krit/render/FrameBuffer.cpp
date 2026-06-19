@@ -40,7 +40,7 @@ void FrameBuffer::init() {
 #endif
     if (initialized) {
         _currentSize.setTo(-1, -1);
-        this->resize(size.x(), size.y());
+        this->resize(size.x, size.y);
     }
 }
 
@@ -56,8 +56,8 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
     if (!texture) {
         LOG_ERROR("failed to generate texture for FrameBuffer");
     }
-    checkForGlErrors("create framebuffer texture: %i %ix%i\n", texture,
-                     width, height);
+    checkForGlErrors("create framebuffer texture: %i %ix%i\n", texture, width,
+                     height);
 
 #if KRIT_ENABLE_MULTISAMPLING
     if (multisample) {
@@ -120,9 +120,8 @@ void FrameBuffer::createTextures(unsigned int width, unsigned int height) {
 
 void FrameBuffer::_resize() {
     init();
-    int width = size.x(), height = size.y();
-    if (_currentSize.x() != width ||
-        _currentSize.y() != height) {
+    int width = size.x, height = size.y;
+    if (_currentSize.x != width || _currentSize.y != height) {
         GLint drawFboId = 0;
         glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &drawFboId);
         glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
@@ -159,10 +158,9 @@ GLuint FrameBuffer::getTexture() {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, resolvedFb);
         // glClear(0);
         checkForGlErrors("glBindFramebuffer");
-        glBlitFramebuffer(0, 0, size.x(), size.y(), 0, 0, size.x(), size.y(),
+        glBlitFramebuffer(0, 0, size.x, size.y, 0, 0, size.x, size.y,
                           GL_COLOR_BUFFER_BIT, GL_NEAREST);
-        checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer,
-                         resolvedFb);
+        checkForGlErrors("glBlitFramebuffer %i -> %i", frameBuffer, resolvedFb);
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, drawFboId);
         // glClear(0);
     }
@@ -203,7 +201,7 @@ void FrameBuffer::queueReadPixel(int x, int y) {
     }
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     checkForGlErrors("glBindFramebuffer");
-    glReadPixels(x, size.y() - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glReadPixels(x, size.y - y - 1, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     checkForGlErrors("glReadPixels");
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     checkForGlErrors("queueReadPixel");
@@ -215,13 +213,11 @@ uint32_t FrameBuffer::readPixel() {
     }
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
     checkForGlErrors("glBindBuffer");
-    uint8_t *ptr = (uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+    uint8_t *ptr = (uint8_t *)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
     checkForGlErrors("glMapBuffer");
     assert(ptr);
-    Color c(static_cast<float>(ptr[0]) / 255,
-            static_cast<float>(ptr[1]) / 255,
-            static_cast<float>(ptr[2]) / 255,
-            static_cast<float>(ptr[3]) / 255);
+    Color c(static_cast<float>(ptr[0]) / 255, static_cast<float>(ptr[1]) / 255,
+            static_cast<float>(ptr[2]) / 255, static_cast<float>(ptr[3]) / 255);
     glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
     checkForGlErrors("glUnmapBuffer");
@@ -233,7 +229,7 @@ std::shared_ptr<ImageData> FrameBuffer::imageData() {
     GLuint t = getTexture();
     if (i) {
         i->texture = t;
-        i->dimensions.setTo(size.x(), size.y());
+        i->dimensions.setTo(size.x, size.y);
     } else {
         i = std::make_shared<ImageData>(t, size);
         i->owned = false;

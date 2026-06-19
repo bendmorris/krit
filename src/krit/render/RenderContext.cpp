@@ -10,8 +10,8 @@ struct DrawKey;
 IntDimensions RenderContext::size() {
     if (drawCommandBuffer->currentRenderTarget) {
         IntDimensions d(drawCommandBuffer->currentRenderTarget->size);
-        d.x() *= drawCommandBuffer->currentRenderTarget->scale.x();
-        d.y() *= drawCommandBuffer->currentRenderTarget->scale.y();
+        d.x *= drawCommandBuffer->currentRenderTarget->scale.x;
+        d.y *= drawCommandBuffer->currentRenderTarget->scale.y;
         return d;
     } else if (camera) {
         return IntDimensions(camera->viewportWidth(), camera->viewportHeight());
@@ -35,19 +35,24 @@ bool RenderContext::endAutoClip() {
 
 void RenderContext::popClip() { this->drawCommandBuffer->popClip(); }
 
-void RenderContext::addRect(const DrawKey &key, IntRectangle &rect,
-                            Matrix4 &matrix, Color color, int zIndex) {
+void RenderContext::addRect(const DrawKey &key, const IntRectangle &rect,
+                            const Matrix4 &matrix, const Color color,
+                            int zIndex) {
     this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
 }
 
-void RenderContext::addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
-                                Color color, int zIndex) {
+void RenderContext::addTriangle(const DrawKey &key, const Triangle &t,
+                                const Triangle &uv, const Color color,
+                                int zIndex) {
     this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
 }
 
-void RenderContext::addTriangle(const DrawKey &key, Triangle &t, Triangle &uv,
-                                const Color &color1, const Color &color2, const Color &color3, int zIndex) {
-    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color1, color2, color3, zIndex);
+void RenderContext::addTriangle(const DrawKey &key, const Triangle &t,
+                                const Triangle &uv, const Color &color1,
+                                const Color &color2, const Color &color3,
+                                int zIndex) {
+    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color1, color2,
+                                         color3, zIndex);
 }
 
 void RenderContext::drawRect(int x, int y, int w, int h, Color c, float alpha) {

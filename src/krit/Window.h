@@ -15,11 +15,11 @@ struct Engine;
 struct Renderer;
 
 struct Window : public IntDimensions {
-    int width() { return size().x(); }
-    int height() { return size().y(); }
+    int width() { return size().x; }
+    int height() { return size().y; }
 
     IntDimensions &size() {
-        getWindowSize(&x(), &y());
+        getWindowSize(&x, &y);
         return *this;
     }
 
@@ -37,7 +37,7 @@ struct Window : public IntDimensions {
 
     void setWindowSize(int w, int h) {
         SDL_SetWindowSize(this->window, w, h);
-        SDL_GetWindowSize(this->window, &x(), &y());
+        SDL_GetWindowSize(this->window, &x, &y);
     }
 
 private:

@@ -68,7 +68,7 @@ file(GLOB_RECURSE KRIT_SCRIPT_FILES CONFIGURE_DEPENDS
 )
 list(APPEND KRIT_SRC_FILES ${KRIT_SCRIPT_FILES})
 if(KRIT_ENABLE_TRACY)
-    add_definitions(-DTRACY_ENABLE)
+    add_definitions(-DTRACY_ENABLE -DTRACY_NO_CRASH_HANDLER -DTRACY_ON_DEMAND)
     list(APPEND TRACY_FILES
         ${KRIT_DIR}/tracy/public/TracyClient.cpp
     )
@@ -177,7 +177,8 @@ list(APPEND KRIT_SRC_FILES
     ${KRIT_DIR}/quickjs/dtoa.c
 )
 
-add_library(${PROJECT_NAME} OBJECT
+add_library(${PROJECT_NAME} INTERFACE)
+target_sources(${PROJECT_NAME} PUBLIC
     ${KRIT_GENERATED_FILES}
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
@@ -215,7 +216,7 @@ if(KRIT_ENABLE_TOOLS)
 endif()
 
 target_link_libraries(${PROJECT_NAME}
-    PUBLIC
+    INTERFACE
     "-Wl,-Bdynamic"
     ${KRIT_LIBS}
     ${KRIT_STATIC}
@@ -225,7 +226,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${FREETYPE_INCLUDE_DIRS})
 
-file(GLOB_RECURSE KRIT_EDITOR_FILES CONFIGURE_DEPENDS
+file(GLOB_RECURSE BINDGEN_SRC_FILES CONFIGURE_DEPENDS
     ${KRIT_DIR}/tools/tsbindgen/src/*.ts
 )
 
@@ -260,7 +261,13 @@ function(tsbindgen BRIDGE_SRC_DIR PREFIX NAMESPACE)
 endfunction()
 
 if(KRIT_ENABLE_TRACY AND BUILD_WINDOWS)
-    target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 dbghelp)
+    target_link_libraries(${PROJECT_NAME} INTERFACE ws2_32 dbghelp)
+endif()
+
+if(KRIT_BACKEND_PLATFORM STREQUAL "Desktop")
+    message("including backward")
+    add_definitions(-DKRIT_BACKWARD)
+    target_include_directories(krit INTERFACE ${KRIT_DIR}/backward-cpp)
 endif()
 
 tsbindgen(${KRIT_DIR}/src generated/krit krit)

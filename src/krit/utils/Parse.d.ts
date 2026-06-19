@@ -1,5 +1,3 @@
-
 declare class Parse {
-        static parseColor(s: string, into: Color): void;
-    }
-
+    static parseColor(s: string, into: Color): void;
+}

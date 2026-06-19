@@ -205,11 +205,11 @@ void SpineSprite::render(RenderContext &ctx) {
 
     Matrix4 m;
     m.identity();
-    m.translate(-origin.x(), -origin.y());
-    m.scale(scale.x(), scale.y());
+    m.translate(-origin.x, -origin.y);
+    m.scale(scale.x, scale.y);
     m.rotate(angle);
     m.pitch(pitch);
-    m.translate(position.x(), position.y(), position.z());
+    m.translate(position.x, position.y, position.z);
 
     DrawKey key;
     key.shader = this->shader;
@@ -262,14 +262,14 @@ void SpineSprite::render(RenderContext &ctx) {
             uv.p2.setTo(uvs[i2 * 2], uvs[i2 * 2 + 1]);
             uv.p3.setTo(uvs[i3 * 2], uvs[i3 * 2 + 1]);
             if (uvOffsetX) {
-                uv.p1.x() += uvOffsetX;
-                uv.p2.x() += uvOffsetX;
-                uv.p3.x() += uvOffsetX;
+                uv.p1.x += uvOffsetX;
+                uv.p2.x += uvOffsetX;
+                uv.p3.x += uvOffsetX;
             }
             if (uvOffsetY) {
-                uv.p1.y() += uvOffsetY;
-                uv.p2.y() += uvOffsetY;
-                uv.p3.y() += uvOffsetY;
+                uv.p1.y += uvOffsetY;
+                uv.p2.y += uvOffsetY;
+                uv.p3.y += uvOffsetY;
             }
             c.setTo(colors[i1] & 0xffffff);
             c.a = ((colors[i1] >> 24) & 0xff) / 0xff;

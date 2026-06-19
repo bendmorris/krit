@@ -25,15 +25,11 @@ struct Camera {
 
     Signal render;
 
-    float &width() { return this->dimensions.x(); }
-    float &height() { return this->dimensions.y(); }
+    float &width() { return this->dimensions.x; }
+    float &height() { return this->dimensions.y; }
 
-    int viewportWidth() {
-        return round(this->currentDimensions.x() * scale.x());
-    }
-    int viewportHeight() {
-        return round(this->currentDimensions.y() * scale.y());
-    }
+    int viewportWidth() { return round(this->currentDimensions.x * scale.x); }
+    int viewportHeight() { return round(this->currentDimensions.y * scale.y); }
 
     float rotation = 0;
     float pitch = 0;

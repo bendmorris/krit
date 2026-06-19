@@ -57,10 +57,23 @@ void runSoundThread(AudioBackend *backend) {
 #endif
 
 AudioBackend::AudioBackend() {
-    device = alcOpenDevice(nullptr);
+    device = alcOpenDevice("OpenAL Soft");
     if (!device) {
         AREA_LOG_FATAL("audio", "couldn't open OpenAL default device");
-        return;
+        const ALCchar *devices = alcGetString(NULL, ALC_DEVICE_SPECIFIER);
+        const ALCchar *device = devices, *next = devices + 1;
+        size_t len = 0;
+
+        fprintf(stdout, "Devices list:\n");
+        fprintf(stdout, "----------\n");
+        while (device && *device != '\0' && next && *next != '\0') {
+            fprintf(stdout, "%s\n", device);
+            len = strlen(device);
+            device += (len + 1);
+            next += (len + 2);
+        }
+        fprintf(stdout, "----------\n");
+        panic("couldn't initialize audio");
     }
 
     init();
@@ -222,42 +235,42 @@ void AudioBackend::update() {
 
 #if KRIT_SOUND_THREAD
     {
-    ScopedMutex _lock(&soundThreadMutex);
+        ScopedMutex _lock(&soundThreadMutex);
 #endif
-    if (alcReopenDeviceSOFT && needToRefreshDefaultDevice) {
-        AREA_LOG_INFO("audio", "reopening default audio device");
-        if (!alcReopenDeviceSOFT(device, nullptr, nullptr)) {
-            AREA_LOG_INFO("audio", "failed to reopen default audio device");
+        if (alcReopenDeviceSOFT && needToRefreshDefaultDevice) {
+            AREA_LOG_INFO("audio", "reopening default audio device");
+            if (!alcReopenDeviceSOFT(device, nullptr, nullptr)) {
+                AREA_LOG_INFO("audio", "failed to reopen default audio device");
+            }
+            if (alcResetDeviceSOFT) {
+                alcResetDeviceSOFT(device, nullptr);
+            }
+            needToRefreshDefaultDevice = false;
         }
-        if (alcResetDeviceSOFT) {
-            alcResetDeviceSOFT(device, nullptr);
-        }
-        needToRefreshDefaultDevice = false;
-    }
-    for (int i = alSourceQuarantine.size() - 1; i >= 0; --i) {
-        ALuint alSource = alSourceQuarantine[i];
-        ALint buffersProcessed = 0;
-        alGetSourcei(alSource, AL_BUFFERS_PROCESSED, &buffersProcessed);
-        if (buffersProcessed) {
-            AREA_LOG_DEBUG("audio",
-                           "quarantined source %i processed %i buffers",
-                           alSource, buffersProcessed);
-            for (; buffersProcessed > 0; --buffersProcessed) {
-                ALuint alBuffer{0};
-                alSourceUnqueueBuffers(alSource, 1, &alBuffer);
-                recycleAlBuffer(alBuffer);
+        for (int i = alSourceQuarantine.size() - 1; i >= 0; --i) {
+            ALuint alSource = alSourceQuarantine[i];
+            ALint buffersProcessed = 0;
+            alGetSourcei(alSource, AL_BUFFERS_PROCESSED, &buffersProcessed);
+            if (buffersProcessed) {
+                AREA_LOG_DEBUG("audio",
+                               "quarantined source %i processed %i buffers",
+                               alSource, buffersProcessed);
+                for (; buffersProcessed > 0; --buffersProcessed) {
+                    ALuint alBuffer{0};
+                    alSourceUnqueueBuffers(alSource, 1, &alBuffer);
+                    recycleAlBuffer(alBuffer);
+                }
+            }
+            ALint buffers{0};
+            alGetSourcei(alSource, AL_BUFFERS_QUEUED, &buffers);
+            if (buffers == 0) {
+                AREA_LOG_DEBUG("audio",
+                               "quarantined source %i is ready to be recycled",
+                               alSource);
+                alSourcePool.push_back(alSource);
+                alSourceQuarantine.erase(alSourceQuarantine.begin() + i);
             }
         }
-        ALint buffers{0};
-        alGetSourcei(alSource, AL_BUFFERS_QUEUED, &buffers);
-        if (buffers == 0) {
-            AREA_LOG_DEBUG("audio",
-                           "quarantined source %i is ready to be recycled",
-                           alSource);
-            alSourcePool.push_back(alSource);
-            alSourceQuarantine.erase(alSourceQuarantine.begin() + i);
-        }
-    }
 #if KRIT_SOUND_THREAD
     }
     {

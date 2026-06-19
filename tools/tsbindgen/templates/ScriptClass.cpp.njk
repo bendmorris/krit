@@ -2,9 +2,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <functional>
 #include <utility>
 #include <vector>
 #include <string>
+#include "krit/script/CodeGenHelpers.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ScriptType.h"
@@ -28,6 +30,9 @@ template<> {{namespace}}::{{cls.name}} &TypeConverter<{{namespace}}::{{cls.name}
 template<> const {{namespace}}::{{cls.name}} &TypeConverter<const {{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
     {{namespace}}::{{cls.name}} *p = ObjectHeader::data<{{namespace}}::{{cls.name}}>(val);
     return *p;
+}
+template<> bool TypeConverter<{{namespace}}::{{cls.name}}>::isConvertible(JSContext *ctx, JSValue val) {
+    return JS_GetClassID(val) == ScriptClass<{{namespace}}::{{cls.name}}>::classId();
 }
 
 template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(JSContext *ctx, const {{namespace}}::{{cls.name}} &val) {
@@ -92,30 +97,34 @@ static JSValue js_{{ cls.name }}_get_internal_id(JSContext *ctx, JSValueConst th
 }
 
 {% for prop in cls.properties %}
+{% if not prop.writeonly %}
 static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
-    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
-        return JS_EXCEPTION;
+        return JS_ThrowTypeError(ctx, "invalid {{cls.name}}");
     }
     {% if prop.get %}
-    return krit::TypeConverter<prop_type<decltype(p->{{prop.name}}())>::type>::valueToJs(ctx, p->{{ prop.name }}());
+    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    return krit::TypeConverter<prop_type<decltype(p->get{{ prop.name | title }}())>::type>::valueToJs(ctx, p->get{{ prop.name | title }}());
     {% else %}
-    return krit::TypeConverter<prop_type<decltype(p->{{prop.name}})>::type>::valueToJs(ctx, p->{{ prop.name }});
+    static_assert(krit::TypeValidator<std::remove_reference_t<decltype(std::invoke(&{{cls.name}}::{{prop.name}}, *p))>, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    return krit::TypeConverter<prop_type<decltype(std::invoke(&{{cls.name}}::{{prop.name}}, *p))>::type>::valueToJs(ctx, std::invoke(&{{cls.name}}::{{prop.name}}, *p));
     {% endif %}
 }
+{% endif %}
 
 {% if not prop.readonly %}
 static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
-    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
-        return JS_EXCEPTION;
+        return JS_ThrowTypeError(ctx, "invalid {{cls.name}}");
     }
     {% if prop.set %}
-    p->{{ prop.name }}() = krit::TypeConverter<std::remove_reference<decltype(p->{{ prop.name }}())>::type>::valueFromJs(ctx, val);
+    static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    p->set{{ prop.name | title }}(krit::TypeConverter<FunctionType<decltype(&{{cls.name}}::set{{ prop.name | title }})>::arg<0>::type>::valueFromJs(ctx, val));
     {% else %}
-    p->{{ prop.name }} = krit::TypeConverter<decltype(p->{{ prop.name }})>::valueFromJs(ctx, val);
+    static_assert(krit::TypeValidator<std::remove_reference_t<decltype(std::invoke(&{{cls.name}}::{{prop.name}}, *p))>, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
+    std::invoke(&{{cls.name}}::{{prop.name}}, *p) = krit::TypeConverter<std::remove_reference_t<decltype(std::invoke(&{{cls.name}}::{{prop.name}}, *p))>>::valueFromJs(ctx, val);
     {% endif %}
     return JS_UNDEFINED;
 }
@@ -151,40 +160,58 @@ static JS_FUNC({{cls.name}}___constructor__) {
         return engine->createOwned<{{ namespacedName(cls) }}>(val);
     }
     {% endif %}
-    return engine->createOwned<{{ namespacedName(cls) }}>({{ (namespacedName(cls) + '::create') | call(cls.ctor) }});
+    {% for overload in cls.ctor.overloads %}
+    {% set inc = 0 %}
+    {% if cls.ctor.overloads.length > 1 %}if (argc >= {{overload.requiredArgs}}{% for param in overload.params %}{% if not param.optional %} && TypeConverter<{{typename(param.type)}}>::isConvertible(ctx, argv[{{ inc }}]){% set inc = inc + 1 %}{% endif %}{% endfor %}) {% endif %}{
+        return engine->createOwned<{{ namespacedName(cls) }}>({{ ('new ' + namespacedName(cls)) | call(overload) }});
+    }
+    {% endfor %}
+    return JS_ThrowTypeError(ctx, "new {{cls.name}}: no matching constructor");
 }
 {% endif %}
 
 {% for method in cls.staticMethods %}
 static JS_FUNC({{cls.name}}_{{method.name}}) {
-    static_assert(krit::TypeValidator<{{ typename(method.returnType) }}, {{ method.returnType.validationType }}>::valid, "C++ and TS types don't match");
-    {% for arg in method.args %}
+    {% for overload in method.overloads %}
+    static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in overload.args %}
     static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
     {% endfor %}
-    {% set comma = joiner() %}
-    {% if method.returnType.validationType !== 'void' %}
-    return krit::TypeConverter<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(method) }});
-    {% else %}
-    {{ cls.name + '::' + method.name | call(method) }};
-    return JS_UNDEFINED;
-    {% endif %}
+    {% set inc = 0 %}
+    {% if method.overloads.length > 1 %}if (argc >= {{overload.requiredArgs}}{% for param in overload.params %}{% if not param.optional %} && TypeConverter<{{typename(param.type)}}>::isConvertible(ctx, argv[{{ inc }}]){% set inc = inc + 1 %}{% endif %}{% endfor %}) {% endif %}{
+        {% set comma = joiner() %}
+        {% if overload.returnType.validationType !== 'void' %}
+        return krit::TypeConverter<{{ typename(overload.returnType) }}>::valueToJs(ctx, {{ cls.name + '::' + method.name | call(overload) }});
+        {% else %}
+        {{ cls.name + '::' + method.name | call(overload) }};
+        return JS_UNDEFINED;
+        {% endif %}
+    }
+    {% endfor %}
+    return JS_ThrowTypeError(ctx, "{{cls.name}}.{{method.name}}: arg types didn't match");
 }
 {% endfor %}
 
 {% for method in cls.methods %}
 static JS_FUNC({{cls.name}}_{{ method.name }}) {
-    static_assert(krit::TypeValidator<{{ typename(method.returnType) }}, {{ method.returnType.validationType }}>::valid, "C++ and TS types don't match");
-    {% for arg in method.args %}
+    {% for overload in method.overloads %}
+    static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in overload.args %}
     static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
     {% endfor %}
-    {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
-    {% set comma = joiner() %}
-    {% if method.returnType.validationType !== 'void' %}
-    return krit::TypeConverter<{{ typename(method.returnType) }}>::valueToJs(ctx, {{ ("p->" + method.name) | call(method) }});
-    {% else %}
-    {{ ("p->" + method.name) | call(method) }};
-    return JS_UNDEFINED;
-    {% endif %}
+    {% set inc = 0 %}
+    {% if method.overloads.length > 1 %}if (argc >= {{overload.requiredArgs}}{% for param in overload.params %}{% if not param.optional %} && TypeConverter<{{typename(param.type)}}>::isConvertible(ctx, argv[{{ inc }}]){% set inc = inc + 1 %}{% endif %}{% endfor %}) {% endif %}{
+        {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
+        {% set comma = joiner() %}
+        {% if overload.returnType.validationType !== 'void' %}
+        return krit::TypeConverter<{{ typename(overload.returnType) }}>::valueToJs(ctx, {{ ("p->" + method.name) | call(overload) }});
+        {% else %}
+        {{ ("p->" + method.name) | call(overload) }};
+        return JS_UNDEFINED;
+        {% endif %}
+    }
+    {% endfor %}
+    return JS_ThrowTypeError(ctx, "{{cls.name}}.{{method.name}}: arg types didn't match");
 }
 {% endfor %}
 
@@ -199,14 +226,14 @@ namespace krit {
 static const JSCFunctionListEntry protoFuncs{{ cls.name }}[] = {
     JS_CGETSET_DEF("__id", {{ namespace }}::js_{{cls.name}}_get_internal_id, nullptr),
     {% for prop in cls.properties %}
-    JS_CGETSET_DEF("{{ prop.name }}", {{ namespace }}::js_{{cls.name}}_get_{{ prop.name }}, {% if prop.readonly %} nullptr {% else %} {{ namespace }}::js_{{cls.name}}_set_{{ prop.name }} {% endif %}),
+    JS_CGETSET_DEF("{{ prop.name }}", {% if prop.writeonly %}nullptr{% else %}{{ namespace }}::js_{{cls.name}}_get_{{ prop.name }}{% endif %}, {% if prop.readonly %}nullptr{% else %}{{ namespace }}::js_{{cls.name}}_set_{{ prop.name }}{% endif %}),
     {% endfor %}
     JS_CFUNC_DEF("toString", 0, {{ namespace }}::js_{{ cls.name }}_toString),
     {% if cls.ctor %}
-    JS_CFUNC_SPECIAL_DEF("__ctor", {{ cls.ctor.params.length }}, constructor, {{ namespace }}::js_{{ cls.name }}___constructor__),
+    JS_CFUNC_SPECIAL_DEF("__ctor", {{ paramLength(cls.ctor) }}, constructor, {{ namespace }}::js_{{ cls.name }}___constructor__),
     {% endif %}
     {% for method in cls.methods %}
-    JS_CFUNC_DEF("{{ method.name }}", {{ method.params.length }}, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}),
+    JS_CFUNC_DEF("{{ method.name }}", {{ paramLength(method) }}, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}),
     {% endfor %}
 };
 
@@ -268,7 +295,7 @@ template<> void ScriptClass<{{namespacedName(cls)}}>::init(ScriptEngine *engine)
         {% endif %}
         {% for method in cls.staticMethods %}
         {
-            JSValue method = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}, "{{ method.name }}", {{ method.params.length }});
+            JSValue method = JS_NewCFunction(ctx, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}, "{{ method.name }}", {{ paramLength(method) }});
             JS_SetPropertyStr(ctx, ctor, "{{ method.name }}", method);
         }
         {% endfor %}
@@ -295,22 +322,28 @@ namespace {
 
 {% if not fn.jsfunc %}
 static JS_FUNC({{ jsFuncName(fn) }}) {
-    static_assert(krit::TypeValidator<{{ typename(fn.returnType) }}, {{ fn.returnType.validationType }}>::valid, "C++ and TS types don't match");
-    {% for arg in fn.args %}
+    {% for overload in fn.overloads %}
+    static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
+    {% for arg in overload.args %}
     static_assert(krit::TypeValidator<{{ typename(arg.type) }}, {{ arg.type.validationType }}>::valid, "C++ and TS types don't match");
     {% endfor %}
-    {% set comma = joiner() %}
-    {% if fn.returnType.validationType !== 'void' %}
-    return krit::TypeConverter<{{ typename(fn.returnType) }}>::valueToJs(ctx, {{ fn.name | call(fn) }});
-    {% else %}
-    return JS_UNDEFINED;
-    {% endif %}
+    {% set inc = 0 %}
+    {% if fn.overloads.length > 1 %}if (argc >= {{overload.requiredArgs}}{% for param in overload.params %}{% if not param.optional %} && TypeConverter<{{typename(param.type)}}>::isConvertible(ctx, argv[{{ inc }}]){% set inc = inc + 1 %}{% endif %}{% endfor %}) {% endif %}{
+        {% set comma = joiner() %}
+        {% if fn.returnType.validationType !== 'void' %}
+        return krit::TypeConverter<{{ typename(fn.returnType) }}>::valueToJs(ctx, {{ fn.name | call(overload) }});
+        {% else %}
+        return JS_UNDEFINED;
+        {% endif %}
+    }
+    {% endfor %}
+    return JS_ThrowTypeError(ctx, "{{ jsFuncName(fn) }}: arg types didn't match");
 }
 {% endif %}
 
 void init{{ fn.name }}(ScriptEngine *engine) {
     JSContext *ctx = engine->ctx;
-    JSValue fn = JS_NewCFunction(ctx, js_{{ jsFuncName(fn) }}, "{{ fn.name }}", {{ fn.params.length }});
+    JSValue fn = JS_NewCFunction(ctx, js_{{ jsFuncName(fn) }}, "{{ fn.name }}", {{ paramLength(fn) }});
     const char *ns[] {{ namespaceArray(fn) }};
     engine->setAtNamespace(ns, "{{ fn.name }}", fn);
 }

@@ -1,9 +1,9 @@
 declare class DrawCommandBuffer {
     currentRenderTarget: FrameBuffer;
-    setRenderTarget(fb: FrameBuffer, clear?: boolean): void;
-    drawSceneShader(shader: SceneShader): void;
+    setRenderTarget(fb: Ptr<FrameBuffer>, /** @defaultValue false */ clear?: boolean): void;
+    drawSceneShader(shader: Ptr<SceneShader>): void;
     clearColor(c: Color): void;
     pushClip(rect: Partial<Rectangle>): void;
     popClip(): void;
-    queueReadPixel(fb: FrameBuffer, x: number, y: number): void;
+    queueReadPixel(fb: Ptr<FrameBuffer>, x: int, y: int): void;
 }

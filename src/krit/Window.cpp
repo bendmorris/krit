@@ -15,14 +15,17 @@ namespace krit {
 Window::Window(KritOptions &options)
     : fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight) {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-    SDL_Init(SDL_INIT_VIDEO);
+    if (SDL_Init(SDL_INIT_VIDEO)) {
+        panic("SDL init failed: %s\n", SDL_GetError());
+    }
 
 #ifdef __EMSCRIPTEN__
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #else
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
+                        SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
 #endif
@@ -37,7 +40,8 @@ Window::Window(KritOptions &options)
 #endif
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, GL_TRUE);
     SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, GL_TRUE);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
+                        SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
     window = SDL_CreateWindow(
         options.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -59,7 +63,6 @@ Window::Window(KritOptions &options)
     SDL_GetGlobalMouseState(&x, &y);
     SDL_GetWindowPosition(this->window, &wx, &wy);
     SDL_WarpMouseInWindow(this->window, x - wx, y - wy);
-    
     SDL_StopTextInput();
 }
 
@@ -79,18 +82,21 @@ void Window::setFullScreen(bool full) {
             if ((this->full = full)) {
                 // SDL_DisplayMode mode;
                 // SDL_GetDesktopDisplayMode(0, &mode);
-                // if (fullScreenDimensions.x() > 0 &&
-                //     fullScreenDimensions.y() > 0) {
-                //     mode.w = fullScreenDimensions.x();
-                //     mode.h = fullScreenDimensions.y();
+                // if (fullScreenDimensions.x > 0 &&
+                //     fullScreenDimensions.y > 0) {
+                //     mode.w = fullScreenDimensions.x;
+                //     mode.h = fullScreenDimensions.y;
                 // }
                 // SDL_SetWindowDisplayMode(window, &mode);
-                SDL_SetWindowFullscreen(window, engine->useSystemFullScreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
+                SDL_SetWindowFullscreen(window,
+                                        engine->useSystemFullScreen
+                                            ? SDL_WINDOW_FULLSCREEN
+                                            : SDL_WINDOW_FULLSCREEN_DESKTOP);
             } else {
                 SDL_SetWindowFullscreen(window, 0);
             }
             size();
-            int x = this->x() / 2, y = this->y() / 2;
+            int x = this->x / 2, y = this->y / 2;
             SDL_WarpMouseInWindow(window, x, y);
         }
     });

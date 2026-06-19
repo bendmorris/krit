@@ -2,8 +2,8 @@
 #include "krit/Engine.h"
 #include <csignal>
 #include <cstdlib>
-#ifdef KRIT_LINUX
-#include <execinfo.h>
+#ifdef KRIT_BACKWARD
+#include "backward.hpp"
 #endif
 
 namespace krit {
@@ -46,16 +46,28 @@ static void errorHandler(const char *fmt, ...) {
     vfprintf(errorLog, fmt, args);
     fputs("\n", errorLog);
     fflush(errorLog);
-#ifdef KRIT_LINUX
-    void *array[20];
-    size_t size = backtrace(array, 10);
-    backtrace_symbols_fd(array, size, fileno(errorLog));
+    // auto trace = std::basic_stacktrace::current().to_string();
+    // fputs(trace.c_str());
+    // fflush(errorLog);
+#ifdef KRIT_BACKWARD
+    {
+        backward::StackTrace st;
+        st.load_here(32);
+
+        backward::TraceResolver tr;
+        tr.load_stacktrace(st);
+        for (size_t i = 0; i < st.size(); ++i) {
+            backward::ResolvedTrace trace = tr.resolve(st[i]);
+            fprintf(errorLog, "# %zu %s %s [%p]\n", i, trace.object_filename.c_str(), trace.object_function.c_str(), trace.addr);
+        }
+        fflush(errorLog);
+    }
 #endif
     if (engine && engine->script.ctx) {
         engine->script.dumpBacktrace(errorLog);
-        if (!JS_IsUndefined(engine->scriptContext())) {
+        if (!JS_IsUndefined(engine->scriptContext)) {
             JSValue stringified =
-                JS_JSONStringify(engine->script.ctx, engine->scriptContext(),
+                JS_JSONStringify(engine->script.ctx, engine->scriptContext,
                                  JS_UNDEFINED, JS_UNDEFINED);
             const char *s = JS_ToCString(engine->script.ctx, stringified);
             if (s) {

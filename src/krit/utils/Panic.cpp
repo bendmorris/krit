@@ -17,7 +17,7 @@ void vpanic(const char *fmt, va_list args) {
     ssize_t len = vsnprintf(NULL, 0, fmt, args);
     char *buf = static_cast<char *>(std::malloc(len + 1));
     vsnprintf(buf, len + 1, fmt, args);
-    throw buf;
+    std::abort();
 }
 
 }

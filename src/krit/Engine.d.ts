@@ -6,8 +6,8 @@ declare class Engine {
     readonly window: Window;
     readonly audio: AudioBackend;
     readonly fonts: FontManager;
-    get scriptContext(): any;
-    get isRenderPhase(): boolean;
+    readonly scriptContext: any;
+    readonly isRenderPhase: boolean;
     speed: number;
     // elapsed: number;
     totalElapsed: number;
@@ -15,10 +15,10 @@ declare class Engine {
     useSystemFullScreen: boolean;
 
     cameras: Array<Camera>;
-    addCursor(path: string, name: string, resolution?: number, x?: number, y?: number): void;
+    addCursor(path: string, name: string, /** @defaultValue 0 */ resolution?: number, /** @defaultValue 0 */ x?: number, /** @defaultValue 0 */ y?: number): void;
     setCursor(name: string): void;
 
-    getImage(id: string): ImageData;
-    getAtlas(id: string): TextureAtlas;
-    getAudio(id: string): AudioData;
+    getImage(id: string): SharedPtr<ImageData>;
+    getAtlas(id: string): SharedPtr<TextureAtlas>;
+    getAudio(id: string): SharedPtr<AudioData>;
 }

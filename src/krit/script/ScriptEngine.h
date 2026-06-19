@@ -340,6 +340,38 @@ template <typename T> struct TypeConverter<std::shared_ptr<T>> {
             }
         }
     }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
+    }
+};
+
+template <typename T> struct TypeConverter<const std::shared_ptr<T> &> {
+    static JSValue valueToJs(JSContext *ctx, const std::shared_ptr<T> &val) {
+        if (!val) {
+            return JS_NULL;
+        }
+        ScriptEngine *engine =
+            static_cast<ScriptEngine *>(JS_GetContextOpaque(ctx));
+        return engine->createShared<T>(val);
+    }
+    static std::shared_ptr<T> valueFromJs(JSContext *ctx, JSValue val) {
+        if (JS_IsNull(val) || !JS_IsObject(val)) {
+            return nullptr;
+        }
+        auto header = ObjectHeader::header(val);
+        switch (header->type()) {
+            case ObjectHeader::OwnershipType::Shared: {
+                return header->getShared<T>();
+            }
+            default: {
+                assert(false);
+                return {};
+            }
+        }
+    }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
+    }
 };
 
 template <typename ReturnT, typename... Args>

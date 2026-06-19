@@ -36,7 +36,7 @@ void Shader::init() {
             glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(vertexShader);
-                panic("failed to compile vertex shader:\n\n%s",
+                panic("failed to compile vertex shader: %i\n\n%s", glGetError(),
                       vertexSource.c_str());
             }
             checkForGlErrors("compile vertex");
@@ -50,8 +50,8 @@ void Shader::init() {
             glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &status);
             if (status == GL_FALSE) {
                 printShaderInfoLog(fragmentShader);
-                panic("failed to compile fragment shader:\n\n%s",
-                      fragmentSource.c_str());
+                panic("failed to compile fragment shader: %i\n\n%s",
+                      glGetError(), fragmentSource.c_str());
             }
             checkForGlErrors("compile fragment");
         }
@@ -201,15 +201,15 @@ void ShaderInstance::bind() {
                     checkForGlErrors("glUniform1f");
                 } else if (uniformName == "uResolution") {
                     IntDimensions size = engine->window.size();
-                    glUniform2f(i, size.x(), size.y());
+                    glUniform2f(i, size.x, size.y);
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uSize") {
                     IntDimensions size = ctx.size();
-                    glUniform2f(i, size.x(), size.y());
+                    glUniform2f(i, size.x, size.y);
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uScale") {
                     Vec2f &scale = ctx.camera->scale;
-                    glUniform2f(i, scale.x(), scale.y());
+                    glUniform2f(i, scale.x, scale.y);
                     checkForGlErrors("glUniform2f");
                 } else if (uniformName == "uInverseMatrix") {
                     Matrix4 inverseMatrix;

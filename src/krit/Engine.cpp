@@ -57,10 +57,10 @@ Engine::Engine(KritOptions &options)
     emscripten_set_main_loop(__doFrame, 0, 0);
 #endif
     script.userData = this;
-    _scriptContext = JS_NewObject(script.ctx);
+    scriptContext = JS_NewObject(script.ctx);
 }
 
-Engine::~Engine() { JS_FreeValue(script.ctx, _scriptContext); }
+Engine::~Engine() { JS_FreeValue(script.ctx, scriptContext); }
 
 Engine::EngineScope::EngineScope(Engine *engine) {
     if (krit::engine) {
@@ -184,7 +184,7 @@ bool Engine::doFrame() {
     }
 
     frame.elapsed = elapsed / 1000000.0;
-    LOG_DEBUG("update; elapsed: %.3f", frame.elapsed);
+    LOG_DEBUG("update; elapsed: %.6fms", frame.elapsed * 1000);
     this->update();
     if (!running) {
         quit();
@@ -339,10 +339,10 @@ void Engine::update() {
     audio.update();
 #endif
     // refresh window size
-    int height = window.y();
+    int height = window.y;
     window.size();
 
-    if (!cursor.empty() && (height != window.y() || !_cursor)) {
+    if (!cursor.empty() && (height != window.y || !_cursor)) {
         chooseCursor();
     }
 
@@ -461,7 +461,7 @@ void Engine::chooseCursor() {
     int candidateY = -1;
     for (size_t i = 0; i < list.size(); ++i) {
         if (list[i].second &&
-            (list[i].first <= window.y() && list[i].first > candidateY)) {
+            (list[i].first <= window.y && list[i].first > candidateY)) {
             candidate = list[i].second;
             candidateY = list[i].first;
         }

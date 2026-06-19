@@ -77,7 +77,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
     std::filesystem::path path = key;
     std::string extension = path.extension().string();
 
-    int windowHeight = engine->window.y();
+    int windowHeight = engine->window.y;
 
     ImageResolutionInfo *found = nullptr;
     std::filesystem::path pathToLoad;
@@ -223,8 +223,8 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             }
 
             TaskManager::instance->pushRender([=]() {
-                LOG_DEBUG("callback: load image %s",
-                          pathToLoad.c_str(), surface->format->format,
+                LOG_DEBUG("callback: load image %s", pathToLoad.c_str(),
+                          surface->format->format,
                           (int)surface->format->BitsPerPixel, surface->pitch);
                 // upload texture
                 GLuint texture;
@@ -258,8 +258,8 @@ template <> bool AssetLoader<ImageData>::assetIsReady(ImageData *img) {
 }
 
 template <> size_t AssetLoader<ImageData>::cost(ImageData *img) {
-    return (img->dimensions.x() * img->scale) *
-           (img->dimensions.y() * img->scale) * 4;
+    return (img->dimensions.x * img->scale) * (img->dimensions.y * img->scale) *
+           4;
 }
 
 template <> AssetType AssetLoader<ImageData>::type() { return ImageAsset; }

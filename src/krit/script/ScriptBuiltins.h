@@ -26,6 +26,8 @@ JS_FUNC(getImage);
 JS_FUNC(getAtlasRegion);
 JS_FUNC(encodeString);
 JS_FUNC(decodeString);
+JS_FUNC(hash);
+JS_FUNC(assert);
 
 }
 

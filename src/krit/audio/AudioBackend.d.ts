@@ -1,8 +1,8 @@
 declare class AudioBackend {
     gain: number;
 
-    oneShot(a: AudioData): StreamAudioSource;
-    loop(a: AudioData): StreamAudioSource;
-    sequence(): SequenceAudioSource;
-    layered(): LayeredAudioSource;
+    oneShot(a: SharedPtr<AudioData>): SharedPtr<StreamAudioSource>;
+    loop(a: SharedPtr<AudioData>): SharedPtr<StreamAudioSource>;
+    sequence(): SharedPtr<SequenceAudioSource>;
+    layered(): SharedPtr<LayeredAudioSource>;
 }

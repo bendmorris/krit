@@ -28,8 +28,8 @@ struct ImageData {
 
     ImageData(uint8_t *data, size_t width, size_t height);
 
-    int width() { return this->dimensions.x(); }
-    int height() { return this->dimensions.y(); }
+    int width() { return this->dimensions.x; }
+    int height() { return this->dimensions.y; }
 
     ImageData() {}
     virtual ~ImageData();

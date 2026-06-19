@@ -7,13 +7,13 @@ declare class DbRow {
 declare class FileDb {
     constructor(path: string);
     valid: boolean;
-    exec(query: string, callback?: (row: DbRow) => void): void;
-    prepare(query: string): DbQuery;
+    exec(query: string, callback?: (row: object) => void): void;
+    prepare(query: string): UniquePtr<DbQuery>;
 }
 
 declare class DbQuery {
-    get columnNames(): string[];
-    get columnCount(): number;
+    readonly columnNames: string[];
+    readonly columnCount: number;
     bindInt(index: number, val: number): void;
     bindString(index: number, val: string): void;
     bindBlob(index: number, val: ArrayBuffer): void;

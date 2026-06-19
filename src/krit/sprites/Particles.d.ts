@@ -1,9 +1,9 @@
-declare class ParticleSystem extends VisibleSprite {
+declare class ParticleSystem extends Sprite {
     static clone(value: ParticleSystem): ParticleSystem;
     constructor();
     loadAtlas(path: string): void;
     loadEffect(path: string): void;
-    emit(name: string, p: Partial<Vec3f>, loop?: boolean): EffectInstance;
+    emit(name: string, p: Partial<Vec3f>, /** @defaultValue false */ loop?: boolean): EffectInstance;
     clear(): void;
     hasParticles(): boolean;
 }

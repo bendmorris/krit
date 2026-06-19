@@ -50,13 +50,23 @@ JS_FUNC(Log_setLogLevel) {
     return JS_UNDEFINED;
 }
 
-#define DEFINE_LOG_METHOD(level)                                               \
-    JS_FUNC(Log_##level) {                                                     \
-        const char *s = JS_ToCString(ctx, argv[0]);                            \
-        Log::level("script", s);                                               \
-        JS_FreeCString(ctx, s);                                                \
-        return JS_UNDEFINED;                                                   \
-    }
+#define DEFINE_LOG_METHOD(level) \
+JS_FUNC(Log_##level) {\
+    const char *area, *s;\
+    if (argc > 1) {\
+        area = JS_ToCString(ctx, argv[0]);\
+        s = JS_ToCString(ctx, argv[1]);\
+    } else {\
+        area = "script";\
+        s = JS_ToCString(ctx, argv[0]);\
+    }\
+    Log::level(area, s);\
+    JS_FreeCString(ctx, s);\
+    if (argc > 1) {\
+        JS_FreeCString(ctx, area);\
+    }\
+    return JS_UNDEFINED;\
+}
 DEFINE_LOG_METHOD(debug)
 DEFINE_LOG_METHOD(info)
 DEFINE_LOG_METHOD(warn)
@@ -93,7 +103,16 @@ JS_FUNC(__id) {
     if (JS_IsUndefined(argv[0]) || JS_IsNull(argv[0])) {
         return JS_NewInt32(ctx, 0);
     }
-    return JS_GetPropertyStr(ctx, argv[0], "__id");
+    JSAtom atom = JS_NewAtom(ctx, "__id");
+    if (atom == JS_ATOM_NULL)
+        return JS_EXCEPTION;
+    if (!JS_HasProperty(ctx, argv[0], atom)) {
+        JS_FreeAtom(ctx, atom);
+        return JS_ThrowTypeError(ctx, "invalid value passed to __id");
+    }
+    JSValue val = JS_GetProperty(ctx, argv[0], atom);
+    JS_FreeAtom(ctx, atom);
+    return val;
 }
 
 /**
@@ -163,13 +182,74 @@ JS_FUNC(decodeString) {
         return JS_ThrowTypeError(ctx, "invalid arguments to decodeString");
     }
     size_t pbyte_offset, pbyte_length, pbytes_per_element;
-    JSValue buf = JS_GetTypedArrayBuffer(ctx, argv[0], &pbyte_offset, &pbyte_length, &pbytes_per_element);
+    JSValue buf = JS_GetTypedArrayBuffer(ctx, argv[0], &pbyte_offset,
+                                         &pbyte_length, &pbytes_per_element);
     size_t psize;
     uint8_t *bytes = JS_GetArrayBuffer(ctx, &psize, buf);
-    JSValue s = JS_NewStringLen(ctx, (char*)(bytes + pbyte_offset), pbyte_length);
+    JSValue s =
+        JS_NewStringLen(ctx, (char *)(bytes + pbyte_offset), pbyte_length);
     JS_FreeValue(ctx, buf);
     return s;
 }
 
+static uint32_t crcLookupTable[256];
+static void initCrc32(void) {
+    uint32_t crc32 = 1;
+    // C guarantees CRCTable[0] = 0 already.
+    for (unsigned int i = 128; i; i >>= 1) {
+        crc32 = (crc32 >> 1) ^ (crc32 & 1 ? 0xedb88320 : 0);
+        for (unsigned int j = 0; j < 256; j += 2 * i)
+            crcLookupTable[i + j] = crc32 ^ crcLookupTable[j];
+    }
+}
+
+JS_FUNC(hash) {
+    // crc32
+    if (argc < 2) {
+        return JS_ThrowTypeError(ctx, "not enough arguments to hash");
+    }
+    if (!crcLookupTable[0]) {
+        initCrc32();
+    }
+    uint32_t hash;
+    JS_ToUint32(ctx, &hash, argv[0]);
+    hash = ~hash;
+
+    for (int i = 1; i < argc; ++i) {
+        if (JS_IsString(argv[i])) {
+            size_t len;
+            const char *data = JS_ToCStringLen(ctx, &len, argv[i]);
+            for (size_t i = 0; i < len; ++i) {
+                hash ^= data[i];
+                hash = (hash >> 8) ^ crcLookupTable[hash & 0xFF];
+            }
+            JS_FreeCString(ctx, data);
+        } else if (JS_IsNumber(argv[i])) {
+            uint32_t n;
+            JS_ToUint32(ctx, &n, argv[i]);
+            hash ^= n;
+            hash = (hash >> 8) ^ crcLookupTable[hash & 0xFF];
+        } else {
+            return JS_ThrowTypeError(ctx, "invalid argument to hash");
+        }
+    }
+
+    return JS_NewUint32(ctx, ~hash);
+}
+
+JS_FUNC(assert) {
+    if (argc < 1) {
+        JS_ThrowTypeError(ctx, "assertion failure");
+        krit::panic("assertion failure");
+    }
+    int val = JS_ToBool(ctx, argv[0]);
+    if (!val) {
+        std::string s = ScriptEngine::serializeValue(ctx, argc > 1 ? argv[1] : argv[0]);
+        JSValue ret = JS_ThrowTypeError(ctx, "assertion failure");
+        krit::panic("assertion failure: %s", s.c_str());
+        return ret;
+    }
+    return JS_UNDEFINED;
+}
 
 }

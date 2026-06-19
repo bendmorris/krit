@@ -11,47 +11,40 @@
 
 namespace krit {
 
-NineSlice::NineSlice(ImageRegion &base, int leftWidth, int rightWidth,
-                     int topHeight, int bottomHeight)
-    : ul(base), uc(base), ur(base), cl(base), cc(base), cr(base), bl(base),
-      bc(base), br(base) {
-
-    int w = base.rect.width;
-    int h = base.rect.height;
-    int x0 = base.rect.x;
-    int y0 = base.rect.y;
-    int cx = x0 + leftWidth;
-    int cw = w - leftWidth - rightWidth;
-    int cy = y0 + topHeight;
-    int ch = h - topHeight - bottomHeight;
-    int rx = x0 + w - rightWidth;
-    int by = y0 + h - bottomHeight;
-
-    ul.rect.setTo(x0, y0, leftWidth, topHeight);
-    uc.rect.setTo(cx, y0, cw, topHeight);
-    ur.rect.setTo(rx, y0, rightWidth, topHeight);
-    cl.rect.setTo(x0, cy, leftWidth, ch);
-    cc.rect.setTo(cx, cy, cw, ch);
-    cr.rect.setTo(rx, cy, rightWidth, ch);
-    bl.rect.setTo(x0, by, leftWidth, bottomHeight);
-    bc.rect.setTo(cx, by, cw, bottomHeight);
-    br.rect.setTo(rx, by, rightWidth, bottomHeight);
-}
-
 void NineSlice::render(RenderContext &render) {
-    float w = this->width();
-    float h = this->height();
+    if (color.a <= 0 && !shader) {
+        return;
+    }
 
-    float lw = this->ul.rect.width;
-    float rw = this->ur.rect.width;
-    float uh = this->ul.rect.height;
-    float bh = this->bl.rect.height;
+    IntRectangle ul, uc, ur, cl, cc, cr, bl, bc, br;
+    {
+        int basew = base.rect.width;
+        int baseh = base.rect.height;
+        int x0 = base.rect.x;
+        int y0 = base.rect.y;
+        int cx = x0 + leftWidth;
+        int cw = basew - leftWidth - rightWidth;
+        int cy = y0 + topHeight;
+        int ch = baseh - topHeight - bottomHeight;
+        int rx = x0 + basew - rightWidth;
+        int by = y0 + baseh - bottomHeight;
+        ul.setTo(x0, y0, leftWidth, topHeight);
+        uc.setTo(cx, y0, cw, topHeight);
+        ur.setTo(rx, y0, rightWidth, topHeight);
+        cl.setTo(x0, cy, leftWidth, ch);
+        cc.setTo(cx, cy, cw, ch);
+        cr.setTo(rx, cy, rightWidth, ch);
+        bl.setTo(x0, by, leftWidth, bottomHeight);
+        bc.setTo(cx, by, cw, bottomHeight);
+        br.setTo(rx, by, rightWidth, bottomHeight);
+    }
 
-    lw *= borderScale.x();
-    rw *= borderScale.x();
-    bh *= borderScale.y();
-    uh *= borderScale.y();
-
+    float w = this->dimensions.x;
+    float h = this->dimensions.y;
+    float lw = ul.width * borderScale;
+    float rw = ur.width * borderScale;
+    float uh = ul.height * borderScale;
+    float bh = bl.height * borderScale;
     float cx = lw;
     float cw = w - lw - rw;
     float rx = w - rw;
@@ -60,35 +53,36 @@ void NineSlice::render(RenderContext &render) {
     float by = h - bh;
 
     DrawKey key;
-    key.image = this->ul.img;
+    key.image = this->base.img;
     key.smooth = this->smooth;
     key.blend = this->blendMode;
     key.shader = this->shader;
 
-    auto renderSlice = [&](ImageRegion &_r, float _x, float _y, float _w, float _h) {
-        if (w > 0 && h > 0) {
+    auto renderSlice = [&](const IntRectangle &_r, float _x, float _y, float _w,
+                           float _h) {
+        if (w > 0 && h > 0 && _r.width > 0 && _r.height > 0) {
             Matrix4 m;
             m.identity();
-            m.scale(_w / _r.width(), _h / _r.height());
-            m.translate(_x - this->origin.x(), _y - this->origin.y());
+            m.scale(_w / _r.width, _h / _r.height);
+            m.translate(_x - this->origin.x, _y - this->origin.y);
             if (pitch) {
                 m.pitch(pitch);
             }
-            m.scale(this->scale.x(), this->scale.y());
-            m.translate(this->position.x(), this->position.y(), this->position.z());
-            render.addRect(key, _r.rect, m, this->color);
+            // m.scale(this->scale.x, this->scale.y);
+            m.translate(this->position.x, this->position.y, this->position.z);
+            render.addRect(key, _r, m, this->color);
         }
     };
 
-    renderSlice(this->ul, 0, 0, lw, uh);
-    renderSlice(this->ur, rx, 0, rw, uh);
-    renderSlice(this->bl, 0, by, lw, bh);
-    renderSlice(this->br, rx, by, rw, bh);
-    renderSlice(this->uc, cx, 0, cw, uh);
-    renderSlice(this->bc, cx, by, cw, bh);
-    renderSlice(this->cl, 0, cy, lw, ch);
-    renderSlice(this->cr, rx, cy, rw, ch);
-    renderSlice(this->cc, cx, cy, cw, ch);
+    renderSlice(ul, 0, 0, lw, uh);
+    renderSlice(ur, rx, 0, rw, uh);
+    renderSlice(bl, 0, by, lw, bh);
+    renderSlice(br, rx, by, rw, bh);
+    renderSlice(uc, cx, 0, cw, uh);
+    renderSlice(bc, cx, by, cw, bh);
+    renderSlice(cl, 0, cy, lw, ch);
+    renderSlice(cr, rx, cy, rw, ch);
+    renderSlice(cc, cx, cy, cw, ch);
 }
 
 }
