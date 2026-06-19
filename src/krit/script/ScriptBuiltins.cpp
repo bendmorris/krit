@@ -50,23 +50,23 @@ JS_FUNC(Log_setLogLevel) {
     return JS_UNDEFINED;
 }
 
-#define DEFINE_LOG_METHOD(level) \
-JS_FUNC(Log_##level) {\
-    const char *area, *s;\
-    if (argc > 1) {\
-        area = JS_ToCString(ctx, argv[0]);\
-        s = JS_ToCString(ctx, argv[1]);\
-    } else {\
-        area = "script";\
-        s = JS_ToCString(ctx, argv[0]);\
-    }\
-    Log::level(area, s);\
-    JS_FreeCString(ctx, s);\
-    if (argc > 1) {\
-        JS_FreeCString(ctx, area);\
-    }\
-    return JS_UNDEFINED;\
-}
+#define DEFINE_LOG_METHOD(level)                                               \
+    JS_FUNC(Log_##level) {                                                     \
+        const char *area, *s;                                                  \
+        if (argc > 1) {                                                        \
+            area = JS_ToCString(ctx, argv[0]);                                 \
+            s = JS_ToCString(ctx, argv[1]);                                    \
+        } else {                                                               \
+            area = "script";                                                   \
+            s = JS_ToCString(ctx, argv[0]);                                    \
+        }                                                                      \
+        Log::level(area, s);                                                   \
+        JS_FreeCString(ctx, s);                                                \
+        if (argc > 1) {                                                        \
+            JS_FreeCString(ctx, area);                                         \
+        }                                                                      \
+        return JS_UNDEFINED;                                                   \
+    }
 DEFINE_LOG_METHOD(debug)
 DEFINE_LOG_METHOD(info)
 DEFINE_LOG_METHOD(warn)
@@ -108,7 +108,9 @@ JS_FUNC(__id) {
         return JS_EXCEPTION;
     if (!JS_HasProperty(ctx, argv[0], atom)) {
         JS_FreeAtom(ctx, atom);
-        return JS_ThrowTypeError(ctx, "invalid value passed to __id");
+        return TypeConverter<int>::valueToJs(
+            ctx, static_cast<int>(
+                     reinterpret_cast<intptr_t>(JS_VALUE_GET_PTR(argv[0]))));
     }
     JSValue val = JS_GetProperty(ctx, argv[0], atom);
     JS_FreeAtom(ctx, atom);
@@ -244,12 +246,21 @@ JS_FUNC(assert) {
     }
     int val = JS_ToBool(ctx, argv[0]);
     if (!val) {
-        std::string s = ScriptEngine::serializeValue(ctx, argc > 1 ? argv[1] : argv[0]);
+        std::string s =
+            ScriptEngine::serializeValue(ctx, argc > 1 ? argv[1] : argv[0]);
         JSValue ret = JS_ThrowTypeError(ctx, "assertion failure");
         krit::panic("assertion failure: %s", s.c_str());
         return ret;
     }
     return JS_UNDEFINED;
 }
+
+static int64_t get_time_ns(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000000 + ts.tv_nsec;
+}
+
+JS_FUNC(now) { return JS_NewFloat64(ctx, (double)get_time_ns() / 1e6); }
 
 }

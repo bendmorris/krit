@@ -15,7 +15,7 @@ declare namespace console {
 /** @jsfunc */ declare function readFile(path: string): string;
 /** @jsfunc */ declare function hash(prev: number, ...s: Array<string | number>): number;
 /** @jsfunc */ declare function assert(value: any, message?: any): void;
-/** @skip */ declare function __date_clock(): number;
+/** @jsfunc */ declare function now(): number;
 
 declare namespace Log {
     /** @jsfunc */ function addLogSink(sink: (area: string, s: string, level: LogLevel) => void): void;
