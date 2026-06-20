@@ -185,8 +185,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
     glewExperimental = GL_TRUE;
     GLenum err = glewInit();
     if (err != GLEW_OK) {
-        LOG_FATAL("glew init failed");
-        panic("%s\n", glewGetErrorString(err));
+        panic("glew init failed: %s", glewGetErrorString(err));
     }
     checkForGlErrors("glew init");
 #endif
