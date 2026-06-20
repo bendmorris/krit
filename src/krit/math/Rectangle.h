@@ -15,8 +15,8 @@ template <typename T, typename Self> struct BaseRectangle {
 
     T x = 0, y = 0, width = 0, height = 0;
 
-    BaseRectangle<T, Self>() {}
-    BaseRectangle<T, Self>(T x, T y, T width, T height)
+    BaseRectangle() {}
+    BaseRectangle(T x, T y, T width, T height)
         : x(x), y(y), width(width), height(height) {}
 
     bool operator==(const Self &other) {
@@ -97,7 +97,7 @@ template <typename T, typename Self> struct BaseRectangle {
 struct Rectangle : public BaseRectangle<float, Rectangle> {
     Rectangle() {}
     Rectangle(float x, float y, float width, float height)
-        : BaseRectangle<float, Rectangle>(x, y, width, height) {}
+        : BaseRectangle(x, y, width, height) {}
     template <typename T, typename U>
     Rectangle(Vec2f &p, Vec2f &d) : Rectangle(p.x, p.y, d.x, d.y) {}
 };
@@ -105,7 +105,7 @@ struct Rectangle : public BaseRectangle<float, Rectangle> {
 struct IntRectangle : public BaseRectangle<int, IntRectangle> {
     IntRectangle() {}
     IntRectangle(int x, int y, int width, int height)
-        : BaseRectangle<int, IntRectangle>(x, y, width, height) {}
+        : BaseRectangle(x, y, width, height) {}
 };
 
 }
