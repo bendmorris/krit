@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    </head>
+
+    <style>
+        #loading {
+            width: 1280px;
+            height: 720px;
+            text-align: center;
+            padding-top: 200px;
+            font-size: 64px;
+            animation-name: loading-color;
+            animation-duration: 2s;
+            animation-iteration-count: infinite;
+        }
+
+        @keyframes loading-color {
+            0% {
+                color: #222;
+            }
+            50% {
+                color: #a52d39;
+            }
+            100% {
+                color: #222;
+            }
+        }
+    </style>
+
+    <body style="margin: 0">
+        <div id="loading">
+            Loading...
+        </div>
+        <canvas id="canvas" oncontextmenu="event.preventDefault()" width="1280" height="720"></canvas>
+
+        <script type="text/javascript">
+            var Module = {
+                canvas: document.getElementById('canvas'),
+                noInitialRun: true,
+                onRuntimeInitialized() {
+                    document.getElementById("loading").remove();
+                    FS.mkdir('/data');
+                    FS.mount(IDBFS, {}, '/data');
+                    FS.syncfs(true, function () {
+                        Module.callMain();
+                    });
+                },
+            };
+            // iframe-fix.js
+            var lastTarget, canvas, body;
+            window.onload = function () {
+                (body = document.querySelector('body')), (canvas = document.getElementById('canvas'));
+                var activateCanvas = function (event) {
+                    lastTarget = event.target;
+                    window.focus();
+                };
+                var preventScroll = function (event) {
+                    var keyCodes = [32, 33, 34, 35, 36, 37, 38, 39, 40];
+                    if (lastTarget != canvas) {
+                        return false;
+                    }
+                    if (keyCodes.includes(event.keyCode)) {
+                        event.preventDefault();
+                    }
+                };
+                var handleMouseDown = function (event) {
+                    window.focus();
+                    event.preventDefault();
+                    event.stopPropagation();
+                    event.target.style.cursor = 'default';
+                };
+                body.addEventListener('keydown', preventScroll, false);
+                body.addEventListener('click', activateCanvas, false);
+                canvas.addEventListener('mousedown', handleMouseDown, false);
+            };
+        </script>
+
+        {{{ SCRIPT }}}
+    </body>
+</html>
