@@ -7,7 +7,6 @@
 #include "krit/render/BlendMode.h"
 #include "krit/render/ImageRegion.h"
 #include "krit/sprites/Image.h"
-#include "krit/sprites/UserSprite.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Interpolation.h"
 #include <algorithm>
