@@ -146,21 +146,21 @@ lib/libpng16.a: build/libpng-1.6.39 lib/libz.a
 
 # SDL
 sdl: lib/libSDL2.a
-build/SDL2-2.29.1.tar.gz:
+build/SDL2-2.32.10.tar.gz:
 	mkdir -p build
-	curl -L https://github.com/libsdl-org/SDL/releases/download/prerelease-2.29.1/SDL2-2.29.1.tar.gz -o $@
-build/SDL2-2.29.1: build/SDL2-2.29.1.tar.gz
+	curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz -o $@
+build/SDL2-2.32.10: build/SDL2-2.32.10.tar.gz
 	tar xzf $< -C build
-lib/libSDL2.a: build/SDL2-2.29.1
+lib/libSDL2.a: build/SDL2-2.32.10
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
 
 # SDL_image
 sdl_image: lib/libSDL2_image.a
-build/SDL2_image-2.6.2.tar.gz:
-	curl -L https://www.libsdl.org/projects/SDL_image/release/SDL2_image-2.6.2.tar.gz -o $@
-build/SDL2_image-2.6.2: build/SDL2_image-2.6.2.tar.gz
+build/SDL2_image-2.8.12.tar.gz:
+	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.12/SDL2_image-2.8.12.tar.gz -o $@
+build/SDL2_image-2.8.12: build/SDL2_image-2.8.12.tar.gz
 	tar xzf $< -C build
-lib/libSDL2_image.a: build/SDL2_image-2.6.2 lib/libSDL2.a lib/libpng16.a lib/libjpeg.a
+lib/libSDL2_image.a: build/SDL2_image-2.8.12 lib/libSDL2.a lib/libpng16.a lib/libjpeg.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-png-shared --disable-jpg-shared --prefix=$$PREFIX --with-sdl-prefix=$$PREFIX && make -j8 && make install
 
 # sndfile
