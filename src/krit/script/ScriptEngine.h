@@ -297,6 +297,7 @@ struct ScriptEngine {
 
 private:
     std::vector<DelayRequest> delayPromises;
+    bool shuttingDown { false };
 };
 
 template <typename T> struct TypeConverter<std::unique_ptr<T>> {

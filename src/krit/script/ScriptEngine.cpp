@@ -22,7 +22,9 @@ void ScriptEngine::baseFinalizer(JSRuntime *rt, JSValue val) {
         ObjectHeader *hdr = static_cast<ObjectHeader *>(p);
         ScriptEngine *engine =
             static_cast<ScriptEngine *>(JS_GetRuntimeOpaque(rt));
-        engine->instances.erase(std::make_pair(_id, hdr->get()));
+        if (!engine->shuttingDown) {
+            engine->instances.erase(std::make_pair(_id, hdr->get()));
+        }
         ObjectHeader::recycle(hdr);
     }
 }
@@ -121,6 +123,7 @@ ScriptEngine::ScriptEngine() {
 }
 
 ScriptEngine::~ScriptEngine() {
+    shuttingDown = true;
     instances.clear();
     JS_FreeValue(ctx, exports);
     JS_FreeValue(ctx, features);
