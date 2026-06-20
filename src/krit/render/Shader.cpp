@@ -314,7 +314,7 @@ void ShaderInstance::bind() {
                 break;
             }
             default: {
-                panic("unknown uniform type: %i\n", uniform.type);
+                panic("unknown uniform type: %i", uniform.type);
             }
         }
     }

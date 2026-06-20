@@ -43,7 +43,7 @@ static FT_Library ftLibrary;
 FontManager::FontManager() {
     int error = FT_Init_FreeType(&ftLibrary);
     if (error) {
-        panic("failed to initialize freetype: %i\n", error);
+        panic("failed to initialize freetype: %i", error);
     }
     FT_Stroker_New(ftLibrary, &stroker);
 }

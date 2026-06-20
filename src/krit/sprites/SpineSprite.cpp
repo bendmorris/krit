@@ -173,7 +173,7 @@ void SpineSprite::setSkin(const std::string &name) {
     if (newSkin) {
         this->skin->addSkin(newSkin);
     } else {
-        panic("unknown skin: %s\n", name.c_str());
+        panic("unknown skin: %s", name.c_str());
     }
     this->skeleton->setSkin(this->skin.get());
     this->skeleton->setSlotsToSetupPose();

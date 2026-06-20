@@ -108,14 +108,14 @@ struct IoZip : public Io {
                 buffer.resize(stat.size);
                 zip_file_t *f = zip_fopen_index(archive.zip, index, 0);
                 if (!f) {
-                    panic("failed to open file in zip archive: %s\n", s.c_str());
+                    panic("failed to open file in zip archive: %s", s.c_str());
                 }
                 int bytes = stat.size;
                 char *cur = buffer.data();
                 while (bytes) {
                     int read = zip_fread(f, cur, bytes);
                     if (read == -1) {
-                        panic("error reading file in zip archive: %s (error=%i)\n",
+                        panic("error reading file in zip archive: %s (error=%i)",
                               s.c_str(), read);
                     }
                     bytes -= read;

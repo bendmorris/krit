@@ -14,6 +14,8 @@ void panic(const char *fmt, ...) {
 
 void vpanic(const char *fmt, va_list args) {
     vfprintf(stderr, fmt, args);
+    fputc('\n', stderr);
+    fflush(stderr);
     std::abort();
 }
 

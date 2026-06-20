@@ -20,7 +20,7 @@ template <typename ModelType> struct DataModel {
     ModelType &getById(const std::string &id) {
         auto it = this->idMap.find(id);
         if (it == this->idMap.end()) {
-            panic("unknown ID: %s\n", id.c_str());
+            panic("unknown ID: %s", id.c_str());
         }
         return this->data[it->second];
     }

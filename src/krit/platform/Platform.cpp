@@ -22,7 +22,7 @@ std::string Platform::readFile(const std::filesystem::path &path) {
     if (!file.good()) {
         // TODO: handle errors
         auto s = path.string();
-        panic("file does not exist: %s\n", s.c_str());
+        panic("file does not exist: %s", s.c_str());
     }
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);

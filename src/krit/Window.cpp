@@ -16,7 +16,7 @@ Window::Window(KritOptions &options)
     : fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight) {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
     if (SDL_Init(SDL_INIT_VIDEO)) {
-        panic("SDL init failed: %s\n", SDL_GetError());
+        panic("SDL init failed: %s", SDL_GetError());
     }
 
 #ifdef __EMSCRIPTEN__

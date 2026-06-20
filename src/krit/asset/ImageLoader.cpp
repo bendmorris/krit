@@ -177,7 +177,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             auto fullPathToLoad = foundArchive / pathToLoad;
             SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
             if (!surface) {
-                panic("IMG_Load(%s) is null: %s\n", fullPathToLoad.c_str(),
+                panic("IMG_Load(%s) is null: %s", fullPathToLoad.c_str(),
                       IMG_GetError());
             }
 #else
@@ -187,7 +187,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
         SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
         if (!surface) {
-            panic("IMG_Load(%s) is null: %s\n", pathToLoad.c_str(),
+            panic("IMG_Load(%s) is null: %s", pathToLoad.c_str(),
                   IMG_GetError());
         }
         img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);

@@ -94,7 +94,7 @@ struct FontManager {
     std::shared_ptr<Font> getFont(const std::string &name) {
         auto font = fontRegistry[name];
         if (!font) {
-            panic("missing font: %s\n", name.c_str());
+            panic("missing font: %s", name.c_str());
         }
         return font;
     }
