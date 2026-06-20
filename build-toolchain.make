@@ -1,5 +1,5 @@
 .PHONY: all clean curl curses flac freetype harfbuzz jpeg libedit ogg openal openssl opus png sdl sdl_image sndfile sqlite vorbis yaml zip zlib
-all: curl flac freetype harfbuzz jpeg ogg openal openssl opus png sdl sdl_image sndfile sqlite vorbis yaml zip zlib
+all: curl flac flatbuffers freetype harfbuzz jpeg ogg openal openssl opus png sdl sdl_image sndfile sqlite vorbis yaml zip zlib
 clean:
 	rm -rf lib/* `ls -d build/*/`
 
@@ -51,6 +51,16 @@ build/flac-1.4.2: build/flac-1.4.2.tar.xz
 lib/libFLAC.a: build/flac-1.4.2 lib/libogg.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX --disable-stack-smash-protection && make -j8 && make install
 
+# flatbuffers
+flatbuffers: lib/libflatbuffers.a
+build/flatbuffers.tar.gz:
+	curl -L https://github.com/google/flatbuffers/archive/refs/tags/v25.12.19-2026-02-06-03fffb2.tar.gz -o $@
+build/flatbuffers-25.12.19-2026-02-06-03fffb2: build/flatbuffers.tar.gz
+	tar xf $< -C build
+lib/libflatbuffers.a: build/flatbuffers-25.12.19-2026-02-06-03fffb2
+	mkdir -p build/flatbuffers-25.12.19-2026-02-06-03fffb2/build
+	cd build/flatbuffers-25.12.19-2026-02-06-03fffb2/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE .. && make flatbuffers -j8 && make install
+
 # freetype
 freetype: lib/libfreetype.a
 build/freetype-2.12.1.tar.xz:
@@ -71,13 +81,13 @@ lib/libharfbuzz.a: build/harfbuzz-6.0.0 lib/libfreetype.a
 
 # JPEG
 jpeg: lib/libjpeg.a
-build/libjpeg-turbo-2.0.4.tar.gz:
-	curl -L https://sourceforge.net/projects/libjpeg-turbo/files/2.0.4/libjpeg-turbo-2.0.4.tar.gz/download -o $@
-build/libjpeg-turbo-2.0.4: build/libjpeg-turbo-2.0.4.tar.gz
+build/libjpeg-turbo-3.1.4.1.tar.gz:
+	curl -L https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/3.1.4.1/libjpeg-turbo-3.1.4.1.tar.gz -o $@
+build/libjpeg-turbo-3.1.4.1: build/libjpeg-turbo-3.1.4.1.tar.gz
 	tar xzf $< -C build
-lib/libjpeg.a: build/libjpeg-turbo-2.0.4
-	mkdir -p build/libjpeg-turbo-2.0.4/build
-	cd build/libjpeg-turbo-2.0.4/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE .. && make jpeg-static -j8 && make install
+lib/libjpeg.a: build/libjpeg-turbo-3.1.4.1
+	mkdir -p build/libjpeg-turbo-3.1.4.1/build
+	cd build/libjpeg-turbo-3.1.4.1/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE .. && make jpeg-static -j8 && make install
 
 # libedit
 libedit: lib/libedit.a
@@ -155,12 +165,12 @@ lib/libSDL2_image.a: build/SDL2_image-2.6.2 lib/libSDL2.a lib/libpng16.a lib/lib
 
 # sndfile
 sndfile: lib/libsndfile.a
-build/libsndfile-1.2.0.tar.xz:
-	curl -L https://github.com/libsndfile/libsndfile/releases/download/1.2.0/libsndfile-1.2.0.tar.xz -o $@
-build/libsndfile-1.2.0: build/libsndfile-1.2.0.tar.xz
+build/libsndfile-1.2.2.tar.xz:
+	curl -L https://github.com/libsndfile/libsndfile/releases/download/1.2.2/libsndfile-1.2.2.tar.xz -o $@
+build/libsndfile-1.2.2: build/libsndfile-1.2.2.tar.xz
 	tar xf $< -C build
-lib/libsndfile.a: build/libsndfile-1.2.0 lib/libogg.a lib/libvorbis.a lib/libopus.a lib/libFLAC.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
+lib/libsndfile.a: build/libsndfile-1.2.2 lib/libogg.a lib/libvorbis.a lib/libopus.a lib/libFLAC.a
+	cd $< && CFLAGS="${CFLAGS} -std=c99" ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX  && make -j8 && make install
 
 # sqlite
 sqlite: lib/libsqlite3.a
@@ -191,18 +201,18 @@ lib/libyaml.a: build/yaml-0.2.5
 
 # zip
 zip: lib/libzip.a
-build/libzip-1.9.2.tar.gz:
-	curl -L https://github.com/nih-at/libzip/releases/download/v1.9.2/libzip-1.9.2.tar.gz -o $@
-build/libzip-1.9.2: build/libzip-1.9.2.tar.gz
+build/libzip-1.11.4.tar.gz:
+	curl -L https://github.com/nih-at/libzip/releases/download/v1.11.4/libzip-1.11.4.tar.gz -o $@
+build/libzip-1.11.4: build/libzip-1.11.4.tar.gz
 	tar xzf $< -C build
-lib/libzip.a: build/libzip-1.9.2 lib/libz.a
+lib/libzip.a: build/libzip-1.11.4 lib/libz.a
 	cd $< && mkdir -p build && cd build && cmake $$CMAKE_TOOLCHAIN .. -DBUILD_SHARED_LIBS=Off -DENABLE_COMMONCRYPTO=Off -DENABLE_GNUTLS=Off -DENABLE_MBEDTLS=Off -DENABLE_OPENSSL=Off -DENABLE_WINDOWS_CRYPTO=Off -DENABLE_BZIP2=Off -DENABLE_LZMA=Off -DENABLE_ZSTD=Off -DBUILD_TOOLS=Off -DBUILD_REGRESS=Off -DBUILD_EXAMPLES=Off -DBUILD_DOC=Off -DCMAKE_FIND_ROOT_PATH=$$PREFIX -DCMAKE_INSTALL_PREFIX=$$PREFIX -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include && make -j8 && make install
 
 # ZLIB
 zlib: lib/libz.a
-build/zlib-1.3.1.tar.gz:
-	curl -L https://zlib.net/zlib-1.3.1.tar.gz -o $@
-build/zlib-1.3.1: build/zlib-1.3.1.tar.gz
+build/zlib-1.3.2.tar.gz:
+	curl -L https://zlib.net/zlib-1.3.2.tar.gz -o $@
+build/zlib-1.3.2: build/zlib-1.3.2.tar.gz
 	tar xzf $< -C build
-lib/libz.a: build/zlib-1.3.1
+lib/libz.a: build/zlib-1.3.2
 	cd $< && ./configure --static --prefix=$$PREFIX && make -j8 && make install
