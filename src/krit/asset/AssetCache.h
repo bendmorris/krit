@@ -5,6 +5,7 @@
 // TODO: make this more generic
 #include "krit/ecs/Utils.h"
 #include "krit/utils/Log.h"
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <string>
