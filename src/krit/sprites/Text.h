@@ -199,11 +199,6 @@ struct Text : public Sprite, public TextOptions {
 
     Text() = default;
     Text(const TextOptions &options);
-    Text(const Text &other) {
-        *this = other;
-        this->hbBuf = nullptr;
-        this->dirty = true;
-    }
     virtual ~Text();
 
     Text &setText(const std::string &text);
@@ -230,8 +225,9 @@ struct Text : public Sprite, public TextOptions {
     void setTabStops(const std::string &stops);
 
 private:
+    void recycleBuffers();
     std::vector<TextOpcode> opcodes;
-    hb_buffer_t *hbBuf = nullptr;
+    std::vector<hb_buffer_t*> buffers;
     bool rich = false;
     bool dirty = false;
     Dimensions renderedSize;

@@ -25,9 +25,23 @@
 
 namespace krit {
 
+struct ReusableHbBuffer {
+    hb_buffer_t *hbBuf{nullptr};
+
+    ReusableHbBuffer(hb_buffer_t *buf) : hbBuf(buf) {}
+    ~ReusableHbBuffer() {
+        if (hbBuf) {
+            hb_buffer_destroy(hbBuf);
+            hbBuf = nullptr;
+        }
+    }
+
+    hb_buffer_t *operator*() { return hbBuf; }
+};
+
 static const int FONT_SCALE = 64;
 
-static std::vector<hb_buffer_t *> recycledBuffers;
+static std::vector<ReusableHbBuffer> recycledBuffers;
 hb_buffer_t *getHbBuffer() {
     hb_buffer_t *hbBuf;
     if (recycledBuffers.empty()) {
@@ -38,7 +52,7 @@ hb_buffer_t *getHbBuffer() {
         hb_buffer_set_cluster_level(
             hbBuf, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
     } else {
-        hbBuf = recycledBuffers.back();
+        hbBuf = *recycledBuffers.back();
         recycledBuffers.pop_back();
     }
     return hbBuf;
@@ -186,6 +200,8 @@ struct TextParser {
         if (s.empty()) {
             return;
         }
+
+        txt.recycleBuffers();
 
         // pass 1: find all format tags, and convert the text into TextRuns
         std::vector<TextRun> runs;
@@ -363,6 +379,7 @@ struct TextParser {
             auto &run = runs[i];
             // shape the text
             auto &hbBuf = run.hbBuf;
+            txt.buffers.push_back(hbBuf);
             auto &rawText = run.rawText;
             hb_buffer_add_utf8(hbBuf, rawText.c_str(), rawText.size(), 0, -1);
             run.font->shape(hbBuf);
@@ -599,8 +616,10 @@ TextOptions &TextOptions::setFont(const std::string &name) {
 
 Text::Text(const TextOptions &options) : TextOptions(options) { assert(font); }
 
-Text::~Text() {
-    if (hbBuf) {
+Text::~Text() { recycleBuffers(); }
+
+void Text::recycleBuffers() {
+    for (hb_buffer_t *hbBuf : buffers) {
         hb_buffer_clear_contents(hbBuf);
         recycleHbBuffer(hbBuf);
     }
