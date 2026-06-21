@@ -252,6 +252,18 @@ struct TypeConverter<
     }
 };
 
+template <typename T>
+struct TypeConverter<
+    T *,
+    std::enable_if_t<!has_reference_specialization<std::decay_t<T>>::value &&
+                     std::is_class_v<std::decay_t<T>>>> {
+    static JSValue valueToJs(JSContext *ctx, const T *val);
+    static T *valueFromJs(JSContext *ctx, const JSValue &val);
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return TypeConverter<T>::isConvertible(ctx, val);
+    }
+};
+
 // copy instance from reference
 template <typename T>
 struct TypeConverter<
@@ -265,21 +277,6 @@ struct TypeConverter<
         return TypeConverter<T &>::valueFromJs(ctx, val);
     }
     static bool isConvertible(JSContext *ctx, JSValue val);
-};
-
-// default implementation for pointers which have a reference implementation
-template <typename T>
-struct TypeConverter<
-    T *, std::enable_if_t<convertible_from_js<std::decay_t<T> &>::value>> {
-    static JSValue valueToJs(JSContext *ctx, T *val) {
-        return TypeConverter<T &>::valueToJs(ctx, *val);
-    }
-    static T *valueFromJs(JSContext *ctx, const JSValue &val) {
-        return &TypeConverter<T &>::valueFromJs(ctx, val);
-    }
-    static bool isConvertible(JSContext *ctx, JSValue val) {
-        return TypeConverter<T>::isConvertible(ctx, val);
-    }
 };
 
 // default implementation for pointers; we can't make these from JS

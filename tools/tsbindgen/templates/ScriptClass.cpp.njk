@@ -23,12 +23,18 @@
 {% for cls in types.classes %}
 namespace krit {
 // script class type
-template<> {{namespace}}::{{cls.name}} &TypeConverter<{{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
+template<> {{namespace}}::{{cls.name}} *TypeConverter<{{namespace}}::{{cls.name}}*>::valueFromJs(JSContext *ctx, const JSValue &val) {
     {{namespace}}::{{cls.name}} *p = ObjectHeader::data<{{namespace}}::{{cls.name}}>(val);
+    return p;
+}
+template<> {{namespace}}::{{cls.name}} &TypeConverter<{{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
+    auto *p = TypeConverter<{{namespace}}::{{cls.name}}*>::valueFromJs(ctx, val);
+    assert(p);
     return *p;
 }
 template<> const {{namespace}}::{{cls.name}} &TypeConverter<const {{namespace}}::{{cls.name}}&>::valueFromJs(JSContext *ctx, const JSValue &val) {
-    {{namespace}}::{{cls.name}} *p = ObjectHeader::data<{{namespace}}::{{cls.name}}>(val);
+    auto *p = TypeConverter<{{namespace}}::{{cls.name}}*>::valueFromJs(ctx, val);
+    assert(p);
     return *p;
 }
 template<> bool TypeConverter<{{namespace}}::{{cls.name}}>::isConvertible(JSContext *ctx, JSValue val) {
@@ -48,6 +54,12 @@ template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(JSCont
     JS_SetOpaque(obj, header);
     engine->setCachedInstance(ScriptClass<{{namespace}}::{{cls.name}}>::classId(), &val, obj);
     return obj;
+}
+template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}*>::valueToJs(JSContext *ctx, const {{namespace}}::{{cls.name}} *val) {
+    if (!val) {
+        return JS_UNDEFINED;
+    }
+    return TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(ctx, *val);
 }
 template<> JSValue TypeConverter<{{namespace}}::{{cls.name}}>::valueToJs(JSContext *ctx, const {{namespace}}::{{cls.name}} &val) {
     return TypeConverter<{{namespace}}::{{cls.name}}&>::valueToJs(ctx, val);
