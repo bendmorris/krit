@@ -60,7 +60,14 @@ Engine::Engine(KritOptions &options)
     scriptContext = JS_NewObject(script.ctx);
 }
 
-Engine::~Engine() { JS_FreeValue(script.ctx, scriptContext); }
+Engine::~Engine() {
+    JS_FreeValue(script.ctx, scriptContext);
+    for (auto it : cursors) {
+        for (auto &cursor : it.second) {
+            SDL_FreeCursor(cursor.second);
+        }
+    }
+}
 
 Engine::EngineScope::EngineScope(Engine *engine) {
     if (krit::engine) {
@@ -435,7 +442,6 @@ void Engine::addCursor(const std::string &cursorPath,
                        int y) {
     std::string s = engine->io->readFile(cursorPath);
 
-    // TaskManager::instance->push([=, s = std::move(s)]() mutable {
     SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
     SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
     SDL_RWclose(rw);
@@ -445,7 +451,8 @@ void Engine::addCursor(const std::string &cursorPath,
     if (this->cursor == cursorName) {
         chooseCursor();
     }
-    // });
+
+    SDL_FreeSurface(surface);
 }
 
 void Engine::setCursor(const std::string &cursor) {
