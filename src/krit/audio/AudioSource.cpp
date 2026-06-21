@@ -258,7 +258,7 @@ void AudioSource::stop() {
 void AudioSource::pause() { state = PlaybackState::Paused; }
 
 StreamAudioSource::~StreamAudioSource() {
-    if (alSource) {
+    if (alSource && !engine->audio.shuttingDown) {
         engine->audio.recycleAlSource(alSource);
     }
 }

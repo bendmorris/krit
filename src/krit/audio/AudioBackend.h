@@ -71,6 +71,8 @@ struct AudioBackend {
     bool soundThreadJoined{false};
 #endif
 
+    bool shuttingDown { false };
+
 private:
     ALCboolean(ALC_APIENTRY *alcReopenDeviceSOFT)(
         ALCdevice *device, const ALCchar *name,

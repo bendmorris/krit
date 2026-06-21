@@ -83,6 +83,7 @@ AudioBackend::AudioBackend() {
 }
 
 AudioBackend::~AudioBackend() {
+    shuttingDown = true;
     // ALuint __sources[MAX_SOURCES] = {0};
     // for (int i = 0; i < MAX_SOURCES; ++i) {
     //     __sources[i] = _sources[i].source;
