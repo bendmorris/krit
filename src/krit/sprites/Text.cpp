@@ -29,6 +29,10 @@ struct ReusableHbBuffer {
     hb_buffer_t *hbBuf{nullptr};
 
     ReusableHbBuffer(hb_buffer_t *buf) : hbBuf(buf) {}
+    ReusableHbBuffer(ReusableHbBuffer &&other) {
+        hbBuf = other.hbBuf;
+        other.hbBuf = nullptr;
+    }
     ~ReusableHbBuffer() {
         if (hbBuf) {
             hb_buffer_destroy(hbBuf);
@@ -36,28 +40,53 @@ struct ReusableHbBuffer {
         }
     }
 
-    hb_buffer_t *operator*() { return hbBuf; }
+    ReusableHbBuffer &operator=(ReusableHbBuffer &&other) {
+        if (hbBuf) {
+            hb_buffer_destroy(hbBuf);
+        }
+        hbBuf = other.hbBuf;
+        other.hbBuf = nullptr;
+        return *this;
+    }
+
+    hb_buffer_t *take() {
+        hb_buffer_t *result = hbBuf;
+        hbBuf = nullptr;
+        return result;
+    }
 };
 
 static const int FONT_SCALE = 64;
+
+static void resetBuffer(hb_buffer_t *hbBuf) {
+    hb_buffer_set_direction(hbBuf, HB_DIRECTION_LTR);
+    hb_buffer_set_script(hbBuf, HB_SCRIPT_LATIN);
+    hb_buffer_set_language(hbBuf, hb_language_from_string("en", -1));
+    hb_buffer_set_cluster_level(hbBuf,
+                                HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
+}
 
 static std::vector<ReusableHbBuffer> recycledBuffers;
 hb_buffer_t *getHbBuffer() {
     hb_buffer_t *hbBuf;
     if (recycledBuffers.empty()) {
         hbBuf = hb_buffer_create();
-        hb_buffer_set_direction(hbBuf, HB_DIRECTION_LTR);
-        hb_buffer_set_script(hbBuf, HB_SCRIPT_LATIN);
-        hb_buffer_set_language(hbBuf, hb_language_from_string("en", -1));
-        hb_buffer_set_cluster_level(
-            hbBuf, HB_BUFFER_CLUSTER_LEVEL_MONOTONE_CHARACTERS);
+        resetBuffer(hbBuf);
     } else {
-        hbBuf = *recycledBuffers.back();
+        hbBuf = recycledBuffers.back().take();
         recycledBuffers.pop_back();
     }
     return hbBuf;
 }
-void recycleHbBuffer(hb_buffer_t *buf) { recycledBuffers.push_back(buf); }
+void recycleHbBuffer(hb_buffer_t *hbBuf) {
+    if (recycledBuffers.size() < 1024) {
+        hb_buffer_clear_contents(hbBuf);
+        resetBuffer(hbBuf);
+        recycledBuffers.push_back(hbBuf);
+    } else {
+        hb_buffer_destroy(hbBuf);
+    }
+}
 
 std::unordered_map<std::string, TextFormatTagOptions> Text::formatTags = {
     {"\n", TextFormatTagOptions().setNewline()},
@@ -187,8 +216,6 @@ struct TextParser {
     std::vector<TextOpcode> word;
     int wordLength = 0;
     int lineHeight = 0;
-
-    hb_buffer_t *hbBuf;
 
     void parseText(Text &txt, const std::string &s, bool rich) {
         ProfileZone("TextParser::parseText");
@@ -620,9 +647,9 @@ Text::~Text() { recycleBuffers(); }
 
 void Text::recycleBuffers() {
     for (hb_buffer_t *hbBuf : buffers) {
-        hb_buffer_clear_contents(hbBuf);
         recycleHbBuffer(hbBuf);
     }
+    buffers.clear();
 }
 
 void Text::refresh() {
