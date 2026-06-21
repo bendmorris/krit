@@ -171,15 +171,15 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
 #ifdef __EMSCRIPTEN__
     // emscripten loads images by path
     (void)imgType;
-    TaskManager::instance->push(
-        [=, pathToLoad = std::move(pathToLoad)]() mutable {
-            LOG_DEBUG("load image %s", pathToLoad.c_str());
-            auto fullPathToLoad = foundArchive / pathToLoad;
-            SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
-            if (!surface) {
-                panic("IMG_Load(%s) is null: %s", fullPathToLoad.c_str(),
-                      IMG_GetError());
-            }
+    TaskManager::instance->push([=,
+                                 pathToLoad = std::move(pathToLoad)]() mutable {
+        LOG_DEBUG("load image %s", pathToLoad.c_str());
+        auto fullPathToLoad = foundArchive / pathToLoad;
+        SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
+        if (!surface) {
+            panic("IMG_Load(%s) is null: %s", fullPathToLoad.c_str(),
+                  IMG_GetError());
+        }
 #else
     TaskManager::instance->push([=, pathToLoad = std::move(pathToLoad),
                                  s = std::move(s)]() mutable {
@@ -193,62 +193,64 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
         img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);
         SDL_RWclose(rw);
 #endif
-            bool hasAlpha = surface->format->Amask;
-            // uint32_t desiredFormat =
-            //     hasAlpha ? SDL_PIXELFORMAT_ABGR8888 : SDL_PIXELFORMAT_BGR888;
-            // if (surface->format->format != desiredFormat) {
-            //     // convert the format
-            //     SDL_Surface *oldSurface = surface;
-            //     surface = SDL_ConvertSurfaceFormat(oldSurface, desiredFormat,
-            //     0); SDL_FreeSurface(oldSurface);
-            // }
-            unsigned int mode;
-            if (hasAlpha) {
-                if (surface->format->Rmask == 0x000000ff) {
-                    mode = GL_RGBA;
-                } else {
-                    mode = GL_BGRA;
-                }
-            } else if (surface->format->BytesPerPixel == 3) {
-                if (surface->format->Rmask == 0x000000ff) {
-                    mode = GL_RGB;
-                } else {
-                    mode = GL_BGR;
-                }
-            } else if (surface->format->BytesPerPixel == 1) {
-                mode = GL_RED;
+        bool hasAlpha = surface->format->Amask;
+        uint32_t desiredFormat =
+            hasAlpha ? SDL_PIXELFORMAT_ABGR8888 : SDL_PIXELFORMAT_BGR888;
+        if (surface->format->format != desiredFormat) {
+            // convert the format
+            SDL_Surface *oldSurface = surface;
+            surface = SDL_ConvertSurfaceFormat(oldSurface, desiredFormat, 0);
+            SDL_FreeSurface(oldSurface);
+        }
+        unsigned int mode;
+        if (hasAlpha) {
+            if (surface->format->Rmask == 0x000000ff) {
+                mode = GL_RGBA;
             } else {
-                panic("IMAGE_Load(%s): BytesPerPixel=%u", pathToLoad.c_str(),
-                      surface->format->BytesPerPixel);
+                mode = GL_BGRA;
             }
+        } else if (surface->format->BytesPerPixel == 1) {
+            mode = GL_RED;
+        } else {
+            if (surface->format->Rmask == 0x0000ff) {
+                mode = GL_RGB;
+            } else {
+                mode = GL_BGR;
+            }
+        // } else {
+        //     panic("IMAGE_Load(%s): BytesPerPixel=%u r=%x g=%x b=%x a=%x",
+        //           pathToLoad.c_str(), surface->format->BytesPerPixel,
+        //           surface->format->Rmask, surface->format->Gmask,
+        //           surface->format->Bmask, surface->format->Amask);
+        }
 
-            TaskManager::instance->pushRender([=]() {
-                LOG_DEBUG("callback: load image %s", pathToLoad.c_str(),
-                          surface->format->format,
-                          (int)surface->format->BitsPerPixel, surface->pitch);
-                // upload texture
-                GLuint texture;
-                glActiveTexture(GL_TEXTURE0);
-                checkForGlErrors("active texture");
-                glGenTextures(1, &texture);
-                if (!texture) {
-                    LOG_ERROR("failed to generate texture for image %s",
-                              pathToLoad.c_str());
-                }
-                checkForGlErrors("gen textures");
-                glBindTexture(GL_TEXTURE_2D, texture);
-                checkForGlErrors("bind texture");
-                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-                glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
-                             mode, GL_UNSIGNED_BYTE, surface->pixels);
-                checkForGlErrors("texImage2D");
-                glGenerateMipmap(GL_TEXTURE_2D);
-                checkForGlErrors("asset load");
-                glBindTexture(GL_TEXTURE_2D, 0);
-                img->texture = texture;
-                SDL_FreeSurface(surface);
-            });
+        TaskManager::instance->pushRender([=]() {
+            LOG_DEBUG("callback: load image %s", pathToLoad.c_str(),
+                      surface->format->format,
+                      (int)surface->format->BitsPerPixel, surface->pitch);
+            // upload texture
+            GLuint texture;
+            glActiveTexture(GL_TEXTURE0);
+            checkForGlErrors("active texture");
+            glGenTextures(1, &texture);
+            if (!texture) {
+                LOG_ERROR("failed to generate texture for image %s",
+                          pathToLoad.c_str());
+            }
+            checkForGlErrors("gen textures");
+            glBindTexture(GL_TEXTURE_2D, texture);
+            checkForGlErrors("bind texture");
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
+                         mode, GL_UNSIGNED_BYTE, surface->pixels);
+            checkForGlErrors("texImage2D");
+            glGenerateMipmap(GL_TEXTURE_2D);
+            checkForGlErrors("asset load");
+            glBindTexture(GL_TEXTURE_2D, 0);
+            img->texture = texture;
+            SDL_FreeSurface(surface);
         });
+    });
 
     return img;
 }
