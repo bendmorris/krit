@@ -30,6 +30,8 @@ void ObjectHeader::recycle(ObjectHeader *p) {
     p->reset();
     if (objHeaderPool.size() < 1024) {
         objHeaderPool.push_back(p);
+    } else {
+        delete p;
     }
 }
 
