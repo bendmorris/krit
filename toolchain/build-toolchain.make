@@ -1,5 +1,5 @@
-.PHONY: all clean curl curses flac freetype harfbuzz jpeg libedit ogg openal openssl opus png sdl sdl_image sndfile sqlite vorbis yaml zip zlib
-all: curl flac flatbuffers freetype harfbuzz jpeg ogg openal openssl opus png sdl sdl_image sndfile sqlite vorbis yaml zip zlib
+.PHONY: all clean curl curses flac freetype harfbuzz jpeg libedit ogg openal openssl opus png sndfile sqlite vorbis yaml zip zlib
+all: curl flac flatbuffers freetype harfbuzz jpeg ogg openal openssl opus png sndfile sqlite vorbis yaml zip zlib
 clean:
 	rm -rf lib/* `ls -d build/*/`
 
@@ -145,23 +145,24 @@ lib/libpng16.a: build/libpng-1.6.39 lib/libz.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
 
 # SDL
-sdl: lib/libSDL2.a
-build/SDL2-2.32.10.tar.gz:
-	mkdir -p build
-	curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz -o $@
-build/SDL2-2.32.10: build/SDL2-2.32.10.tar.gz
-	tar xzf $< -C build
-lib/libSDL2.a: build/SDL2-2.32.10
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
+# sdl: lib/libSDL2.a
+# build/SDL2-2.32.10.tar.gz:
+# 	mkdir -p build
+# 	curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz -o $@
+# build/SDL2-2.32.10: build/SDL2-2.32.10.tar.gz
+# 	tar xzf $< -C build
+# lib/libSDL2.a: build/SDL2-2.32.10
+# 	cd $< && cmake -B build -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE
+# 	cd $< && cmake --build build && cmake --build build --target install
 
 # SDL_image
-sdl_image: lib/libSDL2_image.a
-build/SDL2_image-2.8.12.tar.gz:
-	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.12/SDL2_image-2.8.12.tar.gz -o $@
-build/SDL2_image-2.8.12: build/SDL2_image-2.8.12.tar.gz
-	tar xzf $< -C build
-lib/libSDL2_image.a: build/SDL2_image-2.8.12 lib/libSDL2.a lib/libpng16.a lib/libjpeg.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-png-shared --disable-jpg-shared --prefix=$$PREFIX --with-sdl-prefix=$$PREFIX && make -j8 && make install
+# sdl_image: lib/libSDL2_image.a
+# build/SDL2_image-2.8.12.tar.gz:
+# 	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.12/SDL2_image-2.8.12.tar.gz -o $@
+# build/SDL2_image-2.8.12: build/SDL2_image-2.8.12.tar.gz
+# 	tar xzf $< -C build
+# lib/libSDL2_image.a: build/SDL2_image-2.8.12 lib/libpng16.a lib/libjpeg.a
+# 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-png-shared --disable-jpg-shared --prefix=$$PREFIX --with-sdl-prefix=$$PREFIX && make -j8 && make install
 
 # sndfile
 sndfile: lib/libsndfile.a
