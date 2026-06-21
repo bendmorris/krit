@@ -34,5 +34,5 @@ declare namespace Log {
     /** @skip */ function fatal(area: string, msg: any): void;
 }
 
-/** @jsfunc */ declare function encodeString(s: string): Uint8Array;
+/** @jsfunc */ declare function encodeString(s: string): ArrayBuffer;
 /** @jsfunc */ declare function decodeString(b: Uint8Array): string;

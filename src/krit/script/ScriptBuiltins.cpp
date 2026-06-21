@@ -174,15 +174,12 @@ JS_FUNC(encodeString) {
     const char *s = JS_ToCStringLen(ctx, &len, argv[0]);
     auto buf = JS_NewArrayBufferCopy(ctx, (uint8_t *)s, len);
     JS_FreeCString(ctx, s);
-    auto uint8Array = JS_NewTypedArray(ctx, 1, &buf, JS_TYPED_ARRAY_UINT8);
-    JS_FreeValue(ctx, buf);
-    return uint8Array;
+    // auto uint8Array = JS_NewTypedArray(ctx, 1, &buf, JS_TYPED_ARRAY_UINT8);
+    // JS_FreeValue(ctx, buf);
+    return buf;
 }
 
 JS_FUNC(decodeString) {
-    if (argc < 1 || !JS_IsString(argv[0])) {
-        return JS_ThrowTypeError(ctx, "invalid arguments to decodeString");
-    }
     size_t pbyte_offset, pbyte_length, pbytes_per_element;
     JSValue buf = JS_GetTypedArrayBuffer(ctx, argv[0], &pbyte_offset,
                                          &pbyte_length, &pbytes_per_element);
