@@ -113,7 +113,7 @@ static JSValue js_{{ cls.name }}_get_internal_id(JSContext *ctx, JSValueConst th
 static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
-        return JS_ThrowTypeError(ctx, "invalid {{cls.name}}");
+        return JS_ThrowTypeError(ctx, "invalid %s", "{{cls.name}}");
     }
     {% if prop.get %}
     static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
@@ -129,7 +129,7 @@ static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst 
 static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
-        return JS_ThrowTypeError(ctx, "invalid {{cls.name}}");
+        return JS_ThrowTypeError(ctx, "invalid %s", "{{cls.name}}");
     }
     {% if prop.set %}
     static_assert(krit::TypeValidator<{{ typename(prop.type) }}, {{ prop.type.validationType }}>::valid, "C++ and TS types don't match");
