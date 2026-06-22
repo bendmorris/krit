@@ -24,7 +24,8 @@ void TextMap::setLocale(const std::string &key) {
             size_t lineLength = nextNewline - current;
             nextTab = (const char *)memchr(current, '\t', lineLength);
             if (!nextTab) {
-                LOG_ERROR("no tab in line %i: %.*s\n", line, (int)lineLength - 1, current);
+                LOG_ERROR("no tab in line %i: %.*s\n", line,
+                          (int)lineLength - 1, current);
                 current = nextNewline + 1;
                 remaining -= lineLength + 1;
                 continue;
@@ -43,7 +44,11 @@ std::string_view TextMap::getString(const std::string &key) {
     std::string_view _key(key.data(), key.length());
     auto found = strings.find(_key);
     if (found == strings.end()) {
-        return defaultStrings[_key];
+        found = defaultStrings.find(key);
+        if (found == defaultStrings.end()) {
+            return "???";
+        }
+        return found->second;
     } else {
         return found->second;
     }
