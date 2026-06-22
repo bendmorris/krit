@@ -152,7 +152,7 @@ build/SDL2-2.32.10.tar.gz:
 build/SDL2-2.32.10: build/SDL2-2.32.10.tar.gz
 	tar xzf $< -C build
 lib/libSDL2.a: build/SDL2-2.32.10
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
+	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX ${SDL_FLAGS} && make -j8 && make install
 
 # SDL_image
 sdl_image: lib/libSDL2_image.a

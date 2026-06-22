@@ -8,5 +8,5 @@ export PKG_CONFIG_PATH=$(shell pwd)/lib/pkgconfig
 export BUILD=x86_64-pc-linux-gnu
 export HOST=x86_64-pc-linux-gnu
 OPENAL_LIB_NAME=libopenal.a
-
+SDL_FLAGS=--enable-x11-shared --enable-video-x11 --with-x --x-libraries=/usr/lib/X11 --x-includes=/usr/include/X11
 include ../build-toolchain.make
