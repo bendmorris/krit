@@ -391,9 +391,9 @@ template <typename... Args> struct TypeConverter<std::function<void(Args...)>> {
     using FnT = std::function<void(Args...)>;
     static FnT valueFromJs(JSContext *ctx, JSValue val) {
         OwnedValue ownedFn(ctx, val);
-        return [=](Args... args) {
+        return [ctx, owned = std::move(ownedFn)](Args... args) {
             GET_ENGINE;
-            engine->callVoid<Args...>(*ownedFn, args...);
+            engine->callVoid<Args...>(*owned, args...);
         };
     }
 };

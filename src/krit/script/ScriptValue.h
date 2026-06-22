@@ -58,7 +58,7 @@ template <> struct TypeConverter<JSValue> {
     static JSValue valueFromJs(JSContext *ctx, JSValue val) {
         return val;
     }
-    static JSValue valueToJs(JSContext *ctx, const JSValue &val) { return val; }
+    static JSValue valueToJs(JSContext *ctx, const JSValue &val) { return JS_DupValue(ctx, val); }
     static bool isConvertible(JSContext *ctx, JSValue val) {
         return true;
     }
