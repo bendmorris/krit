@@ -177,7 +177,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
         auto fullPathToLoad = foundArchive / pathToLoad;
         SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
         if (!surface) {
-            panic("IMG_Load(%s) is null: %s", fullPathToLoad.c_str(),
+            panic("IMG_Load(%s) failed: %s", fullPathToLoad.c_str(),
                   IMG_GetError());
         }
 #else
@@ -187,21 +187,13 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
         SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
         SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
         if (!surface) {
-            panic("IMG_Load(%s) is null: %s", pathToLoad.c_str(),
+            panic("IMG_Load(%s) failed: %s", pathToLoad.c_str(),
                   IMG_GetError());
         }
         img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);
         SDL_RWclose(rw);
 #endif
         bool hasAlpha = surface->format->Amask;
-        uint32_t desiredFormat =
-            hasAlpha ? SDL_PIXELFORMAT_ABGR8888 : SDL_PIXELFORMAT_BGR888;
-        if (surface->format->format != desiredFormat) {
-            // convert the format
-            SDL_Surface *oldSurface = surface;
-            surface = SDL_ConvertSurfaceFormat(oldSurface, desiredFormat, 0);
-            SDL_FreeSurface(oldSurface);
-        }
         unsigned int mode;
         if (hasAlpha) {
             if (surface->format->Rmask == 0x000000ff) {
@@ -217,11 +209,6 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             } else {
                 mode = GL_BGR;
             }
-        // } else {
-        //     panic("IMAGE_Load(%s): BytesPerPixel=%u r=%x g=%x b=%x a=%x",
-        //           pathToLoad.c_str(), surface->format->BytesPerPixel,
-        //           surface->format->Rmask, surface->format->Gmask,
-        //           surface->format->Bmask, surface->format->Amask);
         }
 
         TaskManager::instance->pushRender([=]() {
