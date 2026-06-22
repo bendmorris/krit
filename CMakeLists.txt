@@ -14,7 +14,12 @@ option(KRIT_ENABLE_THREADS "Whether task managers should use multiple threads" O
 option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
 option(KRIT_ENABLE_TRACY "Enable profiling hooks for Tracy" OFF)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
-option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(default_dump_leaks OFF)
+else()
+    set(default_dump_leaks ON)
+endif()
+option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" ${default_dump_leaks})
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\" -fno-omit-frame-pointer -fasynchronous-unwind-tables")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
