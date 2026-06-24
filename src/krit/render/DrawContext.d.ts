@@ -11,7 +11,9 @@ declare class DrawContext {
 
     line(p1: Partial<Vec2f>, p2: Partial<Vec2f>): void;
     rect(r: Rectangle): void;
+    rect(x: float, y: float, width: float, height: float): void;
     rectFilled(r: Rectangle): void;
+    rectFilled(x: float, y: float, width: float, height: float): void;
     circle(center: Partial<Vec2f>, radius: number, segments: number): void;
     ring(center: Partial<Vec2f>, radius: number, segments: number): void;
     circleFilled(center: Partial<Vec2f>, radius: number, segments: number): void;

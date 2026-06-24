@@ -10,9 +10,7 @@
 namespace krit {
 
 struct DrawContext {
-    static DrawContext *create() {
-        return new DrawContext();
-    }
+    static DrawContext *create() { return new DrawContext(); }
 
     BlendMode blend = BlendMode::Alpha;
     SmoothingMode smooth = SmoothingMode::SmoothLinear;
@@ -29,8 +27,13 @@ struct DrawContext {
 
     void polyline(const Vec2f *points, size_t pointsLength, bool miterJoint);
 
+    void rect(float x, float y, float width, float height) {
+        rect(Rectangle(x, y, width, height));
+    }
     void rect(const Rectangle &r);
-
+    void rectFilled(float x, float y, float width, float height) {
+        rectFilled(Rectangle(x, y, width, height));
+    }
     void rectFilled(const Rectangle &r);
 
     void circle(const Vec2f &center, float radius, size_t segments);
