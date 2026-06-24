@@ -195,9 +195,9 @@ ALuint AudioBackend::getAlSource() {
             ALuint alSource = alSourcePool[i];
             assert(alSource);
             alSourcei(alSource, AL_LOOPING, AL_FALSE);
-            alSourcei(alSource, AL_DISTANCE_MODEL, AL_LINEAR_DISTANCE_CLAMPED);
-            alSourcef(alSource, AL_MAX_DISTANCE, 2.f);
-            alSourcef(alSource, AL_REFERENCE_DISTANCE, 0.1f);
+            alSourcei(alSource, AL_DISTANCE_MODEL, AL_NONE);
+            // alSourcef(alSource, AL_MAX_DISTANCE, 2.f);
+            // alSourcef(alSource, AL_REFERENCE_DISTANCE, 0.5f);
         }
     }
     ALuint alSource = alSourcePool.back();
