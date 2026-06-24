@@ -8,7 +8,7 @@
 
 namespace krit {
 
-template <typename T, typename Self> struct BaseRectangle {
+template <typename T, typename Self, typename PointT> struct BaseRectangle {
     static Self *create(T x, T y, T width, T height) {
         return new Self(x, y, width, height);
     }
@@ -31,8 +31,16 @@ template <typename T, typename Self> struct BaseRectangle {
     T left() const { return this->x; }
     T right() const { return this->x + this->width; }
 
-    Point center() {
-        return Point(this->x + this->width / 2, this->y + this->height / 2);
+    PointT center() {
+        return PointT(centerX(), centerY());
+    }
+
+    T centerX() {
+        return this->x + this->width / 2;
+    }
+
+    T centerY() {
+        return this->y + this->height / 2;
     }
 
     bool eq(const Self &other) const {
@@ -94,7 +102,7 @@ template <typename T, typename Self> struct BaseRectangle {
     }
 };
 
-struct Rectangle : public BaseRectangle<float, Rectangle> {
+struct Rectangle : public BaseRectangle<float, Rectangle, Vec2f> {
     Rectangle() {}
     Rectangle(float x, float y, float width, float height)
         : BaseRectangle(x, y, width, height) {}
@@ -102,7 +110,7 @@ struct Rectangle : public BaseRectangle<float, Rectangle> {
     Rectangle(Vec2f &p, Vec2f &d) : Rectangle(p.x, p.y, d.x, d.y) {}
 };
 
-struct IntRectangle : public BaseRectangle<int, IntRectangle> {
+struct IntRectangle : public BaseRectangle<int, IntRectangle, Vec2i> {
     IntRectangle() {}
     IntRectangle(int x, int y, int width, int height)
         : BaseRectangle(x, y, width, height) {}
