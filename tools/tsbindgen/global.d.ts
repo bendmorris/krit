@@ -1,6 +1,6 @@
 /** @skip */ type SharedPtr<T> = T;
 /** @skip */ type UniquePtr<T> = T;
-/** @skip */ type Ptr<T> = T;
+/** @skip */ type Ptr<T> = T | undefined;
 /** @skip */ type Ref<T> = T;
 /** @skip */ type Const<T> = T;
 /** @skip */ type StringView = string;
