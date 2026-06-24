@@ -5,6 +5,7 @@ declare class Vec2f {
     x: float;
     y: float;
 
+    clone(): Vec2f;
     copyFrom(other: Partial<Vec2f>): void;
     setTo(x: float, y: float): void;
     distance(p: Partial<Vec2f>): float;
@@ -20,6 +21,7 @@ declare class Vec3f {
     y: float;
     z: float;
 
+    clone(): Vec3f;
     copyFrom(other: Partial<Vec3f>): void;
     setTo(x: float, y: float, /** @defaultValue 0 */ z?: float): void;
     distance(p: Partial<Vec3f>): float;
@@ -34,6 +36,7 @@ declare class Vec2i {
     x: int;
     y: int;
 
+    clone(): Vec2i;
     copyFrom(other: Partial<Vec2i>): void;
     setTo(x: int, y: int): void;
     distance(p: Partial<Vec2i>): float;
@@ -49,6 +52,7 @@ declare class Vec3i {
     y: int;
     z: int;
 
+    clone(): Vec2i;
     copyFrom(other: Partial<Vec3i>): void;
     setTo(x: int, y: int, z: int): void;
     distance(p: Partial<Vec3i>): int;
