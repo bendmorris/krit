@@ -52,14 +52,15 @@ lib/libFLAC.a: build/flac-1.4.2 lib/libogg.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX --disable-stack-smash-protection && make -j8 && make install
 
 # flatbuffers
+FLATBUFFERS_VERSION=1.12.1
 flatbuffers: lib/libflatbuffers.a
-build/flatbuffers.tar.gz:
-	curl -L https://github.com/google/flatbuffers/archive/refs/tags/v25.12.19-2026-02-06-03fffb2.tar.gz -o $@
-build/flatbuffers-25.12.19-2026-02-06-03fffb2: build/flatbuffers.tar.gz
+build/flatbuffers-$(FLATBUFFERS_VERSION).tar.gz:
+	curl -L https://github.com/google/flatbuffers/archive/refs/tags/v$(FLATBUFFERS_VERSION).tar.gz -o $@
+build/flatbuffers-$(FLATBUFFERS_VERSION): build/flatbuffers-$(FLATBUFFERS_VERSION).tar.gz
 	tar xf $< -C build
-lib/libflatbuffers.a: build/flatbuffers-25.12.19-2026-02-06-03fffb2
-	mkdir -p build/flatbuffers-25.12.19-2026-02-06-03fffb2/build
-	cd build/flatbuffers-25.12.19-2026-02-06-03fffb2/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE .. && make flatbuffers -j8 && make install
+lib/libflatbuffers.a: build/flatbuffers-$(FLATBUFFERS_VERSION)
+	mkdir -p build/flatbuffers-$(FLATBUFFERS_VERSION)/build
+	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make flatbuffers flatc -j8 && make install
 
 # freetype
 freetype: lib/libfreetype.a
