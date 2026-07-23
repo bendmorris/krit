@@ -12,6 +12,8 @@ namespace krit {
 
 struct AudioBackend;
 
+enum AudioFilterType : int;
+
 /**
  * A single streaming audio source.
  */
@@ -36,6 +38,18 @@ struct AudioStream {
     Vec3f position;
     float gain{1};
 
+    float getLowpass() { return lowpass; }
+    void setLowpass(float v) {
+        filtersDirty = true;
+        lowpass = v;
+    }
+
+    float getHighpass() { return highpass; }
+    void setHighpass(float v) {
+        filtersDirty = true;
+        highpass = v;
+    }
+
     AudioDataCursor cursor;
     bool reachedEnd{false};
 
@@ -50,6 +64,9 @@ struct AudioStream {
     size_t bufferPtr{0};
     int bufferCount{0};
     int sampleFramesRead{0};
+    float lowpass{0};
+    float highpass{0};
+    bool filtersDirty{true};
 };
 
 /**
@@ -69,6 +86,8 @@ struct AudioSource : public std::enable_shared_from_this<AudioSource> {
     float gain{1};
     bool loop{false};
     int loopFrom{0};
+    float lowpass{0};
+    float highpass{0};
 
     void play();
     void stop();
@@ -82,6 +101,12 @@ struct AudioSource : public std::enable_shared_from_this<AudioSource> {
     };
 
     bool playing() { return state == PlaybackState::Playing; }
+
+    float getLowpass() { return lowpass; }
+    virtual void setLowpass(float v) = 0;
+
+    float getHighpass() { return highpass; }
+    virtual void setHighpass(float v) = 0;
 };
 
 struct StreamAudioSource : public AudioSource {
@@ -93,6 +118,8 @@ struct StreamAudioSource : public AudioSource {
     void reset(bool clearSource) override;
     void render(AudioBackend *backend) override;
     void update(AudioBackend *backend) override;
+    void setLowpass(float v) override;
+    void setHighpass(float v) override;
 };
 
 /**
@@ -107,6 +134,8 @@ struct SequenceAudioSource : public AudioSource {
     ~SequenceAudioSource();
     void reset(bool clearSource) override;
     void render(AudioBackend *backend) override;
+    void setLowpass(float v) override;
+    void setHighpass(float v) override;
 
     std::shared_ptr<SequenceAudioSource> addPart(std::shared_ptr<AudioData>);
 };
@@ -119,6 +148,8 @@ struct LayeredAudioSource : public AudioSource {
 
     void reset(bool clearSource) override;
     void render(AudioBackend *backend) override;
+    void setLowpass(float v) override;
+    void setHighpass(float v) override;
 
     void select(size_t index);
     std::shared_ptr<LayeredAudioSource> addLayer(std::shared_ptr<AudioSource>);

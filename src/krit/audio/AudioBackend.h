@@ -34,12 +34,20 @@ struct StreamAudioSource;
 struct SequenceAudioSource;
 struct LayeredAudioSource;
 
+enum AudioFilterType : int {
+    LowPass = 0,
+    HighPass,
+    BandPass,
+    AudioFilterTypeCount,
+};
+
 struct AudioBackend {
     bool enabled = false;
     ALCdevice *device = nullptr;
     ALCcontext *context = nullptr;
     AudioSource *sourcePool = nullptr;
     AudioSource *activeSources = nullptr;
+    ALuint filters[AudioFilterTypeCount]{0};
     float gain = 1;
     bool streamFloats = false;
 
@@ -71,7 +79,7 @@ struct AudioBackend {
     bool soundThreadJoined{false};
 #endif
 
-    bool shuttingDown { false };
+    bool shuttingDown{false};
 
 private:
     ALCboolean(ALC_APIENTRY *alcReopenDeviceSOFT)(

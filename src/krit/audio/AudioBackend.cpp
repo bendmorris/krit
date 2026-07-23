@@ -76,9 +76,10 @@ AudioBackend::AudioBackend() {
         panic("couldn't initialize audio");
     }
 
-    init();
 #if KRIT_SOUND_THREAD
     soundThread = std::thread(runSoundThread, this);
+#else
+    init();
 #endif
 }
 
@@ -96,6 +97,9 @@ AudioBackend::~AudioBackend() {
     soundThreadJoined = true;
     soundThread.join();
 #endif
+    if (alcIsExtensionPresent(device, "ALC_EXT_EFX")) {
+        alDeleteFilters(AudioFilterTypeCount, filters);
+    }
     alcMakeContextCurrent(nullptr);
     if (!alBufferPool.empty()) {
         alDeleteBuffers(alBufferPool.size(), alBufferPool.data());
@@ -182,6 +186,14 @@ void AudioBackend::init() {
     //         _sources[i - 1].next = &_sources[i];
     //     }
     // }
+
+    if (alcIsExtensionPresent(device, "ALC_EXT_EFX")) {
+        AREA_LOG_INFO("audio", "generating filters");
+        alGenFilters(AudioFilterTypeCount, filters);
+        alFilteri(filters[LowPass], AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+        alFilteri(filters[HighPass], AL_FILTER_TYPE, AL_FILTER_LOWPASS);
+        alFilteri(filters[BandPass], AL_FILTER_TYPE, AL_FILTER_BANDPASS);
+    }
 
     enabled = true;
 }

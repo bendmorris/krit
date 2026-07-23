@@ -13,6 +13,11 @@ declare class AudioSource {
     stop(): void;
     pause(): void;
     playing(): boolean;
+
+    get lowpass(): float;
+    set lowpass(v: float);
+    get highpass(): float;
+    set highpass(v: float);
 }
 
 declare class StreamAudioSource extends AudioSource {
@@ -29,4 +34,5 @@ declare class SequenceAudioSource extends AudioSource {
 declare class LayeredAudioSource extends AudioSource {
     readonly layers: Array<AudioSource>;
     addLayer(source: SharedPtr<AudioSource>): SharedPtr<LayeredAudioSource>;
+    select(layerIndex: size_t): void;
 }

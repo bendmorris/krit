@@ -110,6 +110,31 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
         bufferPtr += buffersProcessed;
         bufferPtr %= NUM_BUFFERS;
     }
+    // update filters
+    if (filtersDirty) {
+        // assigning a filter copies its attributes, after which we can freely
+        // modify them without affecting the source, so we can reuse the same 3
+        // filters here
+        if (lowpass && highpass) {
+            alFilterf(backend->filters[BandPass], AL_BANDPASS_GAINHF,
+                      1.0f - lowpass);
+            alFilterf(backend->filters[BandPass], AL_BANDPASS_GAINLF,
+                      1.0f - highpass);
+            alSourcei(alSource, AL_DIRECT_FILTER, backend->filters[BandPass]);
+        } else if (lowpass) {
+            alFilterf(backend->filters[LowPass], AL_LOWPASS_GAINHF,
+                      1.0f - lowpass);
+            alSourcei(alSource, AL_DIRECT_FILTER, backend->filters[LowPass]);
+        } else if (highpass) {
+            alFilterf(backend->filters[HighPass], AL_HIGHPASS_GAINLF,
+                      1.0f - highpass);
+            alSourcei(alSource, AL_DIRECT_FILTER, backend->filters[HighPass]);
+        } else {
+            // remove filter
+            alSourcei(alSource, AL_DIRECT_FILTER, AL_FILTER_NULL);
+        }
+        filtersDirty = false;
+    }
     // if we need more buffers, render now
     alGetSourcei(alSource, AL_BUFFERS_QUEUED, &this->bufferCount);
     if (bufferCount < NUM_BUFFERS) {
@@ -130,8 +155,7 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
                 break;
             }
             default: {
-                LOG_ERROR("unsupported channel count: %i", audioData->channels);
-                assert(false);
+                panic("unsupported channel count: %i", audioData->channels);
                 return;
             }
         }
@@ -162,16 +186,6 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
                                            ->data[streamBufferSize * buf]),
                             framesToRead) *
                         bytesPerSampleFrame;
-                    if (gain != 1) {
-                        auto src =
-                            (float *)(&sampleRingBuffer
-                                           ->data[streamBufferSize * buf]);
-                        float g = sqrt(gain);
-                        for (size_t i = 0;
-                             i < bytesRead / backend->bytesPerSample(); ++i) {
-                            src[i] *= g;
-                        }
-                    }
                 } else {
                     bytesRead =
                         sf_readf_short(
@@ -180,16 +194,6 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
                                              ->data[streamBufferSize * buf]),
                             framesToRead) *
                         bytesPerSampleFrame;
-                    if (gain != 1) {
-                        auto src =
-                            (int16_t *)(&sampleRingBuffer
-                                             ->data[streamBufferSize * buf]);
-                        float g = sqrt(gain);
-                        for (size_t i = 0;
-                             i < bytesRead / backend->bytesPerSample(); ++i) {
-                            src[i] = static_cast<float>(src[i]) * g;
-                        }
-                    }
                 }
                 AREA_LOG_DEBUG("audio", "decoded %i bytes", bytesRead);
             }
@@ -213,6 +217,7 @@ void AudioStream::render(AudioBackend *backend, ALuint alSource) {
     }
     AREA_LOG_DEBUG("audio", "done rendering; queued buffers: %zu", bufferCount);
     ALenum state;
+    alSourcef(alSource, AL_GAIN, gain);
     alGetSourcei(alSource, AL_SOURCE_STATE, &state);
     if (state != AL_PLAYING) {
         alSourcePlay(alSource);
@@ -372,4 +377,30 @@ LayeredAudioSource::addLayer(std::shared_ptr<AudioSource> source) {
     layers.emplace_back(source);
     return std::static_pointer_cast<LayeredAudioSource>(shared_from_this());
 }
+
+void StreamAudioSource::setLowpass(float v) { stream.setLowpass(v); }
+void StreamAudioSource::setHighpass(float v) { stream.setHighpass(v); }
+
+void SequenceAudioSource::setLowpass(float v) {
+    for (auto &stream : parts) {
+        stream->setLowpass(v);
+    }
+}
+void SequenceAudioSource::setHighpass(float v) {
+    for (auto &stream : parts) {
+        stream->setHighpass(v);
+    }
+}
+
+void LayeredAudioSource::setLowpass(float v) {
+    for (auto &stream : layers) {
+        stream->setLowpass(v);
+    }
+}
+void LayeredAudioSource::setHighpass(float v) {
+    for (auto &stream : layers) {
+        stream->setHighpass(v);
+    }
+}
+
 }

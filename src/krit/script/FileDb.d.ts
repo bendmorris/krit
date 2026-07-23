@@ -7,7 +7,7 @@ declare class DbRow {
 declare class FileDb {
     constructor(path: string);
     valid: boolean;
-    exec(query: string, callback?: (row: object) => void): void;
+    exec(query: string, callback?: (row: any) => void): void;
     prepare(query: string): UniquePtr<DbQuery>;
 }
 
@@ -17,5 +17,5 @@ declare class DbQuery {
     bindInt(index: number, val: number): void;
     bindString(index: number, val: string): void;
     bindBlob(index: number, val: ArrayBuffer): void;
-    exec(callback?: (row: object) => void): void;
+    exec(callback?: (row: any) => void): void;
 }

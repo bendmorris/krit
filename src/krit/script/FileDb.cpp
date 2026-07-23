@@ -24,6 +24,7 @@ JSValue DbRow::getBlob(int index) {
     size_t len = sqlite3_column_bytes(stmt, index);
     const void *buf = sqlite3_column_blob(stmt, index);
     auto ctx = engine->script.ctx;
+    // FIXME: this buffer is leaking at close
     JSValue result = JS_NewArrayBufferCopy(ctx, (const uint8_t *)buf, len);
     return result;
 }
