@@ -22,13 +22,13 @@ struct UniformInfo {
 };
 
 struct Shader {
-    GLuint program = 0;
+    GLuint program{0};
     std::string vertexSource;
     std::string fragmentSource;
-    GLint positionIndex = 0;
-    GLint texCoordIndex = 0;
-    GLint colorIndex = 0;
-    size_t bytesPerVertex = 0;
+    GLint positionIndex{0};
+    GLint texCoordIndex{0};
+    GLint colorIndex{0};
+    size_t bytesPerVertex{0};
     std::vector<UniformInfo> uniforms;
 
     template <typename T>

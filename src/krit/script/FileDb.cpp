@@ -1,3 +1,5 @@
+#if (KRIT_ENABLE_SQLITE && KRIT_ENABLE_SCRIPT)
+
 #include "FileDb.h"
 #include "krit/Engine.h"
 #include "krit/script/ScriptValue.h"
@@ -162,3 +164,5 @@ std::unique_ptr<DbQuery> FileDb::prepare(const std::string &query) {
 }
 
 }
+
+#endif

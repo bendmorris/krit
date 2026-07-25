@@ -8,9 +8,10 @@
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
 #include "yaml.h"
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_pixels.h>
-#include <SDL2/SDL_surface.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_pixels.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3_image/SDL_image.h>
 #include <cstdint>
 #include <filesystem>
 #include <jpeglib.h>
@@ -171,73 +172,71 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
 #ifdef __EMSCRIPTEN__
     // emscripten loads images by path
     (void)imgType;
-    TaskManager::instance->push([=,
-                                 pathToLoad = std::move(pathToLoad)]() mutable {
-        LOG_DEBUG("load image %s", pathToLoad.c_str());
-        auto fullPathToLoad = foundArchive / pathToLoad;
-        SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
-        if (!surface) {
-            panic("IMG_Load(%s) failed: %s", fullPathToLoad.c_str(),
-                  IMG_GetError());
-        }
+    engine->taskManager->push(
+        [=, pathToLoad = std::move(pathToLoad)]() mutable {
+            LOG_DEBUG("load image %s", pathToLoad.c_str());
+            auto fullPathToLoad = foundArchive / pathToLoad;
+            SDL_Surface *surface = IMG_Load(fullPathToLoad.c_str());
+            if (!surface) {
+                panic("IMG_Load(%s) failed: %s", fullPathToLoad.c_str(),
+                      IMG_GetError());
+            }
 #else
-    TaskManager::instance->push([=, pathToLoad = std::move(pathToLoad),
+    engine->taskManager->push([=, pathToLoad = std::move(pathToLoad),
                                  s = std::move(s)]() mutable {
         LOG_DEBUG("load image %s", pathToLoad.c_str());
-        SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
-        SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, imgType);
+        SDL_IOStream *rw = SDL_IOFromConstMem(s.c_str(), s.size());
+        SDL_Surface *surface = IMG_LoadTyped_IO(rw, 0, imgType);
         if (!surface) {
-            panic("IMG_Load(%s) failed: %s", pathToLoad.c_str(),
-                  IMG_GetError());
+            panic("IMG_Load(%s) failed", pathToLoad.c_str());
         }
         img->dimensions.setTo(surface->w / img->scale, surface->h / img->scale);
-        SDL_RWclose(rw);
+        SDL_CloseIO(rw);
 #endif
-        bool hasAlpha = surface->format->Amask;
-        unsigned int mode;
-        if (hasAlpha) {
-            if (surface->format->Rmask == 0x000000ff) {
-                mode = GL_RGBA;
+            auto format = SDL_GetPixelFormatDetails(surface->format);
+            bool hasAlpha = format->Amask;
+            unsigned int mode;
+            if (hasAlpha) {
+                if (format->Rmask == 0x000000ff) {
+                    mode = GL_RGBA;
+                } else {
+                    mode = GL_BGRA;
+                }
+            } else if (format->bytes_per_pixel == 1) {
+                mode = GL_RED;
             } else {
-                mode = GL_BGRA;
+                if (format->Rmask == 0x0000ff) {
+                    mode = GL_RGB;
+                } else {
+                    mode = GL_BGR;
+                }
             }
-        } else if (surface->format->BytesPerPixel == 1) {
-            mode = GL_RED;
-        } else {
-            if (surface->format->Rmask == 0x0000ff) {
-                mode = GL_RGB;
-            } else {
-                mode = GL_BGR;
-            }
-        }
 
-        TaskManager::instance->pushRender([=]() {
-            LOG_DEBUG("callback: load image %s", pathToLoad.c_str(),
-                      surface->format->format,
-                      (int)surface->format->BitsPerPixel, surface->pitch);
-            // upload texture
-            GLuint texture;
-            glActiveTexture(GL_TEXTURE0);
-            checkForGlErrors("active texture");
-            glGenTextures(1, &texture);
-            if (!texture) {
-                LOG_ERROR("failed to generate texture for image %s",
-                          pathToLoad.c_str());
-            }
-            checkForGlErrors("gen textures");
-            glBindTexture(GL_TEXTURE_2D, texture);
-            checkForGlErrors("bind texture");
-            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-            glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
-                         mode, GL_UNSIGNED_BYTE, surface->pixels);
-            checkForGlErrors("texImage2D");
-            glGenerateMipmap(GL_TEXTURE_2D);
-            checkForGlErrors("asset load");
-            glBindTexture(GL_TEXTURE_2D, 0);
-            img->texture = texture;
-            SDL_FreeSurface(surface);
+            engine->taskManager->pushRender([=]() {
+                LOG_DEBUG("callback: load image %s", pathToLoad.c_str());
+                // upload texture
+                GLuint texture;
+                glActiveTexture(GL_TEXTURE0);
+                checkForGlErrors("active texture");
+                glGenTextures(1, &texture);
+                if (!texture) {
+                    LOG_ERROR("failed to generate texture for image %s",
+                              pathToLoad.c_str());
+                }
+                checkForGlErrors("gen textures");
+                glBindTexture(GL_TEXTURE_2D, texture);
+                checkForGlErrors("bind texture");
+                glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+                glTexImage2D(GL_TEXTURE_2D, 0, mode, surface->w, surface->h, 0,
+                             mode, GL_UNSIGNED_BYTE, surface->pixels);
+                checkForGlErrors("texImage2D");
+                glGenerateMipmap(GL_TEXTURE_2D);
+                checkForGlErrors("asset load");
+                glBindTexture(GL_TEXTURE_2D, 0);
+                img->texture = texture;
+                SDL_DestroySurface(surface);
+            });
         });
-    });
 
     return img;
 }

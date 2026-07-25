@@ -1,5 +1,6 @@
-#ifndef KRIT_AUDIO_AUDIODATA
-#define KRIT_AUDIO_AUDIODATA
+#pragma once
+
+#if KRIT_ENABLE_AUDIO
 
 #include <AL/al.h>
 #include <memory>

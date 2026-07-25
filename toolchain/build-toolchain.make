@@ -60,7 +60,7 @@ build/flatbuffers-$(FLATBUFFERS_VERSION): build/flatbuffers-$(FLATBUFFERS_VERSIO
 	tar xf $< -C build
 lib/libflatbuffers.a: build/flatbuffers-$(FLATBUFFERS_VERSION)
 	mkdir -p build/flatbuffers-$(FLATBUFFERS_VERSION)/build
-	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make flatbuffers flatc -j8 && make install
+	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make flatbuffers flatc -j8 && make install
 
 # freetype
 freetype: lib/libfreetype.a
@@ -72,13 +72,14 @@ lib/libfreetype.a: build/freetype-2.12.1 lib/libz.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
 
 # harfbuzz
+HARFBUZZ_VERSION=14.2.1
 harfbuzz: lib/libharfbuzz.a
-build/harfbuzz-6.0.0.tar.xz:
-	curl -L https://github.com/harfbuzz/harfbuzz/releases/download/6.0.0/harfbuzz-6.0.0.tar.xz -o $@
-build/harfbuzz-6.0.0: build/harfbuzz-6.0.0.tar.xz
+build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz:
+	curl -L https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}/harfbuzz-${HARFBUZZ_VERSION}.tar.xz -o $@
+build/harfbuzz-${HARFBUZZ_VERSION}: build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz
 	tar xf $< -C build
-lib/libharfbuzz.a: build/harfbuzz-6.0.0 lib/libfreetype.a
-	cd $< && meson build $$MESON_CROSS -Dprefix=$$PREFIX -Ddefault_library=static -Dtests=disabled -Dc_args="-O3 $$MESON_CFLAGS" -Dcpp_args="-O3 $$MESON_CFLAGS" -Dc_link_args="-static $$MESON_LDFLAGS" -Dcpp_link_args="-static $$MESON_LDFLAGS" && meson compile -C build && ninja src/libharfbuzz.a -C build && meson install -C build && cp build/src/libharfbuzz.a ../../lib/
+lib/libharfbuzz.a: build/harfbuzz-${HARFBUZZ_VERSION} lib/libfreetype.a
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF && cmake --build build -- -j8 libharfbuzz.a && cmake --build build -- install
 
 # JPEG
 jpeg: lib/libjpeg.a
@@ -87,8 +88,7 @@ build/libjpeg-turbo-3.1.4.1.tar.gz:
 build/libjpeg-turbo-3.1.4.1: build/libjpeg-turbo-3.1.4.1.tar.gz
 	tar xzf $< -C build
 lib/libjpeg.a: build/libjpeg-turbo-3.1.4.1
-	mkdir -p build/libjpeg-turbo-3.1.4.1/build
-	cd build/libjpeg-turbo-3.1.4.1/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE .. && make jpeg-static -j8 && make install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D ENABLE_SHARED=FALSE && cmake --build build -- jpeg-static -j8 && cmake --build build -- install
 
 # libedit
 libedit: lib/libedit.a
@@ -115,7 +115,7 @@ build/openal-soft-1.24.0.tar.gz:
 build/openal-soft-1.24.0: build/openal-soft-1.24.0.tar.gz
 	tar xzf $< -C build
 $(OPENAL_LIB_NAME): build/openal-soft-1.24.0 lib/libsndfile.a lib/libz.a
-	cd build/openal-soft-1.24.0/build && cmake -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DLIBTYPE=STATIC -DALSOFT_UTILS=OFF -DALSOFT_EXAMPLES=OFF -DSNDFILE_LIBRARY=$(shell pwd)/lib/libsndfile.a -DSNDFILE_INCLUDE_DIR=$(shell pwd)/include -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include .. && env && make -j8 && make install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DLIBTYPE=STATIC -DALSOFT_UTILS=OFF -DALSOFT_EXAMPLES=OFF -DSNDFILE_LIBRARY=$(shell pwd)/lib/libsndfile.a -DSNDFILE_INCLUDE_DIR=$(shell pwd)/include -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include .. && cmake --build build -- -j8 && cmake --build build -- install
 
 # openssl
 openssl: lib/libssl.a
@@ -146,23 +146,25 @@ lib/libpng16.a: build/libpng-1.6.39 lib/libz.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
 
 # SDL
-sdl: lib/libSDL2.a
-build/SDL2-2.32.10.tar.gz:
+SDL_VERSION=3.4.12
+sdl: lib/libSDL3.a
+build/SDL3-$(SDL_VERSION).tar.gz:
 	mkdir -p build
-	curl -L https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-2.32.10.tar.gz -o $@
-build/SDL2-2.32.10: build/SDL2-2.32.10.tar.gz
+	curl -L https://github.com/libsdl-org/SDL/releases/download/release-$(SDL_VERSION)/SDL3-$(SDL_VERSION).tar.gz -o $@
+build/SDL3-$(SDL_VERSION): build/SDL3-$(SDL_VERSION).tar.gz
 	tar xzf $< -C build
-lib/libSDL2.a: build/SDL2-2.32.10
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX ${SDL_FLAGS} && make -j8 && make install
+lib/libSDL3.a: build/SDL3-$(SDL_VERSION)
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN -DSDL_SHARED=Off -DSDL_STATIC=On -DSDL_TEST_LIBRARY=Off -DSDL_AUDIO=Off -DSDL_VULKAN=Off -DSDL_LEAN_AND_MEAN=On -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON ${SDL_FLAGS} && cmake --build build -- -j8 && cmake --build build -- install
 
 # SDL_image
-sdl_image: lib/libSDL2_image.a
-build/SDL2_image-2.8.12.tar.gz:
-	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-2.8.12/SDL2_image-2.8.12.tar.gz -o $@
-build/SDL2_image-2.8.12: build/SDL2_image-2.8.12.tar.gz
+SDL_IMAGE_VERSION=3.4.4
+sdl_image: lib/libSDL3_image.a
+build/SDL3_image-$(SDL_IMAGE_VERSION).tar.gz:
+	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-$(SDL_IMAGE_VERSION)/SDL3_image-$(SDL_IMAGE_VERSION).tar.gz -o $@
+build/SDL3_image-$(SDL_IMAGE_VERSION): build/SDL3_image-$(SDL_IMAGE_VERSION).tar.gz
 	tar xzf $< -C build
-lib/libSDL2_image.a: build/SDL2_image-2.8.12 lib/libSDL2.a lib/libpng16.a lib/libjpeg.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-png-shared --disable-jpg-shared --prefix=$$PREFIX --with-sdl-prefix=$$PREFIX && make -j8 && make install
+lib/libSDL3_image.a: build/SDL3_image-$(SDL_IMAGE_VERSION) lib/libSDL3.a lib/libpng16.a lib/libjpeg.a
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN -DBUILD_SHARED_LIBS=OFF -DSDLIMAGE_SAMPLES=OFF -DSDLIMAGE_DEPS_SHARED=OFF  -DSDLIMAGE_ANI=Off -DSDLIMAGE_AVIF=Off -DSDLIMAGE_BMP=Off -DSDLIMAGE_GIF=Off -DSDLIMAGE_JXL=Off -DSDLIMAGE_LBM=Off -DSDLIMAGE_PCX=Off -DSDLIMAGE_PNM=Off -DSDLIMAGE_QOI=Off -DSDLIMAGE_SVG=Off -DSDLIMAGE_TGA=Off -DSDLIMAGE_TIF=Off -DSDLIMAGE_WEBP=Off -DSDLIMAGE_XCF=Off -DSDLIMAGE_XPM=Off -DSDLIMAGE_XV=Off -DCMAKE_INSTALL_PREFIX=$$PREFIX && cmake --build build -- -j8 && cmake --build build -- install
 
 # sndfile
 sndfile: lib/libsndfile.a
@@ -207,7 +209,7 @@ build/libzip-1.11.4.tar.gz:
 build/libzip-1.11.4: build/libzip-1.11.4.tar.gz
 	tar xzf $< -C build
 lib/libzip.a: build/libzip-1.11.4 lib/libz.a
-	cd $< && mkdir -p build && cd build && cmake $$CMAKE_TOOLCHAIN .. -DBUILD_SHARED_LIBS=Off -DENABLE_COMMONCRYPTO=Off -DENABLE_GNUTLS=Off -DENABLE_MBEDTLS=Off -DENABLE_OPENSSL=Off -DENABLE_WINDOWS_CRYPTO=Off -DENABLE_BZIP2=Off -DENABLE_LZMA=Off -DENABLE_ZSTD=Off -DBUILD_TOOLS=Off -DBUILD_REGRESS=Off -DBUILD_EXAMPLES=Off -DBUILD_DOC=Off -DCMAKE_FIND_ROOT_PATH=$$PREFIX -DCMAKE_INSTALL_PREFIX=$$PREFIX -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include && make -j8 && make install
+	cd $< && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN .. -DBUILD_SHARED_LIBS=Off -DENABLE_COMMONCRYPTO=Off -DENABLE_GNUTLS=Off -DENABLE_MBEDTLS=Off -DENABLE_OPENSSL=Off -DENABLE_WINDOWS_CRYPTO=Off -DENABLE_BZIP2=Off -DENABLE_LZMA=Off -DENABLE_ZSTD=Off -DBUILD_TOOLS=Off -DBUILD_REGRESS=Off -DBUILD_EXAMPLES=Off -DBUILD_DOC=Off -DCMAKE_FIND_ROOT_PATH=$$PREFIX -DCMAKE_INSTALL_PREFIX=$$PREFIX -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include && make -j8 && make install
 
 # ZLIB
 zlib: lib/libz.a

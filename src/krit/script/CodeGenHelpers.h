@@ -1,5 +1,7 @@
 #pragma once
 
+#if KRIT_ENABLE_SCRIPT
+
 #include <functional>
 #include <type_traits>
 #include <variant>
@@ -34,3 +36,5 @@ template <typename T> decltype(auto) access_property(T &obj) {
 }
 
 }
+
+#endif

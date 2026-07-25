@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_SCRIPT
+
 #include "ObjectHeader.h"
 
 #include "krit/utils/Log.h"
@@ -60,3 +62,5 @@ void ObjectHeader::reset() {
 }
 
 }
+
+#endif

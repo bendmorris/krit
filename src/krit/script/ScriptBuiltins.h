@@ -1,5 +1,6 @@
-#ifndef KRIT_SCRIPT_SCRIPTBUILTINS
-#define KRIT_SCRIPT_SCRIPTBUILTINS
+#pragma once
+
+#if KRIT_ENABLE_SCRIPT
 
 namespace krit {
 

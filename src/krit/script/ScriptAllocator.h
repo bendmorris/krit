@@ -1,5 +1,6 @@
-#ifndef KRIT_SCRIPTALLOCATOR
-#define KRIT_SCRIPTALLOCATOR
+#pragma once
+
+#if KRIT_ENABLE_SCRIPT
 
 #include "quickjs.h"
 #include <algorithm>

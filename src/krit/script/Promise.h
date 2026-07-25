@@ -1,5 +1,6 @@
-#ifndef KRIT_SCRIPT_PROMISE
-#define KRIT_SCRIPT_PROMISE
+#pragma once
+
+#if KRIT_ENABLE_SCRIPT
 
 #include <krit/script/ScriptValue.h>
 #include <quickjs.h>

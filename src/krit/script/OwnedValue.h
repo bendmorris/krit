@@ -1,5 +1,7 @@
 #pragma once
 
+#if KRIT_ENABLE_SCRIPT
+
 #include "quickjs.h"
 
 namespace krit {
@@ -37,3 +39,5 @@ struct OwnedValue {
 };
 
 }
+
+#endif

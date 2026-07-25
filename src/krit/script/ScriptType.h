@@ -1,5 +1,6 @@
-#ifndef KRIT_SCRIPT_SCRIPTTYPES
-#define KRIT_SCRIPT_SCRIPTTYPES
+#pragma once
+
+#if KRIT_ENABLE_SCRIPT
 
 #include <functional>
 #include <memory>

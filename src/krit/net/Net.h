@@ -1,5 +1,6 @@
-#ifndef KRIT_NET
-#define KRIT_NET
+#pragma once
+
+#if KRIT_ENABLE_NET
 
 #include "krit/script/Promise.h"
 #include <cstddef>

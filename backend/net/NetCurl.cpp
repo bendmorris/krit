@@ -21,17 +21,17 @@ struct NetCurl : public Net {
             list = curl_slist_append(list, head.c_str());
         }
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, list);
-        TaskManager::instance->push([promise, curl, list]() {
+        engine->taskManager->push([promise, curl, list]() {
             CURLcode res = curl_easy_perform(curl);
             curl_slist_free_all(list);
             if (res != CURLE_OK) {
-                TaskManager::instance->pushMain(
+                engine->taskManager->pushMain(
                     [curl, promise, res]() {
                         promise.reject(curl_easy_strerror(res));
                         curl_easy_cleanup(curl);
                     });
             } else {
-                TaskManager::instance->pushMain(
+                engine->taskManager->pushMain(
                     [curl, promise]() {
                         promise.resolve(true);
                         curl_easy_cleanup(curl);
@@ -56,17 +56,17 @@ struct NetCurl : public Net {
         curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, request.message.c_str());
         printf("Body = %s\n", request.message.c_str());
         curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
-        TaskManager::instance->push([promise, curl, list]() {
+        engine->taskManager->push([promise, curl, list]() {
             CURLcode res = curl_easy_perform(curl);
             curl_slist_free_all(list);
             if (res != CURLE_OK) {
-                TaskManager::instance->pushMain(
+                engine->taskManager->pushMain(
                     [curl, promise, res]() {
                         promise.reject(curl_easy_strerror(res));
                         curl_easy_cleanup(curl);
                     });
             } else {
-                TaskManager::instance->pushMain(
+                engine->taskManager->pushMain(
                     [curl, promise]() {
                         promise.resolve(true);
                         curl_easy_cleanup(curl);

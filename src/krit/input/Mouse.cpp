@@ -5,6 +5,7 @@ namespace krit {
 
 void MouseContext::registerMouseState(InputContext *ctx, MouseButton btn,
                                       int state) {
+    active[btn] = !!state;
     Action action = mappings[btn];
     if (action) {
         ctx->addEvent(action, state);

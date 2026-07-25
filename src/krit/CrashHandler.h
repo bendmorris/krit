@@ -1,5 +1,4 @@
-#ifndef KRIT_CRASHHANDLER
-#define KRIT_CRASHHANDLER
+#pragma once
 
 namespace krit {
 
@@ -9,5 +8,3 @@ struct CrashHandler {
 };
 
 }
-
-#endif

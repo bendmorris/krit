@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_TEXT
+
 #include "krit/asset/Font.h"
 #include "harfbuzz/hb.h"
 #include "krit/Engine.h"
@@ -280,3 +282,5 @@ void GlyphCache::commitChanges() {
 template <> bool AssetLoader<Font>::assetIsReady(Font *img) { return true; }
 
 }
+
+#endif

@@ -8,13 +8,13 @@
 #include "krit/render/DrawCommand.h"
 #include "krit/render/Gl.h"
 #include "krit/render/RenderContext.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_video.h>
 #include <stddef.h>
 #include <vector>
 
-#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
+#define BUFFER_OFFSET(bytes) ((GLubyte *)NULL + (bytes))
 
 namespace krit {
 struct SpriteShader;
@@ -25,7 +25,7 @@ struct Renderer {
 
     DrawCommandBuffer drawCommandBuffer;
 
-    Renderer(Window &window);
+    Renderer(Window &window, bool block);
     ~Renderer();
 
     void renderFrame(RenderContext &ctx);
@@ -45,6 +45,10 @@ private:
     Window &window;
     Camera *currentCamera = nullptr;
     FrameBuffer *currentRenderTarget = nullptr;
+
+    SpriteShader *defaultTextureSpriteShader{nullptr};
+    SpriteShader *defaultColorSpriteShader{nullptr};
+    SpriteShader *defaultTextSpriteShader{nullptr};
 
     int width = 0;
     int height = 0;

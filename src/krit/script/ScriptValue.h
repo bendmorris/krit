@@ -1,5 +1,7 @@
 #pragma once
 
+#if KRIT_ENABLE_SCRIPT
+
 #include "krit/script/ObjectHeader.h"
 #include "krit/script/ScriptClass.h"
 #include "krit/script/ScriptType.h"
@@ -389,3 +391,5 @@ template <typename T> struct TypeConverter<std::optional<T>> {
 
 // make sure we include the ScriptEngine-dependent specializations as well
 #include "krit/script/ScriptEngine.h"
+
+#endif

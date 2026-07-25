@@ -2,7 +2,7 @@
 #define KRIT_INPUT_KEY
 
 #include "krit/UpdateContext.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <array>
 #include <cstring>
 #include <string>
@@ -250,16 +250,12 @@ enum class KeyCode {
     RAlt = SDL_SCANCODE_RALT,
     RGUI = SDL_SCANCODE_RGUI,
     Mode = SDL_SCANCODE_MODE,
-    AudioNext = SDL_SCANCODE_AUDIONEXT,
-    AudioPrev = SDL_SCANCODE_AUDIOPREV,
-    AudioStop = SDL_SCANCODE_AUDIOSTOP,
-    AudioPlay = SDL_SCANCODE_AUDIOPLAY,
-    AudioMute = SDL_SCANCODE_AUDIOMUTE,
-    MediaSelect = SDL_SCANCODE_MEDIASELECT,
-    WWW = SDL_SCANCODE_WWW,
-    Mail = SDL_SCANCODE_MAIL,
-    Calculator = SDL_SCANCODE_CALCULATOR,
-    Computer = SDL_SCANCODE_COMPUTER,
+    MediaNext = SDL_SCANCODE_MEDIA_NEXT_TRACK,
+    MediaPrev = SDL_SCANCODE_MEDIA_PREVIOUS_TRACK,
+    MediaStop = SDL_SCANCODE_MEDIA_STOP,
+    MediaPlay = SDL_SCANCODE_MEDIA_PLAY,
+    MediaMute = SDL_SCANCODE_MUTE,
+    MediaSelect = SDL_SCANCODE_MEDIA_SELECT,
     ACSearch = SDL_SCANCODE_AC_SEARCH,
     ACHome = SDL_SCANCODE_AC_HOME,
     ACBack = SDL_SCANCODE_AC_BACK,
@@ -267,16 +263,6 @@ enum class KeyCode {
     ACStop = SDL_SCANCODE_AC_STOP,
     ACRefresh = SDL_SCANCODE_AC_REFRESH,
     ACBookmarks = SDL_SCANCODE_AC_BOOKMARKS,
-    BrightnessDown = SDL_SCANCODE_BRIGHTNESSDOWN,
-    BrightnessUp = SDL_SCANCODE_BRIGHTNESSUP,
-    DisplaySwitch = SDL_SCANCODE_DISPLAYSWITCH,
-    KBDIllumToggle = SDL_SCANCODE_KBDILLUMTOGGLE,
-    KBDIllumDown = SDL_SCANCODE_KBDILLUMDOWN,
-    KBDIllumUp = SDL_SCANCODE_KBDILLUMUP,
-    Eject = SDL_SCANCODE_EJECT,
-    Sleep = SDL_SCANCODE_SLEEP,
-    App1 = SDL_SCANCODE_APP1,
-    App2 = SDL_SCANCODE_APP2,
 };
 
 struct KeyEvent {

@@ -1,7 +1,7 @@
 #ifndef KRIT_UTILS_BROWSER
 #define KRIT_UTILS_BROWSER
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 namespace krit {
 

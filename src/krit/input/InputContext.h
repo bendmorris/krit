@@ -87,7 +87,24 @@ struct InputContext {
         this->mouse.define(btn, action);
     }
     void registerMousePos(int x, int y) { mouse.registerPos(x, y); }
-    void registerMouseOver(bool over) { mouse.registerOver(over); }
+    void registerMouseOver(bool over) {
+        mouse.registerOver(over);
+        if (over) {
+            // prevent mouse state from getting stuck by checking the mouse
+            // state explicitly when the mouse comes back; capturing it
+            // doesn't seem to work reliably
+            auto state = SDL_GetGlobalMouseState(nullptr, nullptr);
+            if (!(state & SDL_BUTTON_LEFT) && mouse.active[MouseButton::MouseLeft]) {
+                mouseUp(MouseButton::MouseLeft);
+            }
+            if (!(state & SDL_BUTTON_RIGHT) && mouse.active[MouseButton::MouseRight]) {
+                mouseUp(MouseButton::MouseRight);
+            }
+            if (!(state & SDL_BUTTON_MIDDLE) && mouse.active[MouseButton::MouseMiddle]) {
+                mouseUp(MouseButton::MouseMiddle);
+            }
+        }
+    }
 };
 
 }

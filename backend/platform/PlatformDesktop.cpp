@@ -1,5 +1,7 @@
 #include "krit/platform/Platform.h"
+#if KRIT_ENABLE_DIALOGS
 #include "tinyfiledialogs.h"
+#endif
 
 namespace krit {
 
@@ -61,6 +63,7 @@ struct PlatformDesktop : public Platform {
 #endif
     }
 
+#if KRIT_ENABLE_DIALOGS
     std::optional<std::string>
     saveFileDialog(const std::string &title,
                    std::vector<std::string> filters) override {
@@ -86,6 +89,7 @@ struct PlatformDesktop : public Platform {
             title.c_str(), "", filterPtrs.size(), &filterPtrs[0], desc, 0);
         return result ? std::optional<std::string>(result) : std::nullopt;
     }
+#endif
 };
 
 std::unique_ptr<Platform> platform() {

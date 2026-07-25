@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_AUDIO
+
 #include "krit/audio/AudioSource.h"
 #include "krit/Engine.h"
 #include "krit/audio/AudioBackend.h"
@@ -404,3 +406,5 @@ void LayeredAudioSource::setHighpass(float v) {
 }
 
 }
+
+#endif

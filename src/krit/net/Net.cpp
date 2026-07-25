@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_NET
+
 #include "Net.h"
 #include "krit/Engine.h"
 
@@ -7,3 +9,5 @@ Promise NetRequest::get() { return engine->net->get(*this); }
 Promise NetRequest::post() { return engine->net->post(*this); }
 
 }
+
+#endif

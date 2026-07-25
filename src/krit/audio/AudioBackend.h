@@ -1,5 +1,6 @@
-#ifndef KRIT_BACKEND
-#define KRIT_BACKEND
+#pragma once
+
+#if KRIT_ENABLE_AUDIO
 
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"

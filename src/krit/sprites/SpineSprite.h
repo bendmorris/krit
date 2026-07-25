@@ -1,5 +1,6 @@
-#ifndef KRIT_SPRITES_SPINESPRITE
-#define KRIT_SPRITES_SPINESPRITE
+#pragma once
+
+#if KRIT_ENABLE_SPINE
 
 #include <memory>
 #include <stddef.h>

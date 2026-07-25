@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_TEXT
+
 #include "krit/sprites/Text.h"
 #include "harfbuzz/hb.h"
 #include "krit/Camera.h"
@@ -981,3 +983,5 @@ void Text::setFont(const std::string &fontName) {
 }
 
 }
+
+#endif

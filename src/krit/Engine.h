@@ -5,19 +5,28 @@
 #include "krit/Options.h"
 #include "krit/Window.h"
 #include "krit/asset/AssetCache.h"
-#include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/io/Io.h"
 #include "krit/math/Dimensions.h"
-#include "krit/net/Net.h"
 #include "krit/platform/Platform.h"
 #include "krit/render/Renderer.h"
-#include "krit/script/ScriptEngine.h"
-#include "krit/audio/AudioBackend.h"
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Signal.h"
+#if KRIT_ENABLE_TEXT
+#include "krit/asset/Font.h"
+#endif
+#if KRIT_ENABLE_AUDIO
+#include "krit/audio/AudioBackend.h"
+#endif
+#if KRIT_ENABLE_NET
+#include "krit/net/Net.h"
+#endif
+#if KRIT_ENABLE_SCRIPT
+#include "krit/script/ScriptEngine.h"
+#endif
 #include <chrono>
+#include <list>
 #include <string>
 
 namespace krit {
@@ -58,30 +67,43 @@ struct Engine {
 
     bool isRenderPhase() { return phase == FramePhase::Render; }
 
-private:
-    struct EngineScope {
-        EngineScope(Engine *);
-        ~EngineScope();
+    struct Scope {
+        Scope(Engine *);
+        ~Scope();
+        Engine *prev{nullptr};
     };
 
-    EngineScope _scope;
+    Scope scope() { return Scope(this); }
 
 public:
+    Io *io = ioFile;
+
     // backends
-    std::unique_ptr<Io> io;
-    std::unique_ptr<Net> net;
     std::unique_ptr<Platform> platform;
+#if KRIT_ENABLE_NET
+    std::unique_ptr<Net> net;
+#endif
 
     RenderContext ctx;
     Window window;
     Renderer renderer;
-    FontManager fonts;
-    AudioBackend audio;
     InputContext input;
     AssetCache assets;
+
+#if KRIT_ENABLE_TEXT
+    FontManager fonts;
+#endif
+#if KRIT_ENABLE_AUDIO
+    AudioBackend audio;
+#endif
+#if KRIT_ENABLE_SCRIPT
     ScriptEngine script;
+#endif
+
+#if KRIT_ENABLE_CURSORS
     std::unordered_map<std::string, std::vector<std::pair<int, SDL_Cursor *>>>
         cursors;
+#endif
 
     FramePhase phase = FramePhase::Inactive;
     int fixedFramerate = 0;
@@ -103,7 +125,9 @@ public:
     Engine(KritOptions &options);
     ~Engine();
 
-    JSValue scriptContext { JS_UNDEFINED };
+#if KRIT_ENABLE_SCRIPT
+    JSValue scriptContext{JS_UNDEFINED};
+#endif
 
     RenderContext &renderCtx() {
         if (phase != FramePhase::Render) {
@@ -113,8 +137,10 @@ public:
         return ctx;
     }
 
+    void start();
+    bool runFrame();
+
     void run();
-    bool doFrame();
 
     /**
      * Ends the run() loop.
@@ -134,7 +160,7 @@ public:
 
     std::string cursor;
 
-    bool useSystemFullScreen{false};
+    bool block{true};
 
     void update();
     void fixedUpdate();
@@ -162,6 +188,8 @@ public:
     DECLARE_ASSET_GETTER(Particle, ParticleEffect)
 #undef DECLARE_ASSET_GETTER
 
+    std::unique_ptr<TaskManager> taskManager;
+
 private:
     std::chrono::steady_clock clock;
     std::chrono::steady_clock::time_point appStart, frameStart, frameFinish;
@@ -169,12 +197,16 @@ private:
     int32_t accumulator = 0, elapsed = 0;
     // microseconds per frame, at framerate and framerate+2
     int32_t frameDelta, frameDelta2;
-    TaskManager *taskManager = nullptr;
+#if KRIT_ENABLE_CURSORS
     SDL_Cursor *_cursor = nullptr;
+#endif
 
     void handleEvents();
     void cleanup();
+
+#if KRIT_ENABLE_CURSORS
     void chooseCursor();
+#endif
 
     friend struct Editor;
     friend struct Renderer;

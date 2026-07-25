@@ -1,3 +1,5 @@
+#if KRIT_MAIN
+
 #define SDL_MAIN_HANDLED
 #include "krit/Engine.h"
 #include "krit/Options.h"
@@ -58,6 +60,8 @@ void gameMain(int argc, char *argv[]) {
 
     _engine->onBegin = [&]() {
         auto &engine = *_engine;
+
+#if KRIT_ENABLE_SCRIPT
         auto &script = engine.script;
         auto &jsCtx = script.ctx;
 
@@ -66,9 +70,9 @@ void gameMain(int argc, char *argv[]) {
             JS_SetPropertyStr(
                 jsCtx, global, "frame",
                 TypeConverter<UpdateContext *>::valueToJs(jsCtx, &frame));
-            JS_SetPropertyStr(jsCtx, global, "render",
-                              TypeConverter<RenderContext *>::valueToJs(
-                                  jsCtx, &engine.ctx));
+            JS_SetPropertyStr(
+                jsCtx, global, "render",
+                TypeConverter<RenderContext *>::valueToJs(jsCtx, &engine.ctx));
             JS_FreeValue(jsCtx, global);
         }
         {
@@ -135,6 +139,7 @@ void gameMain(int argc, char *argv[]) {
                 JS_FreeValue(jsCtx, target);
             }
         }
+#endif
         {
             // parse log areas
             for (auto &l : options.logAreas) {
@@ -190,6 +195,7 @@ void gameMain(int argc, char *argv[]) {
         engine.cameras.resize(options.cameras.size());
         gameBootstrap(engine);
 
+#if KRIT_ENABLE_SCRIPT
         for (auto &filename : options.jsFiles) {
             std::shared_ptr<std::string> contents = engine.getText(filename);
             engine.script.eval(filename.c_str(), contents->data(),
@@ -233,6 +239,7 @@ void gameMain(int argc, char *argv[]) {
                 }
             }
         }
+#endif
     };
 
     _engine->run();
@@ -250,3 +257,5 @@ int main(int argc, char *argv[]) {
     krit::gameMain(argc, argv);
     return 0;
 }
+
+#endif

@@ -1,3 +1,7 @@
+#pragma once
+
+#if (KRIT_ENABLE_SCRIPT && KRIT_ENABLE_SQLITE)
+
 #include "../script/ScriptEngine.h"
 #include <memory>
 #include <optional>
@@ -57,3 +61,5 @@ private:
 };
 
 }
+
+#endif

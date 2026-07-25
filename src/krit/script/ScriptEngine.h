@@ -1,5 +1,7 @@
 #pragma once
 
+#if KRIT_ENABLE_SCRIPT
+
 #include "krit/script/ObjectHeader.h"
 #include "krit/script/OwnedValue.h"
 #include "krit/script/ScriptValue.h"
@@ -399,3 +401,5 @@ template <typename... Args> struct TypeConverter<std::function<void(Args...)>> {
 };
 
 }
+
+#endif

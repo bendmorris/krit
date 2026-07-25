@@ -1,5 +1,4 @@
-#ifndef KRIT_CAMERA
-#define KRIT_CAMERA
+#pragma once
 
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
@@ -73,4 +72,3 @@ struct Camera {
 };
 
 }
-#endif

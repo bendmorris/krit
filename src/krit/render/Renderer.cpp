@@ -21,7 +21,7 @@
 #include "krit/utils/Color.h"
 #include "krit/utils/Panic.h"
 #include "krit/utils/Profiling.h"
-#include <SDL2/SDL_error.h>
+#include <SDL3/SDL_error.h>
 #include <algorithm>
 #include <cassert>
 #include <memory>
@@ -29,14 +29,6 @@
 #include <utility>
 
 namespace krit {
-
-namespace {
-
-SpriteShader *defaultTextureSpriteShader;
-SpriteShader *defaultColorSpriteShader;
-SpriteShader *defaultTextSpriteShader;
-
-}
 
 void Renderer::setSmoothingMode(SmoothingMode mode, ImageData *img) {
     if (currentRenderTarget && !currentRenderTarget->allowSmoothing) {
@@ -164,12 +156,14 @@ SpriteShader *Renderer::getDefaultTextShader() {
 
 Matrix4 _ortho;
 
-Renderer::Renderer(Window &_window) : window(_window) {
+Renderer::Renderer(Window &_window, bool block) : window(_window) {
     checkForGlErrors("context");
-#ifndef __EMSCRIPTEN__
-    SDL_GL_SetSwapInterval(1);
-    checkForGlErrors("swap interval");
+#if KRIT_NO_VSYNC
+    SDL_GL_SetSwapInterval(0);
+#else
+    SDL_GL_SetSwapInterval(block ? 1 : 0);
 #endif
+    checkForGlErrors("swap interval");
     glEnable(GL_BLEND);
     checkForGlErrors("blend");
     glDisable(GL_DEPTH_TEST);
@@ -195,7 +189,7 @@ Renderer::Renderer(Window &_window) : window(_window) {
 
 #if KRIT_ENABLE_TOOLS
     ImGui::CreateContext();
-    ImGui_ImplSDL2_InitForOpenGL(window.window, window.glContext);
+    ImGui_ImplSDL3_InitForOpenGL(window.window, window.glContext);
     ImGui_ImplOpenGL3_Init(nullptr);
     checkForGlErrors("imgui init");
 
@@ -390,7 +384,7 @@ void Renderer::drawCall<RenderImGui, ImDrawData *>(RenderContext &ctx,
 #if KRIT_ENABLE_TOOLS
     if (drawData) {
         ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(engine->window.window);
+        ImGui_ImplSDL3_NewFrame(engine->window.window);
         ImGui_ImplOpenGL3_RenderDrawData(drawData);
     }
 #endif
@@ -476,6 +470,8 @@ void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
 
 void Renderer::renderFrame(RenderContext &ctx) {
     ProfileZone("Renderer::renderFrame");
+
+    SDL_GL_MakeCurrent(window.window, window.glContext);
 
     clear(ctx);
     checkForGlErrors("start frame");
@@ -623,8 +619,7 @@ void Renderer::setSize(RenderContext &ctx, bool sceneShader) {
     if (currentRenderTarget) {
         glViewport(0, 0, width / scale.x, height / scale.y);
     } else {
-        glViewport(ctx.camera->offset.x, ctx.camera->offset.y, width,
-                   height);
+        glViewport(ctx.camera->offset.x, ctx.camera->offset.y, width, height);
     }
 
     // _ortho.translate(1.0, 1.0);

@@ -19,13 +19,15 @@ struct RenderContext;
 Shader::~Shader() {
     GLuint program = this->program;
     if (program) {
-        TaskManager::instance->pushRender(
+        engine->taskManager->pushRender(
             [program]() { glDeleteProgram(program); });
     }
 }
 
 void Shader::init() {
     if (!this->program) {
+        LOG_DEBUG("init shader");
+
         GLint status;
 
         GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
@@ -103,6 +105,9 @@ void Shader::init() {
             // printf("%s = %i\n", name, location);
         }
         checkForGlErrors("uniform info");
+
+        LOG_DEBUG("vertex=%zu fragment=%zu program=%zu", vertexShader,
+                  fragmentShader, program);
     }
 }
 
@@ -113,8 +118,10 @@ size_t Shader::stride() { return sizeof(VertexData); }
 void Shader::bind() {
     this->init();
     checkForGlErrors("shader init");
+    LOG_DEBUG("useProgram program=%zu", program);
     glUseProgram(this->program);
-    checkForGlErrors("glUseProgram");
+    checkForGlErrors("glUseProgram %s %s", vertexSource.c_str(),
+                     fragmentSource.c_str());
 
     size_t stride = this->stride();
     bool hasTexCoord = texCoordIndex > -1;

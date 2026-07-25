@@ -11,10 +11,8 @@ endif()
 
 # engine
 
-set(KRIT_DIR "${CMAKE_SOURCE_DIR}/../..")
-set(KRIT_INCLUDE_PATHS ${CMAKE_SOURCE_DIR}/src)
 set(KRIT_ENABLE_TOOLS ON)
-include(${KRIT_DIR}/CMakeLists.txt)
+include(../../CMakeLists.txt)
 
 # editor
 

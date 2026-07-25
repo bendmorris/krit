@@ -1,5 +1,7 @@
 #pragma once
 
+#if KRIT_ENABLE_SCRIPT
+
 #include "quickjs.h"
 #include <cassert>
 #include <memory>
@@ -66,3 +68,5 @@ private:
 };
 
 }
+
+#endif

@@ -14,6 +14,7 @@
 namespace krit {
 
 struct RenderContext;
+struct TaskManager;
 
 using AsyncTask = std::function<void(void)>;
 
@@ -22,8 +23,9 @@ using AsyncTask = std::function<void(void)>;
 struct AsyncQueue {
     SDL_mutex *lock;
     SDL_cond *available;
+    TaskManager *t;
 
-    AsyncQueue() {
+    AsyncQueue(TaskManager *t) : taskManager(t) {
         lock = SDL_CreateMutex();
         available = SDL_CreateCond();
     }
@@ -56,10 +58,14 @@ private:
 #else
 
 struct AsyncQueue {
+    TaskManager *taskManager;
+
     size_t size() { return queue.size(); }
     void push(AsyncTask job) { queue.push(job); }
 
     bool pop(AsyncTask *to);
+
+    AsyncQueue(TaskManager *t) : taskManager(t) {}
 
 private:
     std::queue<AsyncTask> queue;
@@ -68,8 +74,6 @@ private:
 #endif
 
 struct TaskManager {
-    static TaskManager *instance;
-
     /**
      * Used only by the main/render threads who are the only owners of their
      * work queues. Not safe when multiple threads may perform work.
@@ -97,8 +101,13 @@ struct TaskManager {
 
     bool killed = false;
 
-    TaskManager(size_t size) : size(size) {
-        instance = this;
+    TaskManager(size_t size)
+        : size(size), mainQueue(this), renderQueue(this)
+#if KRIT_ENABLE_THREADS
+          ,
+          workQueue(this)
+#endif
+    {
 #if KRIT_ENABLE_THREADS
         threads = new SDL_Thread *[size];
         for (size_t i = 0; i < size; ++i) {

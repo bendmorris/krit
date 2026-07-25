@@ -1,5 +1,5 @@
-#ifndef KRIT_L12N_TEXTMAP
-#define KRIT_L12N_TEXTMAP
+#ifndef KRIT_L10N_TEXTMAP
+#define KRIT_L10N_TEXTMAP
 
 #include <memory>
 #include <string>

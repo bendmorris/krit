@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_SCRIPT
+
 #include "krit/Engine.h"
 #include "krit/asset/TextureAtlas.h"
 #include "krit/io/Io.h"
@@ -261,3 +263,5 @@ static int64_t get_time_ns(void) {
 JS_FUNC(now) { return JS_NewFloat64(ctx, (double)get_time_ns() / 1e6); }
 
 }
+
+#endif

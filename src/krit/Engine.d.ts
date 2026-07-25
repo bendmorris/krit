@@ -12,7 +12,7 @@ declare class Engine {
     // elapsed: number;
     totalElapsed: number;
     bgColor: Color;
-    useSystemFullScreen: boolean;
+    : boolean;
 
     cameras: Array<Camera>;
     addCursor(path: string, name: string, /** @defaultValue 0 */ resolution?: number, /** @defaultValue 0 */ x?: number, /** @defaultValue 0 */ y?: number): void;

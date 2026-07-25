@@ -1,15 +1,13 @@
-#include "krit/TaskManager.h"
+#include "TaskManager.h"
 
 namespace krit {
-
-TaskManager *TaskManager::instance = nullptr;
 
 #if KRIT_ENABLE_THREADS
 bool AsyncQueue::pop(AsyncTask *to) {
     bool result = false;
     SDL_LockMutex(lock);
     SDL_CondWaitTimeout(available, lock, 1);
-    if (TaskManager::instance->killed) {
+    if (taskManager->killed) {
         SDL_UnlockMutex(lock);
         return false;
     }
@@ -40,7 +38,7 @@ void TaskManager::workerLoop() {
     while (true) {
         AsyncTask job;
         bool popped = workQueue.pop(&job);
-        if (TaskManager::instance->killed) {
+        if (killed) {
             break;
         }
         if (popped) {

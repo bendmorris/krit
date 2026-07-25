@@ -24,7 +24,8 @@ struct Io {
     virtual std::vector<std::string> readDir(const std::filesystem::path &path) = 0;
 };
 
-std::unique_ptr<Io> io();
+extern Io *ioFile;
+extern Io *ioZip;
 
 }
 

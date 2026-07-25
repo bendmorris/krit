@@ -1,4 +1,4 @@
-#include "CrashHandler.h"
+#include "krit/CrashHandler.h"
 #include "krit/Engine.h"
 #include <csignal>
 #include <cstdlib>
@@ -63,6 +63,7 @@ static void errorHandler(const char *fmt, ...) {
         fflush(errorLog);
     }
 #endif
+#if KRIT_ENABLE_SCRIPT
     if (engine && engine->script.ctx) {
         engine->script.dumpBacktrace(errorLog);
         if (!JS_IsUndefined(engine->scriptContext)) {
@@ -76,6 +77,7 @@ static void errorHandler(const char *fmt, ...) {
             JS_FreeCString(engine->script.ctx, s);
         }
     }
+#endif
     fclose(errorLog);
     if (errorLog != stderr) {
         FILE *f = fopen("crash.log", "r");

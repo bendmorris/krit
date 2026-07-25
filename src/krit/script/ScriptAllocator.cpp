@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_SCRIPT
+
 #include "ScriptAllocator.h"
 
 namespace krit {
@@ -8,3 +10,5 @@ BlockAllocator<256> ScriptAllocator::a3(2);
 BlockAllocator<1024> ScriptAllocator::a4(3);
 
 }
+
+#endif

@@ -1,5 +1,6 @@
-#ifndef KRIT_AUDIO_AUDIOSOURCE
-#define KRIT_AUDIO_AUDIOSOURCE
+#pragma once
+
+#if KRIT_ENABLE_AUDIO
 
 #include "krit/audio/AudioData.h"
 #include "krit/math/Vec.h"

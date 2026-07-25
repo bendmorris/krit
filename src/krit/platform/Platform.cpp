@@ -1,6 +1,6 @@
 #include "Platform.h"
 #include "krit/utils/Panic.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <cstring>
 #include <filesystem>
 #include <fstream>

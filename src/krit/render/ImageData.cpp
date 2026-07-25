@@ -7,7 +7,7 @@ namespace krit {
 
 ImageData::ImageData(uint8_t *data, size_t width, size_t height)
     : dimensions(width, height) {
-    TaskManager::instance->pushRender([this, data]() {
+    engine->taskManager->pushRender([this, data]() {
         int width = this->dimensions.x, height = this->dimensions.y;
         LOG_DEBUG("callback: create image data (%ix%i)", width, height);
         // upload texture
@@ -33,7 +33,7 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
 ImageData::~ImageData() {
     if (engine && engine->running && texture && owned) {
         GLuint tex = this->texture;
-        TaskManager::instance->pushRender([tex]() {
+        engine->taskManager->pushRender([tex]() {
             LOG_DEBUG("callback: destroy image data");
             glDeleteTextures(1, &tex);
         });

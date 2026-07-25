@@ -1,5 +1,6 @@
-#ifndef KRIT_SCRIPT_SCRIPTCLASS
-#define KRIT_SCRIPT_SCRIPTCLASS
+#pragma once
+
+#if KRIT_ENABLE_SCRIPT
 
 #include <quickjs.h>
 

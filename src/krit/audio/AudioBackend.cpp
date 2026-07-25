@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_AUDIO
+
 #include "krit/audio/AudioBackend.h"
 #include "krit/Engine.h"
 #include "krit/audio/AudioData.h"
@@ -362,3 +364,5 @@ void AudioBackend::play(std::shared_ptr<AudioSource> source) {
 }
 
 }
+
+#endif

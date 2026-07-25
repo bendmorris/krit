@@ -3,19 +3,19 @@
 #include "krit/TaskManager.h"
 #include "krit/render/Gl.h"
 #include "krit/utils/Panic.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_error.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_mouse.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_video.h>
+#include <SDL3_image/SDL_image.h>
 
 namespace krit {
 
 Window::Window(KritOptions &options)
     : fullScreenDimensions(options.fullscreenWidth, options.fullscreenHeight) {
     SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-    if (SDL_Init(SDL_INIT_VIDEO)) {
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
         panic("SDL init failed: %s", SDL_GetError());
     }
 
@@ -27,7 +27,7 @@ Window::Window(KritOptions &options)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 #endif
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -43,9 +43,14 @@ Window::Window(KritOptions &options)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
                         SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG);
 
-    window = SDL_CreateWindow(
-        options.title.c_str(), SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-        options.width, options.height, SDL_WINDOW_SHOWN | SDL_WINDOW_OPENGL);
+    if (options.windowProperties) {
+        SDL_SetBooleanProperty(options.windowProperties,
+                               "SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN", true);
+        window = SDL_CreateWindowWithProperties(options.windowProperties);
+    } else {
+        window = SDL_CreateWindow(options.title.c_str(), options.width,
+                                  options.height, SDL_WINDOW_OPENGL);
+    }
     if (!window) {
         panic("SDL_CreateWindow failed: %s", SDL_GetError());
     }
@@ -59,16 +64,17 @@ Window::Window(KritOptions &options)
         this->setFullScreen(true);
     }
 
-    int x, y, wx, wy;
+    float x, y;
+    int wx, wy;
     SDL_GetGlobalMouseState(&x, &y);
     SDL_GetWindowPosition(this->window, &wx, &wy);
     SDL_WarpMouseInWindow(this->window, x - wx, y - wy);
-    SDL_StopTextInput();
+    SDL_StopTextInput(window);
 }
 
 Window::~Window() {
     if (this->glContext) {
-        SDL_GL_DeleteContext(this->glContext);
+        SDL_GL_DestroyContext(this->glContext);
     }
     if (window) {
         SDL_DestroyWindow(window);
@@ -77,7 +83,7 @@ Window::~Window() {
 }
 
 void Window::setFullScreen(bool full) {
-    TaskManager::instance->pushMain([=]() {
+    engine->taskManager->pushMain([=]() {
         if (this->full != full) {
             if ((this->full = full)) {
                 // SDL_DisplayMode mode;
@@ -88,10 +94,7 @@ void Window::setFullScreen(bool full) {
                 //     mode.h = fullScreenDimensions.y;
                 // }
                 // SDL_SetWindowDisplayMode(window, &mode);
-                SDL_SetWindowFullscreen(window,
-                                        engine->useSystemFullScreen
-                                            ? SDL_WINDOW_FULLSCREEN
-                                            : SDL_WINDOW_FULLSCREEN_DESKTOP);
+                SDL_SetWindowFullscreen(window, SDL_WINDOW_FULLSCREEN);
             } else {
                 SDL_SetWindowFullscreen(window, 0);
             }
@@ -101,5 +104,9 @@ void Window::setFullScreen(bool full) {
         }
     });
 }
+
+void Window::show() { SDL_ShowWindow(window); }
+
+void Window::hide() { SDL_HideWindow(window); }
 
 }

@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_AUDIO
+
 #include "krit/audio/AudioData.h"
 #include "krit/Engine.h"
 #include "krit/asset/AssetLoader.h"
@@ -111,3 +113,5 @@ template <> bool AssetLoader<AudioData>::assetIsReady(AudioData *a) {
 }
 
 }
+
+#endif

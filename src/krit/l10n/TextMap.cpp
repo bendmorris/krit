@@ -1,4 +1,4 @@
-#include "krit/l12n/TextMap.h"
+#include "krit/l10n/TextMap.h"
 #include "krit/asset/AssetLoader.h"
 #include "krit/utils/Log.h"
 #include <cstring>

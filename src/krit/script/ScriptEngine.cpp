@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_SCRIPT
+
 #include "krit/script/ScriptEngine.h"
 #include "krit/script/ObjectHeader.h"
 #include "krit/script/ScriptAllocator.h"
@@ -256,3 +258,5 @@ void ScriptEngine::setCachedInstance(int classId, const void *p, JSValue val) {
 }
 
 }
+
+#endif

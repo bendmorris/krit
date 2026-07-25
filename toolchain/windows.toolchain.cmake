@@ -23,4 +23,4 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-link_directories(${CMAKE_SOURCE_DIR}/krit/toolchain/windows/bin)
+link_directories(${CMAKE_CURRENT_LIST_DIR}/windows/bin)

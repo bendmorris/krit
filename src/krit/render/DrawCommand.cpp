@@ -1,5 +1,7 @@
 #include "krit/render/DrawCommand.h"
+#if KRIT_ENABLE_TOOLS
 #include "imgui.h"
+#endif
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
 #include "krit/render/ImageData.h"

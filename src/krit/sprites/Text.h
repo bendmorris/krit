@@ -1,5 +1,6 @@
-#ifndef KRIT_SPRITES_TEXT
-#define KRIT_SPRITES_TEXT
+#pragma once
+
+#if KRIT_ENABLE_TEXT
 
 #include "krit/Sprite.h"
 #include "krit/asset/Font.h"

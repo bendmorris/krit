@@ -1,5 +1,6 @@
-#ifndef KRIT_ASSET_FONT
-#define KRIT_ASSET_FONT
+#pragma once
+
+#if KRIT_ENABLE_TEXT
 
 #include "krit/asset/AssetLoader.h"
 #include "krit/math/Point.h"

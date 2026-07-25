@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_SPINE
+
 #include "krit/sprites/SpineSprite.h"
 #include "krit/Engine.h"
 #include "krit/UpdateContext.h"
@@ -296,3 +298,5 @@ std::vector<std::string> SpineSprite::animationNames() {
 }
 
 }
+
+#endif

@@ -1,9 +1,10 @@
 #ifndef KRIT_OPTIONS
 #define KRIT_OPTIONS
 
+#include "krit/utils/Log.h"
+#include <SDL3/SDL.h>
 #include <string>
 #include <vector>
-#include "krit/utils/Log.h"
 
 namespace krit {
 
@@ -13,16 +14,20 @@ namespace krit {
 struct KritOptions {
     std::string programName;
     std::string title;
-    int width { 320 };
-    int height { 240 };
-    int fullscreenWidth { -1 };
-    int fullscreenHeight { -1 };
-    bool fullscreen { false };
-    int fixedFramerate { 60 };
-    void *userData { nullptr };
-    std::vector<const char*> cameras;
+    int width{320};
+    int height{240};
+    int fullscreenWidth{-1};
+    int fullscreenHeight{-1};
+    bool fullscreen{false};
+    bool block{true};
+    int fixedFramerate{60};
+    void *userData{nullptr};
+    SDL_PropertiesID windowProperties{0};
+    std::vector<const char *> cameras;
+#if KRIT_ENABLE_SCRIPT
     std::vector<std::string> jsFiles;
-    LogLevel logLevel { LogLevel::Error };
+#endif
+    LogLevel logLevel{LogLevel::Error};
     std::vector<std::string> features;
     std::vector<std::string> logAreas;
 
@@ -58,10 +63,12 @@ struct KritOptions {
         cameras.push_back(renderExport);
         return *this;
     }
+#if KRIT_ENABLE_SCRIPT
     KritOptions &addJs(std::string &&filename) {
         jsFiles.push_back(filename);
         return *this;
     }
+#endif
 };
 
 }

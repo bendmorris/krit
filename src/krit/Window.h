@@ -3,9 +3,9 @@
 
 #include "krit/Options.h"
 #include "krit/math/Dimensions.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_surface.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_surface.h>
+#include <SDL3/SDL_video.h>
 
 namespace krit {
 
@@ -40,8 +40,16 @@ struct Window : public IntDimensions {
         SDL_GetWindowSize(this->window, &x, &y);
     }
 
-private:
+    void setWindowPos(int x, int y) {
+        SDL_SetWindowPosition(window, x, y);
+    }
+
+    void show();
+    void hide();
+
     SDL_Window *window = nullptr;
+
+private:
     SDL_Surface *surface = nullptr;
     SDL_GLContext glContext;
     IntDimensions fullScreenDimensions;

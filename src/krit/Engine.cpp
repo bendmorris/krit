@@ -7,7 +7,6 @@
 #include "krit/CrashHandler.h"
 #include "krit/Options.h"
 #include "krit/TaskManager.h"
-#include "krit/asset/Font.h"
 #include "krit/input/InputContext.h"
 #include "krit/input/Key.h"
 #include "krit/input/Mouse.h"
@@ -16,13 +15,13 @@
 #include "krit/utils/Panic.h"
 #include "krit/utils/Profiling.h"
 #include "krit/utils/Signal.h"
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_error.h>
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_image.h>
-#include <SDL2/SDL_keyboard.h>
-#include <SDL2/SDL_mouse.h>
-#include <SDL2/SDL_mutex.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_error.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_mutex.h>
+#include <SDL3_image/SDL_image.h>
 #include <cmath>
 #include <stdlib.h>
 #include <unistd.h>
@@ -44,39 +43,45 @@ RenderContext &render() {
 #ifdef __EMSCRIPTEN__
 static void __doFrame() {
     if (engine->running) {
-        engine->doFrame();
+        engine->runFrame();
     }
 }
 #endif
 
 Engine::Engine(KritOptions &options)
-    : _scope(this), io(krit::io()), net(krit::net()),
-      platform(krit::platform()), window(options), renderer(window),
-      fixedFramerate(options.fixedFramerate) {
+    : platform(krit::platform()),
+#if KRIT_ENABLE_NET
+      net(krit::net()),
+#endif
+      window(options), renderer(window, options.block),
+      fixedFramerate(options.fixedFramerate), block(options.block), taskManager(std::make_unique<TaskManager>(3)) {
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(__doFrame, 0, 0);
 #endif
+#if KRIT_ENABLE_SCRIPT
     script.userData = this;
     scriptContext = JS_NewObject(script.ctx);
+#endif
 }
 
 Engine::~Engine() {
+#if KRIT_ENABLE_SCRIPT
     JS_FreeValue(script.ctx, scriptContext);
+#endif
+#if KRIT_ENABLE_CURSORS
     for (auto it : cursors) {
         for (auto &cursor : it.second) {
             SDL_FreeCursor(cursor.second);
         }
     }
+#endif
 }
 
-Engine::EngineScope::EngineScope(Engine *engine) {
-    if (krit::engine) {
-        panic("can only have a single Engine running at once");
-    }
+Engine::Scope::Scope(Engine *engine) : prev(krit::engine) {
     krit::engine = engine;
 }
 
-Engine::EngineScope::~EngineScope() { krit::engine = nullptr; }
+Engine::Scope::~Scope() { krit::engine = prev; }
 
 float Engine::time() {
     return std::chrono::duration_cast<std::chrono::microseconds>(clock.now() -
@@ -85,23 +90,12 @@ float Engine::time() {
            1000.0f;
 }
 
-void Engine::run() {
+void Engine::start() {
+    assert(engine == this);
+
     CrashHandler::init();
 
     appStart = clock.now();
-
-    // SDL_Image
-    int flags = IMG_INIT_PNG | IMG_INIT_JPG;
-    int result = IMG_Init(flags);
-#ifdef __EMSCRIPTEN__
-    (void)result;
-#else
-    if ((result & flags) != flags) {
-        panic("PNG/JPEG support is required; png=%s jpg=%s",
-              result & IMG_INIT_PNG ? "y" : "n",
-              result & IMG_INIT_JPG ? "y" : "n");
-    }
-#endif
 
     frameDelta = 1000000 / fixedFramerate;
     frameDelta2 = 1000000 / (fixedFramerate + 2);
@@ -113,33 +107,35 @@ void Engine::run() {
     frameFinish = frameStart;
     // bool lockFramerate = true;
 
-    taskManager = new TaskManager(3);
-
     phase = FramePhase::Begin;
     invoke(onBegin);
     phase = FramePhase::Inactive;
     onBegin = nullptr;
 
     running = true;
+}
 
-#ifndef __EMSCRIPTEN__
+void Engine::run() {
     while (running) {
-        if (!doFrame()) {
+        if (!runFrame()) {
             break;
         }
     }
 
     cleanup();
-#endif
 }
 
 void Engine::cleanup() {
+    assert(engine == this);
+
     invoke(onEnd);
     onEnd = nullptr;
-    TaskManager::instance->cleanup();
+    engine->taskManager->cleanup();
 }
 
-bool Engine::doFrame() {
+bool Engine::runFrame() {
+    assert(engine == this);
+
     if (!running) {
         return false;
     }
@@ -175,19 +171,21 @@ bool Engine::doFrame() {
         return false;
     }
 
-    while (accumulator >= frameDelta2 && frame.frameCount < MAX_FRAMES) {
-        accumulator -= frameDelta;
-        if (accumulator < 0) {
-            accumulator = 0;
+    if (block) {
+        while (accumulator >= frameDelta2 && frame.frameCount < MAX_FRAMES) {
+            accumulator -= frameDelta;
+            if (accumulator < 0) {
+                accumulator = 0;
+            }
+            ++frame.frameCount;
+            ++frame.frameId;
+            LOG_DEBUG("fixed update frame %u", frame.frameId);
+            frame.elapsed = frameDelta / 1000000.0;
+            fixedUpdate();
         }
-        ++frame.frameCount;
-        ++frame.frameId;
-        LOG_DEBUG("fixed update frame %u", frame.frameId);
-        frame.elapsed = frameDelta / 1000000.0;
-        fixedUpdate();
-    }
-    if (accumulator > frameDelta2) {
-        accumulator = fmod(accumulator, frameDelta2);
+        if (accumulator > frameDelta2) {
+            accumulator = fmod(accumulator, frameDelta2);
+        }
     }
 
     frame.elapsed = elapsed / 1000000.0;
@@ -210,8 +208,10 @@ bool Engine::doFrame() {
 
     phase = FramePhase::Inactive;
 
+#if KRIT_ENABLE_TEXT
     LOG_DEBUG("flush fonts");
     fonts.flush();
+#endif
 
 #if TRACY_ENABLE
     FrameMark;
@@ -239,69 +239,63 @@ void Engine::handleEvents() {
         bool handleKey = true, handleMouse = true;
 #if KRIT_ENABLE_TOOLS
         if (Editor::imguiInitialized) {
-            ImGui_ImplSDL2_ProcessEvent(&event);
+            ImGui_ImplSDL3_ProcessEvent(&event);
             auto &io = ImGui::GetIO();
             handleKey = !io.WantTextInput;
             handleMouse = !io.WantCaptureMouse;
         }
 #endif
         switch (event.type) {
-            case SDL_QUIT: {
+            case SDL_EVENT_QUIT: {
                 quit();
                 break;
             }
-            case SDL_WINDOWEVENT: {
-                switch (event.window.event) {
-                    case SDL_WINDOWEVENT_ENTER: {
-                        input.registerMouseOver(true);
-                        break;
-                    }
-                    case SDL_WINDOWEVENT_LEAVE: {
-                        input.registerMouseOver(false);
-                        break;
-                    }
-                    case SDL_WINDOWEVENT_CLOSE: {
-                        quit();
-                        break;
-                    }
-                }
+            case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+                input.registerMouseOver(true);
                 break;
             }
-            case SDL_KEYDOWN: {
+            case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+                input.registerMouseOver(false);
+                break;
+            }
+            case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+                quit();
+                break;
+            }
+            case SDL_EVENT_KEY_DOWN: {
                 if (!event.key.repeat) {
                     if (handleKey) {
-                        input.keyDown(
-                            static_cast<KeyCode>(event.key.keysym.scancode));
+                        input.keyDown(static_cast<KeyCode>(event.key.key));
                     }
                 }
                 break;
             }
-            case SDL_KEYUP: {
+            case SDL_EVENT_KEY_UP: {
                 if (handleKey) {
-                    input.keyUp(
-                        static_cast<KeyCode>(event.key.keysym.scancode));
+                    input.keyUp(static_cast<KeyCode>(event.key.key));
                 }
                 break;
             }
-            case SDL_MOUSEBUTTONDOWN: {
+            case SDL_EVENT_MOUSE_BUTTON_DOWN: {
                 if (handleMouse) {
                     input.mouseDown(sdlMouseButton(event.button.button));
+
                 }
                 break;
             }
-            case SDL_MOUSEBUTTONUP: {
+            case SDL_EVENT_MOUSE_BUTTON_UP: {
                 if (handleMouse) {
                     input.mouseUp(sdlMouseButton(event.button.button));
                 }
                 break;
             }
-            case SDL_MOUSEMOTION: {
+            case SDL_EVENT_MOUSE_MOTION: {
                 if (event.motion.x || event.motion.y) {
                     seenMouseEvent = true;
                 }
                 break;
             }
-            case SDL_MOUSEWHEEL: {
+            case SDL_EVENT_MOUSE_WHEEL: {
                 if (handleMouse && event.wheel.y) {
                     input.mouseWheel(
                         event.wheel.y *
@@ -310,7 +304,7 @@ void Engine::handleEvents() {
                 }
                 break;
             }
-            case SDL_TEXTINPUT: {
+            case SDL_EVENT_TEXT_INPUT: {
                 input.key.inputText += event.text.text;
                 break;
             }
@@ -322,7 +316,7 @@ void Engine::handleEvents() {
     // therefore, we need to avoid asking for position until a SDL_MOUSEMOTION
     // event has been seen
     if (seenMouseEvent) {
-        int mouseX, mouseY;
+        float mouseX, mouseY;
         SDL_GetMouseState(&mouseX, &mouseY);
         input.registerMousePos(mouseX, mouseY);
     }
@@ -342,16 +336,18 @@ void Engine::update() {
         return;
     }
 
-#if !KRIT_SOUND_THREAD
+#if (KRIT_ENABLE_SOUND && !KRIT_SOUND_THREAD)
     audio.update();
 #endif
     // refresh window size
-    int height = window.y;
     window.size();
 
+#if KRIT_ENABLE_CURSORS
+    int height = window.y;
     if (!cursor.empty() && (height != window.y || !_cursor)) {
         chooseCursor();
     }
+#endif
 
     // handle setTimeout events
     static std::list<TimedEvent> requeue;
@@ -385,7 +381,9 @@ void Engine::update() {
 
     // actual update cycle
     invoke(onUpdate);
+#if KRIT_ENABLE_SCRIPT
     script.update();
+#endif
     invoke(postUpdate);
 }
 
@@ -407,8 +405,10 @@ void Engine::render() {
         }
         ctx.camera = nullptr;
 
+#if KRIT_ENABLE_TEXT
         fonts.commit();
         checkForGlErrors("fonts commit");
+#endif
 
         renderer.renderFrame(ctx);
         checkForGlErrors("after render frame");
@@ -437,6 +437,7 @@ void Engine::setTimeout(TimedEvent::SignalType s, float delay, void *userData) {
     }
 }
 
+#if KRIT_ENABLE_CURSORS
 void Engine::addCursor(const std::string &cursorPath,
                        const std::string &cursorName, int resolution, int x,
                        int y) {
@@ -477,6 +478,7 @@ void Engine::chooseCursor() {
         SDL_SetCursor(_cursor = candidate);
     }
 }
+#endif
 
 Camera &Engine::addCamera() {
     cameras.emplace_back();
