@@ -106,12 +106,12 @@ public:
 #endif
 
     FramePhase phase = FramePhase::Inactive;
-    int fixedFramerate = 0;
-    bool running = false;
-    bool paused = false;
-    bool fixedFrameRate = false;
-    float speed = 1;
-    double totalElapsed = 0;
+    int fixedFramerate{0};
+    bool running{false};
+    bool paused{false};
+    bool fixedFrameRate{false};
+    float speed{1};
+    double totalElapsed{0};
 
     Signal onBegin;
     Signal onEnd;
@@ -202,6 +202,7 @@ private:
 #endif
 
     void handleEvents();
+    void handleEvent(SDL_Event &);
     void cleanup();
 
 #if KRIT_ENABLE_CURSORS

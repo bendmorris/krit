@@ -41,18 +41,24 @@ template <> AssetType AssetLoader<Font>::type() { return FontAsset; }
 template <> size_t AssetLoader<Font>::cost(Font *f) { return sizeof(Font); }
 
 static FT_Library ftLibrary;
+static int ftLibraryUsers {0};
 
 FontManager::FontManager() {
     int error = FT_Init_FreeType(&ftLibrary);
     if (error) {
         panic("failed to initialize freetype: %i", error);
     }
-    FT_Stroker_New(ftLibrary, &stroker);
+    if (!ftLibrary) {
+        FT_Stroker_New(ftLibrary, &stroker);
+        ++ftLibraryUsers;
+    }
 }
 
 FontManager::~FontManager() {
-    FT_Done_FreeType(ftLibrary);
-    ftLibrary = nullptr;
+    if (!(--ftLibraryUsers)) {
+        FT_Done_FreeType(ftLibrary);
+        ftLibrary = nullptr;
+    }
 }
 
 void FontManager::commit() {
@@ -150,12 +156,16 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
     }
     FT_Face face = (FT_Face)font->ftFace;
     FT_Set_Pixel_Sizes(face, size, size);
-    FT_Load_Glyph(face, codePoint, FT_LOAD_DEFAULT);
+    if (FT_Load_Glyph(face, codePoint, FT_LOAD_DEFAULT)) {
+        panic("couldn't load glyph: %i", (int)codePoint);
+    }
     FT_Glyph glyph;
-    FT_Get_Glyph(face->glyph, &glyph);
+    if (FT_Get_Glyph(face->glyph, &glyph)) {
+        panic("couldn't get glyph: %i", (int)codePoint);
+    }
     if (border > 0) {
         FT_Stroker_Set(stroker, border * 64, FT_STROKER_LINECAP_ROUND,
-                       FT_STROKER_LINEJOIN_ROUND, 0);
+                        FT_STROKER_LINEJOIN_ROUND, 0);
         FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
     }
     FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
@@ -170,16 +180,19 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
     {
         // search columns for space
         for (auto &column : columns) {
-            if (CACHE_TEXTURE_SIZE - column.height >= height + PADDING * 2 &&
-                column.width >= neededWidth && column.width < neededWidth * 2) {
+            if (CACHE_TEXTURE_SIZE - column.height >=
+                    height + PADDING * 2 &&
+                column.width >= neededWidth &&
+                column.width < neededWidth * 2) {
                 // use this one
                 auto it = glyphs.emplace(
                     std::piecewise_construct,
                     std::make_tuple(font, codePoint, size, border),
                     std::make_tuple(
-                        ImageRegion(img, IntRectangle(x + PADDING,
-                                                      column.height + PADDING,
-                                                      width, height)),
+                        ImageRegion(img,
+                                    IntRectangle(x + PADDING,
+                                                    column.height + PADDING,
+                                                    width, height)),
                         bitmap->left, bitmap->top));
                 column.height += height + PADDING * 2;
                 pending.emplace_back(font, codePoint, size, border);
@@ -198,8 +211,8 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
                 std::piecewise_construct,
                 std::make_tuple(font, codePoint, size, border),
                 std::make_tuple(
-                    ImageRegion(
-                        img, IntRectangle(x + PADDING, PADDING, width, height)),
+                    ImageRegion(img, IntRectangle(x + PADDING, PADDING,
+                                                    width, height)),
                     bitmap->left, bitmap->top));
             pending.emplace_back(font, codePoint, size, border);
             FT_Done_Glyph(glyph);
@@ -211,6 +224,7 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
 }
 
 void GlyphCache::createTexture() {
+    engine->window.makeCurrent();
     GLuint textureId;
     glGenTextures(1, &textureId);
     if (!textureId) {
@@ -223,6 +237,7 @@ void GlyphCache::createTexture() {
 }
 
 void GlyphCache::commitChanges() {
+    engine->window.makeCurrent();
     if (!pending.empty()) {
         // iterate over pending glyphs
         for (auto &it : pending) {

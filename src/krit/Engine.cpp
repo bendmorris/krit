@@ -34,6 +34,8 @@
 
 namespace krit {
 
+std::vector<Engine *> active;
+
 Engine *engine{0};
 RenderContext &render() {
     assert(engine);
@@ -54,7 +56,9 @@ Engine::Engine(KritOptions &options)
       net(krit::net()),
 #endif
       window(options), renderer(window, options.block),
-      fixedFramerate(options.fixedFramerate), block(options.block), taskManager(std::make_unique<TaskManager>(3)) {
+      fixedFramerate(options.fixedFramerate), block(options.block),
+      taskManager(std::make_unique<TaskManager>(3)) {
+    active.push_back(this);
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(__doFrame, 0, 0);
 #endif
@@ -65,6 +69,17 @@ Engine::Engine(KritOptions &options)
 }
 
 Engine::~Engine() {
+    for (size_t i = 0; i < active.size(); ++i) {
+        if (active[i] == this) {
+            if (i == active.size() - 1) {
+                active.pop_back();
+            } else {
+                active[i] = active[active.size() - 1];
+                active.pop_back();
+            }
+            break;
+        }
+    }
 #if KRIT_ENABLE_SCRIPT
     JS_FreeValue(script.ctx, scriptContext);
 #endif
@@ -162,7 +177,6 @@ bool Engine::runFrame() {
     TaskManager::work(taskManager->mainQueue);
 
     LOG_DEBUG("handling input");
-    input.startFrame();
     handleEvents();
     input.endFrame();
 
@@ -217,6 +231,10 @@ bool Engine::runFrame() {
     FrameMark;
 #endif
 
+    // if there are multiple engines running, we may receive events before the
+    // next frame, so clear our input state here
+    input.startFrame();
+
     LOG_DEBUG("tick finished");
     return true;
 }
@@ -233,92 +251,86 @@ MouseButton sdlMouseButton(int b) {
 }
 
 void Engine::handleEvents() {
-    static bool seenMouseEvent = false;
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        bool handleKey = true, handleMouse = true;
-#if KRIT_ENABLE_TOOLS
-        if (Editor::imguiInitialized) {
-            ImGui_ImplSDL3_ProcessEvent(&event);
-            auto &io = ImGui::GetIO();
-            handleKey = !io.WantTextInput;
-            handleMouse = !io.WantCaptureMouse;
-        }
-#endif
-        switch (event.type) {
-            case SDL_EVENT_QUIT: {
-                quit();
-                break;
-            }
-            case SDL_EVENT_WINDOW_MOUSE_ENTER: {
-                input.registerMouseOver(true);
-                break;
-            }
-            case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
-                input.registerMouseOver(false);
-                break;
-            }
-            case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
-                quit();
-                break;
-            }
-            case SDL_EVENT_KEY_DOWN: {
-                if (!event.key.repeat) {
-                    if (handleKey) {
-                        input.keyDown(static_cast<KeyCode>(event.key.key));
-                    }
+        auto window = SDL_GetWindowFromEvent(&event);
+        if (window) {
+            for (auto &engine : active) {
+                if (engine->window.window == window) {
+                    engine->handleEvent(event);
+                    break;
                 }
-                break;
-            }
-            case SDL_EVENT_KEY_UP: {
-                if (handleKey) {
-                    input.keyUp(static_cast<KeyCode>(event.key.key));
-                }
-                break;
-            }
-            case SDL_EVENT_MOUSE_BUTTON_DOWN: {
-                if (handleMouse) {
-                    input.mouseDown(sdlMouseButton(event.button.button));
-
-                }
-                break;
-            }
-            case SDL_EVENT_MOUSE_BUTTON_UP: {
-                if (handleMouse) {
-                    input.mouseUp(sdlMouseButton(event.button.button));
-                }
-                break;
-            }
-            case SDL_EVENT_MOUSE_MOTION: {
-                if (event.motion.x || event.motion.y) {
-                    seenMouseEvent = true;
-                }
-                break;
-            }
-            case SDL_EVENT_MOUSE_WHEEL: {
-                if (handleMouse && event.wheel.y) {
-                    input.mouseWheel(
-                        event.wheel.y *
-                        (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1
-                                                                         : -1));
-                }
-                break;
-            }
-            case SDL_EVENT_TEXT_INPUT: {
-                input.key.inputText += event.text.text;
-                break;
             }
         }
     }
+}
 
-    // the mouse position will return (0,0) if we haven't had any mouse events,
-    // but since this is a valid position, we use (-1,-1) for no position;
-    // therefore, we need to avoid asking for position until a SDL_MOUSEMOTION
-    // event has been seen
-    if (seenMouseEvent) {
-        float mouseX, mouseY;
-        SDL_GetMouseState(&mouseX, &mouseY);
-        input.registerMousePos(mouseX, mouseY);
+void Engine::handleEvent(SDL_Event &event) {
+    auto scope = this->scope();
+    bool handleKey = true, handleMouse = true;
+#if KRIT_ENABLE_TOOLS
+    if (Editor::imguiInitialized) {
+        ImGui_ImplSDL3_ProcessEvent(&event);
+        auto &io = ImGui::GetIO();
+        handleKey = !io.WantTextInput;
+        handleMouse = !io.WantCaptureMouse;
+    }
+#endif
+    switch (event.type) {
+        case SDL_EVENT_QUIT: {
+            quit();
+            break;
+        }
+        case SDL_EVENT_WINDOW_MOUSE_ENTER: {
+            input.registerMouseOver(true);
+            break;
+        }
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE: {
+            input.registerMouseOver(false);
+            break;
+        }
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED: {
+            quit();
+            break;
+        }
+        case SDL_EVENT_KEY_DOWN: {
+            if (!event.key.repeat) {
+                if (handleKey) {
+                    input.keyDown(static_cast<KeyCode>(event.key.key));
+                }
+            }
+            break;
+        }
+        case SDL_EVENT_KEY_UP: {
+            if (handleKey) {
+                input.keyUp(static_cast<KeyCode>(event.key.key));
+            }
+            break;
+        }
+        case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+            if (handleMouse) {
+                input.mouseDown(sdlMouseButton(event.button.button));
+            }
+            break;
+        }
+        case SDL_EVENT_MOUSE_BUTTON_UP: {
+            if (handleMouse) {
+                input.mouseUp(sdlMouseButton(event.button.button));
+            }
+            break;
+        }
+        case SDL_EVENT_MOUSE_WHEEL: {
+            if (handleMouse && event.wheel.y) {
+                input.mouseWheel(
+                    event.wheel.y *
+                    (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1 : -1));
+            }
+            break;
+        }
+        case SDL_EVENT_TEXT_INPUT: {
+            input.key.inputText += event.text.text;
+            break;
+        }
     }
 }
 

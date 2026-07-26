@@ -45,11 +45,20 @@ Window::Window(KritOptions &options)
 
     if (options.windowProperties) {
         SDL_SetBooleanProperty(options.windowProperties,
-                               "SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN", true);
+                               SDL_PROP_WINDOW_CREATE_OPENGL_BOOLEAN, true);
+        if (!options.windowBorder) {
+            SDL_SetBooleanProperty(options.windowProperties,
+                                   SDL_PROP_WINDOW_CREATE_BORDERLESS_BOOLEAN,
+                                   true);
+        }
         window = SDL_CreateWindowWithProperties(options.windowProperties);
     } else {
+        SDL_WindowFlags flags = SDL_WINDOW_OPENGL;
+        if (!options.windowBorder) {
+            flags |= SDL_WINDOW_BORDERLESS;
+        }
         window = SDL_CreateWindow(options.title.c_str(), options.width,
-                                  options.height, SDL_WINDOW_OPENGL);
+                                  options.height, flags);
     }
     if (!window) {
         panic("SDL_CreateWindow failed: %s", SDL_GetError());
@@ -79,7 +88,6 @@ Window::~Window() {
     if (window) {
         SDL_DestroyWindow(window);
     }
-    SDL_Quit();
 }
 
 void Window::setFullScreen(bool full) {

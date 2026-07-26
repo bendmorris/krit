@@ -1,8 +1,9 @@
-#ifndef KRIT_ECS_WORLD
-#define KRIT_ECS_WORLD
+#pragma once
+
+#if KRIT_ENABLE_ECS
 
 #include "krit/ecs/Entity.h"
-#include "krit/ecs/Utils.h"
+#include "krit/utils/FindFirst.h"
 #include <queue>
 #include <unordered_map>
 
@@ -37,11 +38,11 @@ template <typename... Components> struct World {
      * Add a single component attached to an existing entity.
      */
     template <typename ComponentType, class... Args>
-    ComponentType &add(const Entity &e, Args &&... args) {
+    ComponentType &add(const Entity &e, Args &&...args) {
         return this->add<ComponentType, Args...>(args...);
     }
     template <typename ComponentType, class... Args>
-    ComponentType &add(EntityId e, Args &&... args) {
+    ComponentType &add(EntityId e, Args &&...args) {
         auto &map = std::get<
             find_first<std::tuple<Components...>, ComponentType>::value>(
             this->components);

@@ -40,12 +40,12 @@ struct Window : public IntDimensions {
         SDL_GetWindowSize(this->window, &x, &y);
     }
 
-    void setWindowPos(int x, int y) {
-        SDL_SetWindowPosition(window, x, y);
-    }
+    void setWindowPos(int x, int y) { SDL_SetWindowPosition(window, x, y); }
 
     void show();
     void hide();
+
+    void makeCurrent() { SDL_GL_MakeCurrent(window, glContext); }
 
     SDL_Window *window = nullptr;
 

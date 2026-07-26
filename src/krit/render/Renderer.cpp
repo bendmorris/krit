@@ -471,7 +471,7 @@ void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
 void Renderer::renderFrame(RenderContext &ctx) {
     ProfileZone("Renderer::renderFrame");
 
-    SDL_GL_MakeCurrent(window.window, window.glContext);
+    window.makeCurrent();
 
     clear(ctx);
     checkForGlErrors("start frame");

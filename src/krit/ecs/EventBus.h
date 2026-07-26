@@ -1,5 +1,6 @@
-#ifndef KRIT_ECS_EVENTBUS
-#define KRIT_ECS_EVENTBUS
+#pragma once
+
+#if KRIT_ENABLE_ECS
 
 #include <functional>
 #include <list>

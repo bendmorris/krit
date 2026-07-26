@@ -1,5 +1,6 @@
-#ifndef KRIT_ECS_BUILDER
-#define KRIT_ECS_BUILDER
+#pragma once
+
+#if KRIT_ENABLE_ECS
 
 #include "krit/ecs/Entity.h"
 #include "krit/ecs/World.h"

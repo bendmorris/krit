@@ -1,5 +1,6 @@
-#ifndef KRIT_BEHAVIOR_BEHAVIORTREEBUILDER
-#define KRIT_BEHAVIOR_BEHAVIORTREEBUILDER
+#pragma once
+
+#if KRIT_ENABLE_BEHAVIORTREE
 
 #include "krit/behavior/BehaviorTree.h"
 #include "krit/utils/Panic.h"

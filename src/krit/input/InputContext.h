@@ -54,6 +54,14 @@ struct InputContext {
     }
 
     void endFrame() {
+        if (mouse.mouseOver) {
+            float mouseX, mouseY;
+            SDL_GetMouseState(&mouseX, &mouseY);
+            registerMousePos(mouseX, mouseY);
+        } else {
+            registerMousePos(-1, -1);
+        }
+
         auto it = states.begin();
         while (it != states.end()) {
             if (!seen[it->first]) {
@@ -94,13 +102,16 @@ struct InputContext {
             // state explicitly when the mouse comes back; capturing it
             // doesn't seem to work reliably
             auto state = SDL_GetGlobalMouseState(nullptr, nullptr);
-            if (!(state & SDL_BUTTON_LEFT) && mouse.active[MouseButton::MouseLeft]) {
+            if (!(state & SDL_BUTTON_LEFT) &&
+                mouse.active[MouseButton::MouseLeft]) {
                 mouseUp(MouseButton::MouseLeft);
             }
-            if (!(state & SDL_BUTTON_RIGHT) && mouse.active[MouseButton::MouseRight]) {
+            if (!(state & SDL_BUTTON_RIGHT) &&
+                mouse.active[MouseButton::MouseRight]) {
                 mouseUp(MouseButton::MouseRight);
             }
-            if (!(state & SDL_BUTTON_MIDDLE) && mouse.active[MouseButton::MouseMiddle]) {
+            if (!(state & SDL_BUTTON_MIDDLE) &&
+                mouse.active[MouseButton::MouseMiddle]) {
                 mouseUp(MouseButton::MouseMiddle);
             }
         }

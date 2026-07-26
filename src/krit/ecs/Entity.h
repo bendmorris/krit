@@ -1,7 +1,8 @@
-#ifndef KRIT_ECS_ENTITY
-#define KRIT_ECS_ENTITY
+#pragma once
 
-#include "krit/ecs/Utils.h"
+#if KRIT_ENABLE_ECS
+
+#include "krit/utils/FindFirst.h"
 #include <tuple>
 
 namespace krit {

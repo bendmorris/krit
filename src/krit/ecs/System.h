@@ -1,7 +1,8 @@
-#ifndef KRIT_ECS_SYSTEM
-#define KRIT_ECS_SYSTEM
+#pragma once
 
-#include "krit/ecs/Utils.h"
+#if KRIT_ENABLE_ECS
+
+#include "krit/utils/FindFirst.h"
 
 namespace krit {
 

@@ -1,9 +1,8 @@
-#ifndef KRIT_ASSET_ASSETCACHE
-#define KRIT_ASSET_ASSETCACHE
+#pragma once
 
 #include "krit/asset/AssetLoader.h"
 // TODO: make this more generic
-#include "krit/ecs/Utils.h"
+#include "krit/utils/FindFirst.h"
 #include "krit/utils/Log.h"
 #include <algorithm>
 #include <functional>
@@ -132,5 +131,3 @@ struct AssetCache
 };
 
 }
-
-#endif

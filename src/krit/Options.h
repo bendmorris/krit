@@ -20,6 +20,7 @@ struct KritOptions {
     int fullscreenHeight{-1};
     bool fullscreen{false};
     bool block{true};
+    bool windowBorder{true};
     int fixedFramerate{60};
     void *userData{nullptr};
     SDL_PropertiesID windowProperties{0};

@@ -78,6 +78,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
     std::filesystem::path path = key;
     std::string extension = path.extension().string();
 
+    auto engine = krit::engine;
     int windowHeight = engine->window.y;
 
     ImageResolutionInfo *found = nullptr;
@@ -213,6 +214,7 @@ AssetLoader<ImageData>::loadAsset(const std::string &key) {
             }
 
             engine->taskManager->pushRender([=]() {
+                engine->window.makeCurrent();
                 LOG_DEBUG("callback: load image %s", pathToLoad.c_str());
                 // upload texture
                 GLuint texture;

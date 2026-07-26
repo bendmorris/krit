@@ -1,5 +1,4 @@
-#ifndef KRIT_ECS_UTILS
-#define KRIT_ECS_UTILS
+#pragma once
 
 #include <tuple>
 #include <type_traits>
@@ -33,5 +32,3 @@ struct find_first<std::tuple<Head, Rest...>, T, Fail, Index>
           find_first<std::tuple<Rest...>, T, Fail, Index + 1>>::type {};
 
 }
-
-#endif
