@@ -68,8 +68,8 @@ build/freetype-2.12.1.tar.xz:
 	curl -L https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.xz -o $@
 build/freetype-2.12.1: build/freetype-2.12.1.tar.xz
 	tar xf $< -C build
-lib/libfreetype.a: build/freetype-2.12.1 lib/libz.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
+lib/libfreetype.a: build/freetype-2.12.1 lib/libz.a include/hb-ft.h
+	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --without-bzip2 --without-brotli --prefix=$$PREFIX && make -j8 && make install
 
 # harfbuzz
 HARFBUZZ_VERSION=14.2.1
@@ -78,8 +78,11 @@ build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz:
 	curl -L https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}/harfbuzz-${HARFBUZZ_VERSION}.tar.xz -o $@
 build/harfbuzz-${HARFBUZZ_VERSION}: build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz
 	tar xf $< -C build
+# harfbuzz and freetype have a circular dependency; freetype needs to be able to find this to build
+include/hb-ft.h: build/harfbuzz-${HARFBUZZ_VERSION}
+	cp build/harfbuzz-14.2.1/src/hb-ft.h $@
 lib/libharfbuzz.a: build/harfbuzz-${HARFBUZZ_VERSION} lib/libfreetype.a
-	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF && cmake --build build -- -j8 libharfbuzz.a && cmake --build build -- install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF -DHB_HAVE_FREETYPE=ON && cmake --build build -- -j8 libharfbuzz.a && cmake --build build -- install
 
 # JPEG
 jpeg: lib/libjpeg.a
