@@ -6,13 +6,14 @@ clean:
 .MKDIR: $(shell mkdir -p build)
 
 # curl
+CURL_VERSION:=7.87.0
 curl: lib/libcurl.a
-build/curl-7.87.0.tar.xz:
-	curl -L https://github.com/curl/curl/releases/download/curl-7_87_0/curl-7.87.0.tar.xz -o $@
-build/curl-7.87.0: build/curl-7.87.0.tar.xz
+build/curl-${CURL_VERSION}.tar.xz:
+	curl -L https://github.com/curl/curl/releases/download/curl-7_87_0/curl-${CURL_VERSION}.tar.xz -o $@
+build/curl-${CURL_VERSION}: build/curl-${CURL_VERSION}.tar.xz
 	tar xf $< -C build
-lib/libcurl.a: build/curl-7.87.0 lib/libssl.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl --prefix=$$PREFIX && make -j8 && make install
+lib/libcurl.a: build/curl-${CURL_VERSION} lib/libssl.a
+	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl --without-brotli --prefix=$$PREFIX && make -j8 && make install
 
 # curses
 curses: lib/libncurses.a
@@ -52,7 +53,7 @@ lib/libFLAC.a: build/flac-1.4.2 lib/libogg.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX --disable-stack-smash-protection && make -j8 && make install
 
 # flatbuffers
-FLATBUFFERS_VERSION=1.12.1
+FLATBUFFERS_VERSION:=1.12.1
 flatbuffers: lib/libflatbuffers.a
 build/flatbuffers-$(FLATBUFFERS_VERSION).tar.gz:
 	curl -L https://github.com/google/flatbuffers/archive/refs/tags/v$(FLATBUFFERS_VERSION).tar.gz -o $@
@@ -63,26 +64,27 @@ lib/libflatbuffers.a: build/flatbuffers-$(FLATBUFFERS_VERSION)
 	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make flatbuffers flatc -j8 && make install
 
 # freetype
+FREETYPE_VERSION:=2.12.1
 freetype: lib/libfreetype.a
-build/freetype-2.12.1.tar.xz:
-	curl -L https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.xz -o $@
-build/freetype-2.12.1: build/freetype-2.12.1.tar.xz
+build/freetype-${FREETYPE_VERSION}.tar.xz:
+	curl -L https://download.savannah.gnu.org/releases/freetype/freetype-${FREETYPE_VERSION}.tar.xz -o $@
+build/freetype-${FREETYPE_VERSION}: build/freetype-${FREETYPE_VERSION}.tar.xz
 	tar xf $< -C build
-lib/libfreetype.a: build/freetype-2.12.1 lib/libz.a include/hb-ft.h
+lib/libfreetype.a: build/freetype-${FREETYPE_VERSION} lib/libz.a include/harfbuzz/hb-ft.h
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --without-bzip2 --without-brotli --prefix=$$PREFIX && make -j8 && make install
 
 # harfbuzz
-HARFBUZZ_VERSION=14.2.1
+HARFBUZZ_VERSION:=14.2.1
 harfbuzz: lib/libharfbuzz.a
 build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz:
 	curl -L https://github.com/harfbuzz/harfbuzz/releases/download/${HARFBUZZ_VERSION}/harfbuzz-${HARFBUZZ_VERSION}.tar.xz -o $@
 build/harfbuzz-${HARFBUZZ_VERSION}: build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz
 	tar xf $< -C build
 # harfbuzz and freetype have a circular dependency; freetype needs to be able to find this to build
-include/hb-ft.h: build/harfbuzz-${HARFBUZZ_VERSION}
-	cp build/harfbuzz-14.2.1/src/hb-ft.h $@
-lib/libharfbuzz.a: build/harfbuzz-${HARFBUZZ_VERSION} lib/libfreetype.a
-	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF -DHB_HAVE_FREETYPE=ON && cmake --build build -- -j8 libharfbuzz.a && cmake --build build -- install
+include/harfbuzz/hb-ft.h: build/harfbuzz-${HARFBUZZ_VERSION}
+	mkdir -p `dirname $@` && cp build/harfbuzz-${HARFBUZZ_VERSION}/src/hb-ft.h $@
+lib/libharfbuzz.a: build/harfbuzz-${HARFBUZZ_VERSION} lib/libfreetype.a include/harfbuzz/hb-ft.h
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF && cmake --build build -- -j8 && cmake --build build -- install
 
 # JPEG
 jpeg: lib/libjpeg.a
@@ -149,7 +151,7 @@ lib/libpng16.a: build/libpng-1.6.39 lib/libz.a
 	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --prefix=$$PREFIX && make -j8 && make install
 
 # SDL
-SDL_VERSION=3.4.12
+SDL_VERSION:=3.4.12
 sdl: lib/libSDL3.a
 build/SDL3-$(SDL_VERSION).tar.gz:
 	mkdir -p build
@@ -157,10 +159,10 @@ build/SDL3-$(SDL_VERSION).tar.gz:
 build/SDL3-$(SDL_VERSION): build/SDL3-$(SDL_VERSION).tar.gz
 	tar xzf $< -C build
 lib/libSDL3.a: build/SDL3-$(SDL_VERSION)
-	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN -DSDL_SHARED=Off -DSDL_STATIC=On -DSDL_TEST_LIBRARY=Off -DSDL_AUDIO=Off -DSDL_RENDER=Off -DSDL_CAMERA=Off -DSDL_HAPTIC=Off -DSDL_POWER=Off -DSDL_SENSOR=Off -DSDL_DIALOG=Off -DSDL_TRAY=Off -DSDL_VULKAN=Off -DSDL_LEAN_AND_MEAN=On -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON ${SDL_FLAGS}  && cmake --build build -- -j8 && cmake --build build -- install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN -DSDL_SHARED=Off -DSDL_STATIC=On -DSDL_TEST_LIBRARY=Off -DSDL_AUDIO=Off -DSDL_RENDER=Off -DSDL_CAMERA=Off -DSDL_HAPTIC=Off -DSDL_POWER=Off -DSDL_SENSOR=Off -DSDL_DIALOG=Off -DSDL_TRAY=Off -DSDL_VULKAN=Off -DSDL_LEAN_AND_MEAN=On -DSDL_X11_XTEST=Off -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON ${SDL_FLAGS}  && cmake --build build -- -j8 && cmake --build build -- install
 
 # SDL_image
-SDL_IMAGE_VERSION=3.4.4
+SDL_IMAGE_VERSION:=3.4.4
 sdl_image: lib/libSDL3_image.a
 build/SDL3_image-$(SDL_IMAGE_VERSION).tar.gz:
 	curl -L https://github.com/libsdl-org/SDL_image/releases/download/release-$(SDL_IMAGE_VERSION)/SDL3_image-$(SDL_IMAGE_VERSION).tar.gz -o $@
@@ -215,10 +217,11 @@ lib/libzip.a: build/libzip-1.11.4 lib/libz.a
 	cd $< && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release $$CMAKE_TOOLCHAIN .. -DBUILD_SHARED_LIBS=Off -DENABLE_COMMONCRYPTO=Off -DENABLE_GNUTLS=Off -DENABLE_MBEDTLS=Off -DENABLE_OPENSSL=Off -DENABLE_WINDOWS_CRYPTO=Off -DENABLE_BZIP2=Off -DENABLE_LZMA=Off -DENABLE_ZSTD=Off -DBUILD_TOOLS=Off -DBUILD_REGRESS=Off -DBUILD_EXAMPLES=Off -DBUILD_DOC=Off -DCMAKE_FIND_ROOT_PATH=$$PREFIX -DCMAKE_INSTALL_PREFIX=$$PREFIX -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include && make -j8 && make install
 
 # ZLIB
+ZLIB_VERSION:=1.3.2
 zlib: lib/libz.a
-build/zlib-1.3.2.tar.gz:
-	curl -L https://zlib.net/zlib-1.3.2.tar.gz -o $@
-build/zlib-1.3.2: build/zlib-1.3.2.tar.gz
+build/zlib-${ZLIB_VERSION}.tar.gz:
+	curl -L https://zlib.net/zlib-${ZLIB_VERSION}.tar.gz -o $@
+build/zlib-${ZLIB_VERSION}: build/zlib-${ZLIB_VERSION}.tar.gz
 	tar xzf $< -C build
-lib/libz.a: build/zlib-1.3.2
+lib/libz.a: build/zlib-${ZLIB_VERSION}
 	cd $< && ./configure --static --prefix=$$PREFIX && make -j8 && make install

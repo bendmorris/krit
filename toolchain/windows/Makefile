@@ -1,6 +1,6 @@
 export BUILD=x86_64-pc-linux-gnu
-export HOST=i686-w64-mingw32
-export TOOLCHAIN_PREFIX=i686-w64-mingw32-
+export HOST=x86_64-w64-mingw32
+export TOOLCHAIN_PREFIX=x86_64-w64-mingw32-
 export PREFIX=$(shell pwd)
 export AR=${TOOLCHAIN_PREFIX}ar
 export CC=${TOOLCHAIN_PREFIX}gcc
@@ -14,11 +14,11 @@ export CPLUS_INCLUDE_PATH=$(shell pwd)/include
 export CFLAGS=-I$(shell pwd)/include -DFLAC__NO_DLL -O3 -DWINVER=0x0600 -DNTDDI_VERSION=0x06000000 -D_WIN32_WINNT=0x0600
 export CPPFLAGS=-I$(shell pwd)/include -O3 -DWINVER=0x0600 -DNTDDI_VERSION=0x06000000 -D_WIN32_WINNT=0x0600
 export CXXFLAGS=-I$(shell pwd)/include -O3 -DWINVER=0x0600 -DNTDDI_VERSION=0x06000000 -D_WIN32_WINNT=0x0600
-export PKG_CONFIG=i686-w64-mingw32-pkg-config
+export PKG_CONFIG=x86_64-w64-mingw32-pkg-config
 export PKG_CONFIG_PATH=$(shell pwd)/lib/pkgconfig
 export LIBS=-lws2_32 -lcrypt32
 export CMAKE_TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=$(shell pwd)/../windows.toolchain.cmake
-export MESON_CROSS=--cross-file $(shell pwd)/i686-mingw-w64.meson.ini
+export MESON_CROSS=--cross-file $(shell pwd)/x86_64-mingw-w64.meson.ini
 export SSL_CONFIGURE=mingw
 export MESON_CFLAGS="-static"
 export MESON_LDFLAGS=-static -static-libgcc -static-libstdc++

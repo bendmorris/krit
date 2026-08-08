@@ -97,7 +97,7 @@ list(APPEND KRIT_STATIC_LIBS)
 
 if(KRIT_ENABLE_TOOLS)
     message(STATUS "tools enabled")
-    add_definitions(-DKRIT_ENABLE_TOOLS)
+    target_compile_definitions(krit INTERFACE -DKRIT_ENABLE_TOOLS)
     file(GLOB_RECURSE TOOLS_FILES CONFIGURE_DEPENDS ${CMAKE_CURRENT_LIST_DIR}/imgui/*.cpp)
     target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/imgui)
 endif()
@@ -109,7 +109,7 @@ if(KRIT_ENABLE_SPINE)
 endif()
 
 if(KRIT_ENABLE_TRACY)
-    add_definitions(-DTRACY_ENABLE -DTRACY_NO_CRASH_HANDLER -DTRACY_ON_DEMAND)
+    target_compile_definitions(krit INTERFACE -DTRACY_ENABLE -DTRACY_NO_CRASH_HANDLER -DTRACY_ON_DEMAND)
     list(APPEND TRACY_FILES
         ${CMAKE_CURRENT_LIST_DIR}/tracy/public/TracyClient.cpp
     )
@@ -131,19 +131,20 @@ endif()
 
 if(BUILD_WINDOWS)
     include(${CMAKE_CURRENT_LIST_DIR}/toolchain/windows.cmake)
-    add_definitions(-DKRIT_WINDOWS)
+    target_compile_definitions(krit INTERFACE -DKRIT_WINDOWS)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
     include(${CMAKE_CURRENT_LIST_DIR}/toolchain/emscripten.cmake)
-    add_definitions(-DKRIT_EMSCRIPTEN)
+    target_compile_definitions(krit INTERFACE -DKRIT_EMSCRIPTEN)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     include(${CMAKE_CURRENT_LIST_DIR}/toolchain/linux.cmake)
-    add_definitions(-DKRIT_LINUX)
+    target_compile_definitions(krit INTERFACE -DKRIT_LINUX)
 else()
     message(FATAL_ERROR "Unrecognized platform")
 endif()
 
 if(KRIT_USE_GLEW)
-    add_definitions(-DKRIT_USE_GLEW -DGLEW_STATIC)
+    message("using glew")
+    target_compile_definitions(krit INTERFACE -DKRIT_USE_GLEW -DGLEW_STATIC)
     list(APPEND KRIT_SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/src/GL/glew.c)
     set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/GL/glew.c
         PROPERTIES COMPILE_OPTIONS "-Wno-error"
@@ -199,18 +200,15 @@ target_sources(krit PUBLIC
 )
 
 if(KRIT_ENABLE_THREADS)
-    add_definitions(-DKRIT_ENABLE_THREADS)
+    target_compile_definitions(krit INTERFACE -DKRIT_ENABLE_THREADS)
+    list(APPEND KRIT_STATIC_LIBS "-lpthread")
 endif()
 
 if(KRIT_ENABLE_MULTISAMPLING)
-    add_definitions(-DKRIT_ENABLE_MULTISAMPLING)
+    target_compile_definitions(krit INTERFACE -DKRIT_ENABLE_MULTISAMPLING)
 endif()
 
 message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
-
-if(KRIT_ENABLE_THREADS)
-    list(APPEND KRIT_STATIC_LIBS "-lpthread")
-endif()
 
 message("==> static libs: ${KRIT_STATIC_LIBS}")
 
@@ -301,7 +299,7 @@ endif()
 
 if(KRIT_BACKEND_PLATFORM STREQUAL "Desktop")
     message("including backward")
-    add_definitions(-DKRIT_BACKWARD)
+    target_compile_definitions(krit INTERFACE -DKRIT_BACKWARD)
     target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/backward-cpp)
 endif()
 

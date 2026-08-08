@@ -89,13 +89,14 @@ enum LogLevel {
     LogLevelCount,
 };
 
-using LogSink = std::function<void(LogLevel level, std::string_view area,
-                                   const char *fmt, va_list args)>;
+// FIXME: this doesn't work on mingw; va_list can't be used as a template parameter
+// using LogSink = std::function<void(LogLevel level, std::string_view area,
+//                                    const char *fmt, va_list args)>;
 
 struct Log {
     static LogLevel defaultLevel;
     static std::unordered_map<size_t, LogLevel> levelMap;
-    static std::vector<LogSink> logSinks;
+    // static std::vector<LogSink> logSinks;
 
     static LogLevel level(std::string_view area);
     static LogLevel level(size_t area);
@@ -103,7 +104,7 @@ struct Log {
                     va_list args);
     static void consoleLog(LogLevel level, std::string_view area,
                            const char *fmt, va_list args);
-    static void addLogSink(LogSink sink) { logSinks.push_back(sink); }
+    // static void addLogSink(LogSink sink) { logSinks.push_back(sink); }
 
 #define DEFINE_LOG_METHOD(name, level)                                         \
     static void name(std::string_view area, const char *fmt, ...) {            \
