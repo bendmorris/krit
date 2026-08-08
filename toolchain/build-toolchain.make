@@ -71,7 +71,7 @@ build/freetype-${FREETYPE_VERSION}.tar.xz:
 build/freetype-${FREETYPE_VERSION}: build/freetype-${FREETYPE_VERSION}.tar.xz
 	tar xf $< -C build
 lib/libfreetype.a: build/freetype-${FREETYPE_VERSION} lib/libz.a include/harfbuzz/hb-ft.h
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --without-bzip2 --without-brotli --prefix=$$PREFIX && make -j8 && make install
+	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --without-bzip2 --without-brotli --without-harfbuzz --prefix=$$PREFIX && make -j8 && make install
 
 # harfbuzz
 HARFBUZZ_VERSION:=14.2.1
@@ -84,7 +84,7 @@ build/harfbuzz-${HARFBUZZ_VERSION}: build/harfbuzz-${HARFBUZZ_VERSION}.tar.xz
 include/harfbuzz/hb-ft.h: build/harfbuzz-${HARFBUZZ_VERSION}
 	mkdir -p `dirname $@` && cp build/harfbuzz-${HARFBUZZ_VERSION}/src/hb-ft.h $@
 lib/libharfbuzz.a: build/harfbuzz-${HARFBUZZ_VERSION} lib/libfreetype.a include/harfbuzz/hb-ft.h
-	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF && cmake --build build -- -j8 && cmake --build build -- install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DCMAKE_POSITION_INDEPENDENT_CODE=ON -D BUILD_SHARED_LIBS=OFF -D HB_HAVE_FREETYPE=Off && cmake --build build -- -j8 && cmake --build build -- install
 
 # JPEG
 jpeg: lib/libjpeg.a
