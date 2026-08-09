@@ -24,24 +24,25 @@ JS_FUNC(console_log) {
 
 char buf[10 * 1024];
 JS_FUNC(Log_addLogSink) {
-    OwnedValue func(ctx, argv[0]);
-    Log::addLogSink([=](LogLevel level, std::string_view area, const char *fmt,
-                        va_list args) {
-        size_t len = vsnprintf(buf, sizeof(buf), fmt, args);
-        if (len >= sizeof(buf)) {
-            // oh no
-            len = sizeof(buf) - 1;
-            buf[len] = 0;
-        }
-        JSValue jsArea = JS_NewStringLen(ctx, area.data(), area.size());
-        JSValue jsFmt = JS_NewStringLen(ctx, buf, len);
-        JSValue jsLevel = JS_NewUint32(ctx, static_cast<uint32_t>(level));
-        JSValue callArgs[3]{jsArea, jsFmt, jsLevel};
-        JS_FreeValue(ctx, JS_Call(ctx, *func, JS_UNDEFINED, 3, callArgs));
-        JS_FreeValue(ctx, jsArea);
-        JS_FreeValue(ctx, jsFmt);
-        JS_FreeValue(ctx, jsLevel);
-    });
+    // FIXME
+    // OwnedValue func(ctx, argv[0]);
+    // Log::addLogSink([=](LogLevel level, std::string_view area, const char *fmt,
+    //                     va_list args) {
+    //     size_t len = vsnprintf(buf, sizeof(buf), fmt, args);
+    //     if (len >= sizeof(buf)) {
+    //         // oh no
+    //         len = sizeof(buf) - 1;
+    //         buf[len] = 0;
+    //     }
+    //     JSValue jsArea = JS_NewStringLen(ctx, area.data(), area.size());
+    //     JSValue jsFmt = JS_NewStringLen(ctx, buf, len);
+    //     JSValue jsLevel = JS_NewUint32(ctx, static_cast<uint32_t>(level));
+    //     JSValue callArgs[3]{jsArea, jsFmt, jsLevel};
+    //     JS_FreeValue(ctx, JS_Call(ctx, *func, JS_UNDEFINED, 3, callArgs));
+    //     JS_FreeValue(ctx, jsArea);
+    //     JS_FreeValue(ctx, jsFmt);
+    //     JS_FreeValue(ctx, jsLevel);
+    // });
     return JS_UNDEFINED;
 }
 

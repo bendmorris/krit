@@ -95,7 +95,7 @@ static void js_std_promise_rejection_tracker(JSContext *ctx,
 //     .js_realloc = ScriptAllocator::realloc,
 // };
 
-ScriptEngine::ScriptEngine() {
+ScriptEngine::ScriptEngine(Engine *engine) {
     // rt = JS_NewRuntime2(&allocFunctions, this);
     rt = JS_NewRuntime();
     // JS_SetRuntimeOpaque(rt, this);
@@ -123,7 +123,7 @@ ScriptEngine::ScriptEngine() {
     }
 
     JS_SetPropertyStr(ctx, globalObj, "krit",
-                      TypeConverter<Engine *>::valueToJs(ctx, krit::engine));
+                      TypeConverter<Engine *>::valueToJs(ctx, engine));
 }
 
 ScriptEngine::~ScriptEngine() {
@@ -138,6 +138,7 @@ ScriptEngine::~ScriptEngine() {
 }
 
 void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
+    AREA_LOG_INFO("script", "evaluating: %s\n", scriptName);
     JSValue result = JS_Eval(ctx, src, len, scriptName, JS_EVAL_TYPE_MODULE);
     if (JS_IsException(result) || JS_IsError(ctx, result)) {
         AREA_LOG_ERROR("script", "error evaluating script: %s", scriptName);
@@ -148,6 +149,7 @@ void ScriptEngine::eval(const char *scriptName, const char *src, size_t len) {
 
 std::string ScriptEngine::evalToString(const std::string &scriptName,
                                        const char *src, size_t len) {
+    AREA_LOG_INFO("script", "evaluating to string: %s\n", scriptName);
     JSValue result =
         JS_Eval(ctx, src, len, scriptName.c_str(), JS_EVAL_TYPE_GLOBAL);
     std::string s = js_std_get_error(ctx, result);

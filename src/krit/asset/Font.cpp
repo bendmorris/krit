@@ -40,16 +40,22 @@ template <> AssetType AssetLoader<Font>::type() { return FontAsset; }
 
 template <> size_t AssetLoader<Font>::cost(Font *f) { return sizeof(Font); }
 
-static FT_Library ftLibrary;
-static int ftLibraryUsers {0};
+static FT_Library ftLibrary{0};
+static int ftLibraryUsers{0};
 
 FontManager::FontManager() {
-    int error = FT_Init_FreeType(&ftLibrary);
-    if (error) {
-        panic("failed to initialize freetype: %i", error);
-    }
     if (!ftLibrary) {
-        FT_Stroker_New(ftLibrary, &stroker);
+        int error;
+        AREA_LOG_INFO("font", "init freetype");
+        error = FT_Init_FreeType(&ftLibrary);
+        if (error) {
+            panic("failed to initialize freetype: %i", error);
+        }
+        AREA_LOG_INFO("font", "creating stroker");
+        error = FT_Stroker_New(ftLibrary, &stroker);
+        if (error) {
+            AREA_LOG_ERROR("font", "couldn't create stroker: %i", error);
+        }
         ++ftLibraryUsers;
     }
 }
@@ -161,12 +167,16 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
     }
     FT_Glyph glyph;
     if (FT_Get_Glyph(face->glyph, &glyph)) {
-        panic("couldn't get glyph: %i", (int)codePoint);
+        AREA_LOG_ERROR("font", "couldn't get glyph: %i", (int)codePoint);
+        return nullptr;
     }
     if (border > 0) {
         FT_Stroker_Set(stroker, border * 64, FT_STROKER_LINECAP_ROUND,
-                        FT_STROKER_LINEJOIN_ROUND, 0);
-        FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
+                       FT_STROKER_LINEJOIN_ROUND, 0);
+        int err = FT_Glyph_StrokeBorder(&glyph, stroker, false, true);
+        if (err) {
+            AREA_LOG_ERROR("font", "couldn't stroke border: %i", err);
+        }
     }
     FT_Glyph_To_Bitmap(&glyph, FT_RENDER_MODE_NORMAL, nullptr, true);
     FT_BitmapGlyph bitmap = reinterpret_cast<FT_BitmapGlyph>(glyph);
@@ -180,19 +190,16 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
     {
         // search columns for space
         for (auto &column : columns) {
-            if (CACHE_TEXTURE_SIZE - column.height >=
-                    height + PADDING * 2 &&
-                column.width >= neededWidth &&
-                column.width < neededWidth * 2) {
+            if (CACHE_TEXTURE_SIZE - column.height >= height + PADDING * 2 &&
+                column.width >= neededWidth && column.width < neededWidth * 2) {
                 // use this one
                 auto it = glyphs.emplace(
                     std::piecewise_construct,
                     std::make_tuple(font, codePoint, size, border),
                     std::make_tuple(
-                        ImageRegion(img,
-                                    IntRectangle(x + PADDING,
-                                                    column.height + PADDING,
-                                                    width, height)),
+                        ImageRegion(img, IntRectangle(x + PADDING,
+                                                      column.height + PADDING,
+                                                      width, height)),
                         bitmap->left, bitmap->top));
                 column.height += height + PADDING * 2;
                 pending.emplace_back(font, codePoint, size, border);
@@ -211,8 +218,8 @@ GlyphData *GlyphCache::getGlyph(Font *font, char32_t codePoint,
                 std::piecewise_construct,
                 std::make_tuple(font, codePoint, size, border),
                 std::make_tuple(
-                    ImageRegion(img, IntRectangle(x + PADDING, PADDING,
-                                                    width, height)),
+                    ImageRegion(
+                        img, IntRectangle(x + PADDING, PADDING, width, height)),
                     bitmap->left, bitmap->top));
             pending.emplace_back(font, codePoint, size, border);
             FT_Done_Glyph(glyph);
@@ -228,7 +235,7 @@ void GlyphCache::createTexture() {
     GLuint textureId;
     glGenTextures(1, &textureId);
     if (!textureId) {
-        LOG_ERROR("failed to generate texture for GlyphCache");
+        AREA_LOG_ERROR("font", "failed to generate texture for GlyphCache");
     }
     img = std::make_shared<ImageData>(
         textureId, IntDimensions(CACHE_TEXTURE_SIZE, CACHE_TEXTURE_SIZE));

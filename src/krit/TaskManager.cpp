@@ -6,7 +6,7 @@ namespace krit {
 bool AsyncQueue::pop(AsyncTask *to) {
     bool result = false;
     SDL_LockMutex(lock);
-    SDL_CondWaitTimeout(available, lock, 1);
+    SDL_WaitConditionTimeout(available, lock, 1);
     if (taskManager->killed) {
         SDL_UnlockMutex(lock);
         return false;

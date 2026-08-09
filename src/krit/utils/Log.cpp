@@ -19,7 +19,7 @@ static bool logToTty = isatty(fileno(stdout));
 
 LogLevel Log::defaultLevel = LogLevel::Error;
 std::unordered_map<size_t, LogLevel> Log::levelMap;
-// std::vector<LogSink> Log::logSinks{Log::consoleLog};
+std::vector<LogSink> Log::logSinks{Log::consoleLog};
 
 LogLevel Log::level(std::string_view area) {
     return level(std::hash<std::string_view>()(area));
@@ -35,17 +35,17 @@ void Log::log(LogLevel level, std::string_view area, const char *fmt,
     if (Log::level(area) > level) {
         return;
     }
-    // for (size_t i = 0; i < logSinks.size(); ++i) {
-    //     auto &sink = logSinks[i];
-    //     if (i == logSinks.size() - 1) {
-    //         sink(level, area, fmt, args);
-    //     } else {
-    //         va_list argsCopy;
-    //         va_copy(argsCopy, args);
-    //         sink(level, area, fmt, argsCopy);
-    //         va_end(argsCopy);
-    //     }
-    // }
+    for (size_t i = 0; i < logSinks.size(); ++i) {
+        auto &sink = logSinks[i];
+        if (i == logSinks.size() - 1) {
+            sink(level, area, fmt, args);
+        } else {
+            va_list argsCopy;
+            va_copy(argsCopy, args);
+            sink(level, area, fmt, argsCopy);
+            va_end(argsCopy);
+        }
+    }
 }
 
 void Log::consoleLog(LogLevel level, std::string_view area, const char *fmt,

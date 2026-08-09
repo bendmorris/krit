@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.22 FATAL_ERROR)
 
+set(KRIT_DIR "${CMAKE_CURRENT_LIST_DIR}")
+set(KRIT_DIR "${CMAKE_CURRENT_LIST_DIR}" PARENT_SCOPE)
+
 add_library(krit INTERFACE)
 
 cmake_policy(SET CMP0072 NEW)
@@ -76,7 +79,7 @@ else()
 endif()
 option(KRIT_QUICKJS_DUMP_LEAKS "Dump any JS leaks on exit" ${default_dump_leaks})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -DCONFIG_VERSION=\\\"2021-03-27\\\" -fno-omit-frame-pointer -fasynchronous-unwind-tables")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Wall -MMD -MF .obj/.d -Wno-array-bounds -Wno-format-truncation -D_GNU_SOURCE -fno-omit-frame-pointer -fasynchronous-unwind-tables")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS} ${CMAKE_C_FLAGS_RELEASE} -O2")
 set(CMAKE_C_FLAGS_PROF "${CMAKE_C_FLAGS_RELEASE} ${CMAKE_C_FLAGS_PROF}")
 set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
@@ -129,6 +132,7 @@ if(KRIT_ENABLE_TOOLS)
     list(APPEND KRIT_SRC_FILES ${KRIT_EDITOR_FILES})
 endif()
 
+message(STATUS "system: ${CMAKE_SYSTEM_NAME}")
 if(BUILD_WINDOWS)
     include(${CMAKE_CURRENT_LIST_DIR}/toolchain/windows.cmake)
     target_compile_definitions(krit INTERFACE -DKRIT_WINDOWS)
@@ -143,7 +147,7 @@ else()
 endif()
 
 if(KRIT_USE_GLEW)
-    message("using glew")
+    message(STATUS "using glew")
     target_compile_definitions(krit INTERFACE -DKRIT_USE_GLEW -DGLEW_STATIC)
     list(APPEND KRIT_SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/src/GL/glew.c)
     set_source_files_properties(${CMAKE_CURRENT_LIST_DIR}/src/GL/glew.c
@@ -247,7 +251,7 @@ if(KRIT_ENABLE_SCRIPT)
         target_compile_definitions(krit INTERFACE -DDUMP_LEAKS)
     endif()
 
-    list(APPEND KRIT_SRC_FILES
+    target_sources(krit INTERFACE
         ${CMAKE_CURRENT_LIST_DIR}/quickjs/quickjs.h
         ${CMAKE_CURRENT_LIST_DIR}/quickjs/quickjs.c
         ${CMAKE_CURRENT_LIST_DIR}/quickjs/libregexp.c
@@ -255,6 +259,8 @@ if(KRIT_ENABLE_SCRIPT)
         ${CMAKE_CURRENT_LIST_DIR}/quickjs/cutils.c
         ${CMAKE_CURRENT_LIST_DIR}/quickjs/dtoa.c
     )
+    target_compile_definitions(krit INTERFACE "-DCONFIG_VERSION=\"2021-03-27\"")
+    target_link_options(krit INTERFACE "-Wl,--trace-symbol=my_mystery_symbol")
 
     file(GLOB_RECURSE BINDGEN_SRC_FILES CONFIGURE_DEPENDS
         ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen/src/*.ts
@@ -266,7 +272,9 @@ if(KRIT_ENABLE_SCRIPT)
         COMMAND cd ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen && npm install && npm run build
     )
 
-    function(tsbindgen BRIDGE_SRC_DIR PREFIX NAMESPACE)
+    set(KRIT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+
+    function(tsbindgen TARGET BRIDGE_SRC_DIR PREFIX NAMESPACE)
         message("tsbindgen: ${BRIDGE_SRC_DIR}")
         file(GLOB_RECURSE BRIDGE_TYPE_DEFS CONFIGURE_DEPENDS ${BRIDGE_SRC_DIR}/*.d.ts)
         set(BRIDGE_OUTPUTS "")
@@ -278,19 +286,19 @@ if(KRIT_ENABLE_SCRIPT)
         endforeach()
 
         get_property(CURRENT_BRIDGE_NAMESPACES GLOBAL PROPERTY BRIDGE_NAMESPACES)
-        message("cd ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
+        message("cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
         add_custom_command(
             OUTPUT ${BRIDGE_OUTPUTS}
-            DEPENDS ${BRIDGE_TYPE_DEFS} ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen/dist/index.js ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen/templates/ScriptClass.cpp.njk
-            COMMAND cd ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}"
+            DEPENDS ${BRIDGE_TYPE_DEFS} ${KRIT_DIR}/tools/tsbindgen/dist/index.js ${KRIT_DIR}/tools/tsbindgen/templates/ScriptClass.cpp.njk
+            COMMAND cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}"
         )
 
-        target_sources(krit INTERFACE ${BRIDGE_OUTPUTS})
+        target_sources(${TARGET} PUBLIC ${BRIDGE_OUTPUTS})
 
         set_property(GLOBAL PROPERTY BRIDGE_NAMESPACES "${CURRENT_BRIDGE_NAMESPACES}" "-n" "${NAMESPACE}:${BRIDGE_SRC_DIR}")
     endfunction()
 
-    tsbindgen(${CMAKE_CURRENT_LIST_DIR}/src generated/krit krit)
+    tsbindgen(krit ${CMAKE_CURRENT_LIST_DIR}/src generated/krit krit)
 endif()
 
 if(KRIT_ENABLE_TRACY AND BUILD_WINDOWS)

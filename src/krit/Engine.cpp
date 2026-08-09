@@ -20,7 +20,6 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_mouse.h>
-#include <SDL3/SDL_mutex.h>
 #include <SDL3_image/SDL_image.h>
 #include <cmath>
 #include <stdlib.h>
@@ -56,8 +55,12 @@ Engine::Engine(KritOptions &options)
       net(krit::net()),
 #endif
       window(options), renderer(window, options.block),
+#if KRIT_ENABLE_SCRIPT
+      script(this),
+#endif
       fixedFramerate(options.fixedFramerate), block(options.block),
       taskManager(std::make_unique<TaskManager>(3)) {
+    Scope _scope = scope();
     active.push_back(this);
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(__doFrame, 0, 0);
@@ -66,6 +69,7 @@ Engine::Engine(KritOptions &options)
     script.userData = this;
     scriptContext = JS_NewObject(script.ctx);
 #endif
+    taskManager->start();
 }
 
 Engine::~Engine() {
@@ -86,7 +90,7 @@ Engine::~Engine() {
 #if KRIT_ENABLE_CURSORS
     for (auto it : cursors) {
         for (auto &cursor : it.second) {
-            SDL_FreeCursor(cursor.second);
+            SDL_DestroyCursor(cursor.second);
         }
     }
 #endif
@@ -106,7 +110,7 @@ float Engine::time() {
 }
 
 void Engine::start() {
-    assert(engine == this);
+    Scope _scope = scope();
 
     CrashHandler::init();
 
@@ -131,6 +135,7 @@ void Engine::start() {
 }
 
 void Engine::run() {
+    Scope _scope = scope();
     while (running) {
         if (!runFrame()) {
             break;
@@ -141,7 +146,7 @@ void Engine::run() {
 }
 
 void Engine::cleanup() {
-    assert(engine == this);
+    Scope _scope = scope();
 
     invoke(onEnd);
     onEnd = nullptr;
@@ -149,7 +154,7 @@ void Engine::cleanup() {
 }
 
 bool Engine::runFrame() {
-    assert(engine == this);
+    Scope _scope = scope();
 
     if (!running) {
         return false;
@@ -254,6 +259,9 @@ void Engine::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         auto window = SDL_GetWindowFromEvent(&event);
+        if (event.type == SDL_EVENT_MOUSE_WHEEL) {
+            printf("WHEEL %p\n", window);
+        }
         if (window) {
             for (auto &engine : active) {
                 if (engine->window.window == window) {
@@ -296,14 +304,14 @@ void Engine::handleEvent(SDL_Event &event) {
         case SDL_EVENT_KEY_DOWN: {
             if (!event.key.repeat) {
                 if (handleKey) {
-                    input.keyDown(static_cast<KeyCode>(event.key.key));
+                    input.keyDown(static_cast<KeyCode>(event.key.scancode));
                 }
             }
             break;
         }
         case SDL_EVENT_KEY_UP: {
             if (handleKey) {
-                input.keyUp(static_cast<KeyCode>(event.key.key));
+                input.keyUp(static_cast<KeyCode>(event.key.scancode));
             }
             break;
         }
@@ -320,7 +328,9 @@ void Engine::handleEvent(SDL_Event &event) {
             break;
         }
         case SDL_EVENT_MOUSE_WHEEL: {
+            puts("wheel event");
             if (handleMouse && event.wheel.y) {
+                printf("y: %.2f\n", (double)event.wheel.y);
                 input.mouseWheel(
                     event.wheel.y *
                     (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1 : -1));
@@ -455,9 +465,9 @@ void Engine::addCursor(const std::string &cursorPath,
                        int y) {
     std::string s = engine->io->readFile(cursorPath);
 
-    SDL_RWops *rw = SDL_RWFromConstMem(s.c_str(), s.size());
-    SDL_Surface *surface = IMG_LoadTyped_RW(rw, 0, "PNG");
-    SDL_RWclose(rw);
+    SDL_IOStream *rw = SDL_IOFromConstMem(s.c_str(), s.size());
+    SDL_Surface *surface = IMG_LoadTyped_IO(rw, 0, "PNG");
+    SDL_CloseIO(rw);
 
     SDL_Cursor *cursor = SDL_CreateColorCursor(surface, x, y);
     this->cursors[cursorName].push_back(std::make_pair(resolution, cursor));
@@ -465,7 +475,7 @@ void Engine::addCursor(const std::string &cursorPath,
         chooseCursor();
     }
 
-    SDL_FreeSurface(surface);
+    SDL_DestroySurface(surface);
 }
 
 void Engine::setCursor(const std::string &cursor) {

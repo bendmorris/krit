@@ -20,6 +20,8 @@
 
 namespace krit {
 
+struct Engine;
+
 template <class T, std::size_t = sizeof(T)>
 std::true_type is_complete_impl(T *);
 std::false_type is_complete_impl(...);
@@ -106,7 +108,7 @@ struct ScriptEngine {
                        hash_instance_pair>
         instances;
 
-    ScriptEngine();
+    ScriptEngine(Engine *);
     ~ScriptEngine();
 
     void eval(const std::string &scriptName, const std::string &src) {

@@ -242,7 +242,11 @@ void gameMain(int argc, char *argv[]) {
 #endif
     };
 
-    _engine->run();
+    {
+        Engine::Scope _scope = _engine->scope();
+        _engine->start();
+        _engine->run();
+    }
 
 #ifndef __EMSCRIPTEN__
     // on most platforms, we're done here; in Emscripten, the main loop will

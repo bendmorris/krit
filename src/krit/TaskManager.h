@@ -1,9 +1,8 @@
-#ifndef KRIT_TASKMANAGER
-#define KRIT_TASKMANAGER
+#pragma once
 
 #if KRIT_ENABLE_THREADS
-#include <SDL2/SDL_mutex.h>
-#include <SDL2/SDL_thread.h>
+#include <SDL3/SDL_mutex.h>
+#include <SDL3/SDL_thread.h>
 #endif
 #include <algorithm>
 #include <functional>
@@ -21,17 +20,17 @@ using AsyncTask = std::function<void(void)>;
 #if KRIT_ENABLE_THREADS
 
 struct AsyncQueue {
-    SDL_mutex *lock;
-    SDL_cond *available;
-    TaskManager *t;
+    SDL_Mutex *lock{nullptr};
+    SDL_Condition *available{nullptr};
+    TaskManager *taskManager{nullptr};
 
     AsyncQueue(TaskManager *t) : taskManager(t) {
         lock = SDL_CreateMutex();
-        available = SDL_CreateCond();
+        available = SDL_CreateCondition();
     }
 
     ~AsyncQueue() {
-        SDL_DestroyCond(available);
+        SDL_DestroyCondition(available);
         SDL_DestroyMutex(lock);
     }
 
@@ -45,7 +44,7 @@ struct AsyncQueue {
     void push(AsyncTask job) {
         SDL_LockMutex(lock);
         queue.push(job);
-        SDL_CondBroadcast(available);
+        SDL_BroadcastCondition(available);
         SDL_UnlockMutex(lock);
     }
 
@@ -108,6 +107,10 @@ struct TaskManager {
           workQueue(this)
 #endif
     {
+        start();
+    }
+
+    void start() {
 #if KRIT_ENABLE_THREADS
         threads = new SDL_Thread *[size];
         for (size_t i = 0; i < size; ++i) {
@@ -146,5 +149,3 @@ private:
 };
 
 }
-
-#endif

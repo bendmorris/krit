@@ -13,7 +13,7 @@ build/curl-${CURL_VERSION}.tar.xz:
 build/curl-${CURL_VERSION}: build/curl-${CURL_VERSION}.tar.xz
 	tar xf $< -C build
 lib/libcurl.a: build/curl-${CURL_VERSION} lib/libssl.a
-	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl --without-brotli --prefix=$$PREFIX && make -j8 && make install
+	cd $< && ./configure --build=$$BUILD --host=$$HOST --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl --without-brotli --without-zstd --prefix=$$PREFIX && make -j8 && make install
 
 # curses
 curses: lib/libncurses.a
@@ -61,7 +61,7 @@ build/flatbuffers-$(FLATBUFFERS_VERSION): build/flatbuffers-$(FLATBUFFERS_VERSIO
 	tar xf $< -C build
 lib/libflatbuffers.a: build/flatbuffers-$(FLATBUFFERS_VERSION)
 	mkdir -p build/flatbuffers-$(FLATBUFFERS_VERSION)/build
-	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 .. && make flatbuffers flatc -j8 && make install
+	cd build/flatbuffers-$(FLATBUFFERS_VERSION)/build && cmake -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -D FLATBUFFERS_BUILD_TESTS=OFF -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_CXX_STANDARD=17 .. && make flatbuffers flatc -j8 && make install
 
 # freetype
 FREETYPE_VERSION:=2.12.1
@@ -120,7 +120,7 @@ build/openal-soft-1.24.0.tar.gz:
 build/openal-soft-1.24.0: build/openal-soft-1.24.0.tar.gz
 	tar xzf $< -C build
 $(OPENAL_LIB_NAME): build/openal-soft-1.24.0 lib/libsndfile.a lib/libz.a
-	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DLIBTYPE=STATIC -DALSOFT_UTILS=OFF -DALSOFT_EXAMPLES=OFF -DSNDFILE_LIBRARY=$(shell pwd)/lib/libsndfile.a -DSNDFILE_INCLUDE_DIR=$(shell pwd)/include -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include .. && cmake --build build -- -j8 && cmake --build build -- install
+	cd $< && cmake -B build -DCMAKE_BUILD_TYPE=Release -G"Unix Makefiles" $$CMAKE_TOOLCHAIN -DCMAKE_INSTALL_PREFIX=$$PREFIX -DLIBTYPE=STATIC -DALSOFT_UTILS=OFF -DALSOFT_EXAMPLES=OFF -DSNDFILE_LIBRARY=$(shell pwd)/lib/libsndfile.a -DSNDFILE_INCLUDE_DIR=$(shell pwd)/include -DZLIB_LIBRARY=$(shell pwd)/lib/libz.a -DZLIB_INCLUDE_DIR=$(shell pwd)/include && cmake --build build -- -j8 && cmake --build build -- install
 
 # openssl
 openssl: lib/libssl.a

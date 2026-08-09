@@ -5,6 +5,8 @@
 #include "krit/audio/AudioBackend.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Profiling.h"
+#define AL_ALEXT_PROTOTYPES
+#include <AL/al.h>
 #include <AL/alext.h>
 #include <cassert>
 #include <cstring>
