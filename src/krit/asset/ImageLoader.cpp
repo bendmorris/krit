@@ -7,7 +7,6 @@
 #include "krit/render/ImageData.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
-#include "yaml.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_pixels.h>
 #include <SDL3/SDL_surface.h>

@@ -1,5 +1,6 @@
-#ifndef KRIT_SPRITES_EMITTER
-#define KRIT_SPRITES_EMITTER
+#pragma once
+
+#if KRIT_ENABLE_PARTICLES
 
 #include "krit/Math.h"
 #include "krit/Sprite.h"

@@ -1,3 +1,5 @@
+#if KRIT_ENABLE_PARTICLES
+
 #include "krit/sprites/Particles.h"
 #include "krit/Engine.h"
 #include "krit/Math.h"
@@ -276,3 +278,5 @@ template <> size_t AssetLoader<ParticleEffect>::cost(ParticleEffect *effect) {
 }
 
 }
+
+#endif

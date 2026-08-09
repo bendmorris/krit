@@ -29,8 +29,8 @@ list(APPEND KRIT_LIBS
 )
 
 set(TOOLCHAIN_DIR "${CMAKE_CURRENT_BINARY_DIR}/toolchain")
-set(AUTOTOOLS_COMMON "--build=${AUTOTOOLS_BUILD_TRIPLET};--host=${AUTOTOOLS_HOST_TRIPLET};--prefix=${TOOLCHAIN_DIR}")
-set(CMAKE_COMMON "-DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DIR}")
+set(AUTOTOOLS_COMMON "--build=${AUTOTOOLS_BUILD_TRIPLET};--host=${AUTOTOOLS_HOST_TRIPLET};--prefix=${TOOLCHAIN_DIR};--with-pic")
+set(CMAKE_COMMON "-DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DIR};-DCMAKE_POSITION_INDEPENDENT_CODE=On")
 target_link_directories(krit INTERFACE ${TOOLCHAIN_DIR}/lib)
 target_include_directories(krit INTERFACE ${TOOLCHAIN_DIR}/include)
 
@@ -40,14 +40,7 @@ ExternalProject_Add(jpeg
 )
 ExternalProject_Add(png
     URL http://prdownloads.sourceforge.net/libpng/libpng-1.6.39.tar.gz?download
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
-    BUILD_COMMAND $(MAKE)
-    INSTALL_COMMAND $(MAKE) install
-    USES_TERMINAL_CONFIGURE TRUE
-)
-ExternalProject_Add(yaml
-    URL https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+    CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --with-pic
     BUILD_COMMAND $(MAKE)
     INSTALL_COMMAND $(MAKE) install
     USES_TERMINAL_CONFIGURE TRUE
@@ -71,18 +64,30 @@ ExternalProject_Add(sdl_image
     URL https://github.com/libsdl-org/SDL_image/releases/download/release-3.4.4/SDL3_image-3.4.4.tar.gz
     CMAKE_ARGS ${CMAKE_COMMON} -DBUILD_SHARED_LIBS=OFF -DSDLIMAGE_SAMPLES=OFF -DSDLIMAGE_DEPS_SHARED=OFF  -DSDLIMAGE_ANI=Off -DSDLIMAGE_AVIF=Off -DSDLIMAGE_BMP=Off -DSDLIMAGE_GIF=Off -DSDLIMAGE_JXL=Off -DSDLIMAGE_LBM=Off -DSDLIMAGE_PCX=Off -DSDLIMAGE_PNM=Off -DSDLIMAGE_QOI=Off -DSDLIMAGE_SVG=Off -DSDLIMAGE_TGA=Off -DSDLIMAGE_TIF=Off -DSDLIMAGE_WEBP=Off -DSDLIMAGE_XCF=Off -DSDLIMAGE_XPM=Off -DSDLIMAGE_XV=Off
 )
-add_dependencies(krit jpeg png yaml z zip sdl sdl_image)
+add_dependencies(krit jpeg png z zip sdl sdl_image)
 
 list(APPEND KRIT_STATIC_LIBS
     SDL3
     SDL3_image
     jpeg
     png
-    yaml
     zip
     z
 )
 
+if(KRIT_ENABLE_PARTICLES)
+    ExternalProject_Add(yaml
+        URL https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz
+        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        BUILD_COMMAND $(MAKE)
+        INSTALL_COMMAND $(MAKE) install
+        USES_TERMINAL_CONFIGURE TRUE
+    )
+    list(APPEND KRIT_STATIC_LIBS
+        yaml
+    )
+    add_dependencies(krit yaml)
+endif()
 if(KRIT_ENABLE_NET)
     ExternalProject_Add(openssl
         URL https://www.openssl.org/source/openssl-3.0.7.tar.gz
