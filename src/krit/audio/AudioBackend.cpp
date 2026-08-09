@@ -7,8 +7,6 @@
 #include "krit/utils/Log.h"
 #include "krit/utils/Profiling.h"
 #include "krit/utils/ScopedMutex.h"
-#define AL_ALEXT_PROTOTYPES
-#include <AL/al.h>
 #include <AL/alext.h>
 #include <sndfile.h>
 

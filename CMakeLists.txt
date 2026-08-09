@@ -7,6 +7,7 @@ add_library(krit INTERFACE)
 
 cmake_policy(SET CMP0072 NEW)
 cmake_policy(SET CMP0077 NEW)
+cmake_policy(SET CMP0135 NEW)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -212,15 +213,11 @@ if(KRIT_ENABLE_MULTISAMPLING)
     target_compile_definitions(krit INTERFACE -DKRIT_ENABLE_MULTISAMPLING)
 endif()
 
-message(STATUS "toolchain library path:${TOOLCHAIN_LIB_PATH} prefixes:${CMAKE_FIND_LIBRARY_PREFIXES} suffixes:${CMAKE_FIND_LIBRARY_SUFFIXES}")
-
 message("==> static libs: ${KRIT_STATIC_LIBS}")
 
 if(KRIT_ENABLE_TOOLS)
-    # find_library(NFD_LIB NAMES nfd HINTS "${TOOLCHAIN_LIB_PATH}" CMAKE_FIND_ROOT_PATH_BOTH)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-    # list(APPEND KRIT_STATIC_LIBS ${NFD_LIB})
     list(APPEND KRIT_LIBS ${GTK3_LIBRARIES})
 endif()
 

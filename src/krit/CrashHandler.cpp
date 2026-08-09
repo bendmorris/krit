@@ -17,11 +17,7 @@ static void readFileToStderr(FILE *f) {
 }
 
 static void sigintHandler(int) {
-    if (engine) {
-        engine->quit();
-    } else {
-        exit(0);
-    }
+    Engine::quitAll();
 }
 
 static void errorHandler(const char *fmt, ...) {

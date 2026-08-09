@@ -3,7 +3,7 @@ target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/windows/incl
 target_include_directories(krit BEFORE INTERFACE ${CMAKE_CURRENT_LIST_DIR}/windows/include)
 set(KRIT_PLATFORM_STATIC_LIBS "-lmingw32 -mwindows -Wl,--dynamicbase -Wl,--nxcompat -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lsetupapi -lversion -luuid -lws2_32 -lcrypt32 -lavrt -lbcrypt -fno-stack-protector -ldbghelp")
 set(KRIT_STATIC "-Wl,-Bstatic -lstdc++ -lpthread")
-set(TOOLCHAIN_LIB_PATH ${CMAKE_CURRENT_LIST_DIR}/windows/lib)
+set(AUTOTOOLS_HOST_TRIPLET "x86_64-w64-mingw32")
 include_directories(SYSTEM ${CMAKE_CURRENT_LIST_DIR}/windows/include)
 include_directories(SYSTEM ${CMAKE_CURRENT_LIST_DIR}/windows/include/freetype2)
 link_directories(${CMAKE_CURRENT_LIST_DIR}/windows/bin)

@@ -35,6 +35,12 @@ namespace krit {
 
 std::vector<Engine *> active;
 
+void Engine::quitAll() {
+    for (auto engine : active) {
+        engine->quit();
+    }
+}
+
 Engine *engine{0};
 RenderContext &render() {
     assert(engine);
@@ -328,9 +334,7 @@ void Engine::handleEvent(SDL_Event &event) {
             break;
         }
         case SDL_EVENT_MOUSE_WHEEL: {
-            puts("wheel event");
             if (handleMouse && event.wheel.y) {
-                printf("y: %.2f\n", (double)event.wheel.y);
                 input.mouseWheel(
                     event.wheel.y *
                     (event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? 1 : -1));

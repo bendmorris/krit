@@ -17,10 +17,12 @@ namespace krit {
 struct RenderContext;
 
 Shader::~Shader() {
-    GLuint program = this->program;
-    if (program) {
-        engine->taskManager->pushRender(
-            [program]() { glDeleteProgram(program); });
+    if (engine) {
+        GLuint program = this->program;
+        if (program) {
+            engine->taskManager->pushRender(
+                [program]() { glDeleteProgram(program); });
+        }
     }
 }
 

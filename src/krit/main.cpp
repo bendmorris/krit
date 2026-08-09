@@ -26,6 +26,7 @@ void gameMain(int argc, char *argv[]) {
 
 #ifdef KRIT_DESKTOP
     argparse::ArgumentParser program(options.programName.c_str());
+    program.set_prefix_chars("-");
     program.add_argument("-v", "--verbose")
         .action([&](const auto &) {
             if (options.logLevel > LogLevel::Debug) {
@@ -39,15 +40,15 @@ void gameMain(int argc, char *argv[]) {
         .nargs(0)
         .help("increase the log level (default: ERR)");
     program.add_argument("-f", "--feature")
-        .action([&](const std::string &s) { options.features.push_back(s); })
+        .store_into(options.features)
         .append()
         .help("set feature values");
     program.add_argument("-l", "--log")
-        .action([&](const std::string &s) { options.logAreas.push_back(s); })
+        .store_into(options.logAreas)
         .append()
         .help("enable log areas");
     program.add_argument("-e", "--eval")
-        .action([&](const std::string &s) { options.jsFiles.push_back(s); })
+        .store_into(options.jsFiles)
         .append()
         .help("evaluate files at startup");
 

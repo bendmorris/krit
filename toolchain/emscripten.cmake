@@ -6,7 +6,6 @@ set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -gsource-map -
 # link_directories(${CMAKE_CURRENT_SOURCE_DIR}/toolchain/emscripten/lib)
 include_directories(BEFORE ${CMAKE_CURRENT_LIST_DIR}/emscripten/include)
 target_compile_definitions(krit INTERFACE -DKRIT_NO_VSYNC)
-set(TOOLCHAIN_LIB_PATH ${CMAKE_CURRENT_LIST_DIR}/emscripten/lib)
 set(CMAKE_FIND_LIBRARY_PREFIXES "lib" "")
 set(CMAKE_FIND_LIBRARY_SUFFIXES ".so" ".a")
 set(KRIT_ENABLE_THREADS OFF)

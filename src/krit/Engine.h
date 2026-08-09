@@ -52,6 +52,8 @@ extern Engine *engine;
 struct Engine {
     enum class FramePhase { Inactive, Begin, Update, Render };
 
+    static void quitAll();
+
     struct TimedEvent {
         using SignalType = ReturnSignal<bool, void *>;
         float delay;
