@@ -34,6 +34,8 @@ struct ImageData {
     ImageData() {}
     virtual ~ImageData();
 
+    void update(uint8_t *data, GLuint mode = GL_RGBA, bool free = false);
+
 private:
     bool hasMipmaps = false;
 

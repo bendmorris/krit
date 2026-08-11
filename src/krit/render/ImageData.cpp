@@ -18,15 +18,17 @@ ImageData::ImageData(uint8_t *data, size_t width, size_t height)
         if (!texture) {
             LOG_ERROR("failed to generate empty texture for new ImageData");
         }
-        checkForGlErrors("gen textures");
-        glBindTexture(GL_TEXTURE_2D, texture);
-        checkForGlErrors("bind texture");
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
-                     GL_UNSIGNED_BYTE, data);
-        checkForGlErrors("texImage2D");
-        glBindTexture(GL_TEXTURE_2D, 0);
         this->texture = texture;
-        delete[] data;
+        checkForGlErrors("gen textures");
+        if (data) {
+            glBindTexture(GL_TEXTURE_2D, texture);
+            checkForGlErrors("bind texture");
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
+                         GL_UNSIGNED_BYTE, data);
+            checkForGlErrors("texImage2D");
+            glBindTexture(GL_TEXTURE_2D, 0);
+            delete[] data;
+        }
     });
 }
 
@@ -38,6 +40,21 @@ ImageData::~ImageData() {
             glDeleteTextures(1, &tex);
         });
     }
+}
+
+void ImageData::update(uint8_t *data, GLuint mode, bool free) {
+    assert(data);
+    engine->taskManager->pushRender([this, data, free, mode]() {
+        glBindTexture(GL_TEXTURE_2D, texture);
+        checkForGlErrors("bind texture");
+        glTexImage2D(GL_TEXTURE_2D, 0, mode, width(), height(), 0, mode,
+                     GL_UNSIGNED_BYTE, data);
+        checkForGlErrors("texImage2D");
+        glBindTexture(GL_TEXTURE_2D, 0);
+        if (free) {
+            delete[] data;
+        }
+    });
 }
 
 }
