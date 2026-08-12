@@ -31,6 +31,12 @@ option(KRIT_ENABLE_TOOLS "Include imgui and devtools functionality" OFF)
 option(KRIT_ENABLE_TRACY "Enable profiling hooks for Tracy" OFF)
 option(KRIT_MAIN "Inlude the krit main.cpp file" ON)
 option(KRIT_USE_GLEW "Whether to use glew instead of direct GL" ON)
+option(KRIT_ASAN "Enable address sanitizer" OFF)
+
+if (KRIT_ASAN)
+    target_compile_options(krit INTERFACE -fsanitize=address)
+    target_link_options(krit INTERFACE -fsanitize=address)
+endif()
 
 if(KRIT_ENABLE_AUDIO)
     target_compile_definitions(krit INTERFACE -DKRIT_ENABLE_AUDIO)
@@ -274,6 +280,7 @@ if(KRIT_ENABLE_SCRIPT)
         COMMAND cd ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen && npm install && npm run build
     )
 
+    set(KRIT_DIR "${CMAKE_CURRENT_LIST_DIR}")
     set(KRIT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
     function(tsbindgen TARGET BRIDGE_SRC_DIR PREFIX NAMESPACE)

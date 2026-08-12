@@ -16,8 +16,8 @@ namespace krit {
 struct RenderContext;
 
 struct Image : public Sprite {
-    Point origin;
-    Point scroll;
+    Point origin{0};
+    Point scroll{0};
     float angle = 0;
     float pitch = 0;
     ImageRegion region;

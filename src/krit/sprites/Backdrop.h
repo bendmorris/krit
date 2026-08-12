@@ -20,7 +20,7 @@ struct Backdrop : public Sprite {
     float angle = 0;
     float pitch = 0;
     ImageRegion region;
-    Point scroll;
+    Point scroll{0};
     bool repeatX = true;
     bool repeatY = true;
 

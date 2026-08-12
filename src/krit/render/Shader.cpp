@@ -82,11 +82,6 @@ void Shader::init() {
         this->colorIndex = glGetAttribLocation(program, "aColor");
         checkForGlErrors("colorIndex");
 
-        bytesPerVertex =
-            (2 /* position */ + (colorIndex == -1 ? 0 : 1) /* color */ +
-             (this->texCoordIndex == -1 ? 0 : 2)) *
-            sizeof(GLfloat);
-
         // get uniform info
         GLint count, size;
         GLenum type;
@@ -115,7 +110,7 @@ void Shader::init() {
 
 static void *offset(intptr_t n) { return (void *)n; }
 
-size_t Shader::stride() { return sizeof(VertexData); }
+size_t Shader::stride() { return (sizeof(VertexData) + 3) & (~3); }
 
 void Shader::bind() {
     this->init();
@@ -142,7 +137,7 @@ void Shader::bind() {
     }
     if (hasColor) {
         glEnableVertexAttribArray(colorIndex);
-        glVertexAttribPointer(colorIndex, 4, GL_FLOAT, GL_FALSE, stride,
+        glVertexAttribPointer(colorIndex, 4, GL_UNSIGNED_BYTE, GL_TRUE, stride,
                               offset(offsetof(VertexData, color)));
     }
     checkForGlErrors("attrib pointers");

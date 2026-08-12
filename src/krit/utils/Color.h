@@ -25,10 +25,10 @@ struct Color {
         return Color(1.0, 1.0, 1.0, alpha);
     }
 
-    float r = 0.0;
-    float g = 0.0;
-    float b = 0.0;
-    float a = 0.0;
+    float r;
+    float g;
+    float b;
+    float a;
 
     Color() {}
     Color(const Color &) = default;
@@ -115,34 +115,34 @@ struct Color {
 
     Color withAlpha(float alpha) { return Color(r, g, b, alpha); }
 
-    uint32_t rgb() {
+    uint32_t rgb() const {
         return (static_cast<uint32_t>(r * 0xff) << 16) |
                (static_cast<uint32_t>(g * 0xff) << 8) |
                static_cast<uint32_t>(b * 0xff);
     }
 
-    uint32_t bgra() {
+    uint32_t bgra() const {
         return (static_cast<uint32_t>(b * 0xff) << 24) |
                (static_cast<uint32_t>(g * 0xff) << 16) |
                (static_cast<uint32_t>(r * 0xff) << 8) |
                static_cast<uint32_t>(a * 0xff);
     }
 
-    uint32_t rgba() {
+    uint32_t rgba() const {
         return (static_cast<uint32_t>(r * 0xff) << 24) |
                (static_cast<uint32_t>(g * 0xff) << 16) |
                (static_cast<uint32_t>(b * 0xff) << 8) |
                static_cast<uint32_t>(a * 0xff);
     }
 
-    uint32_t argb() {
+    uint32_t argb() const {
         return (static_cast<uint32_t>(a * 0xff) << 24) |
                (static_cast<uint32_t>(r * 0xff) << 16) |
                (static_cast<uint32_t>(g * 0xff) << 8) |
                static_cast<uint32_t>(b * 0xff);
     }
 
-    uint32_t abgr() {
+    uint32_t abgr() const {
         return (static_cast<uint32_t>(a * 0xff) << 24) |
                (static_cast<uint32_t>(b * 0xff) << 16) |
                (static_cast<uint32_t>(g * 0xff) << 8) |

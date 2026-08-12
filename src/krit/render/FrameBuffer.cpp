@@ -25,7 +25,6 @@ FrameBuffer::~FrameBuffer() {
 
 void FrameBuffer::init() {
     bool initialized = false;
-    // multisample = false;
     if (!frameBuffer) {
         glGenFramebuffers(1, &frameBuffer);
         checkForGlErrors("create framebuffer");

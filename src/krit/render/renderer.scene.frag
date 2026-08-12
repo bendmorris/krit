@@ -9,10 +9,6 @@ out vec4 FragColor;
 
 void main(void) {
     vec4 color = texture(uImage, vTexCoord);
-    if (color.a == 0.0) {
-        discard;
-    } else {
-        FragColor = color;
-    }
+    FragColor = color;
 }
 )"

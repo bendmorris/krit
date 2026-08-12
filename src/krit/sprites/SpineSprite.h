@@ -63,8 +63,8 @@ struct SpineSprite : public Sprite {
         return new SpineSprite(id);
     }
 
-    Vec2f origin;
-    Vec2f scale {1, 1};
+    Vec2f origin{0};
+    Vec2f scale{1, 1};
     float angle = 0;
     float pitch = 0;
     float rate = 1;

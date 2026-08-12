@@ -13,7 +13,7 @@ namespace krit {
 struct RenderContext;
 
 struct NineSlice : public Sprite {
-    Point origin;
+    Point origin{0};
     float pitch = 0;
 
     ImageRegion base;

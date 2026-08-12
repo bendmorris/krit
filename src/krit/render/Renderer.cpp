@@ -57,6 +57,7 @@ void Renderer::setSmoothingMode(SmoothingMode mode, ImageData *img) {
             break;
         }
     }
+    checkForGlErrors("setSmoothingMode");
 }
 
 void Renderer::setBlendMode(BlendMode mode) {
@@ -422,10 +423,12 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
                                 GL_CLAMP_TO_EDGE);
                 checkForGlErrors("bind texture");
                 setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
+                checkForGlErrors("setSmoothingMode");
             }
             if (shader->matrixIndex > -1) {
                 glUniformMatrix4fv(shader->matrixIndex, 1, GL_FALSE,
                                    _ortho.data());
+                checkForGlErrors("glUniformMatrix4fv");
             }
             setBlendMode(drawCall.key.blend);
 

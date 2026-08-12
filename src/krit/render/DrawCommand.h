@@ -47,11 +47,11 @@ struct SetRenderTargetArgs {
 };
 
 struct ReadPixelArgs {
-    FrameBuffer *fb { nullptr };
+    FrameBuffer *fb{nullptr};
     Vec2i pos;
 
     ReadPixelArgs() {}
-    ReadPixelArgs(FrameBuffer *fb, int x, int y): fb(fb), pos(x, y) {}
+    ReadPixelArgs(FrameBuffer *fb, int x, int y) : fb(fb), pos(x, y) {}
 };
 
 struct AutoClipBounds {
@@ -64,14 +64,28 @@ struct AutoClipBounds {
 };
 
 struct VertexData {
-    Vec4f position;
-    Vec2f texCoord;
-    Color color;
+    std::array<float, 4> position;
+    std::array<float, 2> texCoord;
+    uint32_t color;
 
     VertexData() {}
     VertexData(float x, float y, float z, float w, float uvx, float uvy,
                float r, float g, float b, float a)
-        : position(x, y, z, w), texCoord(uvx, uvy), color(r, g, b, a) {}
+        : position{x, y, z, w}, texCoord{uvx, uvy}, color(Color(r, g, b, a).argb()) {}
+
+    inline void setPosition(float x, float y, float z, float w) {
+        position[0] = x;
+        position[1] = y;
+        position[2] = z;
+        position[3] = w;
+    }
+    inline void setTexCoord(float uvx, float uvy) {
+        texCoord[0] = uvx;
+        texCoord[1] = uvy;
+    }
+    inline void setColor(const Color &c) {
+        color = c.abgr();
+    }
 };
 
 struct DrawCommandBuffer {
@@ -136,7 +150,9 @@ struct DrawCommandBuffer {
 
     void setCamera(Camera *c) { buf.emplace_back<SetCamera>(c); }
 
-    void queueReadPixel(FrameBuffer *fb, int x, int y) { buf.emplace_back<ReadPixel>(fb, x, y); }
+    void queueReadPixel(FrameBuffer *fb, int x, int y) {
+        buf.emplace_back<ReadPixel>(fb, x, y);
+    }
 };
 
 }

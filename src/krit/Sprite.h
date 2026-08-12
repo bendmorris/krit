@@ -12,8 +12,8 @@ namespace krit {
 struct SpriteShader;
 
 struct Sprite {
-    Point position;
-    Dimensions dimensions;
+    Point position{0};
+    Dimensions dimensions{0};
     Color color = Color::white();
     SpriteShader *shader = nullptr;
     BlendMode blendMode = Alpha;

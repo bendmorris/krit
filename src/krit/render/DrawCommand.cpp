@@ -90,16 +90,16 @@ void DrawCommandBuffer::addTriangle(RenderContext &ctx, const DrawKey &key,
 
 static inline void addVertex(VertexData &to, float x, float y, float z,
                              float uvx, float uvy, const Color &c) {
-    to.position.setTo(x, y, z, 1.0);
-    to.texCoord.setTo(uvx, uvy);
-    to.color.copyFrom(c);
+    to.setPosition(x, y, z, 1.0);
+    to.setTexCoord(uvx, uvy);
+    to.setColor(c);
 }
 
 static inline void addVertex(VertexData &to, const Vec3f &t, const Vec3f &uv,
                              const Color &c) {
-    to.position.setTo(t.x, t.y, t.z, 1.0);
-    to.texCoord.setTo(uv.x, uv.y);
-    to.color.copyFrom(c);
+    to.setPosition(t.x, t.y, t.z, 1.0);
+    to.setTexCoord(uv.x, uv.y);
+    to.setColor(c);
 }
 
 void DrawCommandBuffer::addTriangle(DrawCall &draw, const Triangle &t,
