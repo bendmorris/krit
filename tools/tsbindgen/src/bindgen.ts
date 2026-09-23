@@ -192,6 +192,11 @@ export class Bindgen {
                     case 'Promise': {
                         return { validationType: `krit::Promise` };
                     }
+                    case 'Record': {
+                        const keyType = this.parseType(node.typeArguments[0]);
+                        const valueType = this.parseType(node.typeArguments[1]);
+                        return { validationType: `std::unordered_map<${keyType.validationType}, ${valueType.validationType}>` };
+                    }
                     default: {
                         throw new TsError(`unknown parameterized type: ${base}`, node);
                     }
@@ -333,6 +338,8 @@ export class Bindgen {
                 classes: [],
                 enums: [],
                 functions: [],
+                // TODO
+                //variables: [],
                 hasDeclarations: false,
             });
 
@@ -496,6 +503,8 @@ export class Bindgen {
                                 })})`,
                         );
                         types.functions.push(f);
+                    } else if (ts.isVariableDeclaration(node)) {
+                        // TODO
                     }
                 } catch (e) {
                     if (e instanceof TsError) {

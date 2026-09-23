@@ -12,6 +12,7 @@
 #include "krit/utils/Color.h"
 #include "krit/utils/Log.h"
 #include "krit/utils/Panic.h"
+#include "krit/utils/Profiling.h"
 #include "spine/AnimationState.h"
 #include "spine/Attachment.h"
 #include "spine/Bone.h"
@@ -65,7 +66,7 @@ AssetLoader<SpineData>::loadAsset(const std::string &path) {
     //     data->json->readSkeletonData((const char *)s));
     if (!data->skeletonData) {
         LOG_ERROR("failed to load skeleton data %s: %s", path.c_str(),
-                   data->binary->getError().buffer());
+                  data->binary->getError().buffer());
     }
     data->animationStateData = std::unique_ptr<spine::AnimationStateData>(
         new spine::AnimationStateData(data->skeletonData.get()));
@@ -203,6 +204,7 @@ void SpineSprite::update() {
 static spine::SkeletonRenderer skeletonRenderer;
 
 void SpineSprite::render(RenderContext &ctx) {
+    ProfileZone("SpineSprite::render");
     spine::Skeleton &skeleton = *this->skeleton;
 
     Matrix4 m;
@@ -212,28 +214,28 @@ void SpineSprite::render(RenderContext &ctx) {
     m.rotate(angle);
     m.pitch(pitch);
     m.translate(position.x, position.y, position.z);
+    auto &v = m.v;
 
     DrawKey key;
     key.shader = this->shader;
     key.smooth = this->smooth;
-    // key.blend = this->blend;
 
-    spine::RenderCommand *command = skeletonRenderer.render(skeleton);
+    spine::RenderCommand *command;
+    {
+        ProfileZone("SpineSprite::render::skeletonRenderer.render");
+        command = skeletonRenderer.render(skeleton);
+    }
     while (command) {
         assert(command->texture);
         float *positions = command->positions;
         float *uvs = command->uvs;
         uint32_t *colors = command->colors;
         uint16_t *indices = command->indices;
-        key.image = static_cast<ImageRegion *>(command->texture)->img;
-        float uvOffsetX = 0, uvOffsetY = 0;
         auto region = static_cast<ImageRegion *>(command->texture);
-        if (region->uvx1() || region->uvy1() ||
-            std::abs(region->uvx2() - 1) > 0.000001 ||
-            std::abs(region->uvy2() - 1) > 0.000001) {
-            uvOffsetX = region->uvx1();
-            uvOffsetY = region->uvy1();
-        }
+        key.image = region->img;
+        DrawCall &call = ctx.drawCommandBuffer->getDrawCall(key);
+        float uvOffsetX = region->uvx1();
+        float uvOffsetY = region->uvy1();
         switch (command->blendMode) {
             case spine::BlendMode_Additive: {
                 key.blend = Add;
@@ -251,34 +253,41 @@ void SpineSprite::render(RenderContext &ctx) {
                 key.blend = Alpha;
             }
         }
-        Color c;
-        for (int i = 0; i < command->numIndices;) {
-            Triangle t, uv;
-            uint16_t i1 = indices[i++];
-            uint16_t i2 = indices[i++];
-            uint16_t i3 = indices[i++];
-            t.p1.setTo(positions[i1 * 2], positions[i1 * 2 + 1]);
-            t.p2.setTo(positions[i2 * 2], positions[i2 * 2 + 1]);
-            t.p3.setTo(positions[i3 * 2], positions[i3 * 2 + 1]);
-            uv.p1.setTo(uvs[i1 * 2], uvs[i1 * 2 + 1]);
-            uv.p2.setTo(uvs[i2 * 2], uvs[i2 * 2 + 1]);
-            uv.p3.setTo(uvs[i3 * 2], uvs[i3 * 2 + 1]);
-            if (uvOffsetX) {
-                uv.p1.x += uvOffsetX;
-                uv.p2.x += uvOffsetX;
-                uv.p3.x += uvOffsetX;
+        Color c(colors[0] & 0xffffff);
+        c.a = static_cast<float>(((colors[0] >> 24) & 0xff)) / 0xff;
+        c = c.multiply(color);
+        uint32_t abgr = c.abgr();
+        {
+            ProfileZone("SpineSprite::render::addTriangles");
+            for (int i = 0; i < command->numIndices;) {
+                Triangle t, uv;
+                uint16_t i1 = indices[i++];
+                uint16_t i2 = indices[i++];
+                uint16_t i3 = indices[i++];
+                float x1 = positions[i1 * 2], y1 = positions[i1 * 2 + 1],
+                      x2 = positions[i2 * 2], y2 = positions[i2 * 2 + 1],
+                      x3 = positions[i3 * 2], y3 = positions[i3 * 2 + 1];
+                // inline matrix multiply
+                auto vertexData = ctx.drawCommandBuffer->emplaceTriangle(call);
+                vertexData[0].setPosition(v[0] * x1 + v[4] * y1 + v[12],
+                                          v[1] * x1 + v[5] * y1 + v[13],
+                                          v[2] * x1 + v[6] * y1 + v[14], 1.0);
+                vertexData[0].setTexCoord(uvs[i1 * 2] + uvOffsetX,
+                                          uvs[i1 * 2 + 1] + uvOffsetY);
+                vertexData[0].setColor(abgr);
+                vertexData[1].setPosition(v[0] * x2 + v[4] * y2 + v[12],
+                                          v[1] * x2 + v[5] * y2 + v[13],
+                                          v[2] * x2 + v[6] * y2 + v[14], 1.0);
+                vertexData[1].setTexCoord(uvs[i2 * 2] + uvOffsetX,
+                                          uvs[i2 * 2 + 1] + uvOffsetY);
+                vertexData[1].setColor(abgr);
+                vertexData[2].setPosition(v[0] * x3 + v[4] * y3 + v[12],
+                                          v[1] * x3 + v[5] * y3 + v[13],
+                                          v[2] * x3 + v[6] * y3 + v[14], 1.0);
+                vertexData[2].setTexCoord(uvs[i3 * 2] + uvOffsetX,
+                                          uvs[i3 * 2 + 1] + uvOffsetY);
+                vertexData[2].setColor(abgr);
             }
-            if (uvOffsetY) {
-                uv.p1.y += uvOffsetY;
-                uv.p2.y += uvOffsetY;
-                uv.p3.y += uvOffsetY;
-            }
-            c.setTo(colors[i1] & 0xffffff);
-            c.a = ((colors[i1] >> 24) & 0xff) / 0xff;
-
-            t = m * t;
-            // t.debugPrint();
-            ctx.addTriangle(key, t, uv, c.multiply(color), zIndex);
         }
         command = command->next;
     }

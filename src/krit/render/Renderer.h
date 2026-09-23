@@ -20,8 +20,13 @@ namespace krit {
 struct SpriteShader;
 struct FrameBuffer;
 
+struct RendererState {
+    GLuint texture{0};
+    SmoothingMode smooth{SmoothingMode::SmoothNearest};
+};
+
 struct Renderer {
-    static const int DUP_BUFFER_COUNT = 1;
+    static const int DUP_BUFFER_COUNT = 3;
 
     DrawCommandBuffer drawCommandBuffer;
 
@@ -36,6 +41,7 @@ struct Renderer {
     SpriteShader *getDefaultTextShader();
 
 private:
+    RendererState lastState;
     GLuint vao;
     GLuint indexBuffer[DUP_BUFFER_COUNT] = {0};
     GLuint vertexBuffer[DUP_BUFFER_COUNT] = {0};

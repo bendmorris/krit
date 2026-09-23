@@ -25,9 +25,7 @@ struct ScriptEngine;
 template <typename T, typename enable_if = void> struct TypeConverter {
     static JSValue valueToJs(JSContext *ctx, const T &val);
     static T valueFromJs(JSContext *ctx, JSValue val);
-    static bool isConvertible(JSContext *ctx, JSValue val) {
-        return false;
-    }
+    static bool isConvertible(JSContext *ctx, JSValue val) { return false; }
 };
 
 template <typename T> struct has_reference_specialization : std::false_type {};
@@ -43,6 +41,9 @@ template <typename T>
 struct has_reference_specialization<std::function<T>> : std::true_type {};
 template <>
 struct has_reference_specialization<std::string> : std::true_type {};
+template <typename T>
+struct has_reference_specialization<std::unordered_map<std::string, T>>
+    : std::true_type {};
 
 template <typename T, typename enable_if = void>
 struct convertible_from_js : std::false_type {};
@@ -53,17 +54,14 @@ struct convertible_from_js<T,
 
 /**
  * If a function returns a new JSValue, it is assumed to have had its ref count
- * incremented already and be "live".
+ * incremented already and be "live". Note that if accessing a property that's a
+ * JSValue, this would not work - these need to go through getters that
+ * increment the ref count.
  */
-
 template <> struct TypeConverter<JSValue> {
-    static JSValue valueFromJs(JSContext *ctx, JSValue val) {
-        return val;
-    }
-    static JSValue valueToJs(JSContext *ctx, const JSValue &val) { return JS_DupValue(ctx, val); }
-    static bool isConvertible(JSContext *ctx, JSValue val) {
-        return true;
-    }
+    static JSValue valueFromJs(JSContext *ctx, JSValue val) { return val; }
+    static JSValue valueToJs(JSContext *ctx, const JSValue &val) { return val; }
+    static bool isConvertible(JSContext *ctx, JSValue val) { return true; }
 };
 
 /**
@@ -71,15 +69,11 @@ template <> struct TypeConverter<JSValue> {
  * the reference count before returning.
  */
 template <> struct TypeConverter<JSValue &> {
-    static JSValue valueFromJs(JSContext *ctx, JSValue val) {
-        return val;
-    }
+    static JSValue valueFromJs(JSContext *ctx, JSValue val) { return val; }
     static JSValue valueToJs(JSContext *ctx, const JSValue &val) {
         return JS_DupValue(ctx, val);
     }
-    static bool isConvertible(JSContext *ctx, JSValue val) {
-        return true;
-    }
+    static bool isConvertible(JSContext *ctx, JSValue val) { return true; }
 };
 
 template <> struct TypeConverter<bool> {
@@ -89,9 +83,7 @@ template <> struct TypeConverter<bool> {
     static JSValue valueToJs(JSContext *ctx, const bool &val) {
         return JS_NewBool(ctx, val);
     }
-    static bool isConvertible(JSContext *ctx, JSValue val) {
-        return true;
-    }
+    static bool isConvertible(JSContext *ctx, JSValue val) { return true; }
 };
 
 // signed integral type or enum
@@ -373,7 +365,7 @@ template <> struct TypeConverter<std::string_view> {
 
 // optional
 template <typename T> struct TypeConverter<std::optional<T>> {
-    static JSValue valueToJs(JSContext *ctx, std::optional<T> v) {
+    static JSValue valueToJs(JSContext *ctx, const std::optional<T> &v) {
         return v ? TypeConverter<T>::valueToJs(ctx, *v) : JS_UNDEFINED;
     }
     static std::optional<T> valueFromJs(JSContext *ctx, JSValue val) {
@@ -384,6 +376,43 @@ template <typename T> struct TypeConverter<std::optional<T>> {
     }
     static bool isConvertible(JSContext *ctx, JSValue val) {
         return JS_IsUndefined(val) || TypeConverter<T>::isConvertible(ctx, val);
+    }
+};
+
+template <typename T> struct TypeConverter<std::optional<T> &> {
+    static JSValue valueToJs(JSContext *ctx, const std::optional<T> &v) {
+        return TypeConverter<std::optional<T>>::valueToJs(ctx, v);
+    }
+};
+
+// map
+template <typename T> struct TypeConverter<std::unordered_map<std::string, T>> {
+    static JSValue valueToJs(JSContext *ctx,
+                             const std::unordered_map<std::string, T> &v) {
+        JSValue map = JS_NewObject(ctx);
+        for (auto it : v) {
+            JSValue val = TypeConverter<T>::valueToJs(ctx, it.second);
+            JS_SetPropertyStr(ctx, map, it.first.c_str(), val);
+        }
+        return map;
+    }
+    // static std::unordered_map<std::string, T> valueFromJs(JSContext *ctx,
+    // JSValue val) {
+    //     std::unordered_map<std::string, T> map;
+    //     // TODO
+    //     return map;
+    // }
+    static bool isConvertible(JSContext *ctx, JSValue val) {
+        return JS_IsObject(val);
+    }
+};
+
+template <typename T>
+struct TypeConverter<std::unordered_map<std::string, T> &> {
+    static JSValue valueToJs(JSContext *ctx,
+                             const std::unordered_map<std::string, T> &v) {
+        return TypeConverter<std::unordered_map<std::string, T>>::valueToJs(ctx,
+                                                                            v);
     }
 };
 

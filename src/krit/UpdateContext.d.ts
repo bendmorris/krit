@@ -1,4 +1,4 @@
-/** skip */ declare const frame: UpdateContext;
+declare const frame: UpdateContext;
 
 declare class UpdateContext {
     readonly elapsed: number;

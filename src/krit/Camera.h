@@ -61,6 +61,15 @@ struct Camera {
     void scaleDimensions(Dimensions &d);
     void unscaleDimensions(Dimensions &d);
 
+    Rectangle &transformRect(Rectangle &rect) {
+        Point p(rect.x, rect.y);
+        Dimensions d(rect.width, rect.height);
+        this->transformPoint(p);
+        this->scaleDimensions(d);
+        rect.setTo(p.x, p.y, d.x, d.y);
+        return rect;
+    }
+
     void getTransformationMatrix(Matrix4 &m, int width, int height);
 
     void update();

@@ -21,7 +21,8 @@ IntDimensions RenderContext::size() {
 }
 
 void RenderContext::pushClip(Rectangle &rect) {
-    this->transformRect(rect);
+    assert(camera);
+    this->camera->transformRect(rect);
     this->drawCommandBuffer->pushClip(rect);
 }
 
@@ -35,33 +36,13 @@ bool RenderContext::endAutoClip() {
 
 void RenderContext::popClip() { this->drawCommandBuffer->popClip(); }
 
-void RenderContext::addRect(const DrawKey &key, const IntRectangle &rect,
-                            const Matrix4 &matrix, const Color color,
-                            int zIndex) {
-    this->drawCommandBuffer->addRect(*this, key, rect, matrix, color, zIndex);
-}
-
-void RenderContext::addTriangle(const DrawKey &key, const Triangle &t,
-                                const Triangle &uv, const Color color,
-                                int zIndex) {
-    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color, zIndex);
-}
-
-void RenderContext::addTriangle(const DrawKey &key, const Triangle &t,
-                                const Triangle &uv, const Color &color1,
-                                const Color &color2, const Color &color3,
-                                int zIndex) {
-    this->drawCommandBuffer->addTriangle(*this, key, t, uv, color1, color2,
-                                         color3, zIndex);
-}
-
 void RenderContext::drawRect(int x, int y, int w, int h, Color c, float alpha) {
     c.a = alpha;
     IntRectangle r(0, 0, w, h);
     Matrix4 m;
     m.identity();
     m.translate(x, y);
-    addRect(DrawKey(), r, m, c);
+    drawCommandBuffer->addRect(DrawKey(), r, m, c);
 }
 
 }

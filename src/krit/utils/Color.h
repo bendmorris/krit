@@ -25,10 +25,10 @@ struct Color {
         return Color(1.0, 1.0, 1.0, alpha);
     }
 
-    float r;
-    float g;
-    float b;
-    float a;
+    float r{0};
+    float g{0};
+    float b{0};
+    float a{0};
 
     Color() {}
     Color(const Color &) = default;
@@ -89,13 +89,9 @@ struct Color {
     // }
     void lerpInPlace(unsigned c, float mix) { *this = this->lerp(c, mix); }
 
-    void zero() {
-        r = g = b = 0;
-    }
+    void zero() { r = g = b = 0; }
 
-    void one() {
-        r = g = b = 1;
-    }
+    void one() { r = g = b = 1; }
 
     Color lerp(const Color &other, float mix) {
         if (mix <= 0) {

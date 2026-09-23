@@ -265,9 +265,6 @@ void Engine::handleEvents() {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         auto window = SDL_GetWindowFromEvent(&event);
-        if (event.type == SDL_EVENT_MOUSE_WHEEL) {
-            printf("WHEEL %p\n", window);
-        }
         if (window) {
             for (auto &engine : active) {
                 if (engine->window.window == window) {
@@ -353,7 +350,10 @@ void Engine::fixedUpdate() {
     if (this->paused) {
         return;
     }
-    invoke(onFixedUpdate);
+    {
+        ProfileZone("Engine::onFixedUpdate");
+        invoke(onFixedUpdate);
+    }
 }
 
 void Engine::update() {
@@ -376,29 +376,32 @@ void Engine::update() {
 #endif
 
     // handle setTimeout events
-    static std::list<TimedEvent> requeue;
-    if (!this->events.empty()) {
-        float elapsed = frame.elapsed;
-        elapsed -= this->events.front().delay;
-        this->events.front().delay -= frame.elapsed;
-        while (!this->events.empty() && this->events.front().delay < 0) {
-            TimedEvent &event = this->events.front();
-            if (invoke(event.signal, false, event.userData)) {
-                requeue.emplace_back(event.interval, event.interval,
-                                     event.signal, event.userData);
+    {
+        ProfileZone("Engine::update::timers");
+        static std::list<TimedEvent> requeue;
+        if (!this->events.empty()) {
+            float elapsed = frame.elapsed;
+            elapsed -= this->events.front().delay;
+            this->events.front().delay -= frame.elapsed;
+            while (!this->events.empty() && this->events.front().delay < 0) {
+                TimedEvent &event = this->events.front();
+                if (invoke(event.signal, false, event.userData)) {
+                    requeue.emplace_back(event.interval, event.interval,
+                                         event.signal, event.userData);
+                }
+                this->events.pop_front();
+                if (!this->events.empty() && elapsed > 0) {
+                    float oldElapsed = elapsed;
+                    elapsed -= this->events.front().delay;
+                    this->events.front().delay -= oldElapsed;
+                }
             }
-            this->events.pop_front();
-            if (!this->events.empty() && elapsed > 0) {
-                float oldElapsed = elapsed;
-                elapsed -= this->events.front().delay;
-                this->events.front().delay -= oldElapsed;
+            // re-enqueue events which returned true
+            while (!requeue.empty()) {
+                TimedEvent &event = requeue.front();
+                this->setTimeout(event.signal, event.delay, event.userData);
+                requeue.pop_front();
             }
-        }
-        // re-enqueue events which returned true
-        while (!requeue.empty()) {
-            TimedEvent &event = requeue.front();
-            this->setTimeout(event.signal, event.delay, event.userData);
-            requeue.pop_front();
         }
     }
 
@@ -406,11 +409,17 @@ void Engine::update() {
     assets.update();
 
     // actual update cycle
-    invoke(onUpdate);
+    {
+        ProfileZone("Engine::onUpdate");
+        invoke(onUpdate);
 #if KRIT_ENABLE_SCRIPT
-    script.update();
+        script.update();
 #endif
-    invoke(postUpdate);
+    }
+    {
+        ProfileZone("Engine::postUpdate");
+        invoke(postUpdate);
+    }
 }
 
 void Engine::render() {
@@ -420,14 +429,21 @@ void Engine::render() {
     if (engine->window.skipFrames > 0) {
         --engine->window.skipFrames;
     } else {
-        invoke(onRender);
+        {
+            ProfileZone("Engine::onRender");
+            invoke(onRender);
+        }
 
         for (auto &camera : cameras) {
+            ProfileZone("Engine::renderCamera");
             ctx.drawCommandBuffer->buf.emplace_back<SetCamera>(&camera);
             ctx.camera = &camera;
             camera.update();
             ctx.drawCommandBuffer->setCamera(&camera);
-            invoke(camera.render);
+            {
+                ProfileZone("Engine::renderCamera::camera.render");
+                invoke(camera.render);
+            }
         }
         ctx.camera = nullptr;
 

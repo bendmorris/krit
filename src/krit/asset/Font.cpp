@@ -105,7 +105,7 @@ GlyphData &FontManager::getGlyph(Font *font, char32_t codePoint,
     }
     GlyphData *found = nextGlyphCache.getGlyph(font, codePoint, size, border);
     if (!found) {
-        panic("ran out of space in backup texture");
+        panic("failed to get glyph");
     }
     return *found;
 }

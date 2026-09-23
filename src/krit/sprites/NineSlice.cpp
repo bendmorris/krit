@@ -70,7 +70,7 @@ void NineSlice::render(RenderContext &render) {
             }
             // m.scale(this->scale.x, this->scale.y);
             m.translate(this->position.x, this->position.y, this->position.z);
-            render.addRect(key, _r, m, this->color);
+            render.drawCommandBuffer->addRect(key, _r, m, this->color);
         }
     };
 

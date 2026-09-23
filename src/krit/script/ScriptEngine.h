@@ -253,6 +253,15 @@ struct ScriptEngine {
         return val;
     }
 
+    template <typename T> JSValue createOwnedProto(T *data, JSValueConst proto) {
+        if (!data) {
+            return JS_NULL;
+        }
+        JSValue val = JS_NewObjectProtoClass(ctx, proto, ScriptClass<T>::classId());
+        tagOwned<T>(val, std::unique_ptr<T>(data));
+        return val;
+    }
+
     template <typename T>
     void tagOwned(JSValue val, std::unique_ptr<T> &&data) {
         auto header = ObjectHeader::create();

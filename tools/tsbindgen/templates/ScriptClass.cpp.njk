@@ -12,6 +12,7 @@
 #include "krit/script/ScriptType.h"
 #include "krit/script/ScriptValue.h"
 #include "krit/utils/Log.h"
+#include "krit/utils/Profiling.h"
 #include "quickjs.h"
 
 #include "{{ includeHeader }}"
@@ -111,6 +112,7 @@ static JSValue js_{{ cls.name }}_get_internal_id(JSContext *ctx, JSValueConst th
 {% for prop in cls.properties %}
 {% if not prop.writeonly %}
 static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst this_val) {
+    ProfileZone("js: get {{ cls.name }}.{{ prop.name }}");
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
         return JS_ThrowTypeError(ctx, "invalid %s", "{{cls.name}}");
@@ -127,6 +129,7 @@ static JSValue js_{{cls.name}}_get_{{ prop.name }}(JSContext *ctx, JSValueConst 
 
 {% if not prop.readonly %}
 static JSValue js_{{cls.name}}_set_{{ prop.name }}(JSContext *ctx, JSValueConst this_val, JSValue val) {
+    ProfileZone("js: set {{ cls.name }}.{{ prop.name }}");
     {{ cls.name }} *p = ObjectHeader::data<{{ cls.name }}>(this_val);
     if (!p) {
         return JS_ThrowTypeError(ctx, "invalid %s", "{{cls.name}}");
@@ -164,26 +167,34 @@ static JS_FUNC({{cls.name}}___clone__) {
 
 {% if cls.ctor %}
 static JS_FUNC({{cls.name}}___constructor__) {
+    ProfileZone("js: {{ cls.name }}.constructor");
     ScriptEngine *engine = static_cast<ScriptEngine*>(JS_GetContextOpaque(ctx));
+    JSValue proto = JS_GetPropertyStr(ctx, this_val, "prototype");
+    JS_FreeValue(ctx, proto);
     {% if cls.partial %}
     if (argc == 1 && JS_IsObject(argv[0])) {
         {{ namespacedName(cls) }} *val = new {{ namespacedName(cls) }}();
         ScriptClass<{{ namespacedName(cls) }}>::populateFromPartial(ctx, *val, argv[0]);
-        return engine->createOwned<{{ namespacedName(cls) }}>(val);
+        return engine->createOwnedProto<{{ namespacedName(cls) }}>(val, proto);
     }
     {% endif %}
     {% for overload in cls.ctor.overloads %}
     {% set inc = 0 %}
     {% if cls.ctor.overloads.length > 1 %}if (argc >= {{overload.requiredArgs}}{% for param in overload.params %}{% if not param.optional %} && TypeConverter<{{typename(param.type)}}>::isConvertible(ctx, argv[{{ inc }}]){% set inc = inc + 1 %}{% endif %}{% endfor %}) {% endif %}{
-        return engine->createOwned<{{ namespacedName(cls) }}>({{ ('new ' + namespacedName(cls)) | call(overload) }});
+        return engine->createOwnedProto<{{ namespacedName(cls) }}>({{ ('new ' + namespacedName(cls)) | call(overload) }}, proto);
     }
     {% endfor %}
     return JS_ThrowTypeError(ctx, "new {{cls.name}}: no matching constructor");
+}
+{% else %}
+static JS_FUNC({{cls.name}}___constructor__) {
+    return JS_ThrowTypeError(ctx, "new {{cls.name}}: cannot be constructed");
 }
 {% endif %}
 
 {% for method in cls.staticMethods %}
 static JS_FUNC({{cls.name}}_{{method.name}}) {
+    ProfileZone("js: {{ cls.name }}.{{ method.name }}");
     {% for overload in method.overloads %}
     static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
     {% for arg in overload.args %}
@@ -206,6 +217,7 @@ static JS_FUNC({{cls.name}}_{{method.name}}) {
 
 {% for method in cls.methods %}
 static JS_FUNC({{cls.name}}_{{ method.name }}) {
+    ProfileZone("js: {{ cls.name }}.{{ method.name }}");
     {% for overload in method.overloads %}
     static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
     {% for arg in overload.args %}
@@ -241,9 +253,6 @@ static const JSCFunctionListEntry protoFuncs{{ cls.name }}[] = {
     JS_CGETSET_DEF("{{ prop.name }}", {% if prop.writeonly %}nullptr{% else %}{{ namespace }}::js_{{cls.name}}_get_{{ prop.name }}{% endif %}, {% if prop.readonly %}nullptr{% else %}{{ namespace }}::js_{{cls.name}}_set_{{ prop.name }}{% endif %}),
     {% endfor %}
     JS_CFUNC_DEF("toString", 0, {{ namespace }}::js_{{ cls.name }}_toString),
-    {% if cls.ctor %}
-    JS_CFUNC_SPECIAL_DEF("__ctor", {{ paramLength(cls.ctor) }}, constructor, {{ namespace }}::js_{{ cls.name }}___constructor__),
-    {% endif %}
     {% for method in cls.methods %}
     JS_CFUNC_DEF("{{ method.name }}", {{ paramLength(method) }}, {{ namespace }}::js_{{ cls.name }}_{{ method.name }}),
     {% endfor %}
@@ -290,13 +299,8 @@ template<> void ScriptClass<{{namespacedName(cls)}}>::init(ScriptEngine *engine)
         }
         {% endif %}
         // bind prototype/constructor to global object
-        {% if cls.ctor %}
-        JSValue ctor = JS_GetPropertyStr(ctx, proto, "__ctor");
+        JSValue ctor = JS_NewCFunction2(ctx, {{ namespace }}::js_{{ cls.name }}___constructor__, "{{cls.name}}", {{ paramLength(cls.ctor) if cls.ctor else 0 }}, JS_CFUNC_constructor, 0);
         JS_SetConstructor(ctx, ctor, proto);
-        {% else %}
-        JSValue ctor = JS_NewObject(ctx);
-        JS_SetPropertyStr(ctx, ctor, "prototype", JS_DupValue(ctx, proto));
-        {% endif %}
         const char *ns[] {{ namespaceArray(cls) }};
         engine->setAtNamespace(ns, "{{ cls.name }}", ctor);
         {% if cls.clone %}
@@ -334,6 +338,7 @@ namespace {
 
 {% if not fn.jsfunc %}
 static JS_FUNC({{ jsFuncName(fn) }}) {
+    ProfileZone("js: {{ fn.name }}");
     {% for overload in fn.overloads %}
     static_assert(krit::TypeValidator<{{ typename(overload.returnType) }}, {{ overload.returnType.validationType }}>::valid, "C++ and TS types don't match");
     {% for arg in overload.args %}

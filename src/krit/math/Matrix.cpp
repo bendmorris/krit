@@ -97,9 +97,9 @@ Vec4f Matrix4::operator*(const Vec4f &vec) const {
 
 Vec3f Matrix4::operator*(const Vec3f &vec) const {
     Vec3f result;
-    result[0] = v[0] * vec[0] + v[4] * vec[1] + v[8] * vec[2] + v[12] * 1;
-    result[1] = v[1] * vec[0] + v[5] * vec[1] + v[9] * vec[2] + v[13] * 1;
-    result[2] = v[2] * vec[0] + v[6] * vec[1] + v[10] * vec[2] + v[14] * 1;
+    result[0] = v[0] * vec[0] + v[4] * vec[1] + v[8] * vec[2] + v[12];
+    result[1] = v[1] * vec[0] + v[5] * vec[1] + v[9] * vec[2] + v[13];
+    result[2] = v[2] * vec[0] + v[6] * vec[1] + v[10] * vec[2] + v[14];
     return result;
 }
 

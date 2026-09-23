@@ -129,7 +129,7 @@ if(KRIT_ENABLE_TRACY)
         ${CMAKE_CURRENT_LIST_DIR}/tracy/public/TracyClient.cpp
     )
     list(APPEND KRIT_SRC_FILES ${TRACY_FILES})
-    include_directories(${CMAKE_CURRENT_LIST_DIR}/tracy/public/tracy)
+    target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/tracy/public/tracy)
     set_source_files_properties(${TRACY_FILES} PROPERTIES
         COMPILE_FLAGS "-w" # GCC/Clang: Suppress all warnings
     )
@@ -208,8 +208,7 @@ if(KRIT_ENABLE_SPINE)
     target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/spine-runtimes/spine-cpp/spine-cpp/include)
 endif()
 
-target_sources(krit PUBLIC
-    ${KRIT_GENERATED_FILES}
+target_sources(krit INTERFACE
     ${KRIT_SRC_FILES}
     ${KRIT_THIRDPARTY_FILES}
     ${TOOLS_FILES}
@@ -249,12 +248,6 @@ if(KRIT_ENABLE_SCRIPT)
     target_include_directories(krit INTERFACE ${CMAKE_CURRENT_LIST_DIR}/quickjs)
     target_include_directories(krit INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/..)
 
-    file(GLOB_RECURSE KRIT_GENERATED_FILES
-        CONFIGURE_DEPENDS
-        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptBridge.cpp
-        ${CMAKE_CURRENT_BINARY_DIR}/krit/script/ScriptClass.*.cpp
-    )
-
     if(KRIT_QUICKJS_DUMP_LEAKS)
         target_compile_definitions(krit INTERFACE -DDUMP_LEAKS)
     endif()
@@ -277,14 +270,15 @@ if(KRIT_ENABLE_SCRIPT)
     add_custom_command(
         OUTPUT ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen/dist/index.js
         DEPENDS ${BINDGEN_SRC_FILES}
-        COMMAND cd ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen && npm install && npm run build
+        WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR}/tools/tsbindgen
+        COMMAND npm install && npm run build
     )
 
     set(KRIT_DIR "${CMAKE_CURRENT_LIST_DIR}")
     set(KRIT_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 
     function(tsbindgen TARGET BRIDGE_SRC_DIR PREFIX NAMESPACE)
-        message("tsbindgen: ${BRIDGE_SRC_DIR}")
+        message(STATUS "tsbindgen: ${BRIDGE_SRC_DIR}")
         file(GLOB_RECURSE BRIDGE_TYPE_DEFS CONFIGURE_DEPENDS ${BRIDGE_SRC_DIR}/*.d.ts)
         set(BRIDGE_OUTPUTS "")
 
@@ -295,13 +289,18 @@ if(KRIT_ENABLE_SCRIPT)
         endforeach()
 
         get_property(CURRENT_BRIDGE_NAMESPACES GLOBAL PROPERTY BRIDGE_NAMESPACES)
-        message("cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
+        message(STATUS "cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o ${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}")
         add_custom_command(
             OUTPUT ${BRIDGE_OUTPUTS}
             DEPENDS ${BRIDGE_TYPE_DEFS} ${KRIT_DIR}/tools/tsbindgen/dist/index.js ${KRIT_DIR}/tools/tsbindgen/templates/ScriptClass.cpp.njk
-            COMMAND cd ${KRIT_DIR}/tools/tsbindgen && node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}"
+            WORKING_DIRECTORY ${KRIT_DIR}/tools/tsbindgen
+            COMMAND node dist/index.js -n ${NAMESPACE}:${BRIDGE_SRC_DIR} ${CURRENT_BRIDGE_NAMESPACES} -s ${BRIDGE_SRC_DIR} -o "${CMAKE_CURRENT_BINARY_DIR}/${PREFIX}"
         )
 
+        add_custom_target(${TARGET}_tsbindgen
+            DEPENDS ${BRIDGE_OUTPUTS}
+        )
+        add_dependencies(${TARGET} ${TARGET}_tsbindgen)
         target_sources(${TARGET} PUBLIC ${BRIDGE_OUTPUTS})
 
         set_property(GLOBAL PROPERTY BRIDGE_NAMESPACES "${CURRENT_BRIDGE_NAMESPACES}" "-n" "${NAMESPACE}:${BRIDGE_SRC_DIR}")

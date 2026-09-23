@@ -39,15 +39,17 @@ ExternalProject_Add(jpeg
     CMAKE_ARGS ${CMAKE_COMMON} -D ENABLE_SHARED=FALSE
 )
 ExternalProject_Add(png
+    BUILD_IN_SOURCE 1
     URL http://prdownloads.sourceforge.net/libpng/libpng-1.6.39.tar.gz?download
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --with-pic
+    CONFIGURE_COMMAND ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --with-pic
     BUILD_COMMAND $(MAKE)
     INSTALL_COMMAND $(MAKE) install
     USES_TERMINAL_CONFIGURE TRUE
 )
 ExternalProject_Add(z
+    BUILD_IN_SOURCE 1
     URL https://zlib.net/zlib-1.3.2.tar.gz
-    CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --static
+    CONFIGURE_COMMAND ./configure ${AUTOTOOLS_COMMON} --static
     BUILD_COMMAND $(MAKE)
     INSTALL_COMMAND $(MAKE) install
     USES_TERMINAL_CONFIGURE TRUE
@@ -77,8 +79,9 @@ list(APPEND KRIT_STATIC_LIBS
 
 if(KRIT_ENABLE_PARTICLES)
     ExternalProject_Add(yaml
+        BUILD_IN_SOURCE 1
         URL https://github.com/yaml/libyaml/releases/download/0.2.5/yaml-0.2.5.tar.gz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
@@ -90,15 +93,17 @@ if(KRIT_ENABLE_PARTICLES)
 endif()
 if(KRIT_ENABLE_NET)
     ExternalProject_Add(openssl
+        BUILD_IN_SOURCE 1
         URL https://www.openssl.org/source/openssl-3.0.7.tar.gz
-        CONFIGURE_COMMAND <SOURCE_DIR>/Configure --prefix=${TOOLCHAIN_DIR} --static -static enable-capieng --libdir=lib
+        CONFIGURE_COMMAND ./Configure --prefix=${TOOLCHAIN_DIR} --static -static enable-capieng --libdir=lib
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install_sw
         USES_TERMINAL_CONFIGURE TRUE
     )
     ExternalProject_Add(curl
+        BUILD_IN_SOURCE 1
         URL https://github.com/curl/curl/releases/download/curl-7_87_0/curl-7.87.0.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl=${TOOLCHAIN_DIR} --without-brotli --without-zstd
+        CONFIGURE_COMMAND ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-ldap --disable-ldaps --without-librtmp --with-openssl=${TOOLCHAIN_DIR} --without-brotli --without-zstd --without-nghttp2 --without-libpsl --without-libidn2
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
@@ -115,8 +120,9 @@ if(KRIT_ENABLE_NET)
 endif()
 if(KRIT_ENABLE_TEXT)
     ExternalProject_Add(freetype
+        BUILD_IN_SOURCE 1
         URL https://download.savannah.gnu.org/releases/freetype/freetype-2.12.1.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --without-bzip2 --without-brotli --without-harfbuzz
+        CONFIGURE_COMMAND ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --without-bzip2 --without-brotli --without-harfbuzz
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
@@ -134,37 +140,41 @@ if(KRIT_ENABLE_TEXT)
 endif()
 if(KRIT_ENABLE_AUDIO)
     ExternalProject_Add(flac
+        BUILD_IN_SOURCE 1
         URL https://github.com/xiph/flac/releases/download/1.4.2/flac-1.4.2.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-stack-smash-protection
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-stack-smash-protection
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
     )
     ExternalProject_Add(ogg
+        BUILD_IN_SOURCE 1
         URL https://github.com/xiph/ogg/releases/download/v1.3.5/libogg-1.3.5.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
     )
     ExternalProject_Add(vorbis
+        BUILD_IN_SOURCE 1
         URL https://github.com/xiph/vorbis/releases/download/v1.3.7/libvorbis-1.3.7.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
     )
     ExternalProject_Add(opus
+        BUILD_IN_SOURCE 1
         URL https://github.com/xiph/opus/releases/download/v1.1.2/opus-1.1.2.tar.gz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
     )
     ExternalProject_Add(sndfile
+        BUILD_IN_SOURCE 1
         URL https://github.com/libsndfile/libsndfile/releases/download/1.2.2/libsndfile-1.2.2.tar.xz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-stack-smash-protection
-        CONFIGURE_ENVIRONMENT_MODIFICATION "CFLAGS=string_append:-std=c99"
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && CFLAGS=-std=c99 ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared --disable-stack-smash-protection
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE
@@ -189,8 +199,9 @@ if(KRIT_ENABLE_AUDIO)
 endif()
 if(KRIT_ENABLE_SQLITE)
     ExternalProject_Add(sqlite3
+        BUILD_IN_SOURCE 1
         URL https://www.sqlite.org/2022/sqlite-autoconf-3400100.tar.gz
-        CONFIGURE_COMMAND <SOURCE_DIR>/configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
+        CONFIGURE_COMMAND touch aclocal.m4 configure Makefile.am Makefile.in && ./configure ${AUTOTOOLS_COMMON} --enable-static --disable-shared
         BUILD_COMMAND $(MAKE)
         INSTALL_COMMAND $(MAKE) install
         USES_TERMINAL_CONFIGURE TRUE

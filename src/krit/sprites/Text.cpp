@@ -676,6 +676,7 @@ void Text::resize(float w, float h) {
 }
 
 void Text::render(RenderContext &ctx) {
+    ProfileZone("Text::render");
     if (borderThickness > 0 && borderColor.a > 0 &&
         (this->border || hasBorderTags)) {
         __render(ctx, true);
@@ -889,11 +890,12 @@ void Text::__render(RenderContext &ctx, bool border) {
                                     thickness + (borderGlyph.region.rect.width -
                                                  thickness) *
                                                     fraction;
-                                ctx.addRect(key, newRect, matrix, borderColor,
-                                            zIndex);
+                                ctx.drawCommandBuffer->addRect(
+                                    key, newRect, matrix, borderColor, zIndex);
                             } else {
-                                ctx.addRect(key, borderGlyph.region.rect,
-                                            matrix, borderColor, zIndex);
+                                ctx.drawCommandBuffer->addRect(
+                                    key, borderGlyph.region.rect, matrix,
+                                    borderColor, zIndex);
                             }
                         }
                     } else {
@@ -905,11 +907,12 @@ void Text::__render(RenderContext &ctx, bool border) {
                             float fraction = fmod(charCount, 1);
                             IntRectangle newRect(glyph.region.rect);
                             newRect.width *= fraction;
-                            ctx.addRect(key, newRect, matrix, renderData.color,
-                                        zIndex);
+                            ctx.drawCommandBuffer->addRect(
+                                key, newRect, matrix, renderData.color, zIndex);
                         } else {
-                            ctx.addRect(key, glyph.region.rect, matrix,
-                                        renderData.color, zIndex);
+                            ctx.drawCommandBuffer->addRect(
+                                key, glyph.region.rect, matrix,
+                                renderData.color, zIndex);
                         }
                     }
 

@@ -4,7 +4,6 @@
 #include <memory>
 
 #include "krit/Engine.h"
-#include "krit/Engine.h"
 #include "krit/math/Dimensions.h"
 #include "krit/math/Matrix.h"
 #include "krit/render/DrawKey.h"
@@ -13,8 +12,7 @@
 
 namespace krit {
 
-Backdrop::Backdrop(const std::string &id)
-    : region(engine->getImage(id)) {}
+Backdrop::Backdrop(const std::string &id) : region(engine->getImage(id)) {}
 
 void Backdrop::render(RenderContext &ctx) {
     if (this->color.a <= 0 && !shader) {
@@ -33,16 +31,16 @@ void Backdrop::render(RenderContext &ctx) {
         if (pos.x > 0) {
             pos.x -= dimensions.x;
         }
-        xi = static_cast<int>(
-            ceil(engine->window.x - pos.x) / dimensions.x + 1);
+        xi =
+            static_cast<int>(ceil(engine->window.x - pos.x) / dimensions.x + 1);
     }
     if (this->repeatY) {
         pos.y = fmod(pos.y, dimensions.y);
         if (pos.y > 0) {
             pos.y -= dimensions.y;
         }
-        yi = static_cast<int>(
-            ceil(engine->window.y - pos.y) / dimensions.y + 1);
+        yi =
+            static_cast<int>(ceil(engine->window.y - pos.y) / dimensions.y + 1);
     }
     DrawKey key;
     key.image = this->region.img;
@@ -60,7 +58,8 @@ void Backdrop::render(RenderContext &ctx) {
         for (int x = 0; x < xi; ++x) {
             m.tx() = pos.x + dimensions.x * x;
             m.ty() = pos.y + dimensions.y * y;
-            ctx.addRect(key, this->region.rect, m, this->color);
+            ctx.drawCommandBuffer->addRect(key, this->region.rect, m,
+                                           this->color);
         }
     }
 

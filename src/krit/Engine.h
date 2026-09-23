@@ -90,13 +90,13 @@ public:
     Window window;
     Renderer renderer;
     InputContext input;
+#if KRIT_ENABLE_AUDIO
+    AudioBackend audio;
+#endif
     AssetCache assets;
 
 #if KRIT_ENABLE_TEXT
     FontManager fonts;
-#endif
-#if KRIT_ENABLE_AUDIO
-    AudioBackend audio;
 #endif
 #if KRIT_ENABLE_SCRIPT
     ScriptEngine script;

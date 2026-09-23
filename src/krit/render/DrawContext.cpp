@@ -1,4 +1,5 @@
 #include "DrawContext.h"
+#include "../render/DrawCommand.h"
 
 namespace krit {
 
@@ -230,7 +231,8 @@ void DrawContext::addTriangle(float tx1, float ty1, float tx2, float ty2,
     key.shader = this->shader;
     Triangle t(tx1, ty1, tx2, ty2, tx3, ty3);
     Triangle uv;
-    krit::render().addTriangle(key, t, uv, c1, c2, c3, this->zIndex);
+    krit::render().drawCommandBuffer->addTriangle(key, t, uv, c1, c2, c3,
+                                                  this->zIndex);
 }
 
 }

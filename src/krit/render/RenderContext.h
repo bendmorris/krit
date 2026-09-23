@@ -9,6 +9,7 @@
 #include "krit/math/Rectangle.h"
 #include "krit/math/Triangle.h"
 #include "krit/utils/Color.h"
+#include <cassert>
 
 namespace krit {
 
@@ -32,62 +33,6 @@ struct RenderContext {
     void popClip();
     void startAutoClip(float xBuffer = 0, float yBuffer = 0);
     bool endAutoClip();
-
-    void addRect(const DrawKey &key, const IntRectangle &rect,
-                 const Matrix4 &matrix, const Color color, int zIndex = 0);
-    void addTriangle(const DrawKey &key, const Triangle &t, const Triangle &uv,
-                     const Color color, int zIndex = 0);
-    void addTriangle(const DrawKey &key, const Triangle &t, const Triangle &uv,
-                     const Color &c1, const Color &c2, const Color &c3,
-                     int zIndex = 0);
-
-    Point &transformPoint(Point &point) {
-        if (this->camera) {
-            this->camera->transformPoint(point);
-        }
-        return point;
-    }
-
-    Point &untransformPoint(Point &point) {
-        if (this->camera) {
-            this->camera->untransformPoint(point);
-        }
-        return point;
-    }
-
-    Rectangle &transformRect(Rectangle &rect) {
-        if (this->camera) {
-            Point p(rect.x, rect.y);
-            Dimensions d(rect.width, rect.height);
-            this->transformPoint(p);
-            this->transformDimensions(d);
-            rect.setTo(p.x, p.y, d.x, d.y);
-        }
-        return rect;
-    }
-
-    // TODO: untransformRect
-
-    Triangle &transformTriangle(Triangle &t) {
-        this->transformPoint(t.p1);
-        this->transformPoint(t.p2);
-        this->transformPoint(t.p3);
-        return t;
-    }
-
-    Dimensions &transformDimensions(Dimensions &d) {
-        if (this->camera) {
-            this->camera->scaleDimensions(d);
-        }
-        return d;
-    }
-
-    Dimensions &untransformDimensions(Dimensions &d) {
-        if (this->camera) {
-            this->camera->unscaleDimensions(d);
-        }
-        return d;
-    }
 
     void drawRect(int x, int y, int w, int h, Color c = Color::white(),
                   float alpha = 1);

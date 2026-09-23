@@ -208,6 +208,7 @@ Renderer::Renderer(Window &_window, bool block) : window(_window) {
     }
     checkForGlErrors("imgui gen textures");
     glBindTexture(GL_TEXTURE_2D, Editor::imguiTextureId);
+    lastState.texture = Editor::imguiTextureId;
     checkForGlErrors("imgui bind texture");
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA,
                  GL_UNSIGNED_BYTE, pixels);
@@ -232,6 +233,8 @@ Renderer::Renderer(Window &_window, bool block) : window(_window) {
     glDepthRangef(-1000, 1000);
 
     checkForGlErrors("renderer init");
+
+    setSmoothingMode(SmoothingMode::SmoothLinear, nullptr);
 }
 
 Renderer::~Renderer() {}
@@ -416,12 +419,15 @@ void Renderer::drawCall<DrawTriangles, DrawCall>(RenderContext &ctx,
 
             if (drawCall.key.image) {
                 glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_2D, drawCall.key.image->texture);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
-                                GL_CLAMP_TO_EDGE);
-                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
-                                GL_CLAMP_TO_EDGE);
-                checkForGlErrors("bind texture");
+                if (lastState.texture != drawCall.key.image->texture) {
+                    lastState.texture = drawCall.key.image->texture;
+                    glBindTexture(GL_TEXTURE_2D, drawCall.key.image->texture);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                                    GL_CLAMP_TO_EDGE);
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                                    GL_CLAMP_TO_EDGE);
+                    checkForGlErrors("bind texture");
+                }
                 setSmoothingMode(drawCall.key.smooth, drawCall.key.image.get());
                 checkForGlErrors("setSmoothingMode");
             }
@@ -473,6 +479,8 @@ void Renderer::drawCall<SetCamera, Camera *>(RenderContext &ctx,
 
 void Renderer::renderFrame(RenderContext &ctx) {
     ProfileZone("Renderer::renderFrame");
+
+    lastState.texture = 0;
 
     window.makeCurrent();
 

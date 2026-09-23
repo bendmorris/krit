@@ -303,7 +303,7 @@ void StreamAudioSource::reset(bool clearSource) {
 }
 
 SequenceAudioSource::~SequenceAudioSource() {
-    if (alSource) {
+    if (alSource && !engine->audio.shuttingDown) {
         engine->audio.recycleAlSource(alSource);
     }
 }

@@ -54,7 +54,8 @@ function main() {
     const bindgen = new Bindgen(opts);
     bindgen.execute();
 
-    console.log(`krit-tsbindgen finished, duration: ${Date.now() - startTime}ms`);
+    console.log(`krit-tsbindgen ${opts.srcDir} finished, duration: ${Date.now() - startTime}ms`);
 }
+
 
 main();

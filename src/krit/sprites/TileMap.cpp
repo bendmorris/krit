@@ -17,9 +17,7 @@ void TileMap::render(RenderContext &ctx) {
         tileHeight = this->properties.tileSize.y;
     Dimensions scaledDimensions(tileWidth, tileHeight);
     scaledDimensions *= this->scale;
-    // ctx.transformDimensions(scaledDimensions);
     Point pos = this->position;
-    // ctx.transformPoint(pos);
     // FIXME
     int startX = 0, startY = 0, destX = properties.sizeInTiles.x,
         destY = properties.sizeInTiles.y;
@@ -47,6 +45,7 @@ void TileMap::render(RenderContext &ctx) {
     m.identity();
     m.a() = scaledDimensions.x / tileWidth;
     m.d() = scaledDimensions.y / tileHeight;
+    DrawCall &call = ctx.drawCommandBuffer->getDrawCall(key);
     for (int y = startY; y < destY; ++y) {
         if (y < this->clip.y || y >= this->clip.bottom()) {
             continue;
@@ -69,7 +68,7 @@ void TileMap::render(RenderContext &ctx) {
                                       this->properties.tilePadding.y,
                                   tileWidth, tileHeight);
                 Matrix4 m2(m);
-                ctx.addRect(key, rect, m2, this->color);
+                ctx.drawCommandBuffer->addRect(call, rect, m2, this->color);
             }
         }
     }
